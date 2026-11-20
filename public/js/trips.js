@@ -66,7 +66,7 @@ G.screens.trips = async function (el, params) {
     if (status === 'boarded') { const v = await G.prompt('Board passenger', [{ name: 'boarding_otp', label: 'Boarding OTP (last 4 of ticket) — optional', full: true }], { ok: 'Mark boarded' }); if (!v) return; if (v.boarding_otp) body.boarding_otp = v.boarding_otp; }
     await G.patch(`/trips/${sel}/passengers/${pnr}/${seat}`, body); G.toast(`Marked ${status.replace('_', ' ')}`, 'ok'); loadDetail();
   });
-  G.on(el, 'click', '[data-call]', async (t) => { const r = await G.post('/calls', { pnr: t.dataset.call }); G.toast(r.message, 'ok'); });
+  G.on(el, 'click', '[data-call]', (t) => G.callNow({ pnr: t.dataset.call }).catch(G.err));
   G.on(el, 'click', '[data-ev]', async (t) => { await G.post(`/trips/${sel}/stop-event`, { stage_id: t.dataset.stage, kind: t.dataset.ev }); loadDetail(); });
   G.on(el, 'click', '[data-book]', () => G.bookingConsole(sel, () => { loadList(); }));
   G.on(el, 'change', '[data-tst]', async (t) => { await G.post(`/trips/${sel}/status`, { trip_status: t.value }); G.toast('Trip status updated', 'ok'); loadList(); });

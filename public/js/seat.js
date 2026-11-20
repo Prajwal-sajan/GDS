@@ -65,7 +65,8 @@ G.bookingConsole = async function (scheduleId, onDone) {
     $('[data-book]', el).onclick = async () => {
       const v = G.formVal(f);
       try {
-        const b = await G.post('/bookings', { schedule_id: scheduleId, from_city_id: fromC, to_city_id: toC, boarding_stage_id: Number(v.bp), dropping_stage_id: Number(v.dp), source: v.source || 'agent', agent_phone: v.agent_phone || null, payment_mode: v.payment_mode, payment_method: v.payment_method, coupon: v.coupon || null, miles_used: v.miles_used || 0, remarks: v.remarks, contact: { name: v.name_0, phone: v.phone, email: v.email }, passengers: seats.map((s, i) => ({ seat: s.code, name: v[`name_${i}`], age: v[`age_${i}`], gender: v[`gender_${i}`], fare: v[`fare_${i}`] })) });
+        const payload = { schedule_id: scheduleId, from_city_id: fromC, to_city_id: toC, boarding_stage_id: Number(v.bp), dropping_stage_id: Number(v.dp), source: v.source || 'agent', agent_phone: v.agent_phone || null, payment_mode: v.payment_mode, payment_method: v.payment_method, coupon: v.coupon || null, miles_used: v.miles_used || 0, remarks: v.remarks, contact: { name: v.name_0, phone: v.phone, email: v.email }, passengers: seats.map((s, i) => ({ seat: s.code, name: v[`name_${i}`], age: v[`age_${i}`], gender: v[`gender_${i}`], fare: v[`fare_${i}`] })) };
+        let b; try { b = await G.post('/bookings', payload); } catch (err) { if (err.status === 409 && /seat rules|couple booking/.test(err.message) && can('bookings.block_seats') && (await G.confirm(`${esc(err.message)}.<br>Override the route seat rule for this booking?`, { ok: 'Override & book' }))) b = await G.post('/bookings', { ...payload, override_rules: true }); else throw err; }
         G.toast(`Booked · PNR ${b.pnr}`, 'ok'); selected = []; await loadMap(); onDone && onDone();
       } catch (e) { G.err(e); }
     };

@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
-const root=path.resolve(import.meta.dirname,'..');
+import { fileURLToPath } from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const html=fs.readFileSync(path.join(root,'public/index.html'),'utf8');
 for (const name of ['trip-parity','accounts-parity','schedule-parity','route-parity']) {
  assert.match(html,new RegExp(`/js/${name}\\.js`));

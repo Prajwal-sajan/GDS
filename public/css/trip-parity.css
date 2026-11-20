@@ -39,3 +39,5 @@
 @media(max-width:950px){.trip-workspace .tp-fields{grid-template-columns:1fr 1fr}.trip-workspace .tp-fields .tp-primary{grid-column:1/-1}.trip-workspace .tp-docs{grid-template-columns:1fr}}
 @media(max-width:600px){.trip-workspace .tp-fields{grid-template-columns:1fr}.trip-workspace .tp-section-tabs{gap:3px;padding:4px}.trip-workspace .tp-section-tabs button{height:48px;font-size:12px}.trip-workspace .tp-stop-heading{padding:16px 12px}.trip-workspace .tp-stop-heading strong{font-size:15px}.trip-workspace .tp-summary{padding:14px}}
 @media print{.trip-workspace .tp-fields,.trip-workspace .tp-section-tabs,.trip-workspace .tp-actions,.trip-workspace button{display:none!important}.trip-workspace .tp-table-scroll{overflow:visible}.trip-workspace .tp-table{min-width:0;font-size:10px}}
+
+.tp-controls .tp-danger{color:#b91c1c;border-color:#fecaca;background:#fef2f2}.tp-controls label{display:inline-flex;gap:6px;align-items:center;font-size:12px}

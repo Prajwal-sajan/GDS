@@ -212,7 +212,7 @@ r.get('/schedules/:id/booking-history', can('schedules.view'), h((req) => ({ his
 r.get('/payment-options', can('bookings.create'), h((req) => { const amt = Number(req.query.amount) || 0; const me = db.col('users').get(req.user.id); const isAgent = me?.role === 'agent'; const comm = isAgent ? me.commission_pct || 0 : 0; return { agent_type: isAgent ? me.agent_type : 'staff', ticket_amount: amt, commission_percent: comm, ticket_net_payable: U.round2(amt * (1 - comm / 100)), options: ['paid', 'unpaid', 'settle_later'], credit_limit: me?.credit_limit || null }; }));
 r.post('/bookings', can('bookings.create'), h((req) => {
   const body = { ...req.body };
-  if (req.user.role === 'agent') { body.source = 'agent'; body.agent_phone = req.user.phone; }
+  if (req.user.role === 'agent') { body.source = 'agent'; body.agent_phone = req.user.phone; delete body.override_rules; }
   return D.createBooking(body, req.user);
 }));
 r.post('/bookings/quote', can('bookings.create'), h((req) => {

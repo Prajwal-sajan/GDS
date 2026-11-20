@@ -51,8 +51,25 @@ r.post('/chats/:cid/block', can('chats.send'), h((req) => { const last = db.col(
 
 // ---------- Calls ----------
 r.get('/calls', can('calls.view'), h((req) => { let rows = db.col('calls').all().slice(); const { status, direction, q } = req.query; if (status) rows = rows.filter((c) => c.status === status); if (direction) rows = rows.filter((c) => c.direction === direction); if (q) rows = rows.filter((c) => `${c.phone} ${c.passenger_name} ${c.pnr}`.toLowerCase().includes(String(q).toLowerCase())); rows.sort((a, b) => b.ts.localeCompare(a.ts)); return { calls: rows, stats: { total: rows.length, answered: rows.filter((c) => c.status === 'answered').length, missed: rows.filter((c) => c.status === 'missed').length, avg_duration: Math.round(U.sum(rows, (c) => c.duration_s) / (rows.length || 1)) } }; }));
-r.post('/calls', can('calls.make'), h((req) => { const b = req.body.pnr ? db.col('bookings').find((x) => x.pnr === req.body.pnr) : null; const phone = String(req.body.phone || b?.contact.phone || ''); if (!/^\d{10}$/.test(phone)) throw D.httpErr(400, 'Valid phone required'); const op = db.meta('operator'); return { ...db.col('calls').insert({ direction: 'outgoing', kind: req.body.kind || 'manual', phone, passenger_name: b?.contact.name || req.body.name || '', pnr: b?.pnr || null, schedule_id: b?.schedule_id || null, status: 'answered', duration_s: 0, agent: req.user.name, ts: U.nowIso(), masked: op.is_number_masking_enabled }), via: op.outgoing_number, message: `Connecting via ${op.outgoing_number}. Your phone will ring first.` }; }));
-r.put('/calls/:id', can('calls.make'), h((req) => db.col('calls').update(req.params.id, { notes: req.body.notes, status: req.body.status, duration_s: req.body.duration_s })));
+// No telephony provider is integrated: calls are operator-logged records. Status is what the operator reports.
+const CALL_STATUSES = ['answered', 'missed', 'busy', 'not_reachable', 'logged'];
+r.post('/calls', can('calls.make'), h((req) => {
+  const b = req.body.pnr ? db.col('bookings').find((x) => x.pnr === req.body.pnr) : null;
+  const phone = String(req.body.phone || b?.contact.phone || '').replace(/\D/g, '').slice(-10);
+  if (!/^\d{10}$/.test(phone)) throw D.httpErr(400, 'Valid phone required');
+  const status = CALL_STATUSES.includes(req.body.status) ? req.body.status : 'logged';
+  const duration = Math.max(0, Number(req.body.duration_s) || 0);
+  const c = db.col('calls').insert({ direction: req.body.direction === 'incoming' ? 'incoming' : 'outgoing', kind: req.body.kind || 'manual', phone, passenger_name: b?.contact.name || req.body.name || '', pnr: b?.pnr || req.body.pnr || null, schedule_id: b?.schedule_id || null, status, duration_s: duration, notes: req.body.notes || '', agent: req.user.name, ts: U.nowIso(), provider: null });
+  return { ...c, message: 'Call record saved (no telephony provider connected).' };
+}));
+r.put('/calls/:id', can('calls.make'), h((req) => {
+  const c = db.col('calls').get(req.params.id); if (!c) throw D.httpErr(404, 'Call not found');
+  const patch = {};
+  if (req.body.notes !== undefined) patch.notes = String(req.body.notes);
+  if (req.body.status !== undefined) { if (!CALL_STATUSES.includes(req.body.status)) throw D.httpErr(400, 'Invalid call status'); patch.status = req.body.status; }
+  if (req.body.duration_s !== undefined) patch.duration_s = Math.max(0, Number(req.body.duration_s) || 0);
+  return db.col('calls').update(c.id, patch);
+}));
 r.get('/speed-dials', can('calls.view'), h(() => ({ settings: db.meta('speed_dial'), dials: db.col('speed_dials').all() })));
 r.post('/speed-dials', can('settings.modify'), h((req) => { const b = req.body; if (!/^\d{1,2}$/.test(b.code || '')) throw D.httpErr(400, 'Code must be 1-2 digits'); if (db.col('speed_dials').find((d) => d.code === b.code)) throw D.httpErr(409, 'Code in use'); return db.col('speed_dials').insert({ code: b.code, kind: b.kind || 'number', phone: b.phone, label: b.label || '', is_active: true }); }));
 r.delete('/speed-dials/:id', can('settings.modify'), h((req) => ({ success: db.col('speed_dials').remove(req.params.id) })));

@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-const root=path.resolve(import.meta.dirname,'..');
+import { fileURLToPath } from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const html=fs.readFileSync(path.join(root,'public/index.html'),'utf8');
 const names=['trip-parity','accounts-parity','schedule-parity','route-parity','communications-access-parity','fleet-operations-parity'];
 for(const n of names){
@@ -22,7 +23,7 @@ assert.ok(!comm.includes('Connecting via cloud telephony'), 'False provider-conn
 const audit=fs.readFileSync(path.join(root,'SCREENSHOT_FEATURE_RECONCILIATION.csv'),'utf8');
 const lines=audit.trim().split(/\r?\n/);
 assert.ok(lines.length>130,`feature matrix must be comprehensive, found ${lines.length-1}`);
-for(const m of ['Trips','Schedules','Routes','Vehicles','Coaches','CRM','Staff','Daily Operations','Sarathi','Chats','Calls','Team & Access','Accounts'])assert.ok(audit.includes(`"${m}"`)||audit.includes(`\n${m},`),`missing audit module: ${m}`);
+for(const m of ['Trips','Schedules','Routes','Vehicles','Coaches','CRM','Staff','Daily Operations','Sarathi','Chats','Calls','Team & Access','Accounts'])assert.ok(lines.slice(1).some(l=>l.split(',')[1]===m||l.includes(`,"${m}",`)),`missing audit module: ${m}`);
 const ctx=vm.createContext({G:{screens:{fleet:async()=>({native:true})}},console});
 vm.runInContext(fleet,ctx);
 assert.equal(typeof ctx.G.screens.fleet,'function');

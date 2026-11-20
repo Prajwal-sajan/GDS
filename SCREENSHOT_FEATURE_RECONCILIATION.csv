@@ -34,7 +34,7 @@ index,module,feature,status,evidence
 32,Routes,Vehicle alternation configuration,OVERLAY_STATIC_CHECKED,route-parity.js
 33,Routes,Native create/edit/duplicate/delete workflows,OVERLAY_STATIC_CHECKED,route-parity.js
 34,Routes,Verified historical GPS halt analysis,NOT_IMPLEMENTED,server/api/master.js route halts uses simulated values
-35,Routes,Seat adjacency couple exception enforced in booking transaction,NOT_IMPLEMENTED,server/api/master.js route halts uses simulated values
+35,Routes,Seat adjacency couple exception enforced in booking transaction,SERVER_TESTED,server/domain.js enforceRouteRules + tests/regression.js (gender adjacency / couple / advance window / staff override)
 36,Routes,Alternation by actual operating departures not calendar offset,NOT_IMPLEMENTED,server/api/master.js route halts uses simulated values
 37,Routes,Published dynamic pricing based on trained validated model,NOT_IMPLEMENTED,server/api/master.js route halts uses simulated values
 38,Vehicles,"Vehicle totals, moving, idling, stopped counts",OVERLAY_STATIC_CHECKED,fleet-operations-parity.js
