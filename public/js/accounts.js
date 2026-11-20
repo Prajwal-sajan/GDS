@@ -1,0 +1,108 @@
+// Accounts: analytics, transactions, receivables & ledger, reports, invoices, reconciliation, coupons.
+(function () {
+  const REPORTS = [['trip-pnl', 'Trip P&L', 'Profit per trip after commission, GST and expenses'], ['expenses', 'Expense breakdown', 'Category-wise cost share'], ['fleet-operations', 'Fleet operations', 'Km, fuel, mileage and utilisation per bus'], ['driver-behavior', 'Driver behaviour', 'Overspeeding, harsh braking, idling'], ['staff-duty', 'Staff duty', 'Duty days per crew member'], ['point-usage', 'Boarding point usage', 'Passengers per pickup point'], ['point-performance', 'Point performance', 'On-time and no-show by boarding point'], ['station-performance', 'Station performance', 'Sales by city pair'], ['metro-bookings', 'Metro bookings', 'Metro station pickups'], ['van-bookings', 'Pickup van bookings', 'Passengers using feeder vans'], ['no-shows', 'No-shows', 'Passengers who did not board'], ['cancellations', 'Cancellations', 'Cancelled tickets, charges and refunds'], ['frequent-travellers', 'Frequent travellers', 'Top repeat customers']];
+
+  G.screens.accounts = async (el, p) => {
+    const tab = p.tab || 'analytics';
+    el.innerHTML = `${G.tabs([['analytics', 'Analytics', 'accounts.view'], ['transactions', 'Transactions', 'accounts.view'], ['receivables', 'Receivables', 'accounts.ledger'], ['reports', 'Reports', 'accounts.reports'], ['invoices', 'Invoices', 'accounts.view'], ['reconciliation', 'OTA reconciliation', 'accounts.reconciliation'], ['coupons', 'Coupons', 'offers.manage_coupons']], tab, (k) => `#/accounts/${k}`)}<div data-body></div>`;
+    const body = $('[data-body]', el);
+    return ({ analytics, transactions, receivables, reports, invoices, reconciliation, coupons }[tab] || analytics)(body, p.id);
+  };
+  const rangeBar = (from, to, extra = '') => `<div class="row" style="margin-bottom:12px">${G.range(from, to)}${extra}<button class="btn sm p" data-go>Apply</button></div>`;
+  const bindRange = (el, base, extra = () => ({})) => { $('[data-go]', el).onclick = () => (location.hash = `${base}?${G.qs({ from: $('[data-from]', el).value, to: $('[data-to]', el).value, ...extra() })}`); };
+  const dflt = () => { const q = G.query(); return { q, from: q.from || addDays(today(), -6), to: q.to || today() }; };
+
+  async function analytics(el) {
+    const { q, from, to } = dflt(); const basis = q.basis || 'travel_date', source = q.source || 'all';
+    const d = await G.get(`/accounts/analytics?${G.qs({ from, to, basis, source })}`); const t = d.totals;
+    el.innerHTML = `${rangeBar(from, to, `<select data-basis><option value="travel_date" ${basis === 'travel_date' ? 'selected' : ''}>By travel date</option><option value="booking_date" ${basis === 'booking_date' ? 'selected' : ''}>By booking date</option></select><select data-src>${['all', ...d.channels.map((c) => c.source)].filter((v, i, a) => a.indexOf(v) === i).map((s) => `<option ${s === source ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select>`)}
+      ${G.kpis([['Net sales', inr(t.net_sales), `${num(t.bookings)} bookings · ${num(t.seats)} seats`], ['Avg. seat price', inr(t.asp), `Offers ${inr(t.offers)}`], ['Occupancy', pct(t.occupancy_pct), `Fleet util ${pct(t.fleet_util_pct)}`], ['Cancellations', inr(t.cancel_charges), `${t.cancelled_pnrs} PNRs · refunds ${inr(t.refunds)}`], ['Profit', inr(t.profit), `Expense ${inr(t.expense)}`]])}
+      <div class="grid g2" style="margin-top:12px"><div class="card"><b>Daily net sales</b>${G.bars(d.rows.map((r) => r.net_sales), d.rows.map((r) => r.date), inr)}</div><div class="card"><b>GST</b><p>Total ${inr(t.gst, 2)}<br><span class="small muted">Payable by operator ${inr(t.gst_own, 2)} · collected by OTAs (sec 9(5)) ${inr(t.gst_95, 2)}</span></p></div></div>
+      <h3 style="margin-top:14px">By day</h3>${G.table(d.rows, [{ l: 'Date', f: (r) => fdate(r.date) }, { k: 'trips', l: 'Trips', n: 1 }, { k: 'bookings', l: 'Bookings', n: 1 }, { k: 'seats', l: 'Seats', n: 1 }, { l: 'Occ', n: 1, f: (r) => pct(r.occupancy_pct) }, { l: 'Net sales', n: 1, f: (r) => inr(r.net_sales) }, { l: 'ASP', n: 1, f: (r) => inr(r.asp) }, { l: 'GST', n: 1, f: (r) => inr(r.gst) }, { l: 'Cancel chg', n: 1, f: (r) => inr(r.cancel_charges) }, { l: 'Refunds', n: 1, f: (r) => inr(r.refunds) }, { l: 'Expense', n: 1, f: (r) => inr(r.expense) }, { l: 'Profit', n: 1, f: (r) => `<b style="color:${r.profit < 0 ? '#dc2626' : '#16a34a'}">${inr(r.profit)}</b>` }])}
+      <h3 style="margin-top:14px">By channel</h3>${G.table(d.channels, [{ k: 'source', l: 'Channel' }, { k: 'bookings', l: 'Bookings', n: 1 }, { k: 'seats', l: 'Seats', n: 1 }, { l: 'Net sales', n: 1, f: (r) => inr(r.net_sales) }, { l: 'Share', n: 1, f: (r) => pct((r.net_sales / (t.net_sales || 1)) * 100) }])}`;
+    bindRange(el, '#/accounts/analytics', () => ({ basis: $('[data-basis]', el).value, source: $('[data-src]', el).value }));
+  }
+
+  async function transactions(el) {
+    const { q, from, to } = dflt();
+    const params = { from, to, q: q.q, source: q.source };
+    const d = await G.get(`/accounts/transactions?${G.qs(params)}`);
+    el.innerHTML = `${rangeBar(from, to, `<input data-q placeholder="PNR / phone / name" value="${esc(q.q || '')}"/>`)}
+      <div class="row between" style="margin-bottom:8px">${G.kpis([['Bookings', num(d.totals.bookings)], ['Amount', inr(d.totals.amount, 2)], ['Refunds', inr(d.totals.refunds, 2)]])}<button class="btn sm" data-csv>⬇ Export CSV</button></div>
+      ${G.table(d.rows.slice(0, 500), [{ l: 'Date', f: (r) => fdt(r.date) }, { l: 'PNR', f: (r) => `<a href="#" data-pnr="${esc(r.pnr)}">${esc(r.ticket)}</a>` }, { k: 'type', l: 'Type' }, { l: 'Travel', f: (r) => `${fdate(r.travel_date)} · ${esc(r.service)}` }, { k: 'passenger', l: 'Passenger' }, { k: 'seats', l: 'Seats' }, { k: 'source', l: 'Channel' }, { k: 'booked_by', l: 'By' }, { l: 'Fare', n: 1, f: (r) => inr(r.fare) }, { l: 'Disc.', n: 1, f: (r) => (r.discount ? inr(r.discount) : '') }, { l: 'GST', n: 1, f: (r) => inr(r.gst, 2) }, { l: 'Total', n: 1, f: (r) => inr(r.total, 2) }, { l: 'Comm.', n: 1, f: (r) => inr(r.commission, 2) }, { l: 'Payment', f: (r) => `${statusBadge(r.payment)} <span class="small muted">${esc(r.method || '')}</span>` }, { l: 'Status', f: (r) => statusBadge(r.status) }])}
+      ${d.rows.length > 500 ? `<p class="small muted">Showing 500 of ${d.rows.length}. Export CSV for all.</p>` : ''}`;
+    bindRange(el, '#/accounts/transactions', () => ({ q: $('[data-q]', el).value }));
+    $('[data-csv]', el).onclick = () => G.download(`/accounts/transactions?${G.qs({ ...params, format: 'csv' })}`, `transactions_${from}_${to}.csv`).catch(G.err);
+    G.on(el, 'click', '[data-pnr]', (b, e) => { e.preventDefault(); G.bookingModal(b.dataset.pnr); });
+  }
+
+  async function receivables(el) {
+    const { q, from, to } = dflt();
+    const d = await G.get(`/accounts/receivables?${G.qs({ from, to })}`);
+    el.innerHTML = `${rangeBar(from, to)}${G.kpis([['From OTAs', inr(d.summary.otas, 2)], ['From agents', inr(d.summary.agents, 2)], ['From branches', inr(d.summary.branches, 2)], ['Operator', inr(d.summary.operator, 2)]])}
+      <div class="row between" style="margin:14px 0 8px"><b>Channel balances</b>${can('accounts.ledger') ? '<button class="btn sm p" data-entry>+ Ledger entry</button>' : ''}</div>
+      ${G.table(d.rows, [{ l: 'Channel', f: (r) => `<b>${esc(r.display_name)}</b> <span class="badge">${esc(r.channel_type)}</span>` }, { k: 'bookings', l: 'Bookings', n: 1 }, { l: 'Gross', n: 1, f: (r) => inr(r.total, 2) }, { l: 'Commission', n: 1, f: (r) => inr(r.commission, 2) }, { l: 'GST on comm.', n: 1, f: (r) => inr(r.gst_on_commission, 2) }, { l: 'TDS', n: 1, f: (r) => inr(r.tds, 2) }, { l: 'Received', n: 1, f: (r) => inr(r.paid, 2) }, { l: 'Receivable', n: 1, f: (r) => `<b>${inr(r.receivable, 2)}</b>` }, { l: '', f: (r) => `<button class="btn sm" data-led="${esc(r.channel_key)}">Ledger</button>` }])}`;
+    bindRange(el, '#/accounts/receivables'); void q;
+    G.on(el, 'click', '[data-led]', async (b) => { const L = await G.get(`/accounts/ledger?channel_key=${encodeURIComponent(b.dataset.led)}`); G.modal({ title: `Ledger · ${esc(L.channel_key)}`, size: 'lg', body: `${G.kpis([['Debits', inr(L.total_debits, 2)], ['Credits', inr(L.total_credits, 2)], ['Balance', inr(L.balance, 2)]])}<div style="margin-top:10px">${G.table(L.entries.slice(-300).reverse(), [{ l: 'Date', f: (r) => fdate(r.date) }, { k: 'kind', l: 'Type' }, { k: 'ref', l: 'Ref' }, { k: 'note', l: 'Note' }, { l: 'Debit', n: 1, f: (r) => (r.debit ? inr(r.debit, 2) : '') }, { l: 'Credit', n: 1, f: (r) => (r.credit ? inr(r.credit, 2) : '') }, { l: 'Balance', n: 1, f: (r) => inr(r.balance, 2) }])}</div>` }); });
+    const eb = $('[data-entry]', el); if (eb) eb.onclick = async () => { const ch = await G.get('/accounts/channels'); const opts = [...ch.otas.map((c) => [c.channel_key, `OTA · ${c.name}`]), ...ch.agents.map((c) => [c.channel_key, `Agent · ${c.name}`]), ...ch.branches.map((c) => [c.channel_key, `Branch · ${c.name}`])]; const v = await G.prompt('Ledger entry', [{ name: 'channel_key', label: 'Channel', type: 'select', options: opts }, { name: 'type', label: 'Type', type: 'select', options: [['credit', 'Payment received (credit)'], ['debit', 'Adjustment (debit)']] }, { name: 'amount', label: 'Amount', type: 'number', required: true }, { name: 'date', label: 'Date', type: 'date', value: today() }, { name: 'note', label: 'Note / UTR', full: 1 }]); if (v) { await G.post('/accounts/ledger', v); G.toast('Entry recorded', 'ok'); receivables(el); } };
+  }
+
+  async function reports(el, key) {
+    if (!key) {
+      el.innerHTML = `<div class="grid g3">${REPORTS.map(([k, l, s]) => `<a class="card" href="#/accounts/reports/${k}" style="display:block"><b>${esc(l)}</b><div class="small muted">${esc(s)}</div></a>`).join('')}</div>`;
+      return;
+    }
+    const { from, to } = dflt();
+    const d = await G.get(`/accounts/reports/${key}?${G.qs({ from, to })}`);
+    const title = (REPORTS.find((r) => r[0] === key) || [key, key])[1];
+    const arrays = Object.entries(d).filter(([, v]) => Array.isArray(v) && v.length && typeof v[0] === 'object');
+    const sum = d.summary ? G.kpis(Object.entries(d.summary).slice(0, 5).map(([k, v]) => [k.replace(/_/g, ' '), typeof v === 'number' ? (/fare|amount|sales|expense|profit|refund|charge|per_trip/.test(k) ? inr(v) : /pct/.test(k) ? pct(v) : num(v)) : esc(v)])) : '';
+    el.innerHTML = `<div class="row between"><div><a href="#/accounts/reports">← Reports</a> &nbsp;<b style="font-size:16px">${esc(title)}</b> <span class="muted">${esc(d.operator_name || '')}</span></div><div class="row"><button class="btn sm" data-csv>⬇ CSV</button><button class="btn sm" onclick="window.print()">🖨 Print</button></div></div>
+      ${rangeBar(from, to)}${sum}${arrays.map(([k, v]) => `<h3 style="margin-top:14px;text-transform:capitalize">${esc(k.replace(/_/g, ' '))}</h3>${G.autoTable(v.map((r) => Object.fromEntries(Object.entries(r).map(([a, b]) => [a, Array.isArray(b) ? b.map((x) => (typeof x === 'object' ? x.name || JSON.stringify(x) : x)).join(', ') : b]))))}`).join('') || '<div class="empty">No data for this period</div>'}`;
+    bindRange(el, `#/accounts/reports/${key}`);
+    $('[data-csv]', el).onclick = () => G.download(`/accounts/reports/${key}?${G.qs({ from, to, format: 'csv' })}`, `${key}_${from}_${to}.csv`).catch(G.err);
+  }
+
+  async function invoices(el) {
+    const d = await G.get('/accounts/documents'); const b = d.balance;
+    el.innerHTML = `${G.kpis([['Statement', esc(b.statement)], ['Closing balance', inr(b.closing_balance, 2)], ['Paid since', inr(b.paid_since, 2)], ['Balance due', `<b>${inr(b.balance, 2)}</b>`]])}
+      <div class="row between" style="margin:14px 0 8px"><b>Platform invoices & statements</b>${b.balance > 0 ? '<button class="btn sm p" data-pay>Pay now</button>' : ''}</div>
+      ${G.table(d.documents, [{ l: 'Date', f: (r) => fdate(r.date) }, { k: 'label', l: 'Document' }, { k: 'name', l: 'Number' }, { k: 'month', l: 'Month' }, { l: 'Amount', n: 1, f: (r) => inr(r.amount, 2) }, { l: 'Status', f: (r) => statusBadge(String(r.status).toLowerCase()) }])}`;
+    const pb = $('[data-pay]', el); if (pb) pb.onclick = async () => { const v = await G.prompt('Record payment', [{ name: 'amount', label: 'Amount', type: 'number', value: b.balance, required: true }, { name: 'reference', label: 'UTR / reference', required: true }]); if (v) { await G.post('/accounts/documents/pay', v); G.toast('Payment recorded', 'ok'); invoices(el); } };
+  }
+
+  async function reconciliation(el, id) {
+    if (id) return settlementDetail(el, id);
+    const [{ imports }, cfg] = await Promise.all([G.get('/reconciliation/settlements'), G.get('/reconciliation/config')]);
+    el.innerHTML = `<div class="row between" style="margin-bottom:8px"><b>Settlement uploads</b><button class="btn sm p" data-up>⬆ Upload settlement CSV</button></div>
+      ${G.table(imports, [{ l: 'Uploaded', f: (r) => fdate(r.created_at) }, { k: 'ota_slug', l: 'OTA' }, { k: 'file_name', l: 'File' }, { k: 'invoice_number', l: 'Invoice' }, { l: 'Period', f: (r) => `${fdate(r.billing_period_start)} – ${fdate(r.billing_period_end)}` }, { l: 'Matched', n: 1, f: (r) => (r.total_lines_parsed ? `${r.matched_count}/${r.total_lines_parsed}` : '') }, { l: 'Status', f: (r) => statusBadge(r.status) }, { l: '', f: (r) => `<a class="btn sm" href="#/accounts/reconciliation/${r.id}">Open</a>` }], { empty: 'No settlements uploaded' })}
+      <div class="row between" style="margin:18px 0 8px"><b>OTA commission configuration</b><button class="btn sm" data-savecfg>Save</button></div>
+      <div class="tw"><table class="t"><thead><tr><th>OTA</th><th>Commission %</th><th>Base</th><th>GST on comm. %</th><th>TDS %</th><th>Settlement</th><th>Cycle (days)</th><th>Active</th></tr></thead><tbody>${cfg.map((c, i) => `<tr data-i="${i}"><td>${esc(c.ota_display_name)}</td><td><input type="number" step="any" data-k="commission_percent" value="${c.commission_percent}" style="width:70px"/></td><td><select data-k="commission_base">${['fare_only', 'fare_plus_gst'].map((x) => `<option ${x === c.commission_base ? 'selected' : ''}>${x}</option>`).join('')}</select></td><td><input type="number" step="any" data-k="gst_on_commission_percent" value="${c.gst_on_commission_percent}" style="width:70px"/></td><td><input type="number" step="any" data-k="tds_percent" value="${c.tds_percent}" style="width:70px"/></td><td><select data-k="settlement_mode">${['DOJ', 'DOB'].map((x) => `<option ${x === c.settlement_mode ? 'selected' : ''}>${x}</option>`).join('')}</select></td><td><input type="number" data-k="settlement_cycle_days" value="${c.settlement_cycle_days}" style="width:60px"/></td><td><input type="checkbox" data-k="is_active" ${c.is_active ? 'checked' : ''}/></td></tr>`).join('')}</tbody></table></div>`;
+    $('[data-savecfg]', el).onclick = async () => { const out = cfg.map((c, i) => { const o = { ...c }; $$(`tr[data-i="${i}"] [data-k]`, el).forEach((x) => (o[x.dataset.k] = x.type === 'checkbox' ? x.checked : x.type === 'number' ? Number(x.value) : x.value)); return o; }); await G.put('/reconciliation/config', out).catch(G.err); G.toast('Configuration saved', 'ok'); };
+    $('[data-up]', el).onclick = () => {
+      const m = G.modal({ title: 'Upload OTA settlement', body: `<form class="grid g2" data-f>${G.field({ name: 'ota_slug', label: 'OTA', type: 'select', options: cfg.map((c) => [c.ota_slug, c.ota_display_name]) })}<label class="f">CSV file<input type="file" accept=".csv,text/csv" data-file/></label></form><p class="small muted">Columns: pnr, fare, commission, payout[, type]</p>`, foot: '<button class="btn p" data-go2>Upload & match</button>' });
+      m.$('[data-go2]').onclick = async () => { const f = m.$('[data-file]').files[0]; if (!f) return G.toast('Choose a CSV file', 'bad'); const csv = await f.text(); const r = await G.post('/reconciliation/settlements', { ota_slug: G.formVal(m.$('[data-f]')).ota_slug, file_name: f.name, csv }).catch(G.err); if (!r) return; m.close(); location.hash = `#/accounts/reconciliation/${r.id}`; };
+    };
+  }
+  async function settlementDetail(el, id) {
+    const s = await G.get(`/reconciliation/settlements/${id}`);
+    const rows = s.rows || s.lines || [];
+    const by = (st) => rows.filter((r) => r.status === st);
+    el.innerHTML = `<div class="row between"><div><a href="#/accounts/reconciliation">← Settlements</a> &nbsp;<b>${esc(s.ota_slug)} · ${esc(s.file_name)}</b> ${statusBadge(s.status)}</div></div>
+      ${G.kpis([['Lines', rows.length], ['Matched', by('matched').length], ['Mismatched', by('mismatched').length], ['Missing in GDS', by('unmatched_ota').length], ['Payout diff', s.difference != null ? `${inr(s.ota_payout, 2)} vs ${inr(s.our_expected, 2)}` : '—']])}
+      <div class="row" style="margin:12px 0"><button class="btn sm" data-res="accept_ota">Accept OTA values for selected</button><button class="btn sm" data-res="accept_gds">Keep GDS values</button><button class="btn sm" data-res="ignore">Ignore</button></div>
+      ${G.table(rows, [{ l: '', f: (r) => (r.status !== 'matched' ? `<input type="checkbox" data-p="${esc(r.pnr)}"/>` : '') }, { k: 'pnr', l: 'PNR' }, { k: 'type', l: 'Type' }, { l: 'OTA fare', n: 1, f: (r) => inr(r.fare, 2) }, { l: 'Our fare', n: 1, f: (r) => inr(r.expected_fare, 2) }, { l: 'OTA comm.', n: 1, f: (r) => inr(r.commission, 2) }, { l: 'Expected comm.', n: 1, f: (r) => inr(r.expected_commission, 2) }, { l: 'OTA payout', n: 1, f: (r) => inr(r.payout, 2) }, { l: 'Expected payout', n: 1, f: (r) => inr(r.expected_payout, 2) }, { l: 'Diff', n: 1, f: (r) => (r.difference ? `<b style="color:#dc2626">${inr(r.difference, 2)}</b>` : '') }, { k: 'reason', l: 'Reason' }, { l: 'Status', f: (r) => statusBadge(r.resolution || r.status) }], { empty: 'No line items in this settlement' })}`;
+    G.on(el, 'click', '[data-res]', async (b) => { const pnrs = $$('[data-p]', el).filter((x) => x.checked).map((x) => x.dataset.p); if (!pnrs.length) return G.toast('Select rows', 'bad'); await G.post(`/reconciliation/settlements/${id}/resolve`, { pnrs, action: b.dataset.res }); G.toast('Resolved', 'ok'); settlementDetail(el, id); });
+  }
+
+  async function coupons(el) {
+    const { coupons: C } = await G.get('/coupons');
+    el.innerHTML = `<div class="row between" style="margin-bottom:8px"><b>Coupons</b><button class="btn sm p" data-new>+ New coupon</button></div>
+      ${G.table(C, [{ l: 'Code', f: (c) => `<b>${esc(c.code)}</b><div class="small muted">${esc(c.description || '')}</div>` }, { l: 'Discount', f: (c) => (c.discount_type === 'percent' ? `${c.discount_value}%${c.max_discount_amount ? ` (max ${inr(c.max_discount_amount)})` : ''}` : inr(c.discount_value)) }, { l: 'Min fare', n: 1, f: (c) => inr(c.min_fare) }, { k: 'audience', l: 'Audience' }, { l: 'Channels', f: (c) => esc((c.channels || []).join(', ') || 'All') }, { l: 'Validity', f: (c) => (c.valid_from || c.valid_until ? `${fdate(c.valid_from)} – ${fdate(c.valid_until)}` : 'Always') }, { l: 'Uses (30d / all)', n: 1, f: (c) => `${c.uses_30d} / ${c.uses_total}${c.total_limit ? ` of ${c.total_limit}` : ''}` }, { l: 'Given (30d)', n: 1, f: (c) => inr(c.given_30d) }, { l: 'Active', f: (c) => `<label class="chk"><input type="checkbox" data-tog="${c.id}" ${c.is_active ? 'checked' : ''}/></label>` }, { l: '', f: (c) => `<button class="btn sm" data-ed="${c.id}">Edit</button>` }])}`;
+    const form = (c = {}) => [{ name: 'code', label: 'Code', required: true, value: c.code }, { name: 'description', label: 'Description', value: c.description }, { name: 'discount_type', label: 'Type', type: 'select', options: [['flat', 'Flat ₹'], ['percent', 'Percent']], value: c.discount_type }, { name: 'discount_value', label: 'Value', type: 'number', required: true, value: c.discount_value }, { name: 'max_discount_amount', label: 'Max discount (₹)', type: 'number', value: c.max_discount_amount }, { name: 'min_fare', label: 'Min fare', type: 'number', value: c.min_fare }, { name: 'audience', label: 'Audience', type: 'select', options: [['all', 'Everyone'], ['new', 'New customers'], ['repeat', 'Repeat customers']], value: c.audience }, { name: 'channels', label: 'Channels (comma; blank = all)', value: (c.channels || []).join(', ') }, { name: 'per_user_limit', label: 'Per-user limit', type: 'number', value: c.per_user_limit }, { name: 'total_limit', label: 'Total limit', type: 'number', value: c.total_limit }, { name: 'valid_from', label: 'Valid from', type: 'date', value: c.valid_from }, { name: 'valid_until', label: 'Valid until', type: 'date', value: c.valid_until }, { name: 'stackable', label: 'Stackable with miles', type: 'checkbox', value: c.stackable }, { name: 'private', label: 'Private (not shown to customers)', type: 'checkbox', value: c.private }];
+    const norm = (v) => ({ ...v, code: v.code.toUpperCase(), channels: v.channels.split(',').map((s) => s.trim()).filter(Boolean), valid_from: v.valid_from || null, valid_until: v.valid_until || null });
+    $('[data-new]', el).onclick = async () => { const v = await G.prompt('New coupon', form(), { size: 'lg' }); if (v) { await G.post('/coupons', norm(v)); G.toast('Coupon created', 'ok'); coupons(el); } };
+    G.on(el, 'click', '[data-ed]', async (b) => { const c = C.find((x) => x.id == b.dataset.ed); const v = await G.prompt('Edit coupon', form(c), { size: 'lg' }); if (v) { await G.put(`/coupons/${c.id}`, norm(v)); coupons(el); } });
+    G.on(el, 'change', '[data-tog]', async (b) => { await G.put(`/coupons/${b.dataset.tog}`, { is_active: b.checked }); G.toast(b.checked ? 'Coupon activated' : 'Coupon paused', 'ok'); });
+  }
+})();
