@@ -1,0 +1,146 @@
+index,module,feature,status,evidence
+0,Global shell,Trips/GDS/Chats/Calls navigation,BASE_PRESENT_UNVERIFIED,public/js/main.js
+1,Global shell,Schedules/Routes/CRM/Vehicles/Accounts/Staff/Daily Ops/Sarathi navigation,BASE_PRESENT_UNVERIFIED,public/js/main.js
+2,Global shell,Language and settings controls,BASE_PRESENT_UNVERIFIED,public/js/main.js
+3,Global shell,Role-gated navigation and active tab states,BASE_PRESENT_UNVERIFIED,public/js/main.js
+4,Trips,Trip date/status/filter navigation,OVERLAY_STATIC_CHECKED,trip-parity.js
+5,Trips,Pickup charts and arrival/departure tables,OVERLAY_STATIC_CHECKED,trip-parity.js
+6,Trips,Crew and vehicle assignment details,OVERLAY_STATIC_CHECKED,trip-parity.js
+7,Trips,Trip passenger list and PNR drilldown,OVERLAY_STATIC_CHECKED,trip-parity.js
+8,Trips,Boarded/checked-in/no-show status and comments,OVERLAY_STATIC_CHECKED,trip-parity.js
+9,Trips,Trip communication history and details,OVERLAY_STATIC_CHECKED,trip-parity.js
+10,Trips,End-to-end boarding OTP and no-show escalation,NOT_VERIFIED,server/api/ops.js and external providers
+11,Trips,Actual passenger notification delivery,NOT_VERIFIED,server/api/ops.js and external providers
+12,Trips,Multi-user authorization/branch scoping,NOT_VERIFIED,server/api/ops.js and external providers
+13,Trips,Live passenger tracking feeds,NOT_VERIFIED,server/api/ops.js and external providers
+14,Schedules,Schedule cards and trip detail,OVERLAY_STATIC_CHECKED,schedule-parity.js
+15,Schedules,Bookings tab and seat map,OVERLAY_STATIC_CHECKED,schedule-parity.js
+16,Schedules,Block and unblock seats,OVERLAY_STATIC_CHECKED,schedule-parity.js
+17,Schedules,Update trip assignment,OVERLAY_STATIC_CHECKED,schedule-parity.js
+18,Schedules,"Cities, pickup and drop tabs",OVERLAY_STATIC_CHECKED,schedule-parity.js
+19,Schedules,Fares and fare change controls,OVERLAY_STATIC_CHECKED,schedule-parity.js
+20,Schedules,P&L and History tabs,OVERLAY_STATIC_CHECKED,schedule-parity.js
+21,Schedules,Pickup chart grouping and download/export affordances,OVERLAY_STATIC_CHECKED,schedule-parity.js
+22,Schedules,Two-desk seat hold transaction and realtime sync,NOT_VERIFIED,Requires live API/database browser QA
+23,Schedules,Passenger seat shift/date shift and cancellation settlement,NOT_VERIFIED,Requires live API/database browser QA
+24,Schedules,Booking payment and refund provider confirmation,NOT_VERIFIED,Requires live API/database browser QA
+25,Schedules,Strict schedule-stop override enforcement,NOT_VERIFIED,Requires live API/database browser QA
+26,Routes,Active/inactive/deleted route list,OVERLAY_STATIC_CHECKED,route-parity.js
+27,Routes,Origin/destination timetable and via cities,OVERLAY_STATIC_CHECKED,route-parity.js
+28,Routes,Route service/recurrence details,OVERLAY_STATIC_CHECKED,route-parity.js
+29,Routes,Pickup and drop points,OVERLAY_STATIC_CHECKED,route-parity.js
+30,Routes,Fare matrix access and guardrails,OVERLAY_STATIC_CHECKED,route-parity.js
+31,Routes,Route seat and boarding policy controls,OVERLAY_STATIC_CHECKED,route-parity.js
+32,Routes,Vehicle alternation configuration,OVERLAY_STATIC_CHECKED,route-parity.js
+33,Routes,Native create/edit/duplicate/delete workflows,OVERLAY_STATIC_CHECKED,route-parity.js
+34,Routes,Verified historical GPS halt analysis,NOT_IMPLEMENTED,server/api/master.js route halts uses simulated values
+35,Routes,Seat adjacency couple exception enforced in booking transaction,NOT_IMPLEMENTED,server/api/master.js route halts uses simulated values
+36,Routes,Alternation by actual operating departures not calendar offset,NOT_IMPLEMENTED,server/api/master.js route halts uses simulated values
+37,Routes,Published dynamic pricing based on trained validated model,NOT_IMPLEMENTED,server/api/master.js route halts uses simulated values
+38,Vehicles,"Vehicle totals, moving, idling, stopped counts",OVERLAY_STATIC_CHECKED,fleet-operations-parity.js
+39,Vehicles,Search vehicle registration and coach,OVERLAY_STATIC_CHECKED,fleet-operations-parity.js
+40,Vehicles,State and health filters,OVERLAY_STATIC_CHECKED,fleet-operations-parity.js
+41,Vehicles,Sort and list/cards toggle,OVERLAY_STATIC_CHECKED,fleet-operations-parity.js
+42,Vehicles,Vehicle detail view and available GPS time,OVERLAY_STATIC_CHECKED,fleet-operations-parity.js
+43,Vehicles,Native edit/add/delete and document actions,OVERLAY_STATIC_CHECKED,fleet-operations-parity.js
+44,Vehicles,Live fleet map with moving bus markers and map zoom,NOT_IMPLEMENTED,Requires authorized GPS/ECU provider
+45,Vehicles,Location sharing and next-trip driver/helper contact modal,NOT_IMPLEMENTED,Requires authorized GPS/ECU provider
+46,Vehicles,Fault code active/inactive panel and diagnostics,NOT_IMPLEMENTED,Requires authorized GPS/ECU provider
+47,Vehicles,Predictive engine algorithm readings,NOT_IMPLEMENTED,Requires authorized GPS/ECU provider
+48,Vehicles,"Live engine metrics, fuel, AdBlue, after-treatment and chassis",NOT_IMPLEMENTED,Requires authorized GPS/ECU provider
+49,Vehicles,"Alerts by overspeed, hard brake, idling and stoppage",NOT_IMPLEMENTED,Requires authorized GPS/ECU provider
+50,Vehicles,"Telematics time-series, incident routing and live refresh",NOT_IMPLEMENTED,Requires authorized GPS/ECU provider
+51,Coaches,Coach list and layout preview,BASE_PRESENT_UNVERIFIED,public/js/fleet.js
+52,Coaches,"Create, view, edit, delete coach",BASE_PRESENT_UNVERIFIED,public/js/fleet.js
+53,Coaches,Coach pattern and seat-type configuration,BASE_PRESENT_UNVERIFIED,public/js/fleet.js
+54,Coaches,Coach amenities field and editing,BASE_PRESENT_UNVERIFIED,public/js/fleet.js
+55,Coaches,Interactive lower/upper seat-grid editor,NOT_IMPLEMENTED,Native coach layout generator lacks screenshot editor
+56,Coaches,Custom numbered seat names and coordinates,NOT_IMPLEMENTED,Native coach layout generator lacks screenshot editor
+57,Coaches,Emergency exits and toilet/roof-exit geometry editing,NOT_IMPLEMENTED,Native coach layout generator lacks screenshot editor
+58,Coaches,Seater/sleeper upper deck and variable row/aisle arrangement,NOT_IMPLEMENTED,Native coach layout generator lacks screenshot editor
+59,Coaches,Layout geometry validation against actual cabin,NOT_IMPLEMENTED,Native coach layout generator lacks screenshot editor
+60,Coaches,Exact screenshot coach filter and metric controls,NOT_IMPLEMENTED,Native coach layout generator lacks screenshot editor
+61,CRM,Search customers by name or phone,BASE_PRESENT_UNVERIFIED,public/js/engage.js
+62,CRM,"Customer 360 spending, trips and loyalty",BASE_PRESENT_UNVERIFIED,public/js/engage.js
+63,CRM,Booking list and PNR navigation,BASE_PRESENT_UNVERIFIED,public/js/engage.js
+64,CRM,CRM notes and messaging history,BASE_PRESENT_UNVERIFIED,public/js/engage.js
+65,CRM,Three-way PNR/email/phone search and status chips,NOT_IMPLEMENTED,Requires customer search and ticket panel enhancements
+66,CRM,Full booking details right panel over seat map,NOT_IMPLEMENTED,Requires customer search and ticket panel enhancements
+67,CRM,Ticket update/print/invoice/notify menu with real dispatch,NOT_IMPLEMENTED,Requires customer search and ticket panel enhancements
+68,CRM,Seat shift and cancellation tied to refund ledger,NOT_IMPLEMENTED,Requires customer search and ticket panel enhancements
+69,CRM,Full fare components and OTA settlement display,NOT_IMPLEMENTED,Requires customer search and ticket panel enhancements
+70,Staff,Staff list and role filters,BASE_PRESENT_UNVERIFIED,public/js/fleet.js
+71,Staff,Add/edit/deactivate staff,BASE_PRESENT_UNVERIFIED,public/js/fleet.js
+72,Staff,"Salary, advance and employee ledger",BASE_PRESENT_UNVERIFIED,public/js/fleet.js
+73,Staff,Attendance and payouts modules,BASE_PRESENT_UNVERIFIED,public/js/fleet.js
+74,Staff,Document upload/download,BASE_PRESENT_UNVERIFIED,public/js/fleet.js
+75,Staff,"Personal Info, Payables, Bank Details, Ledger, Documents tabbed modal",NOT_IMPLEMENTED,Requires staff profile model/UI changes
+76,Staff,Aadhaar/PAN/license with expiry and field-level masking,NOT_IMPLEMENTED,Requires staff profile model/UI changes
+77,Staff,"Daily wages/monthly salary, overtime bonus and deduction editors",NOT_IMPLEMENTED,Requires staff profile model/UI changes
+78,Staff,Bank holder/branch/account/IFSC/UPI detail validation,NOT_IMPLEMENTED,Requires staff profile model/UI changes
+79,Staff,10 MB PDF/JPG/PNG/WEBP document validation and access audit,NOT_IMPLEMENTED,Requires staff profile model/UI changes
+80,Daily Operations,Day-wise operational metrics and trip summary,BASE_PRESENT_UNVERIFIED,public/js/engage.js
+81,Daily Operations,Per-service fleet and passenger reporting,BASE_PRESENT_UNVERIFIED,public/js/engage.js
+82,Daily Operations,Ratings and low-rating list,BASE_PRESENT_UNVERIFIED,public/js/engage.js
+83,Daily Operations,Native rating reply action,BASE_PRESENT_UNVERIFIED,public/js/engage.js
+84,Daily Operations,Full screenshot per-service table with calls/chats/tracking/check-ins/pickups/drops,NOT_IMPLEMENTED,Requires correlated trip/event/source data
+85,Daily Operations,Daily KPI breakdown for all channels and distinct users,NOT_IMPLEMENTED,Requires correlated trip/event/source data
+86,Daily Operations,Actual OTA ratings sync and ratings by vehicle/driver,NOT_IMPLEMENTED,Requires correlated trip/event/source data
+87,Daily Operations,"RedBus all-time score and weighted ranking, temporal snapshots",NOT_IMPLEMENTED,Requires correlated trip/event/source data
+88,Daily Operations,Search rank per day and top/bottom position history,NOT_IMPLEMENTED,Requires correlated trip/event/source data
+89,Daily Operations,7/30/90/180-day view with verified historical data,NOT_IMPLEMENTED,Requires correlated trip/event/source data
+90,Daily Operations,"Low-rating action workflow, challenge and follow-up status",NOT_IMPLEMENTED,Requires correlated trip/event/source data
+91,Daily Operations,Rated/not-rated passenger reconciliation,NOT_IMPLEMENTED,Requires correlated trip/event/source data
+92,Sarathi,Fleet operations assistant screen,BASE_PRESENT_UNVERIFIED,public/js/engage.js
+93,Sarathi,Ask prompt and response workflow,BASE_PRESENT_UNVERIFIED,public/js/engage.js
+94,Sarathi,Grounded fleet/earnings/passenger/staff prompts,NOT_VERIFIED,Requires inspecting model invocation and data retrieval
+95,Sarathi,"Source citations, tenant scoping, sensitive record permissions",NOT_VERIFIED,Requires inspecting model invocation and data retrieval
+96,Sarathi,Persistent conversation history,NOT_VERIFIED,Requires inspecting model invocation and data retrieval
+97,Chats,Conversation list and unread count,OVERLAY_STATIC_CHECKED,communications-access-parity.js
+98,Chats,Search by name/phone/PNR,OVERLAY_STATIC_CHECKED,communications-access-parity.js
+99,Chats,Active/unread/resolved/blocked filters,OVERLAY_STATIC_CHECKED,communications-access-parity.js
+100,Chats,Conversation message pane,OVERLAY_STATIC_CHECKED,communications-access-parity.js
+101,Chats,Existing WhatsApp and SMS messages/templates,OVERLAY_STATIC_CHECKED,communications-access-parity.js
+102,Chats,Click through to booking via PNR,OVERLAY_STATIC_CHECKED,communications-access-parity.js
+103,Chats,Manual call log from conversation,OVERLAY_STATIC_CHECKED,communications-access-parity.js
+104,Chats,New conversation flow,NOT_IMPLEMENTED,Requires provider messaging integration
+105,Chats,Persisted Issue/Working/Resolved statuses and reports,NOT_IMPLEMENTED,Requires provider messaging integration
+106,Chats,"Email channel, attachments and voice note",NOT_IMPLEMENTED,Requires provider messaging integration
+107,Chats,Provider confirmed delivery/read state,NOT_IMPLEMENTED,Requires provider messaging integration
+108,Chats,WhatsApp number integration and broadcast compliance,NOT_IMPLEMENTED,Requires provider messaging integration
+109,Chats,Screenshot-specific quick Pickup/Drop buttons with event semantics,NOT_IMPLEMENTED,Requires provider messaging integration
+110,Calls,Call list with search and status filters,OVERLAY_STATIC_CHECKED,communications-access-parity.js
+111,Calls,Inbound/outbound and duration records,OVERLAY_STATIC_CHECKED,communications-access-parity.js
+112,Calls,Call stats and PNR lookup,OVERLAY_STATIC_CHECKED,communications-access-parity.js
+113,Calls,Explicit manual call log without fake connected call,OVERLAY_STATIC_CHECKED,communications-access-parity.js
+114,Calls,Actual cloud calling and number masking,NOT_IMPLEMENTED,Requires telecom provider APIs and recording consent
+115,Calls,Multi-leg PSTN/APP attempt timeline,NOT_IMPLEMENTED,Requires telecom provider APIs and recording consent
+116,Calls,"Ring, busy, skipped, unreached metadata",NOT_IMPLEMENTED,Requires telecom provider APIs and recording consent
+117,Calls,Call recording playback/download/share,NOT_IMPLEMENTED,Requires telecom provider APIs and recording consent
+118,Calls,Automatic missed-call escalation and speed dial integration,NOT_IMPLEMENTED,Requires telecom provider APIs and recording consent
+119,Team & Access,Office/bus staff and users view,BASE_PRESENT_UNVERIFIED,public/js/settings.js and communications-access-parity.js
+120,Team & Access,User invite and edit,BASE_PRESENT_UNVERIFIED,public/js/settings.js and communications-access-parity.js
+121,Team & Access,Existing role editor and branches,BASE_PRESENT_UNVERIFIED,public/js/settings.js and communications-access-parity.js
+122,Team & Access,User active/inactive status,BASE_PRESENT_UNVERIFIED,public/js/settings.js and communications-access-parity.js
+123,Team & Access,Dedicated Office staff / Bus staff / Agents / Branches / Access tabs,NOT_IMPLEMENTED,Requires action-scoped IAM and backend policy changes
+124,Team & Access,Specific role templates shown in screenshots,NOT_IMPLEMENTED,Requires action-scoped IAM and backend policy changes
+125,Team & Access,Fine-grained Off/Own/Branch/Company per action enforcement,NOT_IMPLEMENTED,Requires action-scoped IAM and backend policy changes
+126,Team & Access,"Test access, Groups and Advanced panels",NOT_IMPLEMENTED,Requires action-scoped IAM and backend policy changes
+127,Team & Access,Branch-specific booking accounting isolation,NOT_IMPLEMENTED,Requires action-scoped IAM and backend policy changes
+128,Team & Access,Agent online mode and agent settings,NOT_IMPLEMENTED,Requires action-scoped IAM and backend policy changes
+129,Team & Access,Per-user route-specific permission override and audit,NOT_IMPLEMENTED,Requires action-scoped IAM and backend policy changes
+130,Team & Access,Secure impersonation and access logs,NOT_IMPLEMENTED,Requires action-scoped IAM and backend policy changes
+131,Accounts,Sales and transactions tables,OVERLAY_STATIC_CHECKED,accounts-parity.js
+132,Accounts,Receivables and manual ledger action,OVERLAY_STATIC_CHECKED,accounts-parity.js
+133,Accounts,Basic report catalog,OVERLAY_STATIC_CHECKED,accounts-parity.js
+134,Accounts,Read-only agent settings view,OVERLAY_STATIC_CHECKED,accounts-parity.js
+135,Accounts,"Existing invoices, coupon and reconciliation routes",OVERLAY_STATIC_CHECKED,accounts-parity.js
+136,Accounts,All reports export parity and reconciliation,NOT_VERIFIED,Requires accounting backend/PSP integration
+137,Accounts,Full agent credit/commission/settlement lifecycle,NOT_VERIFIED,Requires accounting backend/PSP integration
+138,Accounts,Refund/reversal journal and T+N OTA payouts,NOT_VERIFIED,Requires accounting backend/PSP integration
+139,Accounts,Ledger balances reconcile to payment gateway and bank,NOT_VERIFIED,Requires accounting backend/PSP integration
+140,Overall,Authenticated browser E2E UAT,NOT_VERIFIED,Repository baseline not executable in current container
+141,Overall,Production database migrations,NOT_VERIFIED,Repository baseline not executable in current container
+142,Overall,"Concurrency, security, financial, integration tests",NOT_VERIFIED,Repository baseline not executable in current container
+143,Overall,Provider sandbox acceptance,NOT_VERIFIED,Repository baseline not executable in current container
+144,Overall,Cross-module acceptance against all screenshots,NOT_VERIFIED,Repository baseline not executable in current container
