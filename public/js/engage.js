@@ -29,7 +29,7 @@
   G.callNow = async ({ phone, name, pnr, kind = 'manual' }) => {
     const c = await G.post('/calls', { phone, name, pnr, kind });
     const t0 = Date.now();
-    const m = G.modal({ title: `📞 Calling ${esc(name || phone)}`, body: `<p>Connecting via cloud telephony (number masked)…</p><p class="muted">${esc(phone)}</p>${G.field({ name: 'notes', label: 'Call notes', type: 'textarea', full: 1 })}`, foot: '<button class="btn" data-miss>No answer</button><button class="btn p" data-end>End call</button>' });
+    const m = G.modal({ title: `📞 Calling ${esc(name || phone)}`, body: `<p>Manual call log — dial this number from your phone. No telephony provider is connected.</p><p class="muted">${esc(phone)}</p>${G.field({ name: 'notes', label: 'Call notes', type: 'textarea', full: 1 })}`, foot: '<button class="btn" data-miss>No answer</button><button class="btn p" data-end>End call</button>' });
     const fin = (status) => G.put(`/calls/${c.id}`, { status, duration_s: status === 'answered' ? Math.round((Date.now() - t0) / 1000) : 0, notes: m.$('[name=notes]').value }).then(() => { m.close(); G.toast('Call logged', 'ok'); }).catch(G.err);
     m.$('[data-miss]').onclick = () => fin('missed'); m.$('[data-end]').onclick = () => fin('answered');
   };

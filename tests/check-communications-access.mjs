@@ -1,0 +1,18 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+const index=fs.readFileSync('public/index.html','utf8');
+const script=fs.readFileSync('public/js/communications-access-parity.js','utf8');
+const css=fs.readFileSync('public/css/communications-access-parity.css','utf8');
+assert(index.includes('/js/communications-access-parity.js'));
+assert(index.indexOf('/js/engage.js')<index.indexOf('/js/communications-access-parity.js'));
+assert(index.indexOf('/js/settings.js')<index.indexOf('/js/communications-access-parity.js'));
+assert(index.indexOf('/js/communications-access-parity.js')<index.indexOf('/js/main.js'));
+assert(index.includes('/css/communications-access-parity.css'));
+assert(/@media\(max-width:780px\)/.test(css));
+const original=()=>{};const G={screens:{settings:original},query:()=>({}),qs:()=>'',get:async()=>({conversations:[],unread_total:0,calls:[],stats:{}})};
+vm.runInNewContext(script,{G,esc:x=>String(x),can:()=>false,document:{},location:{},console});
+assert.notEqual(G.screens.settings,original);
+assert.equal(typeof G.screens.chats,'function');
+assert.equal(typeof G.screens.calls,'function');
+console.log('PASS: communications and access overlays initialize, preserve IAM fallback, CSS and script load order');

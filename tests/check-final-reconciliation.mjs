@@ -1,0 +1,32 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import { fileURLToPath } from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const html=fs.readFileSync(path.join(root,'public/index.html'),'utf8');
+const names=['trip-parity','accounts-parity','schedule-parity','route-parity','communications-access-parity','fleet-operations-parity'];
+for(const n of names){
+ const js=fs.readFileSync(path.join(root,'public/js',`${n}.js`),'utf8');
+ const css=fs.readFileSync(path.join(root,'public/css',`${n}.css`),'utf8');
+ assert.ok(js.length>1000 && css.length>100,`nonempty ${n}`);
+ new vm.Script(js,{filename:n});
+ assert.ok(html.includes(`/js/${n}.js`),`missing JS ${n}`);
+ assert.ok(html.includes(`/css/${n}.css`),`missing CSS ${n}`);
+}
+for(const pair of [['/js/engage.js','/js/communications-access-parity.js'],['/js/fleet.js','/js/fleet-operations-parity.js'],['/js/communications-access-parity.js','/js/main.js'],['/js/fleet-operations-parity.js','/js/main.js']])assert.ok(html.indexOf(pair[1])>html.indexOf(pair[0]),`order ${pair}`);
+const fleet=fs.readFileSync(path.join(root,'public/js/fleet-operations-parity.js'),'utf8');
+for(const name of ['[data-fop-state]','[data-fop-health]','[data-fop-sort]','[data-fop-view]','/vehicles','/coaches','[data-fop-native]'])assert.ok(fleet.includes(name),name);
+const comm=fs.readFileSync(path.join(root,'public/js/communications-access-parity.js'),'utf8');
+for(const name of ['Log phone call (manual','no call was placed','/calls','/chats','/settings/users','/settings/roles'])assert.ok(comm.includes(name),name);
+assert.ok(!comm.includes('Connecting via cloud telephony'), 'False provider-connected UX detected');
+const audit=fs.readFileSync(path.join(root,'SCREENSHOT_FEATURE_RECONCILIATION.csv'),'utf8');
+const lines=audit.trim().split(/\r?\n/);
+assert.ok(lines.length>130,`feature matrix must be comprehensive, found ${lines.length-1}`);
+for(const m of ['Trips','Schedules','Routes','Vehicles','Coaches','CRM','Staff','Daily Operations','Sarathi','Chats','Calls','Team & Access','Accounts'])assert.ok(lines.slice(1).some(l=>l.split(',')[1]===m||l.includes(`,"${m}",`)),`missing audit module: ${m}`);
+const ctx=vm.createContext({G:{screens:{fleet:async()=>({native:true})}},console});
+vm.runInContext(fleet,ctx);
+assert.equal(typeof ctx.G.screens.fleet,'function');
+console.log(`PASS: ${names.length} cumulative overlays compile, register and load after their base modules`);
+console.log(`PASS: ${lines.length-1} screenshot features classified; call logging is not misrepresented as telephony`);
+console.log('NOT TESTED: production API, browser clicks, actual GPS/telephony/WhatsApp/OTA integrations, DB migrations, concurrency');

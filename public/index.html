@@ -3,23 +3,63 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>GDS · Bus Operations</title>
+  <title>GDS  Bus Operations</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/app.css" />
+  <link rel="stylesheet" href="/css/trip-parity.css" />
+  <link rel="stylesheet" href="/css/accounts-parity.css" />
+  <link rel="stylesheet" href="/css/schedule-parity.css" />
+  <link rel="stylesheet" href="/css/route-parity.css" />
+  <link rel="stylesheet" href="/css/communications-access-parity.css" />
+  <link rel="stylesheet" href="/css/fleet-operations-parity.css" />
+  <link rel="stylesheet" href="/css/savetrip-visual.css" />
+  <link rel="stylesheet" href="/css/routes-screenshot-v5.css?build=7" />
+  <link rel="stylesheet" href="/css/schedules-screenshot-v6.css?build=7" />
+  <link rel="stylesheet" href="/css/routes-schedules-visual-v7.css?build=7" />
+  <link rel="stylesheet" href="/css/crm-screenshot-v8.css?build=8" />
+  <link rel="stylesheet" href="/css/vehicles-parity-v9.css" />
+  <link rel="stylesheet" href="/css/accounts-parity-v10.css" />
+  <link rel="stylesheet" href="/css/staff-parity-v11.css" />
+  <link rel="stylesheet" href="/css/dailyops-parity-v12.css" />
+  <link rel="stylesheet" href="/css/sarathi-parity-v12.css" />
+  <link rel="stylesheet" href="/css/trip-parity-v13.css" />
+  <link rel="stylesheet" href="/css/communications-v14.css" />
+  <link rel="stylesheet" href="/css/settings-parity.css" />
+  <link rel="stylesheet" href="/css/settings-complete.css" />
 </head>
 <body>
   <div id="app"></div>
   <div id="modal-root"></div>
   <div id="toasts"></div>
+  <!-- Base modules, then parity overlays (each wraps the screen registered before it), then the router. -->
   <script src="/js/core.js"></script>
   <script src="/js/seat.js"></script>
   <script src="/js/trips.js"></script>
+  <script src="/js/trip-parity.js"></script>
   <script src="/js/gds.js"></script>
   <script src="/js/fleet.js"></script>
   <script src="/js/accounts.js"></script>
   <script src="/js/engage.js"></script>
   <script src="/js/settings.js"></script>
-  <script src="/js/main.js"></script>
+  <script src="/js/accounts-parity.js"></script>
+  <script src="/js/schedule-parity.js"></script>
+  <script src="/js/route-parity.js"></script>
+  <script src="/js/communications-access-parity.js"></script>
+  <script src="/js/fleet-operations-parity.js"></script>
+  <script src="/js/savetrip-visual.js"></script>
+  <script src="/js/routes-screenshot-v5.js?build=7"></script>
+  <script src="/js/schedules-screenshot-v6.js?build=7"></script>
+  <script src="/js/crm-screenshot-v8.js?build=8"></script>
+  <script src="/js/vehicles-parity-v9.js"></script>
+    <script src="/js/accounts-parity-v10.js"></script>
+    <script src="/js/staff-parity-v11.js"></script>
+    <script src="/js/dailyops-parity-v12.js"></script>
+    <script src="/js/sarathi-parity-v12.js"></script>
+  <script src="/js/trip-parity-v13.js"></script>
+  <script src="/js/communications-v14.js"></script>
+    <script src="/js/settings-parity.js"></script>
+  <script src="/js/settings-complete.js"></script>
+<script src="/js/main.js"></script>
 </body>
 </html>

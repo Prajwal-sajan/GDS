@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const at=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+const page=at('public/index.html'),js=at('public/js/crm-screenshot-v8.js'),css=at('public/css/crm-screenshot-v8.css'),api=at('server/api/misc.js');
+const required=['Passenger Search','Customer 360','TOTAL TRIPS','TOTAL SPEND','CANCELLATION RATE','BALANCE MILES','Confirmed','Cancelled','Expired','Book Seats','Booking Details','Contact & Journey Details','Passenger Information','Update Ticket','Print Ticket','Print Invoice','Notify','Ticket Confirmation','Bus Details','Bus Delay / Early','Bus Cancellation','Cancel Ticket','Shift Passenger','Show History','Chat Pax','Comment','Total Payable','Amount Paid'];
+for(const item of required) assert(js.includes(item),'CRM v8 missing '+item);
+for(const field of ['cv8-modes','cv8-searchform','cv8-countbar','cv8-customer','cv8-status-tabs','cv8-tickets','cv8-overlay','cv8-dialog-body','cv8-deck','cv8-seat','cv8-contactgrid','cv8-fare-row','cv8-notifymenu']) assert(css.includes(field),'Missing CSS '+field);
+assert(page.indexOf('crm-screenshot-v8.css')>0 && page.indexOf('crm-screenshot-v8.js')>page.indexOf('savetrip-visual.js'));
+assert(api.includes("r.get('/crm/passenger-search', can('crm.view')") && api.includes("r.get('/crm/booking/:pnr', can('crm.view')"));
+assert(api.includes("if (!raw) return { query: '', mode, total: 0, customers: [], bookings: [] };"),'Missing server no-query gate');
+assert(api.includes("Never expose other passengers' names/PNRs"),'Seat map privacy protection missing');
+assert(js.includes('if(!state.query){state.data=null;paint();return;}'),'Missing client empty query gate');
+assert(!js.includes('G.get(`/crm/customers?'),'Must not enumerate customers on entry');
+console.log('PASS CRM v8: reference elements, exact-search gate, permissioned API, privacy, UI script/css ordering');

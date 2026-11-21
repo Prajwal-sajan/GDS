@@ -47,24 +47,57 @@
   }
 
   function shell() {
-    const u = G.user; const op = G.operator || {};
-    if (op.brand_hex) document.documentElement.style.setProperty('--brand', op.brand_hex);
-    document.title = `${op.operator_name || 'GDS'} · Operations`;
-    const initials = (u.name || '?').split(/\s+/).map((x) => x[0]).join('').slice(0, 2).toUpperCase();
-    $('#app').innerHTML = `<div class="app"><header class="iconic-app-header"><div class="hdr-in"><div class="hdr-l">
-        <a class="brand" href="#/" title="Home">${op.logo_url ? `<img src="${esc(op.logo_url)}" alt="" style="height:40px;border-radius:.5rem"/>` : `<span class="iconic-brand-logo">${svg('bus')}</span><span class="iconic-brand-name">${esc(op.app_name || op.operator_name || 'Operator')}</span>`}</a>
-        <nav class="iconic-nav-cluster">${TOP.filter((t) => can(t[3])).map((t) => `<a class="iconic-tab-pill" data-active="false" data-top="${t[0]}" href="${t[2]}">${svg(t[0])}<span>${t[1]}</span><span class="badge bad" data-cnt="${t[0]}" style="display:none"></span></a>`).join('')}</nav></div>
-      <div class="iconic-action-cluster"><button class="icon-btn" data-search title="Search PNR / phone (Ctrl+K)">${svg('gds')}</button><button class="icon-btn" data-bell title="Notifications">${svg('bell')}<span class="dot" data-bc style="display:none"></span></button><button class="icon-btn" data-me title="${esc(u.name)}"><span class="avatar">${esc(initials)}</span></button>
-        <div class="menu" data-menu style="display:none"><div class="who"><b>${esc(u.name)}</b><div class="small muted">${esc(G.roles?.[u.role] || u.role)} · ${esc(u.phone)}</div>${G.viewAs ? '<span class="badge warn" style="margin-top:4px">Viewing as this user</span>' : ''}</div>${can('settings.view') ? '<a href="#/settings">⚙ Settings</a>' : ''}<a data-switch>⇄ Switch user</a><a data-logout>⎋ Log out</a></div></div></div></header>
-      <div data-sub></div><main class="page" data-content></main></div>`;
-    $('[data-search]').onclick = () => G.searchModal();
-    $('[data-bell]').onclick = showAlerts;
-    const menu = $('[data-menu]');
-    $('[data-me]').onclick = (e) => { e.stopPropagation(); menu.style.display = menu.style.display === 'none' ? '' : 'none'; };
-    if (!G._menuClose) { G._menuClose = 1; document.addEventListener('click', (e) => { const m = $('[data-menu]'); if (m && !m.contains(e.target)) m.style.display = 'none'; }); }
-    $('[data-logout]').onclick = (e) => { e.preventDefault(); localStorage.removeItem('token'); localStorage.removeItem('viewAs'); G.viewAs = ''; G.user = null; location.hash = '#/login'; loginScreen(); };
-    $('[data-switch]').onclick = async (e) => { e.preventDefault(); try { const users = await G.get('/auth/switchable-users'); if (!users.length && !G.viewAs) return G.toast('Only owners/admins can switch user', 'bad'); const v = await G.prompt('View app as', [{ name: 'phone', label: 'User', type: 'select', options: [['', '— Myself —'], ...users.map((x) => [x.phone, `${x.name} · ${G.roles?.[x.role] || x.role}`])], value: G.viewAs, full: 1 }], { ok: 'Switch' }); if (!v) return; G.viewAs = v.phone; if (v.phone) localStorage.setItem('viewAs', v.phone); else localStorage.removeItem('viewAs'); await boot(); } catch (er) { G.err(er); } };
-    if (!G._keys) { G._keys = 1; document.addEventListener('keydown', (e) => { if (G.user && (e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); G.searchModal(); } }); }
+    const u=G.user, op=G.operator||{};
+    if(op.brand_hex)document.documentElement.style.setProperty('--brand',op.brand_hex);
+    if(op.font_family)document.body.style.fontFamily=op.font_family+',system-ui,sans-serif';
+    document.body.dataset.stpScheme=localStorage.getItem('stp_brand_scheme')||'Light';
+    document.title=`${op.operator_name||'GDS'} · Operations`;
+    const i=G.settingsParityIcon||svg;
+    const menus=G.renderHeaderMenus?G.renderHeaderMenus():{language:'',settings:''};
+    const lang=localStorage.getItem('stp_language')||'English';
+    $('#app').innerHTML=`<div class="app"><header class="iconic-app-header"><div class="hdr-in"><div class="hdr-l">
+      <a class="brand" href="#/" title="Home">${op.logo_url?`<img src="${esc(op.logo_url)}" alt="Operator logo"/>`:`<span class="iconic-brand-logo">${svg('bus')}</span>`}</a>
+      <nav class="iconic-nav-cluster">${TOP.filter(t=>can(t[3])).map(t=>`<a class="iconic-tab-pill" data-active="false" data-top="${t[0]}" href="${t[2]}">${svg(t[0])}<span>${t[1]}</span><span class="badge bad" data-cnt="${t[0]}" style="display:none"></span></a>`).join('')}</nav></div>
+      <div class="hdr-r"><div class="stp-head-controls">
+        <button class="stp-head-btn" type="button" data-language-btn aria-haspopup="true" aria-expanded="false">${i('globe')}<span data-current-language>${esc(lang)}</span>${i('chevronDown')}</button>
+        <button class="stp-head-btn" type="button" data-settings-btn aria-haspopup="true" aria-expanded="false">${i('settings')}Settings${i('chevronDown')}</button>
+        ${menus.language||''}${menus.settings||''}
+      </div></div></div></header><div data-sub></div><main class="page" data-content></main></div>`;
+    const lb=$('[data-language-btn]'),sb=$('[data-settings-btn]');
+    const lp=$('[data-lang-pop]'),sp=$('[data-settings-pop]');
+    function close(){if(lp)lp.hidden=true;if(sp)sp.hidden=true;if(lb)lb.setAttribute('aria-expanded','false');if(sb)sb.setAttribute('aria-expanded','false');}
+    if(lb)lb.onclick=e=>{e.stopPropagation();const isOpen=lp&&!lp.hidden;close();if(lp)lp.hidden=isOpen;lb.setAttribute('aria-expanded',String(!isOpen));};
+    if(sb)sb.onclick=e=>{e.stopPropagation();const isOpen=sp&&!sp.hidden;close();if(sp)sp.hidden=isOpen;sb.setAttribute('aria-expanded',String(!isOpen));};
+    if(lp)$$('[data-language-option]',lp).forEach(btn=>btn.onclick=()=>{
+      const value=btn.dataset.languageOption;
+      localStorage.setItem('stp_language',value);
+      const label=$('[data-current-language]');if(label)label.textContent=value;
+      $$('[data-language-option]',lp).forEach(b=>b.classList.toggle('active',b.dataset.languageOption===value));
+      close();if(value!=='English')G.toast(`${value} selected · other screen translations are not yet available`);
+    });
+    if(sp)$$('[data-settings-link]',sp).forEach(a=>a.onclick=()=>close());
+    const switchUser=async()=>{
+      try {
+        const users=await G.get('/auth/switchable-users');
+        const v=await G.prompt('Switch User',[{name:'id',label:'View app as',type:'select',options:[['','— Myself —'],...users.map(x=>[String(x.id),`${x.name} · ${G.roles?.[x.role]||x.role}`])],value:G.viewAs,full:1}],{ok:'Switch'});
+        if(!v)return;G.viewAs=v.id||'';
+        if(G.viewAs)localStorage.setItem('viewAs',G.viewAs);else localStorage.removeItem('viewAs');
+        close();await boot();
+      } catch(e){G.err(e);}
+    };
+    if(sp)$$('[data-switch-user]',sp).forEach(a=>a.onclick=e=>{e.preventDefault();switchUser();});
+    if(sp)$$('[data-settings-logout]',sp).forEach(a=>a.onclick=async e=>{
+      e.preventDefault();await G.post('/auth/logout').catch(()=>{});
+      localStorage.removeItem('token');localStorage.removeItem('viewAs');G.viewAs='';G.user=null;location.hash='#/login';loginScreen();
+    });
+    if(!G._settingsClickClose){G._settingsClickClose=1;document.addEventListener('click',e=>{
+      if(!e.target.closest('.stp-head-controls')){const l=$('[data-lang-pop]'),s=$('[data-settings-pop]');if(l)l.hidden=true;if(s)s.hidden=true;}
+    });}
+    if(!G._keys){G._keys=1;document.addEventListener('keydown',e=>{
+      if(G.user&&(e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();G.searchModal();}
+      if(e.key==='Escape'){const l=$('[data-lang-pop]'),s=$('[data-settings-pop]');if(l)l.hidden=true;if(s)s.hidden=true;}
+    });}
+    G.syncHeaderParity&&G.syncHeaderParity();
   }
 
   async function pollAlerts() {
@@ -94,6 +127,7 @@
     const [top, sub] = sectionOf(name, seg[0]);
     $$('[data-top]').forEach((a) => (a.dataset.active = String(a.dataset.top === top)));
     $('[data-sub]').innerHTML = top === 'gds' ? `<div class="page" style="padding-bottom:0"><nav class="subnav">${SUB.filter((s) => can(s[3])).map((s) => `<a class="iconic-tab-pill iconic-tab-pill--compact" data-active="${s[0] === sub}" href="${s[2]}"><span class="iconic-tab-pill__icon">${svg(s[0])}</span>${s[1]}</a>`).join('')}</nav></div>` : '';
+    G.syncHeaderParity && G.syncHeaderParity();
     document.title = `${TOP.concat(SUB).find((x) => x[0] === (sub || top))?.[1] || 'Settings'} · ${G.operator?.app_name || 'GDS'}`;
     const el = $('[data-content]'); const my = ++routeSeq;
     if (!name) { el.innerHTML = '<div class="empty">You have no permissions yet. Ask your administrator.</div>'; return; }

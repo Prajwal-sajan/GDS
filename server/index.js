@@ -20,6 +20,8 @@ app.use('/api', auth.middleware);
 app.use('/api', require('./api/ops'));
 app.use('/api', require('./api/master'));
 app.use('/api', require('./api/accounts'));
+app.use('/api', require('./api/settings-complete'));
+app.use('/api', require('./api/settings-v16-iam-bridge'));
 app.use('/api', misc.r);
 app.use('/api', (req, res) => res.status(404).json({ success: false, message: `No route ${req.method} ${req.path}` }));
 

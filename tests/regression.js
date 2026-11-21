@@ -99,6 +99,23 @@ async function login(who, phone) { await call('POST', '/api/auth/request-otp', {
   await t('role with users cannot be deleted', async () => eq((await call('DELETE', '/api/iam/roles/checker')).status, 400));
   await t('SPA served', async () => { const r = await fetch(base + '/trips'); eq(r.status, 200); });
 
+  console.log('Route business rules & call logging');
+  {
+    const day = new Date(Date.now() + 5 * 864e5).toISOString().slice(0, 10);
+    const sch = (await call('GET', `/api/schedules?from=${day}&to=${day}`)).body.schedules.find((s) => s.route_id === 1);
+    const freePair = async () => { const m = (await call('GET', `/api/schedules/${sch.id}/seat-layout`)).body; const seats = m.decks.flatMap((d) => d.seats.map((s) => ({ ...s, deck: d.deck }))); for (const a of seats) { const b = seats.find((x) => x.deck === a.deck && x.row === a.row && x.col === a.col + 1); if (b && a.status === 'available' && b.status === 'available') return [a.code, b.code]; } return null; };
+    const book = (pax, extra = {}) => call('POST', '/api/bookings', { schedule_id: sch.id, contact: { name: pax[0].name, phone: '9876501234' }, passengers: pax, ...extra });
+    await t('gender adjacency enforced when disabled', async () => {
+      ok(sch, 'schedule'); eq((await call('PUT', '/api/routes/1', { business_rules: { gents_next_to_ladies: false, ladies_next_to_gents: false, couple_exception: true } })).status, 200);
+      const [a, b] = await freePair(); eq((await book([{ seat: a, name: 'Lady', gender: 'F', age: 30 }])).status, 200);
+      const r = await book([{ seat: b, name: 'Gent', gender: 'M', age: 30 }]); eq(r.status, 409, 'adjacent gent'); ok(/seat rules/.test(JSON.stringify(r.body)), 'message');
+      eq((await book([{ seat: b, name: 'Gent', gender: 'M', age: 30 }], { override_rules: true })).status, 200, 'staff override');
+    });
+    await t('couple exception allows 2-seat mixed booking', async () => { const [a, b] = await freePair(); eq((await book([{ seat: a, name: 'Wife', gender: 'F', age: 30 }, { seat: b, name: 'Husband', gender: 'M', age: 32 }])).status, 200); });
+    await t('advance booking window enforced', async () => { await call('PUT', '/api/routes/1', { business_rules: { advance_booking_days: 2 } }); const [a] = await freePair(); eq((await book([{ seat: a, name: 'Early', gender: 'M', age: 30 }])).status, 400); await call('PUT', '/api/routes/1', { business_rules: {} }); });
+    await t('manual call log keeps reported status', async () => { const c = (await call('POST', '/api/calls', { phone: '9876501234', status: 'missed', notes: 'no answer' })).body; eq(c.status, 'missed'); ok(!/Connecting/.test(c.message), 'no fake telephony'); eq((await call('POST', '/api/calls', { phone: '9876501234' })).body.status, 'logged'); eq((await call('PUT', `/api/calls/${c.id}`, { status: 'bogus' })).status, 400); const u = (await call('PUT', `/api/calls/${c.id}`, { duration_s: 30 })).body; eq(u.status, 'missed', 'partial update keeps status'); eq(u.notes, 'no answer'); });
+  }
+
   console.log(`\n${pass} passed, ${fail} failed`);
   server.close(); fs.rmSync(process.env.GDS_DATA_DIR, { recursive: true, force: true });
   process.exit(fail ? 1 : 0);

@@ -232,6 +232,32 @@ function httpErr(status, message) { const e = new Error(message); e.status = sta
 function nextTicket() { const n = (db.meta('ticket_seq') || 95000) + 1; db.meta('ticket_seq', n); return String(n).padStart(6, '0'); }
 function makePnr(ticket) { const d = new Date(); return `ST${String(d.getFullYear()).slice(2)}${U.pad(d.getMonth() + 1)}${U.pad(d.getDate())}${U.pad(d.getHours())}${U.pad(d.getMinutes())}${U.pad(d.getSeconds())}${ticket}`; }
 
+// Route business rules (configured in Route Master → Seat & Boarding Rules).
+// A rule is only enforced when explicitly set to false; staff can bypass with override_rules.
+function enforceRouteRules(r, s, map, input) {
+  const br = r.business_rules || {};
+  if (input.override_rules) return;
+  const days = Number(br.advance_booking_days);
+  if (br.advance_booking_days != null && Number.isFinite(days) && U.daysBetween(U.today(), s.travel_date) > days) throw httpErr(400, `Bookings open only ${days} days before travel`);
+  if (br.gents_next_to_ladies !== false && br.ladies_next_to_gents !== false) return;
+  const where = {};
+  for (const d of map.decks) for (const x of d.seats) where[x.code] = { deck: d.deck, row: x.row, col: x.col, seat: x };
+  const adj = (a, b) => where[a] && where[b] && where[a].deck === where[b].deck && where[a].row === where[b].row && Math.abs(where[a].col - where[b].col) === 1;
+  const g = (x) => (String(x || 'M').toUpperCase().startsWith('F') ? 'F' : 'M');
+  const clash = (mine, other) => (mine === 'M' && other === 'F' && br.gents_next_to_ladies === false) || (mine === 'F' && other === 'M' && br.ladies_next_to_gents === false);
+  const mine = input.passengers.map((p) => ({ seat: p.seat, g: g(p.gender) }));
+  for (const p of mine) {
+    for (const code of Object.keys(where)) {
+      if (!adj(p.seat, code)) continue;
+      const st = where[code].seat;
+      const bookedG = st.status === 'booked_female' ? 'F' : st.status === 'booked_male' ? 'M' : st.status === 'hold' && st.booking ? g(st.booking.gender) : null;
+      if (bookedG && clash(p.g, bookedG)) throw httpErr(409, `Seat ${p.seat} is next to a ${bookedG === 'F' ? 'lady' : 'gent'} passenger — not allowed by route seat rules`);
+      const sameBooking = mine.find((q) => q.seat === code);
+      if (sameBooking && clash(p.g, sameBooking.g) && (br.couple_exception === false || mine.length > 2)) throw httpErr(409, `Seats ${p.seat}/${code}: mixed-gender adjacent seats are allowed only for a 2-seat couple booking`);
+    }
+  }
+}
+
 function createBooking(input, actor) {
   const s = db.col('schedules').get(input.schedule_id);
   if (!s) throw httpErr(404, 'Schedule not found');
@@ -250,6 +276,7 @@ function createBooking(input, actor) {
     if (!['available', 'other_leg', 'blocked'].includes(st.status)) throw httpErr(409, `Seat ${p.seat} is already booked`);
     if (!p.name) throw httpErr(400, `Passenger name required for seat ${p.seat}`);
   }
+  enforceRouteRules(r, s, map, input);
   const source = input.source || 'branch';
   const fares = input.passengers.map((p) => (p.fare != null ? Number(p.fare) : seats[p.seat].fare));
   const price = priceBooking({ seatsFares: fares, source, coupon: input.coupon, agentPhone: input.agent_phone, milesUsed: input.miles_used });
@@ -310,6 +337,8 @@ function cancelBooking(pnr, { seats, by = 'operator', reason = '', refund_pct = 
   const b = db.col('bookings').find((x) => x.pnr === pnr);
   if (!b) throw httpErr(404, 'Booking not found');
   if (b.status === 'cancelled') throw httpErr(400, 'Already cancelled');
+  const rtRules = db.col('routes').get(b.route_id)?.business_rules || {};
+  if (by === 'passenger' && rtRules.allow_cancellation === false) throw httpErr(400, 'Cancellation is disabled for this route');
   const target = seats && seats.length ? b.passengers.filter((p) => seats.includes(p.seat)) : b.passengers.filter((p) => p.status !== 'cancelled');
   const ratio = U.sum(target, (p) => p.fare) / (U.sum(b.passengers.filter((p) => p.status !== 'cancelled'), (p) => p.fare) || 1);
   const calc = refundFor(b, by, refund_pct);

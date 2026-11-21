@@ -21,9 +21,9 @@
     const q = G.query(); const from = q.from || today(), to = q.to || addDays(today(), 7);
     el.innerHTML = `<div class="row" style="margin-bottom:10px">${G.range(from, to)}<input data-q placeholder="Service / bus" value="${esc(q.q || '')}"/><button class="btn p" data-go>Apply</button></div><div data-t></div>`;
     const d = await G.get(`/schedules?${G.qs({ from, to })}`);
-    const draw = () => { const s = ($('[data-q]', el).value || '').toLowerCase(); $('[data-t]', el).innerHTML = G.table(d.schedules.filter((x) => !s || `${x.service_number} ${x.vehicle}`.toLowerCase().includes(s)), [
+    const draw = () => { const s = ($('[data-q]', el).value || '').toLowerCase(); $('[data-t]', el).innerHTML = G.table(d.schedules.filter((x) => !s || `${x.service_number} ${x.vehicle?.registration_number || ''}`.toLowerCase().includes(s)), [
       { l: 'Date', f: (r) => fdate(r.travel_date) }, { l: 'Service', f: (r) => `<b>${esc(r.service_number)}</b> <span class="muted">${esc(r.origin)} → ${esc(r.destination)}</span>` },
-      { l: 'Dep', f: (r) => t12(r.departure_time) }, { k: 'vehicle', l: 'Bus' }, { l: 'Seats', n: 1, f: (r) => `${r.seats_booked}/${r.capacity}` }, { l: 'Occ', n: 1, f: (r) => pct(r.occupancy_pct) }, { l: 'Revenue', n: 1, f: (r) => inr(r.revenue) },
+      { l: 'Dep', f: (r) => t12(r.departure_time) }, { l: 'Bus', f: (r) => esc(r.vehicle?.registration_number || r.vehicle || '—') }, { l: 'Seats', n: 1, f: (r) => `${r.seats_booked}/${r.capacity}` }, { l: 'Occ', n: 1, f: (r) => pct(r.occupancy_pct) }, { l: 'Revenue', n: 1, f: (r) => inr(r.revenue) },
       { l: 'Status', f: (r) => statusBadge(r.status) + (r.sync_with_route === false ? ' <span class="badge warn">custom fares</span>' : '') },
       { l: '', f: (r) => `<button class="btn sm" data-book="${r.id}">Book</button> <button class="btn sm" data-fares="${r.id}">Fares</button> <button class="btn sm" data-pnl="${r.id}">P&amp;L</button> <button class="btn sm" data-hist="${r.id}">History</button> ${can('schedules.toggle') ? `<button class="btn sm" data-tog="${r.id}">${r.status === 'active' ? 'Disable' : 'Enable'}</button>` : ''} ${can('schedules.delete') ? `<button class="btn sm d" data-delsch="${r.id}">Delete</button>` : ''}` },
     ]); };

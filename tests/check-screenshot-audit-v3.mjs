@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const csv=fs.readFileSync('reports/INDIVIDUAL_SCREENSHOT_AUDIT.csv','utf8');
+const count=csv.split(/\r?\n/).filter(line=>line.startsWith('SS-')).length;
+assert.equal(count,181,'Every captured original image must have one audit row');
+const code=fs.readFileSync('public/js/savetrip-visual.js','utf8');
+const html=fs.readFileSync('public/index.html','utf8');
+for(const route of ['/routes?status=','/routes/','/duplicate','/delete-otp']) assert.ok(code.includes(route),'Route action or API missing: '+route);
+for(const key of ['?svtab=','Add Route','Create Route','Pickup','Drop','Fares']) assert.ok(code.includes(key));
+assert.ok(html.includes('savetrip-visual.css')&&html.includes('savetrip-visual.js'));
+console.log('PASS: 181 original screenshots individually indexed; route list deep links and native route actions present.');

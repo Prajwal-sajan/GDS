@@ -38,6 +38,67 @@ r.get('/crm/customers/:phone', can('crm.view'), h((req) => {
 }));
 r.post('/crm/customers/:phone/notes', can('crm.view'), h((req) => db.col('crm_notes').insert({ phone: req.params.phone, text: req.body.text, by: req.user.name, at: U.nowIso() })));
 
+// ---------- Screenshot-faithful CRM search (never enumerates customers before a query) ----------
+// Search is intentionally exact for phone/email/PNR: the UI must not list other customers by default.
+const crmNormal = (s) => String(s || '').trim();
+const crmDisplayBooking = (b) => {
+  const route = db.col('routes').get(b.route_id);
+  const boarding = route?.stages?.find(x => String(x.id) === String(b.boarding_stage_id));
+  const dropping = route?.stages?.find(x => String(x.id) === String(b.dropping_stage_id));
+  return { pnr: b.pnr, ticket_number: b.ticket_number, service: route?.service_number || '',
+    source: b.source, status: b.status, payment: b.payment, payment_method: b.payment_method,
+    travel_date: b.travel_date, booked_at: b.booked_at, passengers: b.passengers,
+    seat_codes: b.passengers.map(p=>p.seat), fare: b.fare, amount: b.fare?.total || 0,
+    from: boarding?.name || D.cityName(b.from_city_id), to: dropping?.name || D.cityName(b.to_city_id),
+    boarding: boarding ? { name: boarding.name, time: boarding.time, day: boarding.day } : null,
+    dropping: dropping ? { name: dropping.name, time: dropping.time, day: dropping.day } : null,
+    contact: b.contact, schedule_id: b.schedule_id, route_id: b.route_id };
+};
+r.get('/crm/passenger-search', can('crm.view'), h((req) => {
+  const mode = String(req.query.mode || '').toLowerCase();
+  const raw = crmNormal(req.query.q);
+  if (!['phone','email','pnr'].includes(mode)) throw D.httpErr(400, 'Choose Phone, Email or PNR');
+  if (!raw) return { query: '', mode, total: 0, customers: [], bookings: [] };
+  if (raw.length > 160) throw D.httpErr(400, 'Search query too long');
+  const digits = raw.replace(/\D/g,'');
+  if (mode === 'phone' && digits.length < 7) throw D.httpErr(400, 'Enter at least 7 phone digits');
+  if (mode === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) throw D.httpErr(400, 'Enter a valid email');
+  if (mode === 'pnr' && raw.length < 4) throw D.httpErr(400, 'Enter at least 4 PNR characters');
+  const all = db.col('bookings').all();
+  const match = all.filter(b => {
+    if (mode === 'phone') return String(b.contact?.phone || '').replace(/\D/g,'').endsWith(digits);
+    if (mode === 'email') return String(b.contact?.email || '').trim().toLowerCase() === raw.toLowerCase();
+    return String(b.pnr).toLowerCase() === raw.toLowerCase() || String(b.ticket_number).toLowerCase() === raw.toLowerCase();
+  });
+  const phones = [...new Set(match.map(b => b.contact?.phone).filter(Boolean))];
+  const summaries = phones.map(phone => {
+    const allMine = all.filter(b => b.contact?.phone === phone).sort((a,b)=>String(b.travel_date).localeCompare(String(a.travel_date)));
+    const first = allMine[0];
+    const confirmed = allMine.filter(b => b.status === 'confirmed');
+    const cancelled = allMine.filter(b => b.status === 'cancelled');
+    const loyalty = db.col('customers').find(c => c.phone === phone) || { tier: 'Bronze', miles: 0 };
+    return { phone, name: first?.contact?.name || '', email: first?.contact?.email || '',
+      tier: loyalty.tier || 'Bronze', miles: loyalty.miles || 0,
+      total_trips: confirmed.length, total_bookings: allMine.length, cancelled: cancelled.length,
+      upcoming: confirmed.filter(b=>b.travel_date>=U.today()).length,
+      cancellation_pct: allMine.length ? U.round2(cancelled.length/allMine.length*100) : 0,
+      spend: U.round2(confirmed.reduce((a,b)=>a + Number(b.fare?.total || 0),0)),
+      last_travel: first?.travel_date || null, from: first?.from || '', to: first?.to || '',
+      last_route: crmDisplayBooking(first),
+      bookings: match.filter(b=>b.contact?.phone === phone).sort((a,b)=>String(b.booked_at).localeCompare(String(a.booked_at))).map(crmDisplayBooking) };
+  });
+  return { mode, query: raw, total: match.length, customers: summaries, bookings: match.map(crmDisplayBooking) };
+}));
+r.get('/crm/booking/:pnr', can('crm.view'), h((req) => {
+  const b = db.col('bookings').find(x=>String(x.pnr).toLowerCase() === String(req.params.pnr).toLowerCase() || String(x.ticket_number) === req.params.pnr);
+  if (!b) throw D.httpErr(404, 'Booking not found');
+  const s = db.col('schedules').get(b.schedule_id);
+  const rawMap = s ? D.seatMap(s, b.from_city_id, b.to_city_id) : null;
+  // Only seat status/fare is needed for this CRM graphic. Never expose other passengers' names/PNRs.
+  const map = rawMap ? { ...rawMap, decks: rawMap.decks.map(d => ({ ...d, seats: d.seats.map(seat => ({ ...seat, booking: seat.booking ? { is_current: seat.booking.pnr === b.pnr } : null })) })) } : null;
+  const history = db.col('edit_history').filter(x => x.entity === 'schedule' && String(x.entity_id) === String(b.schedule_id) && (x.changes?.pnr === b.pnr || x.changes?.details?.pnr === b.pnr));
+  return { booking: { ...crmDisplayBooking(b), cancellations: b.cancellations || [], comments: b.comments || [], coupon: b.coupon, miles_used: b.miles_used, booked_by: b.booked_by, agent_phone: b.agent_phone }, map, history };
+}));
 // ---------- Chats ----------
 r.get('/chats', can('chats.view'), h((req) => {
   const by = U.groupBy(db.col('messages').all(), (m) => m.conversation_id); const q = String(req.query.q || '').toLowerCase();
@@ -51,8 +112,25 @@ r.post('/chats/:cid/block', can('chats.send'), h((req) => { const last = db.col(
 
 // ---------- Calls ----------
 r.get('/calls', can('calls.view'), h((req) => { let rows = db.col('calls').all().slice(); const { status, direction, q } = req.query; if (status) rows = rows.filter((c) => c.status === status); if (direction) rows = rows.filter((c) => c.direction === direction); if (q) rows = rows.filter((c) => `${c.phone} ${c.passenger_name} ${c.pnr}`.toLowerCase().includes(String(q).toLowerCase())); rows.sort((a, b) => b.ts.localeCompare(a.ts)); return { calls: rows, stats: { total: rows.length, answered: rows.filter((c) => c.status === 'answered').length, missed: rows.filter((c) => c.status === 'missed').length, avg_duration: Math.round(U.sum(rows, (c) => c.duration_s) / (rows.length || 1)) } }; }));
-r.post('/calls', can('calls.make'), h((req) => { const b = req.body.pnr ? db.col('bookings').find((x) => x.pnr === req.body.pnr) : null; const phone = String(req.body.phone || b?.contact.phone || ''); if (!/^\d{10}$/.test(phone)) throw D.httpErr(400, 'Valid phone required'); const op = db.meta('operator'); return { ...db.col('calls').insert({ direction: 'outgoing', kind: req.body.kind || 'manual', phone, passenger_name: b?.contact.name || req.body.name || '', pnr: b?.pnr || null, schedule_id: b?.schedule_id || null, status: 'answered', duration_s: 0, agent: req.user.name, ts: U.nowIso(), masked: op.is_number_masking_enabled }), via: op.outgoing_number, message: `Connecting via ${op.outgoing_number}. Your phone will ring first.` }; }));
-r.put('/calls/:id', can('calls.make'), h((req) => db.col('calls').update(req.params.id, { notes: req.body.notes, status: req.body.status, duration_s: req.body.duration_s })));
+// No telephony provider is integrated: calls are operator-logged records. Status is what the operator reports.
+const CALL_STATUSES = ['answered', 'missed', 'busy', 'not_reachable', 'logged'];
+r.post('/calls', can('calls.make'), h((req) => {
+  const b = req.body.pnr ? db.col('bookings').find((x) => x.pnr === req.body.pnr) : null;
+  const phone = String(req.body.phone || b?.contact.phone || '').replace(/\D/g, '').slice(-10);
+  if (!/^\d{10}$/.test(phone)) throw D.httpErr(400, 'Valid phone required');
+  const status = CALL_STATUSES.includes(req.body.status) ? req.body.status : 'logged';
+  const duration = Math.max(0, Number(req.body.duration_s) || 0);
+  const c = db.col('calls').insert({ direction: req.body.direction === 'incoming' ? 'incoming' : 'outgoing', kind: req.body.kind || 'manual', phone, passenger_name: b?.contact.name || req.body.name || '', pnr: b?.pnr || req.body.pnr || null, schedule_id: b?.schedule_id || null, status, duration_s: duration, notes: req.body.notes || '', agent: req.user.name, ts: U.nowIso(), provider: null });
+  return { ...c, message: 'Call record saved (no telephony provider connected).' };
+}));
+r.put('/calls/:id', can('calls.make'), h((req) => {
+  const c = db.col('calls').get(req.params.id); if (!c) throw D.httpErr(404, 'Call not found');
+  const patch = {};
+  if (req.body.notes !== undefined) patch.notes = String(req.body.notes);
+  if (req.body.status !== undefined) { if (!CALL_STATUSES.includes(req.body.status)) throw D.httpErr(400, 'Invalid call status'); patch.status = req.body.status; }
+  if (req.body.duration_s !== undefined) patch.duration_s = Math.max(0, Number(req.body.duration_s) || 0);
+  return db.col('calls').update(c.id, patch);
+}));
 r.get('/speed-dials', can('calls.view'), h(() => ({ settings: db.meta('speed_dial'), dials: db.col('speed_dials').all() })));
 r.post('/speed-dials', can('settings.modify'), h((req) => { const b = req.body; if (!/^\d{1,2}$/.test(b.code || '')) throw D.httpErr(400, 'Code must be 1-2 digits'); if (db.col('speed_dials').find((d) => d.code === b.code)) throw D.httpErr(409, 'Code in use'); return db.col('speed_dials').insert({ code: b.code, kind: b.kind || 'number', phone: b.phone, label: b.label || '', is_active: true }); }));
 r.delete('/speed-dials/:id', can('settings.modify'), h((req) => ({ success: db.col('speed_dials').remove(req.params.id) })));
