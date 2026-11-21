@@ -68,14 +68,17 @@ function requestOtp(phone) {
   otps.set(phone, { otp: OTP_DEV, exp: Date.now() + 5 * 60e3, tries: 0 });
   return { ok: true, message: 'OTP sent', dev_hint: process.env.NODE_ENV === 'production' ? undefined : OTP_DEV };
 }
-function verifyOtp(phone, otp) {
+function verifyOtp(phone, otp, client = {}) {
   const rec = otps.get(phone);
   if (!rec || Date.now() > rec.exp) return { ok: false, message: 'OTP expired — request a new one' };
   if (++rec.tries > 5) return { ok: false, message: 'Too many attempts' };
   if (rec.otp !== String(otp)) return { ok: false, message: 'Incorrect OTP' };
   otps.delete(phone);
   const u = db.col('users').find((x) => x.phone === phone);
-  return { ok: true, token: sign({ uid: u.id, phone, exp: Date.now() + 7 * 86400e3 }), user: publicUser(u) };
+  const stamp=new Date().toISOString();
+  db.col('users').update(u.id,{last_login:stamp,login_count:(Number(u.login_count)||0)+1});
+  const session = db.col('auth_sessions').insert({ user_id:u.id, user_agent:String(client.user_agent||'Unknown browser').slice(0,300), last_seen:stamp, revoked_at:null });
+  return { ok: true, token: sign({ uid: u.id, phone, sid:session.id, exp: Date.now() + 7 * 86400e3 }), user: publicUser(u) };
 }
 // Step-up OTP for sensitive actions (no-show, route delete).
 const stepUps = new Map();
@@ -95,11 +98,17 @@ function middleware(req, res, next) {
   if (!p) return res.status(401).json({ success: false, message: 'Sign in required' });
   const u = db.col('users').get(p.uid);
   if (!u || u.status !== 'ACTIVE') return res.status(401).json({ success: false, message: 'User inactive' });
+  if (p.sid) {
+    const session=db.col('auth_sessions').get(p.sid);
+    if (!session || session.user_id !== u.id || session.revoked_at) return res.status(401).json({success:false,message:'Session signed out'});
+    if (Date.now()-Date.parse(session.last_seen||session.created_at||0)>5*60*1000)
+      db.col('auth_sessions').update(session.id,{last_seen:new Date().toISOString()});
+  }
   // "Switch user" (view as) for owners/admins
   const viewAs = req.headers['x-view-as'];
   let eff = u;
   if (viewAs && ['owner', 'admin'].includes(u.role)) eff = db.col('users').get(viewAs) || u;
-  req.user = { ...publicUser(eff), real_user_id: u.id };
+  req.user = { ...publicUser(eff), real_user_id: u.id, session_id:p.sid || null };
   next();
 }
 const can = (perm) => (req, res, next) => (req.user.permissions.includes(perm) ? next() : res.status(403).json({ success: false, message: `Missing permission: ${perm}` }));

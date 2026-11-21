@@ -1,0 +1,19 @@
+screenshot,unique_reference_elements,implemented_surface,workflow_status,limitation
+165039,Header language trigger and scrolling 13-language selection with active checkmark,Global language menu,Clickable selection persists locally,Language translation across entire GDS remains future work
+165120,Settings dropdown operator phone BUSINESS SETTINGS section and cards with tinted icons,Global Settings menu,All destinations navigate correctly,Some downstream integrations unavailable
+165145,Dropdown scrolling lower Configuration WhatsApp Loyalty Switch User Change Password My devices About,Global Settings menu,Scroll and navigation plus logout working,OTP-based auth has no reusable password
+165221,Team title CTA tabs badge counts search branch note table column headers avatar role active last login actions,Team Office staff,API driven list search create edit role change status toggle delete,Counts from real local dataset rather than screenshot fixture
+165325,Profile overlay avatar role phone status email language last login added Edit and Close,User detail modal,View and Edit functioning,Last-login appears after OTP login tracking
+165411,Bus staff tab orange driver avatars role and status action cells,Team Bus staff,Staff plus driver accounts displayed user login can be created,Non-login staff cannot be IAM toggled until user created
+165434,Agents tab teal avatars Type Mode Active last login Agent settings edit and delete,Team Agents,Agent credits commission and selling mode saved using IAM API,Payment gateway / agent settlement external
+165453,Branches tab empty state plus + New branch and explanatory text,Team Branches,Create edit list and delete branch using API,Deletion blocked while user assigned
+165520,Access heading tabs Roles Test access Groups Advanced and role selector and first permission cards,Access Roles,Role switching and checks implemented,Scope metadata not globally enforced
+165621,Trips and Bookings extended permission toggles and 4-way Off Own Branch Company selectors,Access Roles,Toggle and selector state persisted,Per-record scopes not enforced across all APIs
+165639,Schedules Services and Routes card groups including views edits fares toggles and delete rights,Access Roles,Section render and save mapping to API permission catalogue,Some composite permissions share backend codes
+165704,Fleet Chats Calls Accounts cards multi-select scopes and toggles,Access Roles,Permissions surfaced and saved,Recording and telephony provider not integrated
+165721,Accounts continuation Daily Ops Staff and HR permission groups,Access Roles,All shown rows present with state controls,Accounting enforcement depends on underlying APIs
+165739,Daily ops Staff HR Offers Loyalty Users Access groups,Access Roles,All shown rows present with state controls,Branch/Company policy evaluator pending
+165756,Settings permission group Save Viewer footer note and all lower options,Access Roles,Role save and advanced limits flow,Advanced limits currently metadata only
+165908,Branding toolbar Preview Reset Save and preview hero Identity four fields,Branding,Live client preview and validated API save,Operator logo appears when uploaded
+165931,Brand color 5-step palette Font family Color scheme plus Logo and Assets upload cards,Branding,Color input palette typography scheme and safe upload/remove endpoints,SVG disabled until sanitization added
+165949,Mobile desktop dark favicon signin background assets dimension notes and PWA Advanced two fields,Branding,Five upload slots plus persistent PWA labels,Manifest update requires PWA build wiring
