@@ -22,12 +22,13 @@ function scheduleCard(s) {
   return {
     id: s.id, tripsheet_id: D.tripsheetId(s), route_id: s.route_id, service_number: route.service_number, service_name: route.name,
     origin: D.cityName(route.origin_city_id), destination: D.cityName(route.destination_city_id), travel_date: s.travel_date,
-    departure_time: s.departure_time, arrival_time: s.arrival_time, status: s.status, trip_status: s.trip_status, delay_minutes: s.delay_minutes || 0,
+    departure_time: s.departure_time, arrival_time: s.arrival_time, arrival_day_offset: Math.max(0, (Number(D.routeCities(route).slice(-1)[0]?.day) || (String(s.arrival_time) < String(s.departure_time) ? 2 : 1)) - 1), status: s.status, trip_status: s.trip_status, delay_minutes: s.delay_minutes || 0,
     vehicle: v ? { id: v.id, registration_number: v.registration_number, phone: v.phone_number } : null,
     coach: coach ? coach.name : null, capacity: coach?.layout.capacity || 0, seats_booked: seats, occupancy_pct: coach ? U.round2(seats / coach.layout.capacity * 100) : 0,
     crew: (s.crew || []).map((c) => ({ ...c, name: staff(c.staff_id)?.name, phone: staff(c.staff_id)?.phone })),
     counts: { boarded: pax.filter((p) => ['boarded', 'dropped'].includes(p.status)).length, no_show: pax.filter((p) => p.status === 'no_show').length, checked_in: pax.filter((p) => p.status === 'checked_in').length, to_call: pax.filter((p) => p.call_status === 'to_call').length, called: pax.filter((p) => p.call_status === 'called').length, hold: bs.filter((b) => b.status === 'hold').length },
     revenue: U.round2(U.sum(conf, (b) => b.fare.total)), unread_chats: unread, sync_with_route: s.sync_with_route !== false,
+    main_fare: (s.fare_override || route.fares || []).find(f => String(f.from_city_id) === String(route.origin_city_id) && String(f.to_city_id) === String(route.destination_city_id)) || null,
   };
 }
 
