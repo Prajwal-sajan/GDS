@@ -118,5 +118,5 @@ let server;
   db.persistNow();
   fs.rmSync(process.env.GDS_DATA_DIR,{recursive:true,force:true});
  }
-})().catch(e=>{console.error(e);process.exitCode=1;});
+})().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1);});
 })();
