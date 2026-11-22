@@ -35,6 +35,10 @@ router.get('/accounts/invoices-v24/documents/:key',protect,safe((req,res)=>{
 router.post('/accounts/invoices-v24/documents',protect,safe((req,res)=>{
  const result=S.create(req.body||{},req.user);privateData(res);res.status(201).json(result);
 }));
+router.put('/accounts/invoices-v24/documents/:key/snapshot',protect,safe((req,res)=>{
+ const result=S.attachSnapshot(req.params.key,req.body?.snapshot||req.body,req.user);
+ privateData(res);res.json(result);
+}));
 router.post('/accounts/invoices-v24/documents/:key/pdf',protect,safe((req,res)=>{
  const {base64,filename}=req.body||{};
  const result=S.attachPdf(req.params.key,base64,filename,req.user);
