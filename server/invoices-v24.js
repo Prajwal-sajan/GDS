@@ -106,20 +106,20 @@ const getPdf=key=>{
  return {bytes,document};
 };
 const supportedSnapshotFields={
- tax:['line_items','totals','billing_address','shipping_address','place_of_supply','bank'],
+ tax:['invoice_meta','line_items','totals','billing_address','shipping_address','place_of_supply','bank','notes'],
  metro:['summary_rows','lines','totals','notes'],
  cloud:['lines','summary_rows','totals','notes'],
  ai:['lines','summary_rows','totals','notes'],
  chat:['summary_rows','totals','notes'],
  platform:['channel_summary','lines','totals','notes'],
- operator:['summary_rows','ledger','totals','notes']
+ operator:['summary_rows','ledger','provisional_ledger','totals','notes']
 };
 function validateSnapshot(type,snapshot){
  if(!snapshot||typeof snapshot!=='object'||Array.isArray(snapshot))throw bad('Structured statement snapshot must be an object');
  const result={};
  for(const k of supportedSnapshotFields[type])if(snapshot[k]!==undefined){
    const v=snapshot[k];
-   if(['line_items','summary_rows','lines','ledger','channel_summary','notes'].includes(k)){
+   if(['line_items','summary_rows','lines','ledger','provisional_ledger','channel_summary','notes'].includes(k)){
      if(!Array.isArray(v)||v.length>20000)throw bad(k+' must be an array with at most 20,000 rows');
      if(v.some(x=>typeof x==='object'&&JSON.stringify(x).length>4000))throw bad('An oversized statement row was supplied');
    }else if(typeof v!=='object'&&typeof v!=='string')throw bad('Invalid '+k);
@@ -140,6 +140,16 @@ function validateSnapshot(type,snapshot){
      if(row.balance!==undefined&&Math.abs(running-Number(row.balance))>.011)throw bad('Ledger running balance does not reconcile');
    }
    if(result.posted_closing_balance!==undefined&&Math.abs(running-result.posted_closing_balance)>.011)throw bad('Posted closing balance does not reconcile');
+ }
+ if(type==='operator'&&result.provisional_ledger){
+   let running=money(result.posted_closing_balance??result.closing_balance??0);
+   for(const row of result.provisional_ledger){
+     const debit=Number(row.deducted||0),credit=Number(row.collected||0);
+     if(!Number.isFinite(debit)||!Number.isFinite(credit)||debit<0||credit<0)throw bad('Invalid provisional ledger entry');
+     running=money(running+credit-debit);
+     if(row.balance!==undefined&&Math.abs(running-Number(row.balance))>.011)throw bad('Provisional running balance does not reconcile');
+   }
+   if(result.provisional_balance!==undefined&&Math.abs(running-result.provisional_balance)>.011)throw bad('Provisional closing balance does not reconcile');
  }
  if(type==='chat'&&Array.isArray(result.summary_rows)){
    for(const r of result.summary_rows){
