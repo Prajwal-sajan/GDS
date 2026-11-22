@@ -3,6 +3,7 @@
 // Saved preferences do not imply that a telephony, WhatsApp or push provider is connected.
 const express=require('express'),db=require('../db'),D=require('../domain'),A=require('../auth');
 const r=express.Router();
+const CFG31=require('../configuration-v31-schema');
 const fail=(m,s=400)=>{throw D.httpErr(s,m);};
 const run=fn=>(req,res)=>{try{res.set('Cache-Control','private, no-store');const out=fn(req);if(out!==undefined)res.json(out);}catch(e){res.status(e.status||500).json({success:false,message:e.status?e.message:'Unable to update configuration'});}};
 const grant=A.can;
@@ -19,7 +20,8 @@ const base={
   escalation_contacts:[],ring_order:'share',speed_dial_during_calls:false,
   dial_bus_last4:false,city_contacts:[],office_extra:[],crew_extra:[]},
  notifications:{bus_live_status:false,boarding_point_cutoff:45,pre_boarding_minutes:360,pre_boarding_based_on:'boarding_point',
-  checkin_reminder_minutes:45,rating_request_minutes:120,builtin_crew_push:true,builtin_office_push:true}
+  checkin_reminder_minutes:45,rating_request_minutes:120,builtin_crew_push:true,builtin_office_push:true},
+ ...CFG31.defaults
 };
 const keys=Object.fromEntries(Object.entries(base).map(([k,v])=>[k,new Set(Object.keys(v))]));
 function getAll(){
@@ -112,7 +114,8 @@ const rules={
   rating_request_minutes:v=>number(v,'rating request',43200),
   builtin_crew_push:v=>boolean(v,'crew push'),
   builtin_office_push:v=>boolean(v,'office push')
- }
+ },
+ ...CFG31.rules
 };
 function boolean(v,key){if(typeof v!=='boolean')fail('Invalid '+key);return v;}
 function update(section,payload,req){
@@ -120,6 +123,7 @@ function update(section,payload,req){
  if(Object.keys(payload).some(k=>!keys[section].has(k)))fail('Unknown setting field');
  const patch={};for(const [k,v] of Object.entries(payload))patch[k]=rules[section][k](v);
  const old=store(),next={...old,[section]:{...getAll()[section],...patch}};
+ CFG31.validateFull(section,next[section]);
  // Managed identifiers are informational, not a connected provider configuration.
  db.meta('config_v30',next);
  if(section==='business'){
@@ -138,6 +142,17 @@ function update(section,payload,req){
  D.audit('settings','configuration_v30',section,{fields:Object.keys(patch)},req.user);
  return {section,value:next[section],saved:true,delivery_connected:false};
 }
+
+r.get('/settings/config-v30/seat-display',grant('schedules.view'),run(()=>({
+ seat_legends:getAll().seats
+})));
+r.get('/settings/config-v30/office-hold',grant('bookings.create'),run(()=>({
+ enabled:!!store().office,
+ default_hold:getAll().office.default_hold,
+ max_hold:getAll().office.max_hold,
+ options:CFG31.HOLD,
+ note:'All unpaid seat holds end no later than the scheduled departure.'
+})));
 r.get('/settings/config-v30',grant('settings.view'),run(req=>({
  sections:getAll(),
  dials:db.col('speed_dials').all(),

@@ -15,7 +15,10 @@ G.renderSeats = function (map, selected = []) {
 
 // Full booking console for one schedule (used by Trips "Book" and Schedules).
 G.bookingConsole = async function (scheduleId, onDone) {
-  const sch = await G.get(`/schedules/${scheduleId}`);
+  const [sch,officeHold] = await Promise.all([
+    G.get(`/schedules/${scheduleId}`),
+    G.get('/settings/config-v30/office-hold').catch(()=>null)
+  ]);
   const cities = sch.route.via_cities;
   let fromC = cities[0].city_id, toC = cities[cities.length - 1].city_id;
   let selected = []; let map; let blockMode = false;
@@ -53,6 +56,11 @@ G.bookingConsole = async function (scheduleId, onDone) {
         <label class="f">Coupon<select name="coupon"><option value="">— none —</option>${coupons.map((c) => `<option>${esc(c.code)}</option>`).join('')}</select></label>
         <label class="f">Miles to redeem<input name="miles_used" type="number" value="0"/></label>
         ${G.field({ name: 'payment_mode', label: 'Payment', type: 'select', options: [['paid', 'Paid now'], ['unpaid', 'Hold (pay later)'], ['settle_later', 'Settle later (agent)']] })}
+        ${officeHold?.enabled ? `<label class="f">Seat hold duration
+          <select name="hold_minutes" title="Applies to Hold (pay later) only">
+          ${officeHold.options.filter(x=>officeHold.max_hold==='until_departure'||x!=='until_departure'&&Number(x)<=Number(officeHold.max_hold))
+           .map(x=>`<option value="${x}" ${String(x)===String(officeHold.default_hold)?'selected':''}>${x==='until_departure'?'Until departure':Number(x)+' min'}</option>`).join('')}
+          </select></label>` : ''}
         ${G.field({ name: 'payment_method', label: 'Method', type: 'select', options: [['upi', 'UPI'], ['cash', 'Cash'], ['card', 'Card'], ['online', 'Online']] })}
         <label class="f" style="grid-column:1/-1">Remarks<input name="remarks"/></label>
       </div>
@@ -65,7 +73,8 @@ G.bookingConsole = async function (scheduleId, onDone) {
     $('[data-book]', el).onclick = async () => {
       const v = G.formVal(f);
       try {
-        const payload = { schedule_id: scheduleId, from_city_id: fromC, to_city_id: toC, boarding_stage_id: Number(v.bp), dropping_stage_id: Number(v.dp), source: v.source || 'agent', agent_phone: v.agent_phone || null, payment_mode: v.payment_mode, payment_method: v.payment_method, coupon: v.coupon || null, miles_used: v.miles_used || 0, remarks: v.remarks, contact: { name: v.name_0, phone: v.phone, email: v.email }, passengers: seats.map((s, i) => ({ seat: s.code, name: v[`name_${i}`], age: v[`age_${i}`], gender: v[`gender_${i}`], fare: v[`fare_${i}`] })) };
+        const payload = { schedule_id: scheduleId, from_city_id: fromC, to_city_id: toC, boarding_stage_id: Number(v.bp), dropping_stage_id: Number(v.dp), source: v.source || 'agent', agent_phone: v.agent_phone || null, payment_mode: v.payment_mode, payment_method: v.payment_method,
+          ...(v.payment_mode==='unpaid'&&officeHold?.enabled?{hold_minutes:v.hold_minutes}:{}), coupon: v.coupon || null, miles_used: v.miles_used || 0, remarks: v.remarks, contact: { name: v.name_0, phone: v.phone, email: v.email }, passengers: seats.map((s, i) => ({ seat: s.code, name: v[`name_${i}`], age: v[`age_${i}`], gender: v[`gender_${i}`], fare: v[`fare_${i}`] })) };
         let b; try { b = await G.post('/bookings', payload); } catch (err) { if (err.status === 409 && /seat rules|couple booking/.test(err.message) && can('bookings.block_seats') && (await G.confirm(`${esc(err.message)}.<br>Override the route seat rule for this booking?`, { ok: 'Override & book' }))) b = await G.post('/bookings', { ...payload, override_rules: true }); else throw err; }
         G.toast(`Booked · PNR ${b.pnr}`, 'ok'); selected = []; await loadMap(); onDone && onDone();
       } catch (e) { G.err(e); }

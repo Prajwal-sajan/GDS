@@ -1,0 +1,56 @@
+name: Configuration v31 — Remaining screenshot modules and operational rules
+on:
+  push:
+    branches:
+      - savetrip-screenshotcomplete
+    paths:
+      - 'server/configuration-v31-schema.js'
+      - 'server/office-hold-v31.js'
+      - 'server/api/configuration-v30.js'
+      - 'server/domain.js'
+      - 'server/api/ops.js'
+      - 'public/js/configuration-v30.js'
+      - 'public/js/configuration-v31.js'
+      - 'public/js/seat-legend-v31.js'
+      - 'public/js/seat.js'
+      - 'public/js/trips.js'
+      - 'public/css/configuration-v31.css'
+      - 'public/index.html'
+      - 'tests/configuration-v31-*.cjs'
+      - '.github/workflows/configuration-v31.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Syntax checks
+        run: |
+          node --check server/configuration-v31-schema.js
+          node --check server/office-hold-v31.js
+          node --check server/api/configuration-v30.js
+          node --check server/domain.js
+          node --check server/api/ops.js
+          node --check public/js/configuration-v30.js
+          node --check public/js/configuration-v31.js
+          node --check public/js/seat-legend-v31.js
+          node --check public/js/seat.js
+          node --check public/js/trips.js
+      - name: v31 UI/API, seat legends and hold-policy acceptance
+        run: |
+          node tests/configuration-v31-api.cjs
+          node tests/configuration-v31-ui.cjs
+          node tests/configuration-v31-seat.cjs
+      - name: Previous configuration / Access / GDS regression suites
+        run: |
+          node tests/configuration-v30-api.cjs
+          node tests/configuration-v30-ui.cjs
+          node tests/check-team-access-v28.cjs
+          node tests/team-access-v29-ui.cjs
+          npm test

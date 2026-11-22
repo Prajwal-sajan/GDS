@@ -427,6 +427,7 @@ function bind(root,data,section){
    if(n.type==='radio'&&!n.checked)return;
    result[n.name]=n.type==='checkbox'?n.checked:n.type==='number'?(n.value===''?0:Number(n.value)):n.value;
   });
+  if(G.configurationExtraGather)G.configurationExtraGather(area,section,result);
   return result;
  };
  const submit=root.querySelector('[data-cfg30-save]');
@@ -434,12 +435,15 @@ function bind(root,data,section){
  area.addEventListener('input',()=>{state.dirty=true;submit.classList.add('changed');});
  area.addEventListener('change',()=>{state.dirty=true;submit.classList.add('changed');});
  submit.onclick=async()=>{
-  if(!['business','website','communications','notifications'].includes(section)){G.toast('Open the linked module for these settings','bad');return;}
+  if(!['business','website','communications','notifications'].includes(section)&&!G.configurationExtraPages?.[section]){G.toast('Unknown configuration section','bad');return;}
+  const invalid=area.querySelector('input:invalid,select:invalid,textarea:invalid');
+  if(invalid){invalid.reportValidity();invalid.focus();return;}
   submit.disabled=true;
   try{
    const payload=gather();
    // City contacts are handled by a separate validated editor.
    const result=await save(section,payload);data.sections[section]=result.value;
+   if(section==='seats'){G._seatLegend=result.value;G._seatLegendLoaded=true;}
    state.dirty=false;submit.classList.remove('changed');G.toast('Configuration saved','ok');
   }catch(ex){G.err(ex);}finally{submit.disabled=false;}
  };
@@ -498,6 +502,7 @@ function bind(root,data,section){
   });
   area.querySelectorAll('[data-group-view]').forEach(btn=>btn.onclick=()=>groupModal(root,data,btn.dataset.groupView));
  }
+ if(G.configurationExtraBind)G.configurationExtraBind({root,area,data,section});
  area.querySelectorAll('[data-log-toggle]').forEach(btn=>btn.onclick=()=>{
   const box=btn.nextElementSibling;box.hidden=!box.hidden;
   btn.setAttribute('aria-expanded',String(!box.hidden));
@@ -514,8 +519,9 @@ async function open(root,section){
  state.section=section;
  const data=await get();state.record=data;
  const v=data.sections[section]||{};
- const content=['business','website','communications','notifications'].includes(section)?
-  ({business:businessPage,website:websitePage,communications:communicationsPage,notifications:notificationPage}[section])(v,data):unshownPage(section);
+ const standard={business:businessPage,website:websitePage,communications:communicationsPage,notifications:notificationPage};
+ const renderer=standard[section]||G.configurationExtraPages?.[section];
+ const content=renderer?renderer(v,data):unshownPage(section);
  root.innerHTML='<div class="cfg30-root"><header class="cfg30-header">'+icon('save')+
   '<h1>Configuration</h1><button type="button" class="cfg30-btn gradient" data-cfg30-save>'+glyph('save')+' Save</button></header>'+
   '<div class="cfg30-layout"><aside class="cfg30-sidebar" aria-label="Configuration sections">'+

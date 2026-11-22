@@ -2,6 +2,7 @@
 // booking lifecycle (hold → confirm → cancel / shift), refunds and audit.
 const db = require('./db');
 const U = require('./util');
+const OfficeHoldV31=require('./office-hold-v31');
 
 const GST_PCT = 5;
 const SOURCES = ['redbus', 'abhibus', 'paytm', 'website', 'branch', 'agent'];
@@ -138,7 +139,7 @@ function blockedSeatsFor(s) {
 }
 
 // Seat map: status for each seat for a given segment.
-function seatMap(s, fromCity, toCity) {
+function seatMap(s, fromCity, toCity, viewer=null) {
   const r = db.col('routes').get(s.route_id);
   const coach = coachForSchedule(s);
   const cities = routeCities(r);
@@ -152,7 +153,10 @@ function seatMap(s, fromCity, toCity) {
       if (p.status === 'cancelled') continue;
       const overlaps = segOverlap(fo, to, bo, bt);
       const cur = occ[p.seat];
-      const entry = { pnr: b.pnr, name: p.name, gender: p.gender, status: b.status === 'hold' ? 'hold' : p.status, overlaps, payment: b.payment, source: b.source, boarding: stageName(r, b.boarding_stage_id), dropping: stageName(r, b.dropping_stage_id), from: cityName(b.from_city_id), to: cityName(b.to_city_id) };
+      const entry = { pnr: b.pnr, name: p.name, gender: p.gender, status: b.status === 'hold' ? 'hold' : p.status, overlaps, payment: b.payment, source: b.source,
+       is_mine: !!viewer?.phone&&String(viewer.phone)===String(b.booked_by?.phone),
+       is_my_branch: !!viewer?.branch_id&&String(viewer.branch_id)===String(b.branch_id),
+       boarding: stageName(r, b.boarding_stage_id), dropping: stageName(r, b.dropping_stage_id), from: cityName(b.from_city_id), to: cityName(b.to_city_id) };
       if (!cur || overlaps) occ[p.seat] = entry;
     }
   }
@@ -284,6 +288,9 @@ function createBooking(input, actor) {
   const ticket = nextTicket();
   const payMode = input.payment_mode || 'paid'; // paid | unpaid (hold until paid) | settle_later
   const holdMin = input.hold_minutes || db.meta('hold_settings')?.default_minutes || 15;
+  const officePolicy=payMode==='unpaid'&&['branch','phone','agent'].includes(source)
+    ?db.meta('config_v30')?.office:null;
+  const officeExpiry=officePolicy?OfficeHoldV31.resolve(s,officePolicy,input.hold_minutes):null;
   const b = db.col('bookings').insert({
     pnr: makePnr(ticket), ticket_number: ticket, schedule_id: s.id, route_id: r.id, travel_date: s.travel_date,
     source, channel: source, status: payMode === 'unpaid' ? 'hold' : 'confirmed', payment: payMode,
@@ -294,7 +301,7 @@ function createBooking(input, actor) {
     from_city_id: fromCity, to_city_id: toCity, boarding_stage_id: input.boarding_stage_id, dropping_stage_id: input.dropping_stage_id,
     passengers: input.passengers.map((p, i) => ({ seat: p.seat, name: p.name, gender: p.gender || 'M', age: Number(p.age) || 30, fare: fares[i], status: 'booked', call_status: null })),
     fare: price, coupon: input.coupon || null, comments: (input.comment || input.remarks) ? [{ text: String(input.comment || input.remarks).slice(0, 500), by: actor?.name, at: U.nowIso() }] : [],
-    hold_expires_at: payMode === 'unpaid' ? new Date(Date.now() + holdMin * 60e3).toISOString() : null,
+    hold_expires_at: payMode === 'unpaid' ? officeExpiry || new Date(Date.now() + holdMin * 60e3).toISOString() : null,
     miles_used: input.miles_used || 0,
   });
   if (input.coupon) db.col('coupon_redemptions').insert({ code: input.coupon.toUpperCase(), pnr: b.pnr, amount: price.discount, at: U.nowIso(), source });

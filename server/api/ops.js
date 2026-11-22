@@ -151,7 +151,7 @@ r.get('/schedules/:id', can('schedules.view'), h((req) => {
 r.get('/schedules/:id/seat-layout', can('schedules.view'), h((req) => {
   const s = db.col('schedules').get(req.params.id); if (!s) throw D.httpErr(404, 'Schedule not found');
   D.expireHolds();
-  return D.seatMap(s, req.query.from_city_id, req.query.to_city_id);
+  return D.seatMap(s, req.query.from_city_id, req.query.to_city_id,req.user);
 }));
 
 r.put('/schedules/:id', can('schedules.modify'), h((req) => {
