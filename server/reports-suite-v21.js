@@ -211,7 +211,8 @@ function expenses(ctx){
  const categories=[...cmap.values()].map(x=>({...x,amount:round(x.amount),share_pct:0,avg_per_trip:x.trips?round(x.amount/x.trips):0})).sort((a,b)=>b.amount-a.amount);
  const total=round(sum(rows,'total'));
  categories.forEach(x=>x.share_pct=total?round(x.amount/total*100,1):0);
- fixed=round(sum(categories.filter(x=>x.type==='fixed'),'amount'));
+ categories.forEach(x=>x.type=titleCase(x.type));
+ fixed=round(sum(categories.filter(x=>x.type==='Fixed'),'amount'));
  channel_commission=round(categories.find(x=>x.key==='channel_commission')?.amount||0);
  running=round(total-fixed);
  const top=categories.slice(0,8).map(x=>({key:x.key,label:x.label}));const keys=new Set(top.map(x=>x.key));
@@ -241,7 +242,7 @@ function staffDuty(ctx){
    const start=bp.id?s.stop_events?.[bp.id]:null,end=drop.id?s.stop_events?.[drop.id]:null;
    const firstActual=start?.actual_time||start?.time_actual||null,lastActual=end?.actual_time||end?.time_actual||null;
    const pGps=num(s.km),pFuel=num(s.fuel_l);
-   const bus_avg=(()=>{const other=ctx.schedules.filter(z=>z.status==='active'&&String(z.vehicle_id)===String(s.vehicle_id)&&n(z.km)>0&&n(z.fuel_l)>0);
+   const bus_avg=(()=>{const other=db.col('schedules').filter(z=>z.status==='active'&&within(z.travel_date,ctx.from,ctx.to)&&String(z.vehicle_id)===String(s.vehicle_id)&&n(z.km)>0&&n(z.fuel_l)>0);
      return other.length?round(sum(other,'km')/sum(other,'fuel_l')):null;})();
    const efficiency=pGps>0&&pFuel>0?round(pGps/pFuel):null;
    const delay=num(start?.delay_minutes),late=delay!==null&&delay>=8;
