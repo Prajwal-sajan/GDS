@@ -1,5 +1,7 @@
 // GDS server entry: static SPA + JSON API.
 const path = require('path');
+const fs=require('fs');
+const {buildInfo}=require('./about-v32-build');
 const express = require('express');
 const db = require('./db');
 const D = require('./domain');
@@ -43,13 +45,27 @@ app.use('/api', require('./api/platform-billing-v25').operator);
 app.use('/api', require('./api/team-access-v26'));
 app.use('/api', require('./api/team-access-v28'));
 app.use('/api', require('./api/configuration-v30'));
+app.use('/api', require('./api/about-v32'));
 app.use('/api', require('./api/settings-complete'));
 app.use('/api', require('./api/settings-v16-iam-bridge'));
 app.use('/api', misc.r);
 app.use('/api', (req, res) => res.status(404).json({ success: false, message: `No route ${req.method} ${req.path}` }));
 
+// Embed the build actually loaded by this browser, so update checks can
+// compare it to the deployed server rather than comparing two live fetches.
+const htmlFile=path.join(__dirname,'..','public','index.html');
+const clientBuildScript='<script>window.__GDS_SERVED_BUILD__='+JSON.stringify(buildInfo.build_id)+';</script>';
+const sendAppHtml=(_req,res)=>{
+ res.set('Cache-Control','private, no-store, max-age=0');
+ res.type('html').send(fs.readFileSync(htmlFile,'utf8').replace('</head>',clientBuildScript+'\n</head>'));
+};
+app.get(['/', '/index.html'],sendAppHtml);
+app.use((req,res,next)=>{
+ if(req.path==='/sw.js')res.set('Cache-Control','no-cache, no-store, must-revalidate');
+ next();
+});
 app.use(express.static(path.join(__dirname, '..', 'public')));
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'index.html')));
+app.get('*',sendAppHtml);
 
 setInterval(() => { try { D.expireHolds(); } catch (e) { console.error(e); } }, 60e3);
 const billing = require('./platform-billing-v25');

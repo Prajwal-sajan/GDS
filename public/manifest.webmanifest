@@ -1,0 +1,26 @@
+{
+  "name": "JourneyOS Operator",
+  "short_name": "JourneyOS",
+  "description": "JourneyOS GDS — bus operator management",
+  "id": "/",
+  "start_url": "/#/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7faff",
+  "theme_color": "#5357f1",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icons/journeyos-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/journeyos-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+name: About v32 — build info, update check and PWA installation
+on:
+  push:
+    branches: [savetrip-screenshotcomplete]
+    paths:
+      - 'server/about-v32-build.js'
+      - 'server/api/about-v32.js'
+      - 'server/index.js'
+      - 'public/js/about-v32.js'
+      - 'public/css/about-v32.css'
+      - 'public/index.html'
+      - 'public/manifest.webmanifest'
+      - 'public/sw.js'
+      - 'public/icons/journeyos-192.png'
+      - 'public/icons/journeyos-512.png'
+      - 'tests/about-v32-*.cjs'
+      - '.github/workflows/about-v32.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Static checks
+        run: |
+          node --check server/about-v32-build.js
+          node --check server/api/about-v32.js
+          node --check server/index.js
+          node --check public/js/about-v32.js
+          node --check public/sw.js
+      - name: About UI / backend / PWA acceptance
+        run: |
+          node tests/about-v32-api.cjs
+          node tests/about-v32-ui.cjs
+      - name: Existing settings and complete GDS regression
+        run: |
+          node tests/configuration-v31-api.cjs
+          node tests/configuration-v31-ui.cjs
+          node tests/configuration-v31-seat.cjs
+          npm test
