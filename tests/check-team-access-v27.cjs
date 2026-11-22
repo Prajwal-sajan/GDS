@@ -112,6 +112,22 @@ let server;
   response=await get('/bookings/search?q='+encodeURIComponent(q),manager.id);
   assert.equal(response.status,200);
   assert.ok(response.data.results.every(x=>x.phone==='••••••••••'));
+  // Verify the same matrix configuration is also honored by Route, Fleet,
+  // Staff and financial-export API handlers.
+  response=await put('/team-access/v26/roles/batch',{
+   base_revision:response.data?.matrix_revision??(db.meta('team_matrix_revision_v27')||0),
+   roles:[{key:'manager',matrix:{
+    'Change fares':'Off','Add vehicles':'Off','Edit expenses':'Off','View staff':'Off'
+   }}]
+  });
+  assert.equal(response.status,200,'Additional permission policy save');
+  const route=db.col('routes').all()[0];
+  assert.ok(route);
+  assert.equal((await put('/routes/'+route.id,{fares:[]},manager.id)).status,403,'Route fare editing denied by fine-grained policy');
+  assert.equal((await post('/vehicles',{registration_number:'KA00TEST1234'},manager.id)).status,403,'Fleet add denied by fine-grained policy');
+  assert.equal((await post('/schedules/'+schedule.id+'/expenses',{amount:100,label:'Test'},manager.id)).status,403,'Schedule expenses denied');
+  assert.equal((await get('/staff',manager.id)).status,403,'Staff visibility denied');
+  assert.equal((await get('/accounts/transactions?format=csv',manager.id)).status,403,'Forbidden financial export does not bypass role policy');
   console.log('PASS v27: 13 sections, 89 rows, 10 roles, disabled role cells, limits, concurrency, revocation, PII masking, Own booking scopes, safe cancellation and seat-block actions');
  }finally{
   await new Promise(resolve=>server.close(resolve));
