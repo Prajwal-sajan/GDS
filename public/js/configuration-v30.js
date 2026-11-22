@@ -22,6 +22,14 @@ const EVENTS=['New booking','Booking changed','Cancellation','Trip delayed / can
  'Unpaid hold expired','Payment received','Check-in reminder','Live Journey',
  'Pre-boarding / tracking link','Rating request','Bus approaching'];
 const SOURCE=['Website','app','Branch','Agent','GDS','Partner'];
+const EVENT_ALIASES={
+ 'booking.created':'New booking','booking.cancelled':'Cancellation',
+ 'booking.modified':'Booking changed','hold.expired':'Unpaid hold expired',
+ 'passenger.pre_boarding':'Pre-boarding / tracking link','trip.delayed':'Trip delayed / cancelled',
+ 'trip.started':'Live Journey','vehicle.approaching':'Bus approaching',
+ 'passenger.rating_request':'Rating request'
+};
+const eventLabel=x=>EVENT_ALIASES[x]||x;
 const glyph=(name)=>'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+({
  'building-2':'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h1m4 0h1M9 11h1m4 0h1M9 15h1m4 0h1M10 21v-4h4v4"/>',
  globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c-6 5-6 13 0 18M12 3c6 5 6 13 0 18"/>',
@@ -189,7 +197,7 @@ function communicationsPage(v,data){
 function notificationPage(v,data){
  const rows=data.subscriptions||[];
  const row=(s,builtin=false)=>{
-  const id=E(s.id||''),name=Array.isArray(s.event_types)?s.event_types.join(', '):String(s.event_types||'');
+  const id=E(s.id||''),name=Array.isArray(s.event_types)?s.event_types.map(eventLabel).join(', '):eventLabel(String(s.event_types||''));
   return '<tr><td>'+(builtin?'—':'<span class="cfg30-id">#'+id+'</span>')+'</td>'+
    '<td>'+E(name)+'</td><td>'+E(s.channel==='whatsapp'?'WhatsApp':'App push')+'</td>'+
    '<td>'+E(s.endpoint==='booking_passenger'?'Passenger of the booking':s.endpoint==='crew'?'Crew of the trip':s.endpoint==='office'?'Office team':s.display_name||'Phone number')+
@@ -292,9 +300,10 @@ function subscriptionModal(root,data,entry){
  const edit=!!entry;
  const s=entry||{event_types:['New booking'],channel:'whatsapp',endpoint:'phone',contacts:[],only_sources:false,booking_sources:[],quiet_hours:false};
  const contacts=s.contacts?.length?s.contacts:[{phone:'',name:''}];
+ const selectedEvents=(s.event_types||[]).map(eventLabel);
  const body='<div class="cfg30-dialog-label">Event</div>'+
   '<div class="cfg30-event-chips">'+EVENTS.map(ev=>
-   '<label class="'+(s.event_types.includes(ev)?'active':'')+'"><input type="checkbox" data-event value="'+E(ev)+'" '+(s.event_types.includes(ev)?'checked':'')+'>'+E(ev)+'</label>').join('')+'</div>'+
+   '<label class="'+(selectedEvents.includes(ev)?'active':'')+'"><input type="checkbox" data-event value="'+E(ev)+'" '+(selectedEvents.includes(ev)?'checked':'')+'>'+E(ev)+'</label>').join('')+'</div>'+
   modalSelect('protocol','Protocol',[['whatsapp','WhatsApp'],['push','App push']],s.channel||'whatsapp')+
   modalSelect('endpoint','Endpoint',[['phone','Phone number'],['booking_passenger','Passenger of the booking'],
    ['crew','Crew of the trip'],['office','Office team']],s.endpoint||'phone')+
@@ -330,7 +339,11 @@ function subscriptionModal(root,data,entry){
  const updateEvent=()=>form.querySelectorAll('.cfg30-event-chips label').forEach(l=>l.classList.toggle('active',l.querySelector('input').checked));
  form.querySelectorAll('[data-event]').forEach(x=>x.addEventListener('change',updateEvent));
  form.elements.only_sources.addEventListener('change',()=>form.querySelector('[data-source-list]').hidden=!form.elements.only_sources.checked);
- const showContacts=()=>form.querySelector('[data-contact-area]').hidden=form.elements.endpoint.value!=='phone';
+ const showContacts=()=>{
+  const isPhone=form.elements.endpoint.value==='phone';
+  form.querySelector('[data-contact-area]').hidden=!isPhone;
+  form.querySelectorAll('[name^=mobile_]').forEach((x,i)=>{x.required=isPhone&&i===0;});
+ };
  form.elements.endpoint.addEventListener('change',showContacts);showContacts();
  const contactRows=form.querySelector('[data-contact-rows]');
  function addContact(phone='',name=''){
@@ -367,15 +380,17 @@ function groupModal(root,data,key){
  const v=data.sections.communications;
  const field=key==='crew'?'crew_extra':'office_extra',arr=v[field]||[];
  createModal(key==='crew'?'Crew of the trip':'Office team',
-  '<p class="cfg30-description">Additional contacts beyond the automatically determined staff.</p>'+
-  modalInput('person','Add a person by mobile number','','tel','placeholder="Mobile number"')+
-  '<div class="cfg30-tags">'+arr.map(x=>'<span class="cfg30-chip">'+E(x)+'</span>').join('')+'</div>',
+  '<p class="cfg30-description">Additional contacts beyond the automatically determined staff. Uncheck existing numbers to remove them.</p>'+
+  '<div class="cfg30-group-list">'+arr.map(x=>'<label class="cfg30-check"><input type="checkbox" data-keep-group value="'+E(x)+'" checked> '+E(x)+'</label>').join('')+
+  (arr.length?'':'<p>No additional contacts yet.</p>')+'</div>'+
+  modalInput('person','Add a person by mobile number','','tel','placeholder="Mobile number (optional)"'),
   async form=>{
+   const retained=[...form.querySelectorAll('[data-keep-group]:checked')].map(x=>x.value);
    const value=form.elements.person.value.trim();
-   if(!value)throw Error('Enter a mobile number');
-   await save('communications',{[field]:[...new Set([...arr,value])]});
-   G.toast('Contact added','ok');await open(root,state.section);
-  },'Add a person');
+   const entries=[...new Set([...retained,...(value?[value]:[])])];
+   await save('communications',{[field]:entries});
+   G.toast('Group contacts updated','ok');await open(root,state.section);
+  },'Save group');
 }
 function attachChips(root,section,data){
  root.querySelectorAll('.cfg30-tags').forEach(tag=>{
