@@ -36,21 +36,8 @@ router.get('/accounts/invoices-v24/documents/:key',protect,safe((req,res)=>{
  res.json({document:d.document,snapshot:d.row.snapshot||null,
   pdf_history:Array.isArray(d.row.pdf_history)?d.row.pdf_history.map(x=>({...x})):[]});
 }));
-router.post('/accounts/invoices-v24/documents',protect,safe((req,res)=>{
- const result=S.create(req.body||{},req.user);privateData(res);res.status(201).json(result);
-}));
-router.put('/accounts/invoices-v24/documents/:key/snapshot',protect,safe((req,res)=>{
- const result=S.attachSnapshot(req.params.key,req.body?.snapshot||req.body,req.user);
- privateData(res);res.json(result);
-}));
-router.post('/accounts/invoices-v24/documents/:key/pdf',protect,safe((req,res)=>{
- const {base64,filename}=req.body||{};
- const result=S.attachPdf(req.params.key,base64,filename,req.user);
- privateData(res);res.json(result);
-}));
-router.post('/accounts/invoices-v24/payments',protect,safe((req,res)=>{
- const record=S.recordPayment(req.body||{},req.user);privateData(res);
- res.status(202).json({id:record.id,amount:record.amount,status:record.status,
-  message:'Reference recorded pending verification. No bank transfer has been initiated.'});
-}));
+router.post('/accounts/invoices-v24/documents',protect,(_req,res)=>res.status(405).json({message:'Operator document creation is disabled: the platform issues statements automatically.'}));
+router.put('/accounts/invoices-v24/documents/:key/snapshot',protect,(_req,res)=>res.status(405).json({message:'Operator billing record modification is disabled.'}));
+router.post('/accounts/invoices-v24/documents/:key/pdf',protect,(_req,res)=>res.status(405).json({message:'Operator PDF upload/replacement is disabled.'}));
+router.post('/accounts/invoices-v24/payments',protect,(_req,res)=>res.status(405).json({message:'Use the issued-statement payment reference workflow.'}));
 module.exports=router;

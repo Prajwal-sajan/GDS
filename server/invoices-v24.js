@@ -232,4 +232,4 @@ function bundle(month){
  }));
 }
 module.exports={TYPES,typeOf,asDoc,catalogue,latestStatement,balance,list,resolve,create,attachPdf,getPdf,
- validateSnapshot,attachSnapshot,recordPayment,bundle,zip,validMonth};
+ validateSnapshot,attachSnapshot,recordPayment,bundle,zip,validMonth,validDate};

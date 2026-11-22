@@ -46,7 +46,7 @@ r.get('/accounts/reports/:key', can('accounts.reports'), h((req, res) => {
 }));
 
 r.get('/accounts/documents', can('accounts.ledger'), h(() => ({ documents: db.col('invoices').all().sort((a, b) => b.date.localeCompare(a.date)), balance: (() => { const os = db.col('invoices').filter((i) => i.kind === 'operator').sort((a, b) => b.date.localeCompare(a.date))[0]; const paid = U.sum(db.col('invoice_payments').all(), (p) => p.amount); return { statement: os?.name, closing_balance: os?.amount || 0, paid_since: paid, balance: U.round2((os?.amount || 0) - paid) }; })() })));
-r.post('/accounts/documents/pay', can('accounts.ledger'), h((req) => require('../invoices-v24').recordPayment(req.body || {},req.user)));
+r.post('/accounts/documents/pay', can('accounts.ledger'), (_req,res)=>res.status(405).json({message:'Use payment reference submission against a platform-issued statement.'}));
 
 // ---------- OTA reconciliation ----------
 r.get('/reconciliation/config', can('accounts.reconciliation'), h(() => db.meta('reconciliation_config') || []));

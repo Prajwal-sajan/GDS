@@ -1,4 +1,4 @@
-name: Invoices v24 eight-PDF source and UI audit
+name: Legacy Invoices safety and platform issuance v25
 on:
   push:
     branches: [feature/invoices-eight-pdf-v24]
@@ -28,11 +28,11 @@ jobs:
           node --check server/invoices-v24.js
           node --check server/api/invoices-v24.js
           node --check public/js/invoices-v24.js
-          node --check tests/check-invoices-v24.cjs
+          node --check tests/check-platform-billing-v25.cjs
       - name: Invoice E2E and accounting validation
-        run: node tests/check-invoices-v24.cjs
+        run: node tests/check-platform-billing-v25.cjs
       - name: Invoice screenshot UI validation
-        run: node tests/invoices-v24-ui.cjs
+        run: node tests/invoices-v25-ui.cjs
       - name: Existing Accounts and all 13 Reports regressions
         run: |
           node tests/check-accounts-v10.mjs

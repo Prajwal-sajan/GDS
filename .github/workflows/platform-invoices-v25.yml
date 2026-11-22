@@ -1,0 +1,58 @@
+name: Platform-issued Invoices v25
+on:
+  push:
+    branches: [feature/platform-issued-invoices-v25]
+  pull_request:
+    paths:
+      - 'server/**'
+      - 'public/**'
+      - 'tests/**'
+      - '.github/workflows/platform-invoices-v25.yml'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Syntax
+        run: |
+          node --check server/platform-billing-v25.js
+          node --check server/platform-billing-pdf-v25.js
+          node --check server/api/platform-billing-v25.js
+          node --check server/api/invoices-v24.js
+          node --check public/js/invoices-v24.js
+          node --check tests/check-platform-billing-v25.cjs
+      - name: Platform invoices issuance API, 7 PDFs, accounting
+        env:
+          GDS_EXPORT_INVOICE_SAMPLES: '1'
+        run: node tests/check-platform-billing-v25.cjs
+      - name: Render PDFs and check text/layout
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+          for f in artifacts/invoices-v25/*.pdf; do
+            pdfinfo "$f" | grep -E 'Pages:|Page size:'
+            pdftotext -layout "$f" "${f%.pdf}.txt"
+            test -s "${f%.pdf}.txt"
+            pdftoppm -f 1 -l 1 -scale-to 1350 -singlefile -png "$f" "${f%.pdf}-first"
+          done
+          grep -q 'TAX INVOICE' artifacts/invoices-v25/tax.txt
+          grep -q 'SAC' artifacts/invoices-v25/tax.txt
+          grep -q 'STATEMENT OF ACCOUNT' artifacts/invoices-v25/operator.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: platform-invoices-v25-sample-pdfs-and-renders
+          path: artifacts/invoices-v25/
+          retention-days: 7
+      - name: Screen standard dropdown, read-only action checks
+        run: node tests/invoices-v25-ui.cjs
+      - name: GDS regressions and all 13 reports
+        run: |
+          node tests/check-accounts-v10.mjs
+          node tests/check-reports-13-semantic-v23.cjs
+          npm test

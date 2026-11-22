@@ -5,7 +5,7 @@ const previous=G.screens.accounts;window.__invoicesV24=true;
 const e=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const inMoney=x=>x===null||x===undefined?'—':'₹'+Number(x).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 const titleMonth=m=>{const date=new Date(m+'-01T12:00:00');return Number.isNaN(date.getTime())?m:date.toLocaleDateString('en-GB',{month:'long',year:'numeric'}).toUpperCase()};
-const path='/accounts/invoices-v24';
+const path='/accounts/invoices-v25';
 const icons={
  wallet:'M20 7V5a2 2 0 0 0-2-2H5a3 3 0 0 0-3 3v13a2 2 0 0 0 2 2h16V7Zm0 5h-6a2 2 0 0 0 0 4h6',
  refresh:'M20 11a8 8 0 0 0-14-5L3 9m0-6v6h6m-5 4a8 8 0 0 0 14 5l3-3m0 6v-6h-6',
@@ -86,22 +86,22 @@ function docActions(doc){
  return `<div class="inv24-row-actions">
  ${button(`${ico('eye',17)} View`,'view','quiet',nameAttr(doc))}
  ${button(`${ico('download',18)} PDF`,'pdf','textlink',nameAttr(doc))}
- ${!doc.has_pdf?button(`${ico('upload',15)} Import PDF`,'upload','muted',nameAttr(doc)):''}
+
  </div>`;
 }
 function render(root,state){
  const data=state.data,bal=data.balance||{},docs=(data.documents||[]).filter(x=>
  (state.type==='all'||x.type===state.type)&&(state.year==='all'||x.period_month?.startsWith(state.year)));
  const grouped={};for(const x of docs)(grouped[x.period_month]??=[]).push(x);
- const currentKey=bal.statement_key||data.reference_current?.key||null;
- const currentReference=!bal.statement_key&&!!data.reference_current;
+ const currentKey=bal.statement_key||null;
+ const currentReference=false;
  const canPay=(bal.payable_by_operator||0)>0;
  const heading=bal.closing_balance===null?'No statement balance':bal.closing_balance<0?'Payable by operator':'Payable to operator';
  root.innerHTML=`<div class="inv24-root">
  <div class="inv24-outstanding">
   <div class="inv24-wallet">${ico('wallet',28)}</div>
   <div class="inv24-outstanding-main"><div class="inv24-eyebrow">OUTSTANDING BALANCE</div>
-    <h2>${inMoney(bal.payable_by_operator??0)}</h2>
+    <h2>${inMoney(bal.payable_by_operator)}</h2>
     <p>As per Operator Statement <span>${e(bal.statement||'—')}</span>
      ${bal.statement_key?button('View','current-view','inline-link'):''}</p>
     <small>${e(heading)}${bal.closing_balance!==null?' · Signed statement balance '+inMoney(bal.closing_balance):''}
@@ -109,17 +109,19 @@ function render(root,state){
   <div class="inv24-outstanding-actions">${button(`${ico('refresh')} Refresh`,'refresh','outline')}${button(`${ico('pay')} Pay`,'pay','primary')}</div>
  </div>
  <div class="inv24-toolbar">
-   <label><select name="inv24-type" aria-label="Filter invoice type"><option value="all">All types</option>
+   <label class="ac10-select inv25-filter inv25-type"><select name="inv24-type" aria-label="Filter invoice type"><option value="all">All types</option>
     ${(data.types||[]).map(x=>`<option value="${e(x.id)}" ${state.type===x.id?'selected':''}>${e(x.label)}</option>`).join('')}
    </select></label>
-   <label><select name="inv24-year" aria-label="Filter invoice year"><option value="all">All years</option>
+   <label class="ac10-select inv25-filter inv25-year"><select name="inv24-year" aria-label="Filter invoice year"><option value="all">All years</option>
     ${(data.years||[]).map(y=>`<option value="${e(y)}" ${state.year===y?'selected':''}>${e(y)}</option>`).join('')}</select></label>
-   ${button(`${ico('plus',17)} Add document`,'new','subtle')}
+
    <div class="inv24-spacer"></div>
    <div class="inv24-current">${ico('file',19)} Current statement ${currentReference?'<small>(reference only)</small>':''}</div>
    ${button(`${ico('eye',18)} View`,'current-view','quiet',!currentKey?'disabled':'')}
    ${button(`${ico('download',18)} PDF`,'current-pdf','textlink',!currentKey?'disabled':'')}
  </div>
+
+ <p class="inv24-status-text">Issued by our platform · Available for viewing and download · No document creation required</p>
  <div class="inv24-month-list">${Object.entries(grouped).sort((a,b)=>b[0].localeCompare(a[0])).map(([month,items])=>`
   <section class="inv24-month"><header><span>${e(titleMonth(month))}</span><div class="inv24-month-tools">
     ${button(`Reconcile`,'reconcile','subtle',`data-month="${e(month)}"`)}
@@ -128,12 +130,12 @@ function render(root,state){
    ${items.map(doc=>`<div class="inv24-row"><strong>${e(doc.label)}${doc.is_reference?' <small class="inv24-reference">Reference only</small>':''}</strong><span class="inv24-code">${e(doc.name||'—')}</span>
     ${docActions(doc)}</div>`).join('')}
   </section>`).join('')||'<div class="inv24-empty">No invoices or statements for these filters.</div>'}</div>
- <p class="inv24-footnote">PDF downloads preserve the original uploaded statement. Charges, settlement balances, GST and payment status are never fabricated from missing provider records.</p>
- <input type="file" accept="application/pdf,.pdf" data-inv24-file hidden>
+ <p class="inv24-footnote">Invoices and monthly statements are issued automatically by our platform based on verified billing records. This page is read-only; contact platform billing support for corrections.</p>
  <div class="inv24-overlay-container" data-inv24-overlays></div>
  </div>`;
  root.querySelector('[name=inv24-type]').onchange=ev=>{state.type=ev.target.value;render(root,state)};
  root.querySelector('[name=inv24-year]').onchange=ev=>{state.year=ev.target.value;render(root,state)};
+ root.querySelectorAll('.inv25-filter select').forEach(x=>G.niceSelect?.(x));
 }
 function closeModal(root){
  const overlay=root.querySelector('.inv24-overlay-container');if(overlay){overlay.innerHTML='';}
@@ -173,7 +175,7 @@ async function showDoc(root,key){
     <div><small>Reference</small><b>${e(doc.name)}</b></div><div><small>Statement month</small><b>${e(titleMonth(doc.period_month))}</b></div>
     <div><small>Document date</small><b>${e(doc.document_date)}</b></div><div><small>Recorded amount</small><b>${inMoney(doc.amount)}</b></div>
    </div>${snapshot?previewSummary(doc,snapshot):'<p class="inv24-unavailable">This is a catalogue entry only. A provider-issued PDF or verified source statement has not been imported. No replacement invoice has been fabricated.</p>'}
-   ${button(`${ico('upload',17)} Import original PDF`,'upload','primary',nameAttr(doc))}
+   <p class="inv24-unavailable">PDF not available. Contact our platform billing team; operators cannot create or replace issued financial documents.</p>
    </div>`,true);
  }
 }
@@ -203,26 +205,6 @@ async function allAction(root,month){
  await saveBlob(await res.blob(),'invoices_'+month+'.zip');
  G.toast('Monthly PDF archive downloaded','ok');
 }
-async function upload(root,key){
- const input=root.querySelector('[data-inv24-file]');
- input.value='';input.dataset.doc=key;input.click();
-}
-function bytesToB64(array){
- const out=[];for(let i=0;i<array.length;i+=0x4000)out.push(String.fromCharCode(...array.subarray(i,i+0x4000)));
- return btoa(out.join(''));
-}
-async function addDocument(root){
- const s=root.__inv24State,defaultMonth=new Date().toISOString().slice(0,7);
- dialog(root,'Add invoice or statement',`<form data-inv24-new class="inv24-form">
- <label>Document type<select name="type">${s.data.types.map(x=>`<option value="${e(x.id)}">${e(x.label)}</option>`).join('')}</select></label>
- <label>Document reference<input name="name" placeholder="e.g. PSS-2026-00091" required maxlength="80"></label>
- <label>Period month<input type="month" name="month" value="${defaultMonth}" required></label>
- <label>Document date<input type="date" name="date" value="${new Date().toISOString().slice(0,10)}" required></label>
- <label>Purpose<select name="reference_only"><option value="true">Reference only — not included in settlement</option><option value="false">Operational — auditable statement data required</option></select></label>
- <label>Verified statement data (JSON, optional for reference-only documents)<textarea name="snapshot" rows="4" placeholder='{"opening_balance":0,"ledger":[],"posted_closing_balance":0}'></textarea></label>
- <p>Use the number on the original issued document. This creates a catalogue record only, not a tax invoice or financial transaction.</p>
- <button type="submit" class="inv24-button primary">Add document</button></form>`);
-}
 async function payDialog(root){
  const bal=root.__inv24State.data.balance||{};
  if(!(bal.payable_by_operator>0)){
@@ -244,42 +226,24 @@ async function action(root,evt){
  const b=evt.target.closest('[data-inv24]');if(!b||b.disabled)return;
  const op=b.dataset.inv24,key=b.dataset.key,month=b.dataset.month;
  if(op==='close'){closeModal(root);return;}
- if(op==='new'){await addDocument(root);return;}
  if(op==='refresh'){await refresh(root);return;}
  if(op==='pay'){await payDialog(root);return;}
- if(op==='upload'){await upload(root,key);return;}
  if(op==='view'){await showDoc(root,key);return;}
  if(op==='pdf'){await pdfAction(root,key);return;}
  if(op==='all'){await allAction(root,month);return;}
  if(op==='reconcile'){await reconcile(root,month);return;}
  if(op==='current-view'||op==='current-pdf'){
   const d=root.__inv24State.data;
-  const key=d.balance?.statement_key||d.reference_current?.key;
+  const key=d.balance?.statement_key;
   if(!key)throw Error('No operator statement is available');
   if(op==='current-view')await showDoc(root,key);else await pdfAction(root,key);
  }
 }
 async function wire(root){
  root.addEventListener('click',evt=>{const b=evt.target.closest('[data-inv24]');if(b)action(root,evt).catch(G.err)});
- root.addEventListener('change',async evt=>{
-  if(!evt.target.matches('[data-inv24-file]'))return;
-  const file=evt.target.files?.[0],key=evt.target.dataset.doc;if(!file)return;
-  if(file.size>12*1024*1024){G.toast('PDF must be 12 MB or smaller','bad');return;}
-  try{
-   const base64=bytesToB64(new Uint8Array(await file.arrayBuffer()));
-   await G.post(path+'/documents/'+encodeURIComponent(key)+'/pdf',{base64,filename:file.name});
-   G.toast('Original PDF verified and imported','ok');closeModal(root);await refresh(root);
-  }catch(e){G.err(e);}
- });
  root.addEventListener('submit',async evt=>{
   const f=evt.target;
-  if(f.matches('[data-inv24-new]')){
-   evt.preventDefault();const body=Object.fromEntries(new FormData(f));
-   body.reference_only=body.reference_only!=='false';
-   try{if(body.snapshot?.trim())body.snapshot=JSON.parse(body.snapshot);else delete body.snapshot;
-   await G.post(path+'/documents',body);closeModal(root);await refresh(root);G.toast('Document added; import its original PDF next','ok');}
-   catch(e){G.err(e);}
-  }else if(f.matches('[data-inv24-pay]')){
+  if(f.matches('[data-inv24-pay]')){
    evt.preventDefault();const body=Object.fromEntries(new FormData(f));
    try{await G.post(path+'/payments',body);closeModal(root);await refresh(root);G.toast('Payment UTR pending verification','ok');}
    catch(e){G.err(e);}
