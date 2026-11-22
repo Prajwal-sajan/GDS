@@ -19,6 +19,9 @@ const PERM_MAP={
  'Cancel tickets':'bookings.cancel',
  'Shift seat / date':'bookings.modify',
  'Send passenger messages (delay, pre-boarding, resend ticket)':'trips.chat',
+ 'Add comments to a PNR':'bookings.comment',
+ 'Book on behalf of agents':'bookings.book_for_agents',
+ 'See passenger phone numbers':'bookings.view_phone',
  'Block seats':'bookings.block_seats',
  'Unblock seats / book a blocked seat':'bookings.release_hold',
  'View services & seat layouts':'schedules.view',
@@ -54,6 +57,7 @@ const PERM_MAP={
  'Transactions & receivables':'accounts.view',
  'Add / delete ledger entries':'accounts.ledger',
  'Reports':'accounts.reports',
+ 'Export / download':'accounts.export',
  'Invoices & statements (view / pay)':'accounts.view',
  'Settlements (view)':'accounts.view',
  'Upload & match settlements':'accounts.reconciliation',
@@ -404,7 +408,7 @@ function brandPreview(data){
  const op=data.operator||{}, b=data.branding||{};
  const pal=palette(op.brand_hex);
  const src=b.assets?.mobile_logo||op.logo_url;
- return `<div class="stp-brand-hero"><div class="stp-brand-left"><div class="stp-brand-logo">${src?`<img src="${escV(src)}" alt="Brand logo"/>`:'<div class="stp-brand-logo-mark"><span>NT</span> TRAVELS</div>'}</div><div class="stp-brand-text"><h2 data-preview-name>${escV(op.app_name||op.operator_name||'Operator')}</h2><p data-preview-tagline>${escV(op.tagline||'')}</p><div class="stp-brand-chip-row"><span class="stp-brand-chip">${icon('phone')}<span data-preview-phone>${escV(op.helpline_number||'—')}</span></span><span class="stp-brand-chip">${icon('mail')}<span data-preview-email>${escV(op.support_email||'—')}</span></span></div></div></div><div class="stp-palette-preview" data-palette-preview>${pal.map(x=>`<span class="sw" style="background:${escV(x)}"></span>`).join('')}</div></div>`;
+ return `<div class="stp-brand-hero"><div class="stp-brand-left"><div class="stp-brand-logo">${src?`<img src="${escV(src)}" alt="Brand logo"/>`:'<div class="stp-brand-logo-mark"><span>GDS</span> Operator</div>'}</div><div class="stp-brand-text"><h2 data-preview-name>${escV(op.app_name||op.operator_name||'Operator')}</h2><p data-preview-tagline>${escV(op.tagline||'')}</p><div class="stp-brand-chip-row"><span class="stp-brand-chip">${icon('phone')}<span data-preview-phone>${escV(op.helpline_number||'—')}</span></span><span class="stp-brand-chip">${icon('mail')}<span data-preview-email>${escV(op.support_email||'—')}</span></span></div></div></div><div class="stp-palette-preview" data-palette-preview>${pal.map(x=>`<span class="sw" style="background:${escV(x)}"></span>`).join('')}</div></div>`;
 }
 function assetUpload(item,index,assetData){
  const key=ASSET_CODES[index],src=assetData?.[key]||'';
@@ -421,7 +425,7 @@ async function showBranding(el){
  html+=card('Identity',`<div class="stp-form-grid">${brandField('App name','appName',o.app_name||'', 'badge')}${brandField('Tagline','tagline',o.tagline||'','spark')}${brandField('Helpline','helpline',o.helpline_number||'','phone')}${brandField('Support email','supportEmail',o.support_email||'','mail')}</div>`,'badge');
  html+=card('Colors & Typography',`<div class="stp-color-panel"><div><div class="stp-field-wrap"><label>Brand color</label><div class="stp-color-well"><div class="stp-color-box" data-brand-color-box style="background:${escV(currentHex)}"></div><div class="stp-color-input"><span class="ico">${icon('droplet')}</span><input data-brand="brandColor" value="${escV(currentHex)}" aria-label="Brand color"/></div></div><div class="stp-color-strip">${palette(currentHex).map(x=>`<button type="button" data-palette="${escV(x)}" title="Choose ${escV(x)}"><span class="sw long" style="background:${escV(x)}"></span></button>`).join('')}</div></div><div class="stp-field-wrap" style="margin-top:22px"><label>Color scheme</label><div class="stp-scheme-row">${['Light','Dark','System'].map(v=>`<button class="stp-scheme ${(b.color_scheme||'Light')===v?'active':''}" data-scheme="${v}" type="button">${icon(v==='Light'?'spark':v==='Dark'?'globe':'desktop')} ${v}</button>`).join('')}</div></div></div><div>${brandField('Font family','fontFamily',o.font_family||'Poppins','badge',['Poppins','Inter','Manrope','Roboto','System'])}</div></div>`,'settings');
  html+=card('Logo & Assets',`<div class="stp-assets-grid">${(R.BRANDING_UPLOADS||[]).map((it,i)=>assetUpload(it,i,assets)).join('')}</div><div class="stp-note-line">Logos: use PNG, JPEG or WebP under 1 MB. SVG upload is disabled until server-side sanitization is available. Tap the logo in the header to return home.</div>`,'image');
- html+=card('PWA Advanced',`<div class="stp-form-grid">${brandField('PWA name','pwaName',b.pwa_name||o.app_name||'','mobile')}${brandField('PWA short name','pwaShortName',b.pwa_short_name||'','hash')}</div><p class="stp-muted">Name settings are saved. A deployed PWA manifest/service worker is needed before installed apps use the updated values.</p>`,'mobile');
+ html+=card('PWA Advanced',`<div class="stp-form-grid">${brandField('PWA name','pwaName',b.pwa_name||o.app_name||'','mobile')}${brandField('PWA short name','pwaShortName',b.pwa_short_name||'','hash')}</div><p class="stp-muted">App name, color and icon are served by the live manifest. Installed apps may need to be restarted or reinstalled to refresh branding; offline support requires a separate service-worker rollout.</p>`,'mobile');
  el.innerHTML=`<div class="stp-shell stp-brand-shell">${html}</div>`;
  const field=(key)=>el.querySelector(`[data-brand="${key}"]`);
  const current=()=>({app_name:field('appName')?.value||'',tagline:field('tagline')?.value||'',helpline_number:field('helpline')?.value||'',support_email:field('supportEmail')?.value||'',brand_hex:field('brandColor')?.value||'',font_family:field('fontFamily')?.value||'Poppins',color_scheme:el.querySelector('[data-scheme].active')?.dataset.scheme||'Light',pwa_name:field('pwaName')?.value||'',pwa_short_name:field('pwaShortName')?.value||''});
@@ -437,11 +441,11 @@ async function showBranding(el){
  };
  el.querySelectorAll('[data-brand]').forEach(inp=>inp.addEventListener('input',update));
  el.querySelectorAll('[data-palette]').forEach(btn=>btn.onclick=()=>{field('brandColor').value=btn.dataset.palette;update();});
- el.querySelectorAll('[data-scheme]').forEach(btn=>btn.onclick=()=>{el.querySelectorAll('[data-scheme]').forEach(x=>x.classList.remove('active'));btn.classList.add('active');});
+ el.querySelectorAll('[data-scheme]').forEach(btn=>btn.onclick=()=>{el.querySelectorAll('[data-scheme]').forEach(x=>x.classList.remove('active'));btn.classList.add('active');update();});
  el.querySelector('[data-brand-save]').onclick=async()=>{
   const v=current();if(!/^#[a-f\d]{6}$/i.test(v.brand_hex))return G.toast('Brand color must be #RRGGBB','bad');
   if(v.support_email&&!/^\S+@\S+\.\S+$/.test(v.support_email))return G.toast('Enter a valid support email','bad');
-  try{const r=await G.put('/settings/branding',v);G.operator={...(G.operator||{}),...r.operator};localStorage.setItem('stp_brand_scheme',v.color_scheme);document.body.dataset.stpScheme=v.color_scheme;document.body.style.fontFamily=v.font_family+',system-ui,sans-serif';document.documentElement.style.setProperty('--brand',v.brand_hex);G.toast('Branding saved','ok');await showBranding(el);}catch(e){G.err(e);}
+  try{const r=await G.put('/settings/branding',v);G.operator={...(G.operator||{}),...r.operator};localStorage.setItem('stp_brand_scheme',v.color_scheme);document.body.dataset.stpScheme=v.color_scheme;document.body.style.fontFamily=v.font_family+',system-ui,sans-serif';document.documentElement.style.setProperty('--brand',v.brand_hex);document.querySelector('meta[name=theme-color]')?.setAttribute('content',v.brand_hex);G.toast('Branding saved','ok');await showBranding(el);}catch(e){G.err(e);}
  };
  el.querySelector('[data-brand-reset]').onclick=async()=>{
   if(!await G.confirm('Reset brand fields to the original operator values shown when this screen was opened?',{ok:'Reset'}))return;
