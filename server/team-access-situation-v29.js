@@ -102,6 +102,13 @@ function normalize(raw,{user,db,visible,fail,context}){
   }
   // Unknown or non-visible booking owners cannot grant Own access.
  }
+ // Normalize canonical permission-rule inputs as well as screenshot-only metadata.
+ // The legacy v28 route still independently checks resource IDs and existence.
+ for(const key of ['route_id','seat_count','block_duration_hours','hours_before_departure','branch_id','owner_user_id']){
+  if(data[key]===undefined)continue;
+  if(context[key]!==undefined&&context[key]!==data[key])fail('Conflicting '+key);
+  context[key]=data[key];
+ }
  if(data.days_before_departure!==undefined){
   const hours=data.days_before_departure*24;
   if(context.hours_before_departure!==undefined&&Math.abs(context.hours_before_departure-hours)>0.01)
