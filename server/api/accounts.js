@@ -7,14 +7,15 @@ const Rp = require('../reports');
 const { can } = require('../auth');
 
 const r = express.Router();
+const Policy=require('../access-runtime-v27');
 const h = (fn) => (req, res) => { try { const out = fn(req, res); if (out !== undefined) res.json(out); } catch (e) { res.status(e.status || 500).json({ success: false, message: e.message }); } };
 const range = (q) => ({ from: q.from || q.from_date || U.addDays(U.today(), -6), to: q.to || q.to_date || U.today() });
 const toCsv = (rows) => { if (!rows.length) return ''; const cols = Object.keys(rows[0]).filter((k) => typeof rows[0][k] !== 'object'); return [cols.join(','), ...rows.map((r2) => cols.map((c) => `"${String(r2[c] ?? '').replace(/"/g, '""')}"`).join(','))].join('\n'); };
 const sendCsv = (res, name, rows) => { res.setHeader('Content-Type', 'text/csv'); res.setHeader('Content-Disposition', `attachment; filename="${name}.csv"`); res.send(toCsv(rows)); };
 
 r.get('/accounts/analytics', can('accounts.view'), h((req) => Rp.analytics({ ...range(req.query), basis: req.query.basis, source: req.query.source })));
-r.get('/accounts/transactions', can('accounts.view'), h((req, res) => { const rows = Rp.transactions({ ...range(req.query), source: req.query.source, search: req.query.q || '', user: req.user }); if (req.query.format === 'csv') return sendCsv(res, `transactions_${req.query.from}_${req.query.to}`, rows); return { rows, totals: { bookings: rows.filter((x) => x.type === 'booking').length, amount: U.round2(U.sum(rows, (x) => x.total)), refunds: U.round2(U.sum(rows, (x) => x.refund || 0)) } }; }));
-r.get('/accounts/receivables', can('accounts.view'), h((req, res) => { const out = Rp.receivables(range(req.query)); if (req.query.format === 'csv') return sendCsv(res, 'receivables', out.rows); return out; }));
+r.get('/accounts/transactions', can('accounts.view'), h((req, res) => { const rows = Rp.transactions({ ...range(req.query), source: req.query.source, search: req.query.q || '', user: req.user }); if (req.query.format === 'csv') { Policy.explicitAccess(req,'Export / download'); return sendCsv(res, `transactions_${req.query.from}_${req.query.to}`, rows); } return { rows, totals: { bookings: rows.filter((x) => x.type === 'booking').length, amount: U.round2(U.sum(rows, (x) => x.total)), refunds: U.round2(U.sum(rows, (x) => x.refund || 0)) } }; }));
+r.get('/accounts/receivables', can('accounts.view'), h((req, res) => { const out = Rp.receivables(range(req.query)); if (req.query.format === 'csv') { Policy.explicitAccess(req,'Export / download'); return sendCsv(res, 'receivables', out.rows); } return out; }));
 r.get('/accounts/ledger', can('accounts.ledger'), h((req) => Rp.ledger(req.query.channel_key)));
 r.post('/accounts/ledger', can('accounts.ledger'), h((req) => { const b = req.body; if (!b.channel_key || !(Number(b.amount) > 0)) throw D.httpErr(400, 'Channel and amount required'); return db.col('ledger').insert({ channel_key: b.channel_key, channel_type: b.channel_key.split(':')[0], type: b.type === 'debit' ? 'debit' : 'credit', amount: Number(b.amount), note: b.note || '', date: b.date || U.today(), by: req.user.name }); }));
 r.delete('/accounts/ledger/:id', can('accounts.ledger'), h((req) => ({ success: db.col('ledger').remove(req.params.id) })));
@@ -41,7 +42,7 @@ r.get('/accounts/reports/:key', can('accounts.reports'), h((req, res) => {
   const f = Rp.REPORTS[req.params.key]; if (!f) throw D.httpErr(404, 'Unknown report');
   const out = f({ ...req.query, ...range(req.query) });
   const op = db.meta('operator');
-  if (req.query.format === 'csv') return sendCsv(res, `${req.params.key}_${range(req.query).from}_${range(req.query).to}`, out.rows || out.boarding || out.services || out.categories || out.ranking || []);
+  if (req.query.format === 'csv') { Policy.explicitAccess(req,'Export / download'); return sendCsv(res, `${req.params.key}_${range(req.query).from}_${range(req.query).to}`, out.rows || out.boarding || out.services || out.categories || out.ranking || []);
   return { report: req.params.key, ...range(req.query), operator_name: op.operator_name, ...out };
 }));
 
