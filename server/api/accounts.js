@@ -45,8 +45,8 @@ r.get('/accounts/reports/:key', can('accounts.reports'), h((req, res) => {
   return { report: req.params.key, ...range(req.query), operator_name: op.operator_name, ...out };
 }));
 
-r.get('/accounts/documents', can('accounts.view'), h(() => ({ documents: db.col('invoices').all().sort((a, b) => b.date.localeCompare(a.date)), balance: (() => { const os = db.col('invoices').filter((i) => i.kind === 'operator').sort((a, b) => b.date.localeCompare(a.date))[0]; const paid = U.sum(db.col('invoice_payments').all(), (p) => p.amount); return { statement: os?.name, closing_balance: os?.amount || 0, paid_since: paid, balance: U.round2((os?.amount || 0) - paid) }; })() })));
-r.post('/accounts/documents/pay', can('accounts.ledger'), h((req) => db.col('invoice_payments').insert({ amount: Number(req.body.amount), reference: req.body.reference || '', date: U.today(), by: req.user.name })));
+r.get('/accounts/documents', can('accounts.ledger'), h(() => ({ documents: db.col('invoices').all().sort((a, b) => b.date.localeCompare(a.date)), balance: (() => { const os = db.col('invoices').filter((i) => i.kind === 'operator').sort((a, b) => b.date.localeCompare(a.date))[0]; const paid = U.sum(db.col('invoice_payments').all(), (p) => p.amount); return { statement: os?.name, closing_balance: os?.amount || 0, paid_since: paid, balance: U.round2((os?.amount || 0) - paid) }; })() })));
+r.post('/accounts/documents/pay', can('accounts.ledger'), h((req) => require('../invoices-v24').recordPayment(req.body || {},req.user)));
 
 // ---------- OTA reconciliation ----------
 r.get('/reconciliation/config', can('accounts.reconciliation'), h(() => db.meta('reconciliation_config') || []));

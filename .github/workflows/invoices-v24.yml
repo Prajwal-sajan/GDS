@@ -1,0 +1,42 @@
+name: Invoices v24 eight-PDF source and UI audit
+on:
+  push:
+    branches: [feature/invoices-eight-pdf-v24]
+  pull_request:
+    paths:
+      - 'server/invoices-v24.js'
+      - 'server/api/invoices-v24.js'
+      - 'server/api/accounts.js'
+      - 'server/seed.js'
+      - 'public/js/invoices-v24.js'
+      - 'public/css/invoices-v24.css'
+      - 'tests/check-invoices-v24.cjs'
+      - 'tests/invoices-v24-ui.cjs'
+jobs:
+  invoice-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Invoice JavaScript syntax
+        run: |
+          node --check server/invoices-v24.js
+          node --check server/api/invoices-v24.js
+          node --check public/js/invoices-v24.js
+          node --check tests/check-invoices-v24.cjs
+      - name: Invoice E2E and accounting validation
+        run: node tests/check-invoices-v24.cjs
+      - name: Invoice screenshot UI validation
+        run: node tests/invoices-v24-ui.cjs
+      - name: Existing Accounts and all 13 Reports regressions
+        run: |
+          node tests/check-accounts-v10.mjs
+          node tests/check-reports-13-semantic-v23.cjs
+          node tests/check-reports-suite-v21.cjs
+          node tests/check-reports-performance-v22.cjs
+          npm test

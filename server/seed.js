@@ -246,8 +246,8 @@ function seed() {
 
   // ---------- Accounts: ledger, documents, settlements, ratings ----------
   for (const a of agents) db.col('ledger').insert({ channel_key: `agent:${a.phone}`, channel_type: 'agent', type: 'credit', amount: 5000, note: 'UTR 4521XXXX', date: U.addDays(T, -3), by: 'Admin' });
-  const mon = U.addDays(T, -20).slice(0, 7);
-  for (const [kind, label, name, amount, status] of [['invoice', 'Tax Invoice', 'ST/26-27/11', 112244.2, 'Paid'], ['metro', 'Metro Feeder Statement', 'MFS-2026-00042', 26365, null], ['calls', 'Cloud Calling Statement', 'CS-2026-00033', 4822.6, null], ['calls', 'AI Calling Statement', 'CS-2026-00034', 21655, null], ['chats', 'Chat Statement', 'CHS-2026-00035', 4510.66, null], ['operator', 'Operator Statement', 'OS-2026-00132', 121811.93, null]]) db.col('invoices').insert({ kind, label, name, month: mon, date: `${mon}-28`, amount, status });
+  const mon = U.addDays(T.slice(0, 7) + '-01', -1).slice(0, 7); // last closed billing month
+  for (const [kind, label, name, amount, status] of [['invoice', 'Tax Invoice', 'ST/26-27/11', 112244.2, 'Paid'], ['metro', 'Metro Feeder Statement', 'MFS-2026-00042', 26365, null], ['calls', 'Cloud Calling Statement', 'CS-2026-00033', 4822.6, null], ['calls', 'AI Calling Statement', 'CS-2026-00034', 21655, null], ['chats', 'Chat Statement', 'CHS-2026-00035', 4510.66, null], ['operator', 'Operator Statement', 'OS-2026-00132', 121811.93, null], ['platform', 'Platform Sales Statement', 'PSS-2026-00091', null, null]]) db.col('invoices').insert({ kind, label, name, month: mon, date: U.addDays(U.addDays(T.slice(0,7)+'-01',-1),0), amount, status, is_demo_reference: true });
   db.col('settlements').insert({ ota_slug: 'redbus', file_name: 'redbus-settlement.pdf', invoice_number: 'RB-000014', billing_period_start: U.addDays(T, -14), billing_period_end: U.addDays(T, -8), status: 'matched', created_at: U.addDays(T, -6) });
   for (const b of db.col('bookings').filter((x) => ['redbus', 'abhibus'].includes(x.source) && x.travel_date < T).slice(0, 80)) {
     const rating = R.chance(0.15) ? R.int(1, 2) : R.int(3, 5);
