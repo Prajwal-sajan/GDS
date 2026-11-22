@@ -1,0 +1,94 @@
+/* Access v28 — screenshot continuation: Advanced, Test access, Groups, New role. */
+.ta26-root .ta28-page{color:#1d314e;font-size:15px;max-width:100%;padding:0 0 32px}
+.ta26-root .ta28-page p.ta28-intro{color:#6d83a4;font-size:16px;font-weight:400;margin:9px 4px 23px;line-height:1.5}
+.ta26-root .ta28-page p.ta28-description{color:#677e9e;font-size:15px;margin:0 4px 18px;line-height:1.65}
+.ta26-root .ta28-caption,.ta26-root .ta28-newrole .ta28-caption{font-size:14px;font-weight:650;color:#617796;letter-spacing:.025em;margin:22px 14px 7px;text-transform:uppercase}
+.ta26-root .ta28-page button,.ta26-root .ta28-newrole button{font-family:inherit}
+.ta26-root .ta28-blue-btn{border:0;border-radius:26px;min-height:45px;background:#2f68f6;color:white;font-weight:650;font-size:15px;padding:9px 18px;display:inline-flex;align-items:center;justify-content:center;gap:9px;white-space:nowrap;cursor:pointer;box-shadow:none}
+.ta26-root .ta28-blue-btn svg{height:20px;width:20px;stroke:currentColor}
+.ta26-root .ta28-blue-btn:disabled{background:#adc5fa;color:white;cursor:default}
+.ta26-root .ta28-page input,.ta26-root .ta28-page select,
+.ta26-root .ta28-newrole input,.ta26-root .ta28-newrole select{font-family:inherit;font-size:15px;color:#233854}
+.ta26-root .ta28-page input:focus-visible,.ta26-root .ta28-page select:focus-visible,
+.ta26-root .ta28-newrole input:focus-visible,.ta26-root .ta28-newrole select:focus-visible{outline:2px solid #6794ff;outline-offset:1px}
+.ta26-root .ta28-advanced .ta28-preset-bar{display:flex;align-items:center;gap:10px;row-gap:11px;flex-wrap:wrap;margin:18px 0 15px}
+.ta26-root .ta28-advanced .ta28-preset-bar button:not(.ta28-blue-btn){padding:11px 18px;background:#e9eef6;border:0;border-radius:25px;color:#2362f8;min-height:43px;font-size:15px;font-weight:600;cursor:pointer;line-height:1.25}
+.ta26-root .ta28-advanced .ta28-caption{margin-top:18px;margin-bottom:8px}
+.ta26-root .ta28-rule-list{display:grid;gap:11px}
+.ta26-root .ta28-rules-empty{width:100%;background:#fff;border:1px solid #dce7f4;border-radius:22px;min-height:64px;display:flex;align-items:center;color:#6d85a6;padding:18px;font-size:15px}
+.ta26-root .ta28-rule{display:flex;align-items:center;justify-content:space-between;gap:18px;border:1px solid #dce5f4;border-radius:18px;background:#fff;padding:15px 18px}
+.ta26-root .ta28-rule h3{font-size:16px;margin:0 0 4px}
+.ta26-root .ta28-rule p{margin:0;color:#7388a5;font-size:13px;line-height:1.4}
+.ta26-root .ta28-card-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:9px}
+.ta26-root .ta28-card-actions button:not(.ta28-blue-btn){padding:8px 13px;border:1px solid #dfe7f4;border-radius:11px;color:#2466f6;background:white;cursor:pointer;font-size:14px;font-weight:600}
+.ta26-root .ta28-card-actions button.ta28-danger{color:#bc3c4f;border-color:#ffdee2}
+.ta26-root .ta28-rule-editor{border:1px solid #dce7f4;border-radius:19px;background:white;padding:20px 24px;margin:16px 0 20px}
+.ta26-root .ta28-rule-editor h3{margin:0 0 15px}
+.ta26-root .ta28-editor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.ta26-root .ta28-editor-grid label,.ta26-root .ta28-group-editor>label{display:flex;flex-direction:column;gap:6px;color:#506b92;font-weight:600}
+.ta26-root .ta28-editor-grid input,.ta26-root .ta28-editor-grid select,
+.ta26-root .ta28-group-editor>label>input{background:#fff;border:1px solid #dce5f2;border-radius:11px;min-height:44px;padding:9px 12px;width:100%}
+.ta26-root .ta28-editor-grid [hidden]{display:none!important}
+.ta26-root .ta28-help,.ta26-root .ta28-foot-help{margin:8px 12px;color:#7a91af;font-size:13px;line-height:1.5}
+.ta26-root .ta28-group-create{display:flex;align-items:center;gap:10px;width:100%;margin:16px 0 12px}
+.ta26-root .ta28-group-create input{flex:1;min-width:0;background:white;border:1px solid #dce5f2;border-radius:12px;min-height:48px;padding:11px 15px}
+.ta26-root .ta28-group-create input::placeholder,.ta26-root .ta28-newrole input::placeholder{color:#94a7c4;opacity:1}
+.ta26-root .ta28-group-create button{min-width:117px;border-radius:29px}
+.ta26-root .ta28-group-list{display:grid;gap:14px}
+.ta26-root .ta28-group-card{background:white;border:1px solid #dfe7f5;border-radius:16px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:15px}
+.ta26-root .ta28-group-card h3{margin:0 0 5px;font-size:16px}
+.ta26-root .ta28-group-card p{font-size:13px;color:#7a8eaa;margin:0}
+.ta26-root .ta28-group-editor{width:100%;border-top:1px solid #e8eef8;padding-top:14px;display:grid;gap:13px}
+.ta26-root .ta28-member-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));max-height:280px;overflow:auto;gap:8px}
+.ta26-root .ta28-member-grid label{font-weight:500;border:1px solid #edf1f8;border-radius:10px;padding:8px;display:flex;align-items:center;gap:7px;min-width:0}
+.ta26-root .ta28-member-grid small{font-size:11px;color:#9aaeca}
+.ta26-root .ta28-test .ta28-intro{margin-bottom:22px}
+.ta26-root .ta28-test .ta28-caption{margin-top:0;margin-bottom:9px}
+.ta26-root .ta28-panel{border:1px solid #dee7f4;border-radius:21px;background:white;overflow:hidden;display:block;margin:0 0 0}
+.ta26-root .ta28-wide-row{display:flex;align-items:center;justify-content:space-between;min-height:64px;padding:0 17px;border-bottom:1px solid #eef2f7;gap:12px;cursor:text}
+.ta26-root .ta28-wide-row span{white-space:nowrap}
+.ta26-root .ta28-wide-row input{border:none;outline:none!important;flex:1;background:transparent;text-align:right;min-width:90px;padding:10px 0;color:#263b5a;font-weight:400}
+.ta26-root .ta28-wide-row input::placeholder{color:#91a1ba}
+.ta26-root .ta28-action-wrap{padding:10px 17px;border-bottom:1px solid #eef2f7}
+.ta26-root .ta28-action-wrap select{background:#eef2f7;border:0;border-radius:12px;width:100%;min-height:47px;padding:9px 14px;color:#202b3f;font-size:14px;cursor:pointer}
+.ta26-root .ta28-situation-toggle{padding:0 17px;display:flex;align-items:center;min-height:70px;border-bottom:1px solid #edf1f8}
+.ta26-root .ta28-situation-toggle button{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;color:#2467fa;font-weight:650;font-size:16px;cursor:pointer;padding:12px 0}
+.ta26-root .ta28-situation-toggle svg{height:21px;width:21px}
+.ta26-root .ta28-situation{padding:16px 20px;background:#fafbff;display:grid;gap:14px;grid-template-columns:repeat(3,minmax(0,1fr));border-bottom:1px solid #e8eef8}
+.ta26-root .ta28-situation[hidden]{display:none!important}
+.ta26-root .ta28-situation label{display:flex;flex-direction:column;gap:6px;color:#5f789b;font-size:13px}
+.ta26-root .ta28-situation input,.ta26-root .ta28-situation select{border:1px solid #dce5f1;border-radius:11px;min-height:40px;padding:7px 10px;background:white;width:100%}
+.ta26-root .ta28-panel-footer{min-height:70px;display:flex;align-items:center;justify-content:flex-end;padding:11px 18px}
+.ta26-root .ta28-panel-footer .ta28-blue-btn{border-radius:26px}
+.ta26-root .ta28-result{border-radius:16px;background:#fff;border:1px solid #dce5f3;padding:17px 20px;margin:18px 0}
+.ta26-root .ta28-result-title{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.ta26-root .ta28-result-title strong{font-weight:750;color:#536d8e}
+.ta26-root .ta28-allow .ta28-result-title strong{color:#0d855f}
+.ta26-root .ta28-deny .ta28-result-title strong{color:#bd4450}
+.ta26-root .ta28-conditional .ta28-result-title strong{color:#a46c17}
+.ta26-root .ta28-result p,.ta26-root .ta28-result li{color:#627b9c;font-size:13px;line-height:1.5}
+.ta26-root .ta28-result ul{margin:10px 0 10px;padding-left:21px}
+.ta26-root .ta28-result .ta28-coverage{font-size:12px;color:#788dab}
+.ta26-root .ta28-error{background:#fff8f8;border:1px solid #ffd9dc;border-radius:12px;padding:10px 12px;color:#ac293c;font-size:14px;margin:8px 0 13px}
+.ta26-root .ta28-error[hidden]{display:none!important}
+.ta26-root .ta28-newrole{margin:11px 0 18px}
+.ta26-root .ta28-newrole .ta28-caption{margin:5px 13px 8px}
+.ta26-root .ta28-newrole-box{background:white;border:1px solid #dde6f2;border-radius:20px;overflow:hidden;width:100%;max-width:100%}
+.ta26-root .ta28-newrole-field{min-height:63px;border-bottom:1px solid #edf2f8;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:20px;font-weight:450}
+.ta26-root .ta28-newrole-field>span{white-space:nowrap;font-size:15px}
+.ta26-root .ta28-newrole-field>input{flex:1;text-align:right;border:0;background:transparent;outline:0!important;min-width:0}
+.ta26-root .ta28-newrole-field>select{flex:1;text-align:right;text-align-last:right;border:0;background:white;min-width:0;cursor:pointer}
+.ta26-root .ta28-newrole-box footer{display:flex;justify-content:flex-end;gap:12px;padding:11px 16px;align-items:center}
+.ta26-root .ta28-newrole-box footer>button:not(.ta28-blue-btn){background:transparent;border:0;color:#2769ff;font-size:14px;cursor:pointer}
+.ta26-root .ta28-newrole-box footer>.ta28-blue-btn{min-height:39px;font-size:14px;padding:8px 16px}
+.ta26-root .ta28-newrole .ta28-foot-help{margin:9px 15px}
+.ta26-root .ta27-filter-bar[hidden],.ta26-root .ta26-matrix-scroll[hidden],.ta26-root .ta27-matrix-foot[hidden],.ta26-root .ta27-scope-note[hidden]{display:none!important}
+@media(max-width:800px){
+ .ta26-root .ta28-editor-grid,.ta26-root .ta28-situation{grid-template-columns:1fr}
+ .ta26-root .ta28-member-grid{grid-template-columns:1fr}
+ .ta26-root .ta28-group-create{flex-wrap:wrap}
+ .ta26-root .ta28-group-create input{flex-basis:100%}
+ .ta26-root .ta28-rule{align-items:flex-start;flex-direction:column}
+ .ta26-root .ta28-page p.ta28-intro{font-size:14px}
+ .ta26-root .ta28-advanced .ta28-preset-bar button{max-width:100%;white-space:normal}
+}
