@@ -57,6 +57,13 @@ async function login(phone){
     const after=(await api('GET',url+'/pnl')).data;
     assert.equal(after.expense_version,saved.data.expense_version);
     assert.ok(after.expense_breakdown.items.some(x=>x.manual&&x.label==='Fuel variance QA'));
+    assert.equal((await api('POST',url+'/expenses',{label:'Unverified expense',amount:-3})).status,400,'legacy endpoint rejects negative costs');
+    assert.equal((await api('POST',url+'/expenses',{label:'Unauthorised',amount:1},agent)).status,403,'legacy expense endpoint checks RBAC');
+    const legacy=await api('POST',url+'/expenses',{label:'Legacy v13 expense',amount:17,type:'running'});
+    assert.equal(legacy.status,200,'legacy Trip module can still add expenses');
+    const afterLegacy=(await api('GET',url+'/pnl')).data;
+    assert.equal(afterLegacy.expense_version,after.expense_version+1,'legacy writes invalidate P&L editor version');
+    assert.equal((await api('PUT',url+'/pnl-expenses',{...payload,expected_version:after.expense_version})).status,409,'stale P&L editor cannot overwrite legacy expense');
     const routeAfter=(await api('GET','/routes/'+detail.route_id)).data;
     assert.ok(routeAfter,'route still accessible');
     const history=(await api('GET',url+'/history')).data.history;
