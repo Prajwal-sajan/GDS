@@ -144,9 +144,14 @@ function render(s,root){
     <div class="vd19-content"><nav class="vd19-tabs" role="tablist" aria-label="Vehicle details tabs">${tabs.map(([key,label,iconName])=>`<button type="button" role="tab" aria-selected="${s.tab===key}" data-vd19-tab="${key}" class="${s.tab===key?'active':''}">${ic(iconName,20)} ${label}</button>`).join('')}</nav>
     <div class="vd19-section" role="tabpanel">${s.tab==='details'?renderDetails(s):s.tab==='documents'?renderDocuments(s):s.tab==='maintenance'?renderMaintenance(s):renderArchive(s)}</div></div></div>`;
 }
+let activeWorkspace=null;
 async function open({id,mode='view',host,onDone}){
+  if(activeWorkspace?.root?.isConnected){
+    if(!await activeWorkspace.confirmDiscard())return;
+    activeWorkspace.root.remove();activeWorkspace=null;
+  }
   if(!host)throw new Error('Missing vehicle page');
-  const root=document.createElement('div');root.className='vd19-root';host.replaceChildren(root);
+  const root=document.createElement('div');root.className='vd19-root';host.appendChild(root);
   const s={id,mode,host,onDone,tab:'details',archiveFilter:'all',data:null,draft:null,original:null,dirty:false,canModify:can('fleet.modify'),canDocs:can('fleet.documents')};
   const reload=async({preserveDraft=false}={})=>{
     const previous=preserveDraft?s.draft:null;
@@ -158,7 +163,8 @@ async function open({id,mode='view',host,onDone}){
     render(s,root);
   };
   const confirmDiscard=async()=>!s.dirty||Boolean(await G.confirm('Discard unsaved vehicle changes?',{danger:1,ok:'Discard'}));
-  const leave=async()=>{if(!await confirmDiscard())return;root.remove();if(onDone)await onDone();};
+  const leave=async()=>{if(!await confirmDiscard())return;root.remove();activeWorkspace=null;if(onDone)await onDone();};
+  activeWorkspace={root,confirmDiscard};
   const saveDetails=async()=>{
     if(s.mode!=='edit'||!s.dirty)return;
     if(!s.draft.registration_number?.trim()||!s.draft.coach_template_id){G.toast('Coach Type and Registration Number are required','warn');return;}
