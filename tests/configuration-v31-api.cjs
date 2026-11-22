@@ -86,7 +86,7 @@ async function success(section,payload){
   const operator=db.meta('operator');
   assert.notEqual(operator.operator_name,'November Travels','Reference identity must never overwrite tenant');
   assert.equal((await GET('/settings/config-v30')).data.delivery_connected,false);
-  assert.ok(db.col('edit_history').count(x=>x.section==='configuration_v30')>=8);
+  assert.ok(db.col('edit_history').count(x=>x.entity==='settings'&&x.entity_id==='configuration_v30')>=8);
   console.log('PASS configuration v31 API: 8 persisted sections, 50+ validated controls, RBAC, strict cross-field limits, seat display, office hold cap, no provider activation');
  }finally{
   await new Promise(resolve=>server.close(resolve));db.persistNow();
