@@ -34,6 +34,10 @@ operator.get('/accounts/invoices-v25/documents/:key/pdf',wrap((req,res)=>{
   '; filename="'+document.name.replace(/[^a-zA-Z0-9_.-]/g,'_')+'.pdf"');
  res.set('Content-Length',String(bytes.length));res.send(bytes);
 }));
+operator.post('/accounts/invoices-v25/payments',wrap((req,res)=>{
+ const record=B.recordPayment(req.body||{},req.user);
+ noCache(res);res.status(202).json(record);
+}));
 operator.get('/accounts/invoices-v25/current',wrap((req,res)=>{
  const doc=B.latest();
  if(!doc)return res.status(404).json({message:'No operator statement has been issued'});
