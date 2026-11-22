@@ -1,0 +1,45 @@
+name: Team Access v26 screenshot and IAM acceptance
+on:
+  push:
+    branches: [feature/team-access-screenshotcomplete-v26]
+  pull_request:
+    paths:
+      - 'server/api/team-access-v26.js'
+      - 'server/team-access-schema-v26.js'
+      - 'server/auth.js'
+      - 'server/index.js'
+      - 'public/js/team-access-v26.js'
+      - 'public/css/team-access-v26.css'
+      - 'public/index.html'
+      - 'tests/check-team-access-v26.cjs'
+      - 'tests/team-access-v26-ui.cjs'
+      - '.github/workflows/team-access-v26.yml'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Syntax validation
+        run: |
+          node --check server/api/team-access-v26.js
+          node --check server/team-access-schema-v26.js
+          node --check server/auth.js
+          node --check server/index.js
+          node --check public/js/team-access-v26.js
+      - name: End-to-end API and user access security
+        run: node tests/check-team-access-v26.cjs
+      - name: Screenshot UI interaction contract
+        run: node tests/team-access-v26-ui.cjs
+      - name: Settings and older module regressions
+        run: |
+          node tests/check-settings-v16-backend.cjs
+          node tests/check-communications-access.mjs
+          node tests/check-staff-v11.mjs
+          node tests/check-accounts-v10.mjs
+          npm test
