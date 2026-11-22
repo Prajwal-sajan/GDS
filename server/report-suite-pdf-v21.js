@@ -127,7 +127,7 @@ class Pdf{
      this.y+=height;
    });
    const total=totals||{};
-   if(rows.length){
+   if(rows.length&&(!this.documentStyle||Object.keys(total).length)){
      const rowLines=cols.map((c,j)=>lines(total[c.key]===undefined?'':fmt(total,c),ws[j]-5,small));
      const h=Math.max(lineH+6,...rowLines.map(x=>x.length*lineH+6));
      if(this.y+h>this.size.H-22)repeat();
