@@ -1,0 +1,53 @@
+name: Access v28 — screenshot continuation and authorization checks
+on:
+  push:
+    branches:
+      - feature/team-access-v28-simulator-rules-groups
+  pull_request:
+    paths:
+      - 'server/api/team-access-v28.js'
+      - 'server/team-access-policy-v28.js'
+      - 'server/api/team-access-v26.js'
+      - 'server/team-access-schema-v27.js'
+      - 'server/access-runtime-v27.js'
+      - 'server/index.js'
+      - 'public/js/team-access-v26.js'
+      - 'public/js/team-access-v28.js'
+      - 'public/css/team-access-v28.css'
+      - 'public/index.html'
+      - 'tests/*team-access-v28*'
+      - '.github/workflows/team-access-v28.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Validate all altered JavaScript syntax
+        run: |
+          node --check server/api/team-access-v28.js
+          node --check server/api/team-access-v26.js
+          node --check server/team-access-policy-v28.js
+          node --check server/team-access-schema-v27.js
+          node --check server/access-runtime-v27.js
+          node --check server/index.js
+          node --check public/js/team-access-v28.js
+          node --check public/js/team-access-v26.js
+          node --check tests/check-team-access-v28.cjs
+          node --check tests/team-access-v28-ui.cjs
+      - name: End-to-end Access v28 security, simulator and UI acceptance
+        run: |
+          node tests/check-team-access-v28.cjs
+          node tests/team-access-v28-ui.cjs
+      - name: Previous role matrix, team UI and general GDS regression
+        run: |
+          node tests/check-team-access-v27.cjs
+          node tests/team-access-v27-ui.cjs
+          node tests/check-team-access-v26.cjs
+          node tests/team-access-v26-ui.cjs
+          npm test
