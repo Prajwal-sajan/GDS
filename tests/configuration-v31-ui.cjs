@@ -27,6 +27,7 @@ async function save(){
  const expected=['pricing','office','vehicle','expenses','seats','monitoring','whatsapp','bot'];
  assert.equal(w.G.configurationVersion,'v31');
  for(const section of expected){
+  console.log('v31 UI renderer',section,typeof w.G.configurationExtraPages?.[section],Object.keys(w.G.configurationExtraPages||{}));
   await page(section);
   assert.equal(root.querySelectorAll('[data-cfg30-tab]').length,12,'12 navigation items');
   assert.ok(root.textContent.includes({pricing:'Dynamic Pricing',office:'Seat hold',vehicle:'Fuel Theft Detection',
