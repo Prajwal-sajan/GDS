@@ -147,7 +147,7 @@ async function show(tab){
  assert.equal(form.querySelectorAll('input[type=checkbox]').length,2);
  form.querySelector('input[type=checkbox]').checked=true;
  form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await settle();
- assert.deepEqual(groups[0].user_ids,[11]);
+ assert.deepEqual(Array.from(groups[0].user_ids),[11]);
  content=root.querySelector('.ta26-access-content');
  content.querySelector('[data-v28-delete-group]').click();await settle();
  assert.equal(groups.length,0);
