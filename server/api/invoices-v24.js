@@ -39,9 +39,5 @@ router.get('/accounts/invoices-v24/documents/:key',protect,safe((req,res)=>{
 router.post('/accounts/invoices-v24/documents',protect,(_req,res)=>res.status(405).json({message:'Operator document creation is disabled: the platform issues statements automatically.'}));
 router.put('/accounts/invoices-v24/documents/:key/snapshot',protect,(_req,res)=>res.status(405).json({message:'Operator billing record modification is disabled.'}));
 router.post('/accounts/invoices-v24/documents/:key/pdf',protect,(_req,res)=>res.status(405).json({message:'Operator PDF upload/replacement is disabled.'}));
-router.post('/accounts/invoices-v24/payments',protect,safe((req,res)=>{
- const record=S.recordPayment(req.body||{},req.user);privateData(res);
- res.status(202).json({id:record.id,amount:record.amount,status:record.status,
-  message:'Reference recorded pending verification. No bank transfer has been initiated.'});
-}));
+router.post('/accounts/invoices-v24/payments',protect,(_req,res)=>res.status(405).json({message:'Use the issued-statement payment reference workflow.'}));
 module.exports=router;
