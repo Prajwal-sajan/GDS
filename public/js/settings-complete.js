@@ -54,6 +54,7 @@ const PERM_MAP={
  'Transactions & receivables':'accounts.view',
  'Add / delete ledger entries':'accounts.ledger',
  'Reports':'accounts.reports',
+ 'Export / download':'accounts.export',
  'Invoices & statements (view / pay)':'accounts.view',
  'Settlements (view)':'accounts.view',
  'Upload & match settlements':'accounts.reconciliation',
