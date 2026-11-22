@@ -99,12 +99,14 @@ const line=(description,rate,qty=1,sac='998551')=>{
  assert.equal(new Set(d.data.documents.map(x=>x.type)).size,7,'All seven document families issued');
  assert.ok(d.data.documents.every(x=>x.has_pdf&&!x.is_reference));
  assert.equal(d.data.balance.closing_balance,round(180-tax.totals.total));
+ if(process.env.GDS_EXPORT_INVOICE_SAMPLES)fs.mkdirSync('artifacts/invoices-v25',{recursive:true});
  for(const doc of d.data.documents){
   const res=await request('/accounts/invoices-v25/documents/'+doc.key+'/pdf',{token,binary:true});
   assert.equal(res.status,200,'PDF '+doc.type);
   assert.equal(res.data.subarray(0,5).toString(),'%PDF-');
   assert.ok(res.data.subarray(-150).toString().includes('%%EOF'));
   assert.ok(res.data.toString('latin1').includes('Document No.'));
+  if(process.env.GDS_EXPORT_INVOICE_SAMPLES)fs.writeFileSync('artifacts/invoices-v25/'+doc.type+'.pdf',res.data);
   assert.ok(!res.data.toString('latin1').includes('SAVETRIP TECHNOLOGIES'),'Supplier brand not copied');
   assert.equal((await request('/accounts/invoices-v25/documents/'+doc.key,{token:agent})).status,403);
  }
