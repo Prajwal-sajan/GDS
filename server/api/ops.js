@@ -249,28 +249,34 @@ r.post('/schedules/:id/expenses', can('schedules.financial'), h((req) => {
 r.get('/schedules/:id/history', can('schedules.view'), h((req) => ({ history: db.col('edit_history').filter((e) => e.entity === 'schedule' && e.entity_id == req.params.id).sort((a, b) => b.at.localeCompare(a.at)).slice(0, Number(req.query.limit) || 100) })));
 r.get('/schedules/:id/booking-history', can('schedules.view'), h((req) => ({ history: db.col('bookings').filter((b) => b.schedule_id == req.params.id).map((b) => ({ pnr: b.pnr, ticket_number: b.ticket_number, source: b.source, status: b.status, contact_name: b.contact.name, total_seats: b.passengers.length, total_amount: b.fare.total, blocked_at: b.booked_at, confirmed_at: b.status !== 'hold' ? b.booked_at : null, cancelled_at: b.cancelled_at || null, expired_at: b.expired_at || null, passengers: b.passengers })).sort((a, b) => b.blocked_at.localeCompare(a.blocked_at)) })));
 
+// Read permission is not automatic access to passengers' personal phone numbers.
+const phoneVisible=req=>req.user.permissions.includes('bookings.view_phone');
+const redactPhone=value=>String(value||'').replace(/\d(?=\d{4})/g,'x');
+const safeBooking=(booking,req)=>phoneVisible(req)?booking:{...booking,contact:{...booking.contact,phone:redactPhone(booking.contact?.phone)},passengers:(booking.passengers||[]).map(p=>({...p,...(p.phone?{phone:redactPhone(p.phone)}:{})}))};
 // ---------------- Bookings ----------------
 r.get('/payment-options', can('bookings.create'), h((req) => { const amt = Number(req.query.amount) || 0; const me = db.col('users').get(req.user.id); const isAgent = me?.role === 'agent'; const comm = isAgent ? me.commission_pct || 0 : 0; return { agent_type: isAgent ? me.agent_type : 'staff', ticket_amount: amt, commission_percent: comm, ticket_net_payable: U.round2(amt * (1 - comm / 100)), options: ['paid', 'unpaid', 'settle_later'], credit_limit: me?.credit_limit || null }; }));
 r.post('/bookings', can('bookings.create'), h((req) => {
   const body = { ...req.body };
   if (req.user.role === 'agent') { body.source = 'agent'; body.agent_phone = req.user.phone; delete body.override_rules; }
+  else if(body.agent_phone && !req.user.permissions.includes('bookings.book_for_agents'))throw D.httpErr(403,'Cannot book on behalf of agents');
   return D.createBooking(body, req.user);
 }));
 r.post('/bookings/quote', can('bookings.create'), h((req) => {
   const s = db.col('schedules').get(req.body.schedule_id); const map = D.seatMap(s, req.body.from_city_id, req.body.to_city_id);
   const seats = Object.fromEntries(map.decks.flatMap((d) => d.seats).map((x) => [x.code, x]));
   const fares = (req.body.seats || []).map((c, i) => (req.body.fares?.[i] != null ? Number(req.body.fares[i]) : seats[c]?.fare || 0));
-  return D.priceBooking({ seatsFares: fares, source: req.body.source || 'branch', coupon: req.body.coupon, agentPhone: req.body.agent_phone, milesUsed: req.body.miles_used });
+  if(req.body.agent_phone && req.user.role!=='agent' && !req.user.permissions.includes('bookings.book_for_agents'))throw D.httpErr(403,'Cannot quote on behalf of agents');
+  return D.priceBooking({ seatsFares: fares, source: req.body.source || 'branch', coupon: req.body.coupon, agentPhone: req.user.role==='agent'?req.user.phone:req.body.agent_phone, milesUsed: req.body.miles_used });
 }));
 r.get('/bookings/search', can('bookings.view_all'), h((req) => {
   const q = String(req.query.q || '').toLowerCase().trim(); if (q.length < 3) return { results: [] };
   const res = db.col('bookings').filter((b) => b.pnr.toLowerCase().includes(q) || b.ticket_number.includes(q) || b.contact.phone.includes(q) || b.contact.name.toLowerCase().includes(q)).slice(-50).reverse();
-  return { results: res.map((b) => ({ pnr: b.pnr, ticket: b.ticket_number, name: b.contact.name, phone: b.contact.phone, travel_date: b.travel_date, schedule_id: b.schedule_id, service: db.col('routes').get(b.route_id)?.service_number, seats: b.passengers.map((p) => p.seat), status: b.status, total: b.fare.total, source: b.source })) };
+  return { results: res.map((b) => ({ pnr: b.pnr, ticket: b.ticket_number, name: b.contact.name, phone: phoneVisible(req)?b.contact.phone:redactPhone(b.contact.phone), travel_date: b.travel_date, schedule_id: b.schedule_id, service: db.col('routes').get(b.route_id)?.service_number, seats: b.passengers.map((p) => p.seat), status: b.status, total: b.fare.total, source: b.source })) };
 }));
 r.get('/bookings/:pnr', can('bookings.view_all'), h((req) => {
   const b = db.col('bookings').find((x) => x.pnr === req.params.pnr || x.ticket_number === req.params.pnr); if (!b) throw D.httpErr(404, 'Booking not found');
   const rt = db.col('routes').get(b.route_id);
-  return { ...b, service_number: rt.service_number, from: D.cityName(b.from_city_id), to: D.cityName(b.to_city_id), boarding: rt.stages.find((x) => x.id == b.boarding_stage_id), dropping: rt.stages.find((x) => x.id == b.dropping_stage_id), refund_quote: b.status === 'confirmed' ? D.refundFor(b) : null };
+  return { ...safeBooking(b,req), service_number: rt.service_number, from: D.cityName(b.from_city_id), to: D.cityName(b.to_city_id), boarding: rt.stages.find((x) => x.id == b.boarding_stage_id), dropping: rt.stages.find((x) => x.id == b.dropping_stage_id), refund_quote: b.status === 'confirmed' ? D.refundFor(b) : null };
 }));
 r.get('/bookings/:pnr/refund-quote', can('bookings.cancel'), h((req) => { const b = db.col('bookings').find((x) => x.pnr === req.params.pnr); return D.refundFor(b, req.query.by || 'passenger', req.query.refund_pct ?? null); }));
 r.post('/bookings/:pnr/cancel', can('bookings.cancel'), h((req) => D.cancelBooking(req.params.pnr, req.body, req.user)));
@@ -278,7 +284,7 @@ r.post('/bookings/:pnr/shift', can('bookings.modify'), h((req) => D.shiftBooking
 r.post('/bookings/:pnr/confirm-payment', can('bookings.modify'), h((req) => { const b = db.col('bookings').find((x) => x.pnr === req.params.pnr); if (b.status !== 'hold') throw D.httpErr(400, 'Not on hold'); b.status = 'confirmed'; b.payment = 'paid'; b.payment_method = req.body.method || 'upi'; b.hold_expires_at = null; db.persist(); D.notify('payment.received', b); return b; }));
 r.post('/bookings/:pnr/release', can('bookings.release_hold'), h((req) => { const b = db.col('bookings').find((x) => x.pnr === req.params.pnr); if (b.status !== 'hold') throw D.httpErr(400, 'Not on hold'); b.status = 'released'; b.release_reason = req.body.reason || 'Force release'; b.cancelled_at = U.nowIso(); db.persist(); D.audit('schedule', b.schedule_id, 'bookings', { op: 'release', pnr: b.pnr, reason: b.release_reason }, req.user); return b; }));
 r.post('/bookings/:pnr/mark-paid', can('accounts.ledger'), h((req) => { const b = db.col('bookings').find((x) => x.pnr === req.params.pnr); b.payment = 'paid'; db.persist(); return b; }));
-r.post('/bookings/:pnr/comments', can('bookings.view_all'), h((req) => { const b = db.col('bookings').find((x) => x.pnr === req.params.pnr); b.comments = b.comments || []; b.comments.push({ text: req.body.text, by: req.user.name, at: U.nowIso() }); db.persist(); return b.comments; }));
+r.post('/bookings/:pnr/comments', can('bookings.comment'), h((req) => { const b=db.col('bookings').find(x=>x.pnr===req.params.pnr);if(!b)throw D.httpErr(404,'Booking not found');const note=String(req.body?.text||'').trim().slice(0,1000);if(!note)throw D.httpErr(400,'Comment cannot be empty');b.comments=b.comments||[];b.comments.push({text:note,by:req.user.name,at:U.nowIso()});db.persist();return b.comments; }));
 r.put('/bookings/:pnr', can('bookings.modify'), h((req) => {
   const b = db.col('bookings').find((x) => x.pnr === req.params.pnr);
   const { contact, passengers, boarding_stage_id, dropping_stage_id } = req.body;
