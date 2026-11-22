@@ -12,6 +12,7 @@ D.ensureSchedules(U.addDays(U.today(), -1), U.addDays(U.today(), 30));
 
 const app = express();
 app.use(express.json({ limit: '15mb' }));
+app.use('/', require('./api/branding-public-v17')); // public theme, manifest, validated logo assets
 app.use((req, res, next) => { res.setHeader('X-Content-Type-Options', 'nosniff'); next(); });
 
 const misc = require('./api/misc');
