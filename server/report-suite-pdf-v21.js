@@ -70,7 +70,9 @@ class Pdf{
    if(report.staff?.name)base.push(['Staff:',report.staff.name]);
    if(report.mode&&def.modes)base.push(['Feeder leg:',report.mode==='both'?'Pickup + Drop':report.mode]);
    if(Array.isArray(report.pdf_context))for(const line of report.pdf_context)if(Array.isArray(line)&&line.length>=2)base.push([String(line[0]),String(line[1])]);
-   const all=base.concat(def.metrics.map(m=>{const [k,v]=labelValue(report,m);return [k+':',v]}));
+   const all=base.concat(def.metrics.map(m=>{const [k,v]=labelValue(report,m);
+     const label=report.report==='station-performance'&&m[1]==='trips'?'Trips ('+String(report.summary?.schedules??0)+' schedules)':k;
+     return [label+':',v];}));
    const split=Math.ceil(all.length/2),left=all.slice(0,split),right=all.slice(split);
    const starting=this.y,leftW=this.size.W*.60,labelX=this.M+this.size.W*.17;
    left.forEach(([a,b],i)=>{
