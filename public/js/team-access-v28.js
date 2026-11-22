@@ -14,9 +14,24 @@ const get=path=>G.get(base+path),post=(path,body)=>G.post(base+path,body),put=(p
 const roleChoices=data=>data.roles.filter(x=>!['owner','admin'].includes(x.key)).map(x=>[x.key,x.name]);
 const userChoices=data=>data.users.map(x=>[String(x.id),x.name+' · '+x.phone]);
 function optgroups(matrix,placeholder){
- return '<option value="">'+h(placeholder)+'</option>'+matrix.map(section=>
-  '<optgroup label="'+h(section.title)+'">'+section.rows.map(row=>
-  '<option value="'+h(row.key)+'">'+h(row.label)+'</option>').join('')+'</optgroup>').join('');
+ const special={
+  'SCHEDULES':['Edit timings, coach & delay','Change cities, pickups & drops','Assign bus',
+    'Edit expenses','Assign crew (driver, conductor, helper)'],
+  'ACCOUNTS':['Sales','Transactions & receivables','Add / delete ledger entries',
+    'Reports','Export / download','Invoices & statements (view / pay)','Settlements (view)',
+    'Upload & match settlements','Agent settings (terms, credit, commission)','Send payment links / collect']
+ };
+ return '<option value="">'+h(placeholder)+'</option>'+matrix.map(section=>{
+  const priority=special[section.title]||[];
+  const rows=section.rows.slice().sort((a,b)=>{
+   const x=priority.indexOf(a.label),y=priority.indexOf(b.label);
+   if(x>=0&&y>=0)return x-y;
+   if(x>=0)return -1;if(y>=0)return 1;
+   return 0;
+  });
+  return '<optgroup label="'+h(section.title)+'">'+rows.map(row=>
+   '<option value="'+h(row.key)+'">'+h(row.label)+'</option>').join('')+'</optgroup>';
+ }).join('');
 }
 function actionMenu(matrix,placeholder){
  return '<select data-v28-action required aria-label="Action to check">'+optgroups(matrix,placeholder)+'</select>';
