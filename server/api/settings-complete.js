@@ -85,7 +85,7 @@ r.delete('/branches/:id',allowed('settings.modify'),wrap(req=>{
 }));
 // Keep legacy branch POST, and provide direct listing/update/delete with safeguards.
 
-r.get('/branches',allowed('settings.view'),wrap(()=>db.col('branches').all()));
+r.get('/branches',allowed('settings.view'),wrap(req=>{const me=db.col('users').get(own(req));return db.col('branches').all().filter(b=>['owner','admin','manager'].includes(me?.role)||String(b.id)===String(me?.branch_id));}));
 
 r.get('/iam/groups',allowed('settings.view'),wrap(()=>db.col('iam_groups').all()));
 r.post('/iam/groups',allowed('iam.manage_roles'),wrap(req=>{
