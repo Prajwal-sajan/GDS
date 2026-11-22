@@ -47,13 +47,31 @@ const png='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAA
  assert.ok(now.archive.some(d=>d.id===original.id&&d.archive_reason==='replaced'));
  assert.ok(now.documents.some(d=>d.id===id&&d.visibility==='private'));
  assert.equal((await req('GET','/vehicles/'+vehicles[1].id+'/documents-v19/'+id+'/file')).status,404);
+ const oldDocumentList=await req('GET','/documents/vehicle/'+v.id);
+ assert.equal(oldDocumentList.status,200);
+ assert.ok(!JSON.stringify(oldDocumentList.data).includes('base64'),'Legacy document list must not reveal file bytes');
+ assert.ok(!JSON.stringify((await req('GET','/vehicles')).data).includes('base64'),'Fleet listing must not reveal document bytes');
+ assert.equal((await req('GET','/documents/vehicle/'+v.id,undefined,acct)).status,200);
+ const scheduled=db.col('schedules').find(s=>Number(s.vehicle_id)===Number(v.id)&&(s.crew||[]).length);
+ let crewToken=null;
+ if(scheduled){
+   const crewPhone=db.col('staff').get(scheduled.crew[0].staff_id)?.phone;
+   if(crewPhone){
+     db.col('users').insert({phone:crewPhone,name:'Vehicle crew QA',role:'driver',status:'ACTIVE'});
+     crewToken=await login(crewPhone);
+     assert.equal((await req('GET',url+'/documents-v19/'+id+'/file',undefined,crewToken)).status,403,'Crew cannot open private files');
+   }
+ }
  assert.equal((await req('PUT',url+'/documents-v19/'+id,{visibility:'public',expiry_date:'2028-01-02'})).status,200);
+ if(crewToken)assert.equal((await req('GET',url+'/documents-v19/'+id+'/file',undefined,crewToken,true)).status,200,'Assigned crew can open public document');
  const image=await req('GET',url+'/documents-v19/'+id+'/file',undefined,owner,true);
  assert.equal(image.status,200);assert.ok(image.data.byteLength>20);
  assert.equal((await req('POST',url+'/documents-v19/'+id+'/archive',{})).status,200);
  now=(await req('GET',url+'/detail-v19')).data;
  assert.ok(now.archive.some(d=>d.id===id&&d.archive_reason==='manual'));
  assert.ok(!now.documents.some(d=>d.id===id));
+ if(crewToken)assert.equal((await req('GET',url+'/documents-v19/'+id+'/file',undefined,crewToken)).status,403,'Crew cannot access archived document');
+ assert.equal((await req('GET','/documents/'+id+'/file',undefined,acct)).status,403,'Legacy file endpoint blocks archived files');
  const vltd=await req('POST',url+'/documents-v19',{document_type:'VLTD',file_name:'vltd.png',file_data:png});
  assert.equal(vltd.status,200);
  assert.equal((await req('DELETE',url+'/documents-v19/'+vltd.data.document.id)).status,200);
