@@ -127,8 +127,8 @@ const formSubmit=async overlay=>{const f=overlay.querySelector('form');f.dispatc
  assert.equal(root.querySelectorAll('.ta26-matrix thead th').length,schema.ROLE_COLUMNS.length+1);
  assert.ok(root.textContent.includes('Mark boarded / no-show, passenger notes'));
  const select=root.querySelector('[data-matrix-cell][data-role="viewer"]');
- assert.ok(select);select.value='On';select.dispatchEvent(new w.Event('change',{bubbles:true}));
- assert.equal(select.dataset.scope,'On');
+ assert.ok(select);select.value='Own';select.dispatchEvent(new w.Event('change',{bubbles:true}));
+ assert.equal(select.dataset.scope,'Own');
  fire(root.querySelector('[data-save-matrix]'));
  await settle();
  const batch=actions.findLast(x=>x.method==='PUT'&&x.p==='/team-access/v26/roles/batch');
