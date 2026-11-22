@@ -52,6 +52,17 @@ const del=(p,id)=>call('DELETE',p,null,id);
   assert.equal(r.status,200,'Create office staff: '+JSON.stringify(r.data));
   const manager=r.data;
   assert.equal(manager.branch_id,branch.id);
+  assert.ok(db.col('staff').find(x=>x.phone===phone),'Manager user is matched to Staff by phone');
+  const branchAdmin=await post('/team-access/v26/users',{category:'office-staff',phone:'9876543220',
+   name:'Office Administrator',role:'branch_admin',status:'ACTIVE',branch_id:branch.id});
+  assert.equal(branchAdmin.status,200,'Branch Admin creation');
+  const scoped=await get('/team-access/v26',branchAdmin.data.id);
+  assert.equal(scoped.status,200);
+  assert.ok(scoped.data.users.every(x=>x.id===branchAdmin.data.id||x.branch_id===branch.id),'Branch users only');
+  assert.ok(!scoped.data.users.some(x=>x.role==='owner'),'Owners in other branches are not exposed');
+  const legacyScoped=await get('/iam/users',branchAdmin.data.id);
+  assert.equal(legacyScoped.status,200);
+  assert.ok(!legacyScoped.data.some(x=>x.role==='owner'),'Legacy IAM read is scoped too');
   assert.equal((await post('/team-access/v26/users',{category:'office-staff',phone,name:'Duplicate',role:'viewer'})).status,409);
   assert.equal((await del('/team-access/v26/branches/'+branch.id)).status,409,'Cannot delete branch with assigned users');
   r=await post('/team-access/v26/users',{category:'bus-staff',phone:'9876543211',name:'Fleet Driver',
@@ -59,6 +70,7 @@ const del=(p,id)=>call('DELETE',p,null,id);
   assert.equal(r.status,200,'Create bus staff: '+JSON.stringify(r.data));
   const driver=r.data;
   assert.equal(driver.route_ids[0],route.id);
+  assert.ok(db.col('staff').find(x=>x.phone==='9876543211'),'Driver automatically appears in Staff');
   assert.equal((await put('/team-access/v26/users/'+driver.id,{route_ids:[999999],limit_routes:true})).status,400);
   const managerToken=A.sign({uid:manager.id,exp:Date.now()+600000});
   assert.ok(managerToken);
@@ -72,9 +84,10 @@ const del=(p,id)=>call('DELETE',p,null,id);
    role:'agent',agent_category:'master_agent',mode:'Offline',status:'ACTIVE'});
   assert.equal(off.status,200,'Create offline master agent: '+JSON.stringify(off.data));
   assert.equal(off.data.agent_category,'master_agent');assert.equal(off.data.mode,'Offline');
+  assert.equal(off.data.status,'INACTIVE','Offline agents have no sign-in enabled');
   assert.equal(A.requestOtp('9876543214').ok,false,'Offline agent cannot request OTP');
   assert.equal((await get('/team-access/v26',off.data.id)).status,401,'Offline agent cannot authenticate at all');
-  const aUpdate=await put('/team-access/v26/users/'+off.data.id,{mode:'Online',
+  const aUpdate=await put('/team-access/v26/users/'+off.data.id,{mode:'Online',status:'ACTIVE',
    commission_pct:3.5,credit_limit:25000,agent_type:'prepaid',agent_category:'master_agent'});
   assert.equal(aUpdate.status,200,'Commission update: '+JSON.stringify(aUpdate.data));
   assert.equal(aUpdate.data.commission_pct,3.5);
@@ -106,6 +119,7 @@ const del=(p,id)=>call('DELETE',p,null,id);
   assert.equal(r.status,200);assert.ok(r.data.user.limit_routes);
   assert.equal(r.data.routes[0].id,route.id);
   assert.ok(r.data.scope_enforcement.includes('not uniformly enforced'));
+  assert.equal((await del('/team-access/v26/users/'+branchAdmin.data.id)).status,200);
   const archive=await del('/team-access/v26/users/'+manager.id);
   assert.equal(archive.status,200);
   assert.ok(db.col('users').get(manager.id).deleted_at);
