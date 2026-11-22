@@ -29,8 +29,9 @@ function optgroups(matrix,placeholder){
    if(x>=0)return -1;if(y>=0)return 1;
    return 0;
   });
-  return '<optgroup label="'+h(section.title)+'">'+rows.map(row=>
-   '<option value="'+h(row.key)+'">'+h(row.label)+'</option>').join('')+'</optgroup>';
+  // The reference native dropdown is one uninterrupted action list (no optgroup headers).
+  return rows.map(row=>
+   '<option value="'+h(row.key)+'">'+h(row.label)+'</option>').join('');
  }).join('');
 }
 function actionMenu(matrix,placeholder){
