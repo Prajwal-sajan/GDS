@@ -1,0 +1,40 @@
+name: WhatsApp v33 — Screenshot onboarding and Meta security
+on:
+  push:
+    branches: [savetrip-screenshotcomplete]
+    paths:
+      - 'server/api/whatsapp-v33.js'
+      - 'server/index.js'
+      - 'public/js/whatsapp-v33.js'
+      - 'public/css/whatsapp-v33.css'
+      - 'public/index.html'
+      - 'tests/whatsapp-v33-*.cjs'
+      - '.github/workflows/whatsapp-v33.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: JS syntax checks
+        run: |
+          node --check server/api/whatsapp-v33.js
+          node --check server/index.js
+          node --check public/js/whatsapp-v33.js
+      - name: WhatsApp v33 security, Meta mock and screenshot UI
+        run: |
+          node tests/whatsapp-v33-api.cjs
+          node tests/whatsapp-v33-ui.cjs
+      - name: Existing Settings and GDS regression
+        run: |
+          node tests/about-v32-api.cjs
+          node tests/about-v32-ui.cjs
+          node tests/configuration-v31-api.cjs
+          node tests/configuration-v31-ui.cjs
+          npm test

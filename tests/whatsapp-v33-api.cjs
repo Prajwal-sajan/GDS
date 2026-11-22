@@ -1,0 +1,116 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),crypto=require('node:crypto');
+process.env.GDS_DATA_DIR=fs.mkdtempSync(path.join(os.tmpdir(),'wa33-'));
+process.env.GDS_RESEED='1';
+process.env.META_APP_ID='123456789012345';
+process.env.META_APP_SECRET='test-only-server-secret';
+process.env.META_WHATSAPP_CONFIG_ID='234567890123456';
+process.env.GDS_WA_ENCRYPTION_KEY=crypto.randomBytes(32).toString('hex');
+const originalFetch=globalThis.fetch;
+const token='TEST_TOKEN_NOT_A_REAL_META_TOKEN_1234567890';
+let graphCalls=[],blockPhone=false,failRegistration=false;
+globalThis.fetch=async(input,opts={})=>{
+ const u=String(input);
+ if(!u.startsWith('https://graph.facebook.com/'))return originalFetch(input,opts);
+ const url=new URL(u);graphCalls.push({path:url.pathname,method:opts.method||'GET',headers:opts.headers||{},body:opts.body});
+ let data={};
+ if(url.pathname.endsWith('/oauth/access_token'))data={access_token:token};
+ else if(url.pathname.endsWith('/12345678900123/phone_numbers'))data={data:blockPhone?[]:[{id:'22345678900123',display_phone_number:'+91 98765 43210',verified_name:'Example Operator'}]};
+ else if(url.pathname.endsWith('/12345678900123'))data={id:'12345678900123',name:'Example Operator'};
+ else if(url.pathname.endsWith('/22345678900123/register'))data=failRegistration?{error:{code:131000}}:{success:true};
+ else return new Response(JSON.stringify({error:{code:404}}),{status:404,headers:{'content-type':'application/json'}});
+ return new Response(JSON.stringify(data),{status:failRegistration&&url.pathname.endsWith('/register')?400:200,headers:{'content-type':'application/json'}});
+};
+const app=require('../server/index'),db=require('../server/db'),auth=require('../server/auth');
+const owner=db.col('users').find(x=>x.role==='owner');
+assert.ok(owner,'Seeded owner');
+const manager=db.col('users').find(x=>x.role==='manager');
+const agent=db.col('users').find(x=>x.role==='agent');
+assert.ok(agent,'Agent for permission regression');
+const server=app.listen(0);
+const base='http://127.0.0.1:'+server.address().port+'/api';
+function bearer(user=owner){return 'Bearer '+auth.sign({uid:user.id,exp:Date.now()+600000});}
+async function req(method,route,body,user=owner,extra={}){
+ const headers={'Authorization':bearer(user),...extra};
+ if(body!==undefined)headers['Content-Type']='application/json';
+ const res=await originalFetch(base+route,{method,headers,body:body===undefined?undefined:JSON.stringify(body)});
+ return {status:res.status,headers:res.headers,data:await res.json()};
+}
+const get=(path,user,extra)=>req('GET',path,undefined,user,extra);
+const post=(path,body,user,extra)=>req('POST',path,body,user,extra);
+const pathBase='/settings/whatsapp/onboarding';
+(async()=>{
+ try{
+  let x=await get(pathBase);assert.equal(x.status,200);
+  assert.equal(x.data.enabled,true);
+  assert.equal(x.data.connection.status,'not_connected');
+  assert.equal(x.data.provider,'meta-embedded-signup-v4');
+  assert.equal(x.data.app_id,process.env.META_APP_ID);
+  assert.ok(!JSON.stringify(x.data).includes(process.env.META_APP_SECRET));
+  assert.match(x.headers.get('cache-control'),/no-store/);
+  const raw=await originalFetch(base+pathBase);assert.ok([401,403].includes(raw.status));
+  x=await post(pathBase+'/start',{},agent);assert.equal(x.status,403);
+  if(manager){x=await post(pathBase+'/start',{},manager);assert.equal(x.status,403);}
+  x=await post(pathBase+'/start',{},owner,{'x-view-as':String(agent.id)});assert.equal(x.status,403);
+  const oldSecret=process.env.META_APP_SECRET;delete process.env.META_APP_SECRET;
+  x=await get(pathBase);assert.equal(x.data.enabled,false);assert.equal(x.data.app_id,null);
+  x=await post(pathBase+'/start',{});assert.equal(x.status,503);
+  process.env.META_APP_SECRET=oldSecret;
+  x=await post(pathBase+'/start',{});assert.equal(x.status,200);
+  const state=x.data.state;assert.match(state,/^[0-9a-f]{48}$/);
+  assert.equal(x.data.expires_in_seconds,600);
+  assert.equal(x.data.configuration_id,process.env.META_WHATSAPP_CONFIG_ID);
+  let complete=await post(pathBase+'/finish',{state,code:'code_from_meta',waba_id:'not-id',phone_number_id:'22345678900123'});
+  assert.equal(complete.status,400);
+  complete=await post(pathBase+'/finish',{state,code:'code_from_meta',waba_id:'12345678900123',phone_number_id:'22345678900123'});
+  assert.equal(complete.status,409,'One time state must not replay after failed validation');
+  x=await post(pathBase+'/start',{});blockPhone=true;
+  complete=await post(pathBase+'/finish',{state:x.data.state,code:'meta_business_code',waba_id:'12345678900123',phone_number_id:'22345678900123'});
+  assert.equal(complete.status,409);assert.match(complete.data.message,/not part/i);
+  blockPhone=false;
+  x=await post(pathBase+'/start',{});
+  complete=await post(pathBase+'/finish',{state:x.data.state,code:'another_meta_code',waba_id:'12345678900123',phone_number_id:'22345678900123'});
+  assert.equal(complete.status,200,JSON.stringify(complete.data));
+  assert.equal(complete.data.connection.status,'pending_registration');
+  assert.equal(complete.data.connection.display_phone_number,'+91 98765 43210');
+  assert.ok(!JSON.stringify(complete.data).includes(token));
+  const rec=db.meta('wa_meta_connection');
+  assert.match(rec.token_encrypted,/^gcm1\./);
+  assert.ok(!JSON.stringify(rec).includes(token));
+  assert.equal(rec.phone_number_id,'22345678900123');
+  x=await get(pathBase);assert.equal(x.data.connection.status,'pending_registration');
+  assert.ok(!JSON.stringify(x.data).includes(token));
+  x=await post(pathBase+'/register',{pin:'1234'});assert.equal(x.status,400);
+  failRegistration=true;
+  x=await post(pathBase+'/register',{pin:'123456'});assert.equal(x.status,409);
+  assert.equal(db.meta('wa_meta_connection').status,'pending_registration');
+  failRegistration=false;
+  x=await post(pathBase+'/register',{pin:'123456'});assert.equal(x.status,200);
+  assert.equal(x.data.connection.status,'connected');
+  assert.ok(x.data.connection.connected_at);
+  assert.equal(db.meta('wa_meta_connection').status,'connected');
+  assert.ok(!Object.hasOwn(db.meta('wa_meta_connection'),'pin'),'Registration PIN must never be persisted');
+  x=await post(pathBase+'/register',{pin:'123456'});assert.equal(x.status,409);
+  x=await post(pathBase+'/disconnect',{});assert.equal(x.status,400);
+  assert.equal(db.meta('wa_meta_connection').status,'connected');
+  x=await post(pathBase+'/disconnect',{confirm:'DISCONNECT'},agent);assert.equal(x.status,403);
+  x=await post(pathBase+'/disconnect',{confirm:'DISCONNECT'});assert.equal(x.status,200);
+  assert.equal(db.meta('wa_meta_connection').status,'not_connected');
+  assert.ok(!db.meta('wa_meta_connection').token_encrypted);
+  x=await get(pathBase);assert.equal(x.data.connection.status,'not_connected');
+  assert.ok(graphCalls.some(c=>c.path.includes('/oauth/access_token')));
+  assert.ok(graphCalls.some(c=>c.path.endsWith('/12345678900123/phone_numbers')));
+  assert.ok(graphCalls.some(c=>c.path.endsWith('/22345678900123/register')&&
+   JSON.parse(c.body).pin==='123456'));
+  assert.ok(graphCalls.every(c=>c.path.startsWith('/v24.0/')));
+  assert.ok(db.col('edit_history').count(x=>x.entity==='settings'&&x.entity_id==='whatsapp_onboarding')>=4);
+  const html=fs.readFileSync('public/index.html','utf8');
+  assert.ok(html.includes('/js/whatsapp-v33.js?build=33'));
+  assert.ok(html.includes('/css/whatsapp-v33.css?build=33'));
+  console.log('PASS WhatsApp v33 backend: Meta config gating, RBAC, view-as denial, 1-use nonce, Graph asset verification, AES-256-GCM credentials, registration + negative path, disconnect + audit, no token disclosure');
+ }finally{
+  globalThis.fetch=originalFetch;
+  await new Promise(done=>server.close(done));db.persistNow();
+  fs.rmSync(process.env.GDS_DATA_DIR,{recursive:true,force:true});
+ }
+})().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1);});
