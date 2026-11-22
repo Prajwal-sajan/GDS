@@ -11,6 +11,16 @@ const normPhone=x=>String(x??'').replace(/[\s\-()]/g,'').replace(/^\+91/,'');
 const validPhone=x=>/^[6-9]\d{9}$/.test(x);
 const text=(x,max=160)=>String(x??'').trim().slice(0,max);
 const actor=req=>db.col('users').get(req.user.real_user_id);
+const visibleTo=(actor,users)=>['owner','admin','manager'].includes(actor?.role)?users:
+ users.filter(u=>u.id===actor?.id||(actor?.branch_id&&String(u.branch_id)===String(actor.branch_id)));
+const syncStaff=u=>{
+ if(!['driver','helper','conductor','manager','owner'].includes(u.role))return;
+ const current=db.col('staff').find(x=>normPhone(x.phone)===normPhone(u.phone));
+ if(!current){db.col('staff').insert({name:u.name,phone:u.phone,role:u.role,status:'active',
+  salary_type:'monthly',salary_amount:0,bank:{},linked_user_id:u.id});return;}
+ if(!current.linked_user_id||Number(current.linked_user_id)===Number(u.id))
+  db.col('staff').update(current.id,{name:u.name,linked_user_id:u.id});
+};
 const rank={owner:100,admin:90,manager:70,branch_admin:60,accountant:50,service_agent:45,
  service_associate:40,pickup_manager:40,booking_executive:40,agent:20,driver:20,helper:20,conductor:20,viewer:10};
 const isManager=req=>['owner','admin'].includes(actor(req)?.role);
@@ -117,7 +127,7 @@ function userPayload(b,req,old=null){
   authOverrides({extra_permissions:b.extra_permissions??old?.extra_permissions??[],
     denied_permissions:b.denied_permissions??old?.denied_permissions??[]},req):
   {extra_permissions:old?.extra_permissions||[],denied_permissions:old?.denied_permissions||[]};
- return {name,email,language,role,branch_id:id,status,mode:role==='agent'?mode:'Online',
+ return {name,email,language,role,branch_id:id,status:role==='agent'&&mode==='Offline'?'INACTIVE':status,mode:role==='agent'?mode:'Online',
    agent_category:role==='agent'?agent_category:'agent',master_agent_id:role==='agent'?masterId:null,
    agent_type,commission_pct,credit_limit,limit_routes:limit,route_ids:routes,...permissions};
 }
@@ -156,14 +166,15 @@ const noDeleteReferences=id=>{
   error('Move branch users before deleting their branch',409);
 };
 function actorChanges(req,action,id,changed){
- D.audit('iam',action,id,{changed},req.user);
+ D.audit('iam',id,action,changed,req.user);
 }
 r.get('/team-access/v26',A.can('settings.view'),wrap(req=>{
- const users=db.col('users').all().filter(x=>!x.deleted_at).map(exposeUser);
+ const allUsers=db.col('users').all().filter(x=>!x.deleted_at).map(exposeUser);
+ const users=visibleTo(actor(req),allUsers);
  const staff=A.permsFor(actor(req)).includes('staff.view')?
   db.col('staff').all().filter(s=>['driver','helper','conductor'].includes(s.role)).map(s=>({
    id:s.id,name:s.name,phone:s.phone,role:s.role,status:s.status||'ACTIVE',created_at:s.created_at,staff_only:true})):[];
- return {users,staff,branches:db.col('branches').all(),roles:Object.entries(A.roles()).map(([key,value])=>({
+ return {users,staff,branches:db.col('branches').all().filter(b=>['owner','admin','manager'].includes(actor(req)?.role)||String(b.id)===String(actor(req)?.branch_id)),roles:Object.entries(A.roles()).map(([key,value])=>({
   key,...value,builtin:!!A.DEFAULT_ROLES[key],users:users.filter(x=>x.role===key).length})),
   catalog:A.CATALOG,routes:db.col('routes').all().map(x=>({id:x.id,name:x.name||x.route_name||x.service_number||'Route '+x.id})),
   cities:db.col('cities').all().map(x=>({id:x.id,name:x.name})),
@@ -180,6 +191,7 @@ r.post('/team-access/v26/users',A.can('iam.manage_users'),wrap(req=>{
  if(db.col('users').find(x=>x.phone===phone))error('Phone is already registered',409);
  const p=userPayload(b,req);
  const u=db.col('users').insert({phone,...p});
+ syncStaff(u);
  actorChanges(req,'user-create',u.id,{role:u.role,branch_id:u.branch_id});
  return exposeUser(u);
 }));
@@ -193,6 +205,7 @@ r.put('/team-access/v26/users/:id',A.can('iam.manage_users'),wrap(req=>{
  const changed=Object.keys(p).filter(k=>JSON.stringify(p[k])!==JSON.stringify(u[k]));
  if(!changed.length)return exposeUser(u);
  const update=db.col('users').update(u.id,p);
+ syncStaff(update);
  const revoked=sessionsOff(u.id);
  actorChanges(req,'user-update',u.id,{changed,revoked_sessions:revoked});
  return {...exposeUser(update),revoked_sessions:revoked};
@@ -214,7 +227,7 @@ r.delete('/team-access/v26/users/:id',A.can('iam.manage_users'),wrap(req=>{
 r.post('/team-access/v26/branches',A.can('settings.modify'),wrap(req=>{
  allowBranchEdit(req);
  const p=branchInput(req.body||{}),row=db.col('branches').insert(p);
- D.audit('iam','branch',row.id,{created:true,code:row.code},req.user);
+ D.audit('iam',row.id,'branch-created',{created:true,code:row.code},req.user);
  return row;
 }));
 r.put('/team-access/v26/branches/:id',A.can('settings.modify'),wrap(req=>{
@@ -222,7 +235,7 @@ r.put('/team-access/v26/branches/:id',A.can('settings.modify'),wrap(req=>{
  const row=db.col('branches').get(req.params.id);if(!row)error('Branch not found',404);
  const p=branchInput(req.body||{},row);
  const out=db.col('branches').update(row.id,p);
- D.audit('iam','branch',row.id,{updated:true},req.user);
+ D.audit('iam',row.id,'branch-updated',{updated:true},req.user);
  return out;
 }));
 r.delete('/team-access/v26/branches/:id',A.can('settings.modify'),wrap(req=>{
@@ -230,7 +243,7 @@ r.delete('/team-access/v26/branches/:id',A.can('settings.modify'),wrap(req=>{
  const row=db.col('branches').get(req.params.id);if(!row)error('Branch not found',404);
  noDeleteReferences(row.id);
  db.col('branches').remove(row.id);
- D.audit('iam','branch',row.id,{deleted:true},req.user);
+ D.audit('iam',row.id,'branch-deleted',{deleted:true},req.user);
  return {deleted:true};
 }));
 r.put('/team-access/v26/roles/batch',A.can('iam.manage_roles'),wrap(req=>{
@@ -262,7 +275,7 @@ r.put('/team-access/v26/roles/batch',A.can('iam.manage_roles'),wrap(req=>{
   next[item.key]={...role,name:role.name,permissions:codes,ui_permissions:ui,scopes,limits:role.limits||{}};
  }
  db.meta('roles',next);
- D.audit('iam','role-matrix','batch',{updated_roles:list.map(x=>x.key)},req.user);
+ D.audit('iam','role-matrix','batch-update',{updated_roles:list.map(x=>x.key)},req.user);
  // Revoke every active session on role-policy changes, preventing stale access.
  let revoked=0;for(const u of db.col('users').all().filter(x=>list.some(item=>item.key===x.role)))revoked+=sessionsOff(u.id);
  return {saved:true,roles:list.map(x=>x.key),revoked_sessions:revoked};
@@ -272,7 +285,7 @@ r.post('/team-access/v26/roles',A.can('iam.manage_roles'),wrap(req=>{
  if(name.length<3||!key||key==='owner'||key.length>40||A.roles()[key])error('Role name is unavailable');
  const next={...(db.meta('roles')||{})};
  next[key]={name,permissions:[],scopes:{},ui_permissions:{},limits:{}};
- db.meta('roles',next);D.audit('iam','role',key,{created:name},req.user);
+ db.meta('roles',next);D.audit('iam',key,'role-created',{created:name},req.user);
  return {key,...next[key]};
 }));
 r.delete('/team-access/v26/roles/:key',A.can('iam.manage_roles'),wrap(req=>{
@@ -280,7 +293,7 @@ r.delete('/team-access/v26/roles/:key',A.can('iam.manage_roles'),wrap(req=>{
  if(A.DEFAULT_ROLES[k])error('Built-in roles cannot be deleted',403);
  if(db.col('users').count(x=>x.role===k&&!x.deleted_at))error('Reassign users before deleting their role',409);
  const v={...(db.meta('roles')||{})};if(!v[k])error('Role not found',404);
- delete v[k];db.meta('roles',v);D.audit('iam','role',k,{deleted:true},req.user);return {deleted:true};
+ delete v[k];db.meta('roles',v);D.audit('iam',k,'role-deleted',{deleted:true},req.user);return {deleted:true};
 }));
 r.get('/team-access/v26/evaluate/:id',A.can('settings.view'),wrap(req=>{
  const u=db.col('users').get(req.params.id);if(!u||u.deleted_at)error('User not found',404);
