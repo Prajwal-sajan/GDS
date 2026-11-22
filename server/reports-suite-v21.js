@@ -137,7 +137,7 @@ function noShows(ctx){
 }
 function behavior(ctx){
  const active=ctx.schedules.filter(s=>s.status==='active');
- const recorded=active.filter(s=>s.telemetry&&s.telemetry.driving_score!==null||s.telemetry&&num(s.telemetry.hard_brake)!==null);
+ const recorded=active.filter(s=>s.trip_status!=='running'&&s.trip_status!=='scheduled'&&s.telemetry&&[s.telemetry.driving_score,s.telemetry.hard_brake,s.telemetry.harsh_accel,s.telemetry.over_speed_minutes,s.telemetry.idling_minutes].some(v=>num(v)!==null));
  const out=recorded.map(s=>{
    const t=obj(s.telemetry),r=routeInfo(s.route_id),crew=crewOf(s).filter(c=>/driver/i.test(c.role)),drivers=crew;
    const km=n(s.km??t.km);
@@ -145,7 +145,8 @@ function behavior(ctx){
    const over=num(t.over_speed_minutes??t.overspeed_minutes??t.over_speed_duration_minutes);
    const idle=num(t.idling_minutes??t.idle_minutes??t.idling_duration_minutes);
    const scoreSource=num(t.driving_score);
-   const score=scoreSource??(km>0?Math.max(0,Math.round(100-5*(hard+harsh+freerun+.5*n(over)/10+.2*n(idle)/10)*100/km)):null);
+   const completePenaltyData=km>0&&[t.hard_brake,t.harsh_accel??t.harsh_acceleration,t.free_run??t.freerun,over,idle].every(v=>num(v)!==null);
+   const score=scoreSource??(completePenaltyData?Math.max(0,Math.round(100-5*(hard+harsh+freerun+.5*over/10+.2*idle/10)*100/km)):null);
    return {date:s.travel_date,dep:s.departure_time||r.departure_time||'',service:r.service_number||'',route:routeLabel(r),
    bus:vehi(s),drivers:drivers.map(c=>c.name+(c.phone?' ('+c.phone+')':'' )).join(', ')+(drivers.length>1?' · Shared':''),
    driver_ids:drivers.map(x=>x.id),staff:drivers,km:round(km,1),score,hard_brake:hard,harsh_accel:harsh,
@@ -234,7 +235,11 @@ function staffDuty(ctx){
    const bus_avg=(()=>{const other=db.col('schedules').filter(z=>z.status==='active'&&within(z.travel_date,ctx.from,ctx.to)&&String(z.vehicle_id)===String(s.vehicle_id)&&n(z.km)>0&&n(z.fuel_l)>0);
      return other.length?round(sum(other,'km')/sum(other,'fuel_l')):null;})();
    const efficiency=pGps>0&&pFuel>0?round(pGps/pFuel):null;
-   const delay=num(start?.delay_minutes),late=delay!==null&&delay>=8;
+   const minutes=x=>{const m=String(x||'').match(/(?:^|T|\s)(\d{1,2}):(\d{2})(?::\d{2})?/);
+     return m?(Number(m[1])*60+Number(m[2])):null;};
+   const arrival=minutes(firstActual),expected=minutes(bp.time);
+   const observedDelay=arrival!==null&&expected!==null?((arrival-expected+720+1440)%1440)-720:null;
+   const delay=num(start?.delay_minutes)??observedDelay,late=delay!==null&&delay>=8;
    rows.push({date:s.travel_date,dep:s.departure_time||r.departure_time||'',service:r.service_number||'',route:routeLabel(r),
      bus:vehi(s),status:s.status==='active'?'Worked':'Halt',crew_role:driver?.role||'',
      pickup_scheduled:bp.time||null,pickup_actual:firstActual,drop_scheduled:drop.time||null,drop_actual:lastActual,
@@ -250,39 +255,65 @@ function staffDuty(ctx){
  const working=daily.filter(x=>x.worked).length,halts=daily.filter(x=>!x.worked&&x.halts).length;
  const summary={trips:rows.filter(x=>x.status==='Worked').length,working_days:working,halt_days:halts,
  km:round(sum(rows,'km'),1),fuel_l:round(sum(rows,'fuel_l'),1),
- mileage:sum(rows,'fuel_l')>0?round(sum(rows.filter(x=>x.km>0&&x.fuel_l>0),'km')/sum(rows.filter(x=>x.km>0&&x.fuel_l>0),'fuel_l')):null,
+ mileage:sum(rows.filter(x=>x.km>0&&x.fuel_l>0),'fuel_l')>0?round(sum(rows.filter(x=>x.km>0&&x.fuel_l>0),'km')/sum(rows.filter(x=>x.km>0&&x.fuel_l>0),'fuel_l')):null,
  late_pickups:rows.filter(x=>x.late===1).length,trips_turned_off:rows.filter(x=>x.status==='Halt').length};
  const totals={rows:{date:rows.length+' assigned',km:summary.km,fuel_l:summary.fuel_l},daily:{date:daily.length+' days',trips:sum(daily,'trips'),km:summary.km,fuel_l:summary.fuel_l}};
  return {...output(ctx,summary,{rows,daily},totals,'Assigned trip = passenger bus service with staff/driver on its crew roster. Halt day only if all assigned trips were off. Actual pickup/drop fields show dash when no timestamp exists. Late at 8+ minutes where measured; bus average uses the selected period.'),staff:{id:st.id,name:st.name,role:st.role,phone:st.phone}};
 }
-function legType(stage){
- const t=String(stage.pickup_type||stage.drop_type||stage.feeder_type||stage.transport_type||'').toLowerCase();
- return t;
+function legType(st){
+ const declared=String(st.pickup_type||st.drop_type||st.feeder_type||st.transport_type||'').toLowerCase().trim();
+ if(declared)return declared;
+ // Explicit imported feeder labels are evidence. A generic Metro Station is not enough.
+ const label=String(st.name||'').toLowerCase().replace(/\s+/g,' ');
+ if(/\bfree\s+metro\s+(?:pickup|drop)\b|\(\s*metro\s+(?:pickup|drop)\s*\)/i.test(label))return 'metro';
+ if(/\(\s*(?:pickup\s+van|van\s+(?:pickup|drop))\s*\)/i.test(label))return 'van';
+ return '';
 }
-function ticketRecord(b,type,leg){
- const match=[...db.col('metro_tickets').all(),...db.col('metro_bookings').all()].find(t=>String(t.pnr)===String(b.pnr)&&(t.leg===leg||t.leg_type===leg));
+function ticketRecord(b,leg){
+ const norm=x=>String(x||'').toLowerCase().replace(/[-_ ]/g,'');
+ const match=[...db.col('metro_tickets').all(),...db.col('metro_bookings').all()]
+ .filter(t=>String(t.pnr)===String(b.pnr)&&[norm(leg),'metro'+norm(leg)].includes(norm(t.leg||t.leg_type)));
  const local=obj(b.metro);
- const val=match||local[leg]||{};
- return {fare:num(val.fare??val.ticket_fare??val.metro_fare),status:val.status||'Not billed',
- link_sent:!!(val.ticket_link||val.link_sent),ticket_issued:!!(val.ticket_no||val.ticket_number)};
+ const val=match.sort((a,b)=>String(b.updated_at||b.created_at||'').localeCompare(String(a.updated_at||a.created_at||'')))[0]||local[leg]||{};
+ const present=x=>x===true||x===1||x==='1'||String(x).toLowerCase()==='true';
+ const link=!!(val.ticket_link||val.tracking_link||val.ticket_link_sent_at||val.link_sent_at||val.tracking_link_sent_at)||present(val.link_sent);
+ const status=String(val.billing_status||val.status||'').trim().toLowerCase();
+ const billed=link||['billed','charged','paid','settled','completed'].includes(status);
+ const price=num(val.fare??val.ticket_fare??val.metro_fare??val.billed_fare);
+ const count=num(val.passenger_count??val.metro_pax??val.pax??val.seats);
+ return {fare:billed?price:null,billed,link_sent:link,ticket_issued:!!(val.ticket_no||val.ticket_number),
+   pax:billed?(count??arr(b.passengers).length):null,status:billed?(val.status||'Billed'):'Not billed'};
 }
 function feeder(ctx,type){
  const rows=[];
- for(const b of ctx.bookings.filter(b=>b.status==='confirmed'&&passengerCount(b)>0)){
+ for(const b of ctx.bookings){
    const r=routeInfo(b.route_id),s=db.col('schedules').get(b.schedule_id),bs=stage(r,b.boarding_stage_id),ds=stage(r,b.dropping_stage_id);
-   const pick=legType(bs).includes(type),drop=legType(ds).includes(type);
+   const pickTicket=type==='metro'?ticketRecord(b,'pickup'):null;
+   const dropTicket=type==='metro'?ticketRecord(b,'drop'):null;
+   const pick=legType(bs).includes(type)||!!pickTicket?.billed;
+   const drop=legType(ds).includes(type)||!!dropTicket?.billed;
    if(!pick&&!drop)continue;
+   // A link-issued Metro ticket stays chargeable even if its booking was later cancelled.
+   const confirmed=b.status==='confirmed'&&passengerCount(b)>0;
+   if(!confirmed&&!(type==='metro'&&(pickTicket.billed||dropTicket.billed)))continue;
    if(ctx.mode==='pickup'&&!pick||ctx.mode==='drop'&&!drop)continue;
-   const external=type==='metro'?'Metro':'Van';
-   const actual=type==='metro'?ticketRecord(b,type,'pickup'):{fare:null,status:'Not assigned',link_sent:false,ticket_issued:false};
-   const vans=type==='van'?unique([...arr(s?.pickup_van_ids),...arr(s?.feeder_van_ids),...arr(s?.van_ids)].map(id=>vehInfo(id).registration_number||'')): [];
+   const legPick=pick&&ctx.mode!=='drop',legDrop=drop&&ctx.mode!=='pickup';
+   const billedPick=legPick&&!!pickTicket?.billed,billedDrop=legDrop&&!!dropTicket?.billed;
+   const billedLegs=Number(billedPick)+Number(billedDrop);
+   const billedPax=(billedPick?num(pickTicket.pax)??0:0)+(billedDrop?num(dropTicket.pax)??0:0);
+   const metroFare=(billedPick?num(pickTicket.fare)??0:0)+(billedDrop?num(dropTicket.fare)??0:0);
+   const vans=type==='van'?unique([...arr(s?.pickup_van_ids),...arr(s?.feeder_van_ids),...arr(s?.van_ids)]
+      .map(id=>vehInfo(id).registration_number||'')):[];
+   const seatCount=confirmed?passengerCount(b):arr(b.passengers).length;
    rows.push({date:b.travel_date,service:r.service_number||'',bus:vehi(s),pnr:b.pnr,source:b.source,
-     leg:pick&&drop?'Pickup + Drop':pick?'Pickup':'Drop',pickup:pick,drop:drop,
+     leg:legPick&&legDrop?'Pickup + Drop':legPick?'Pickup':'Drop',pickup:legPick,drop:legDrop,
      boarding:stageName(r,b.boarding_stage_id),dropping:stageName(r,b.dropping_stage_id),
-     exchange_point:bs.exchange_point||ds.exchange_point||null,seats:passengerCount(b),metro_pax:type==='metro'?passengerCount(b):null,
-     metro_fare:type==='metro'?actual.fare:null,metro_billed:type==='metro'&&actual.fare!==null,
-     billing_status:type==='metro'?actual.status:'—',van:vans.join(', ')||null,
-     amount:fare(b),type:external});
+     exchange_point:bs.exchange_point||ds.exchange_point||null,seats:seatCount,
+     metro_pax:type==='metro'?(billedLegs?billedPax:null):null,
+     metro_fare:type==='metro'?(billedLegs?round(metroFare):null):null,metro_billed:billedLegs>0,
+     billed_legs:billedLegs,billing_status:type==='metro'?(billedLegs?'Billed':'Not billed'):'—',
+     van:vans.join(', ')||null,amount:fare(b),type:type==='metro'?'Metro':'Van',
+     charged_after_cancellation:type==='metro'&&!confirmed&&billedLegs>0});
  }
  rows.sort((a,b)=>a.date.localeCompare(b.date)||a.service.localeCompare(b.service)||a.pnr.localeCompare(b.pnr));
  const picked=rows.filter(x=>x.pickup),dropped=rows.filter(x=>x.drop);
@@ -294,7 +325,9 @@ function feeder(ctx,type){
    (x,r)=>{x.pnrs++;x.seats+=r.seats;x.revenue+=r.amount}).map(x=>({...x,revenue:round(x.revenue)})).sort((a,b)=>a.date.localeCompare(b.date));
  const base={seats:sum(rows,'seats'),revenue:round(sum(rows,'amount')),with_pickup:picked.length,
    with_drop:dropped.length,both_legs:rows.filter(x=>x.pickup&&x.drop).length};
- const summary=type==='metro'?{metro_pnrs:rows.length,...base,billed_metro_legs:rows.filter(x=>x.metro_billed).length,metro_pax:sum(rows,'metro_pax'),metro_fare:round(sum(rows,'metro_fare'))}:
+ const summary=type==='metro'?{metro_pnrs:rows.length,...base,billed_metro_legs:sum(rows,'billed_legs'),
+   metro_pax:sum(rows,'metro_pax'),metro_fare:round(sum(rows,'metro_fare')),
+   charged_after_cancellation:rows.filter(x=>x.charged_after_cancellation).length}:
    {van_pnrs:rows.length,...base,vans_used:unique(rows.flatMap(r=>r.van?r.van.split(', '):[])).length,
     pnrs_without_van:rows.filter(r=>!r.van).length};
  const totals={
@@ -303,8 +336,9 @@ function feeder(ctx,type){
    daily:{date:daily.length+' days',pnrs:rows.length,seats:base.seats,revenue:base.revenue},
    rows:{date:rows.length+' PNRs',seats:base.seats,metro_pax:sum(rows,'metro_pax'),metro_fare:round(sum(rows,'metro_fare')),amount:base.revenue}};
  return output(ctx,summary,{pickup_points,drop_points,daily,rows},totals,
- type==='metro'?'PNRs on Metro feeder stages; pickup/drop/both de-duplicate a PNR in combined mode. Metro fare is available only from linked billed-ticket evidence; absent a Metro billing integration it remains unbilled.':'PNRs on Pickup Van feeder stages; both legs count once. Vans show assigned feeder vehicle IDs only where recorded, otherwise Not assigned.');
+ type==='metro'?'Metro stages are identified by explicit feeder markers or ticket-billing evidence. Each PNR counts once in Pickup + Drop; billed pickup and drop count as two charged legs. Fare/pax require linked or billed ticket evidence, including cancellations after ticket billing.':'Pickup Van stages require declared feeder type or explicit Pickup Van marker; a PNR counts once for both legs, and only assigned vans are shown.');
 }
+
 function compute(key,q={}){
  if(!keys.includes(key))err(404,'Unknown report');
  const ctx=base(key,q);
