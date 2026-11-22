@@ -23,6 +23,7 @@ r.get('/accounts/reports/v21/options',can('accounts.reports'),h((req,res)=>{cach
 for(const key of Reports.keys){
  r.get('/accounts/reports/'+key+'.pdf',can('accounts.reports'),h((req,res)=>{
    const data=Reports.compute(key,req.query);
+   if(key==='staff-duty'&&!data.staff?.id){const error=new Error('Select a driver or staff member before exporting PDF');error.status=400;throw error;}
    const buf=PDF.generate(key,data);
    headers(res,`${safe(key)}_${data.from}_${data.to}.pdf`,'application/pdf');
    res.setHeader('Content-Length',buf.length);res.send(buf);
