@@ -12,7 +12,7 @@ const amount=n=>{if(!finite(n))throw bad('Missing or invalid money amount');retu
 const sum=(xs,k)=>round(xs.reduce((v,r)=>v+amount(r[k]),0));
 const equal=(a,b)=>Math.abs(amount(a)-amount(b))<.011;
 const sha=x=>crypto.createHash('sha256').update(x).digest('hex');
-const localDate=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
+const localDate=()=>{const p=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).filter(x=>['year','month','day'].includes(x.type)).map(x=>[x.type,x.value]));return p.year+'-'+p.month+'-'+p.day;};
 const localMonth=()=>localDate().slice(0,7);
 const lastDay=month=>new Date(Date.UTC(+month.slice(0,4),+month.slice(5,7),0)).toISOString().slice(0,10);
 const firstDay=month=>month+'-01';
