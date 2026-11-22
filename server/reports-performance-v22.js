@@ -128,13 +128,7 @@ function point(c){
      const ev=s.stop_events?.[st.id];
      const scheduled=st.time;
      const actual=ev?.actual_arrival||ev?.arrived_at||ev?.actual_time||null;
-     const asMinutes=value=>{
-       if(!value)return null;
-       if(/^\d{1,2}:\d{2}$/.test(String(value)))return U.toMin(value);
-       if(/^\d{4}-\d{2}-\d{2}T/.test(String(value))){const date=new Date(value);return Number.isFinite(date.getTime())?date.getHours()*60+date.getMinutes():null;}
-       return null;
-     };
-     const am=asMinutes(actual),sm=asMinutes(scheduled);
+     const am=U.localMinutes(actual),sm=U.localMinutes(scheduled);
      if(am!==null&&sm!==null){row.gps_count++;const diff=((am-sm+720)%1440)-720;if(Math.abs(diff)<=8)row.on_time_count++;}
    }
  }
