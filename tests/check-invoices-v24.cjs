@@ -61,6 +61,37 @@ const login=async phone=>{
    assert.match(att.headers.get('content-disposition'),/attachment/);
    assert.equal(att.data.length,sample.length);
  }
+ // Typed financial evidence can be imported separately from exact original PDF bytes.
+ const docsByType=Object.fromEntries(docs.map(x=>[x.type,x]));
+ const samples={
+  tax:{line_items:[{description:'WhatsApp Charges',taxable:.72},{description:'AI Messages',taxable:.25},
+    {description:'SMS Charges',taxable:.25},{description:'Cloud Calling',taxable:1},
+    {description:'Cloud Telephony Number Rental',taxable:2},{description:'AI Calling',taxable:2},
+    {description:'Bus ticket reservation service (commission)',taxable:5}],
+    totals:{taxable:100,cgst:9,sgst:9,total:118}},
+  chat:{summary_rows:[{label:'Outgoing',count:2,rate:.36,amount:.72},{label:'AI replies',count:1,rate:.25,amount:.25},
+    {label:'SMS',count:1,rate:.25,amount:.25}],totals:{before_gst:1.22}},
+  metro:{summary_rows:[{provider:'Metro One',metro_fares:100,pnrs:1,passengers:2}],totals:{metro_fares:100}},
+  cloud:{summary_rows:[{label:'Cloud Calling',charge:1},{label:'Business number rental',charge:2}]},
+  ai:{summary_rows:[{label:'AI Calling',charge:2}]},
+  platform:{totals:{total_commission:5,net_to_operator:500}},
+  operator:{opening_balance:1000,ledger:[{date:'2026-10-31',type:'Metro',deducted:100,collected:0,balance:900},
+    {date:'2026-10-31',type:'Invoice',deducted:118,collected:0,balance:782}],
+    posted_closing_balance:782}
+ };
+ for(const [kind,snapshot] of Object.entries(samples)){
+   const key=docsByType[kind].key;
+   const imported=await send('/accounts/invoices-v24/documents/'+key+'/snapshot',{method:'PUT',token:admin,body:{snapshot}});
+   assert.equal(imported.status,200,'Snapshot import '+kind+': '+JSON.stringify(imported.data));
+   assert.ok(imported.data.snapshot_hash);
+ }
+ const reconciled=await send('/accounts/invoices-v24/reconcile/'+docs[0].period_month,{token:admin});
+ assert.equal(reconciled.status,200);
+ assert.ok(reconciled.data.summary.matched>=9,'Source-backed cross-document checks match');
+ assert.equal(reconciled.data.summary.mismatched,0,'No invented mismatches');
+ assert.ok(reconciled.data.checks.find(x=>x.id==='platform-net').status==='informational','Different platform net and postings cannot be equated');
+ assert.equal((await send('/accounts/invoices-v24',{token:admin})).data.balance.payable_by_operator,null,
+   'Reference snapshots must not affect operational settlement');
  const month=docs[0].period_month;
  const zip=await send('/accounts/invoices-v24/bundle/'+month,{token:admin,binary:true});
  assert.equal(zip.status,200);
