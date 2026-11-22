@@ -449,10 +449,13 @@ function advancedScreen(){
  <div class="ta26-matrix-toolbar"><button class="ta26-primary" data-save-limits ${view.data.grants.manage_roles?'':'disabled'}>Save limits</button><button data-export-role class="ta26-cancel">Export role JSON</button></div>`;
 }
 async function accessScreen(tab,data){
+ if(G.teamAccessV28&&['test-access','groups','advanced'].includes(tab))
+  return accessTabs(tab)+'<div class="ta26-access-content"></div>';
  const content=tab==='roles'?matrixScreen(data):tab==='test-access'?testScreen():tab==='groups'?await groupsScreen():advancedScreen();
  return accessTabs(tab)+`<div class="ta26-access-content">${content}</div>`;
 }
 function attachAccessEvents(root,tab){
+ if(G.teamAccessV28&&['test-access','groups','advanced'].includes(tab))return;
  if(tab==='roles'){attachMatrixEventsV27(root);}
  if(tab==='test-access'){
  root.querySelector('[data-test-access]')?.addEventListener('click',async()=>{
