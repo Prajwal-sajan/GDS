@@ -26,9 +26,9 @@ const login=async phone=>{
  const types=[...new Set(docs.map(x=>x.type))].sort();
  assert.deepEqual(types,['ai','chat','cloud','metro','operator','platform','tax']);
  assert.ok(d.data.years.includes(new Date(U.addDays(U.today().slice(0,7)+'-01',-1)+'T12:00:00').getFullYear().toString()));
- assert.equal(d.data.balance.statement,'OS-2026-00132');
- assert.equal(d.data.balance.payable_by_operator,0,'Positive balance is owed TO operator');
- assert.ok(d.data.balance.payable_to_operator>0);
+ assert.equal(d.data.balance.statement,null);
+ assert.equal(d.data.balance.payable_by_operator,null);
+ assert.equal(d.data.balance.payable_to_operator,null);
  assert.equal((await send('/accounts/invoices-v24',{token:agent})).status,403,'Agent cannot access operator invoices');
  assert.equal((await send('/accounts/documents',{token:agent})).status,403,'Legacy API cannot bypass finance permission');
  assert.equal((await send('/accounts/invoices-v24')).status,401);
@@ -67,11 +67,11 @@ const login=async phone=>{
  assert.ok(zip.data.subarray(0,4).equals(Buffer.from('504b0304','hex')),'True ZIP signature');
  assert.ok(zip.data.length>docs.length*sample.length,'All original PDFs in month');
  const cur=await send('/accounts/invoices-v24/current',{token:admin});
- assert.equal(cur.status,200);assert.equal(cur.data.document.type,'operator');
+ assert.equal(cur.status,404);
  // A later signed operator statement can be imported with reconciled credit/debit entries.
  const now=U.today(),mon=now.slice(0,7);
  const newDoc=await send('/accounts/invoices-v24/documents',{method:'POST',token:admin,body:{
-  type:'operator',name:'OS-QA-NEW',month:mon,date:now,
+  type:'operator',name:'OS-QA-NEW',month:mon,date:now,reference_only:false,
   snapshot:{opening_balance:100,ledger:[{date:now,type:'Invoice',particulars:'Platform charge',
     deducted:350,collected:0,balance:-250}],posted_closing_balance:-250,
     summary_rows:[{label:'Closing balance',amount:-250}]}}});
@@ -85,7 +85,7 @@ const login=async phone=>{
  assert.equal((await send('/accounts/invoices-v24',{token:admin})).data.balance.payable_by_operator,250,'Do not treat pending UTR as paid');
  assert.equal((await send('/accounts/invoices-v24/payments',{method:'POST',token:admin,body:{amount:100,reference:'UTR-INVOICE-2026'}})).status,409);
  const incorrectLedger=await send('/accounts/invoices-v24/documents',{method:'POST',token:admin,
-  body:{type:'operator',name:'OS-QA-BAD',month:mon,date:now,
+  body:{type:'operator',name:'OS-QA-BAD',month:mon,date:now,reference_only:false,
    snapshot:{opening_balance:100,ledger:[{deducted:60,collected:0,balance:60}],posted_closing_balance:50}}});
  assert.equal(incorrectLedger.status,400,'Reject non-reconciling ledger');
  const badChat=await send('/accounts/invoices-v24/documents',{method:'POST',token:admin,
