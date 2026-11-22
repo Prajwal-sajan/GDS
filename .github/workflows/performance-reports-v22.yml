@@ -1,0 +1,95 @@
+name: Four performance reports v22
+on:
+  push:
+    branches:
+      - feature/reports-performance-v22
+  pull_request:
+    paths:
+      - "server/reports-performance-v22.js"
+      - "server/report-performance-xlsx-v22.js"
+      - "server/api/report-performance-v22.js"
+      - "server/report-suite-pdf-v21.js"
+      - "public/js/report-suite-v22.js"
+      - "public/js/report-suite-specs-v22.js"
+      - "public/css/report-suite-v22.css"
+      - "tests/*v22*"
+jobs:
+  performance-v22:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: JavaScript syntax
+        run: |
+          node --check server/reports-performance-v22.js
+          node --check server/api/report-performance-v22.js
+          node --check server/report-performance-xlsx-v22.js
+          node --check public/js/report-suite-specs-v22.js
+          node --check public/js/report-suite-v22.js
+      - name: Four reports API acceptance tests
+        run: node tests/check-reports-performance-v22.cjs
+      - name: Screenshot-style UI checks
+        run: node tests/reports-performance-v22-ui.cjs
+      - name: Previous eight report regression
+        run: |
+          node tests/check-reports-suite-v21.cjs
+          node tests/reports-suite-v21-ui.cjs
+      - name: Full GDS regression
+        run: npm test
+      - name: Render all 4 PDFs and check XLSX
+        run: |
+          mkdir -p artifacts/reports-v22
+          node - <<'NODE'
+          const fs=require('fs');
+          process.env.GDS_DATA_DIR=process.cwd()+'/tmp-v22-check';
+          process.env.GDS_RESEED='1';
+          require('./server/index');
+          const U=require('./server/util'),R=require('./server/reports-performance-v22');
+          require('./public/js/report-suite-specs-v22');
+          const PDF=require('./server/report-suite-pdf-v21'),XLSX=require('./server/report-performance-xlsx-v22');
+          const from=U.addDays(U.today(),-8),to=U.addDays(U.today(),-2);
+          for(const key of R.KEYS){
+            const first=R.compute(key,{from,to});
+            const options={from,to};
+            if(key==='point-performance'){
+              options.point=first.sections.ranking[0]?.point_key||first.points[0]?.key;
+              if(!options.point)continue;
+            }
+            const d=R.compute(key,options);
+            fs.writeFileSync('artifacts/reports-v22/'+key+'.pdf',PDF.generate(key,d));
+            if(key==='frequent-travellers')fs.writeFileSync('artifacts/reports-v22/'+key+'.xlsx',XLSX.generate(key,d));
+          }
+          process.exit(0);
+          NODE
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+          for f in artifacts/reports-v22/*.pdf; do
+            pdfinfo "$f" | grep -E 'Pages:|Page size:'
+            pdftotext -layout "$f" "${f%.pdf}.txt"
+            test -s "${f%.pdf}.txt"
+            pdftoppm -f 1 -l 1 -scale-to 1500 -singlefile -png "$f" "${f%.pdf}-p1"
+          done
+          python3 - <<'PY'
+          import zipfile,xml.etree.ElementTree as ET
+          path='artifacts/reports-v22/frequent-travellers.xlsx'
+          with zipfile.ZipFile(path) as z:
+            assert z.testzip() is None
+            names=z.namelist()
+            assert 'xl/workbook.xml' in names
+            for file in names:
+              if file.endswith('.xml') or file.endswith('.rels'):
+                ET.fromstring(z.read(file))
+            assert 'xl/worksheets/sheet1.xml' in names
+            assert 'xl/worksheets/sheet2.xml' in names
+          print('PASS: True XLSX/ZIP format with two parseable worksheets')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: performance-reports-v22-pdf-xlsx-samples
+          path: artifacts/reports-v22/
+          retention-days: 14
