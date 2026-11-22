@@ -21,7 +21,7 @@ const get=(p,who)=>call('GET',p,undefined,who),post=(p,b,who)=>call('POST',p,b,w
   assert.equal(initial.data.sections.notifications.pre_boarding_minutes,360);
   assert.equal(initial.data.delivery_connected,false);
   const saved=await put('/settings/config-v30/business',
-   {operator_name:'Test Operator',support_email:'office@example.com',gst_receivable:true,gst_number:'29AAICN5264CZD'});
+   {operator_name:'Test Operator',support_email:'office@example.com',gst_receivable:true,gst_number:'29AAICN5264C1ZD'});
   assert.equal(saved.status,200,JSON.stringify(saved.data));
   assert.equal(db.meta('operator').operator_name,'Test Operator');
   assert.equal((await put('/settings/config-v30/business',{gst_number:'invalid'})).status,400);
