@@ -234,4 +234,17 @@ function bundle(month){
  if(docs.length!==types.length)throw bad('Monthly statement bundle is incomplete',409);
  return Legacy.zip(docs.map(d=>[d.name.replace(/[/\\]/g,'-')+'.pdf',getPdf(d.key).bytes]));
 }
-module.exports={types,configure,configured,verifiedEvent,ingest,validateGroup,due,runDue,list,issuedDocs,latest,ensureIssued,getPdf,bundle};
+function recordPayment(body,user){
+ const bal=list().balance,due=bal.payable_by_operator;
+ if(!(due>0))throw bad('No issued payable-by-operator balance',400);
+ const value=amount(body.amount),reference=String(body.reference||'').trim(),id=String(currOperator().operator_id);
+ if(value<=0||value>due+.011)throw bad('Invalid payment amount');
+ if(reference.length<5||reference.length>120)throw bad('Valid bank transfer reference required');
+ if(db.col('invoice_payments').find(x=>String(x.operator_id)===id&&String(x.reference).toLowerCase()===reference.toLowerCase()))
+  throw bad('Payment reference already submitted',409);
+ const doc=latest();
+ const p=db.col('invoice_payments').insert({operator_id:id,amount:value,reference,
+  date:U.today(),by:user?.name||user?.id,status:'pending_verification',statement_key:doc.key});
+ return {id:p.id,amount:p.amount,status:p.status,message:'Reference recorded; transfer not initiated, and statement balance unchanged'};
+}
+module.exports={types,configure,configured,verifiedEvent,ingest,validateGroup,due,runDue,list,issuedDocs,latest,ensureIssued,getPdf,bundle,recordPayment};
