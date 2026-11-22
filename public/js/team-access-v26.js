@@ -127,6 +127,9 @@ function routeModal(u,callback){
   <div class="ta26-toggle-pair">${opt('limit_routes',u.limit_routes?'yes':'no')}<button type="button" data-limit="no" class="${!u.limit_routes?'selected':''}">No</button><button type="button" data-limit="yes" class="${u.limit_routes?'selected':''}">Yes</button></div></div>
   <p class="ta26-help">Same routes as their branch (or every route) unless limited here.</p>
   <div data-limited ${u.limit_routes?'':'hidden'}><div class="ta26-route-checks">${routeList||'<p>No routes available. Create routes before applying a restriction.</p>'}</div></div>
+  <label class="ta26-field ta28-user-corridors"><span>Corridor tags (for route-specific seat-block rules)</span>
+  <input name="corridor_tags" maxlength="600" value="${safe((u.corridor_tags||[]).join(', '))}" placeholder="e.g. mangaluru, coastal"></label>
+  <p class="ta26-help">Enter route tags separated by commas. Advanced corridor rules require one of these to match a route tag.</p>
   <details class="ta26-advanced-perms"><summary>Individual permission overrides</summary><p>Only use when this person needs a specific exception to the role. Deny takes precedence over Allow.</p><div class="ta26-perm-list">${permRows}</div></details>
   <p class="ta26-signout">They will be signed out to apply this. Route restrictions need enforcement at every applicable domain endpoint before production use.</p>`,
   onSave:async(_f,outer)=>{
@@ -136,7 +139,11 @@ function routeModal(u,callback){
    const extra_permissions=[...outer.querySelectorAll('[data-extra]:checked')].map(x=>x.dataset.extra);
    const denied_permissions=[...outer.querySelectorAll('[data-denied]:checked')].map(x=>x.dataset.denied);
    const overlapping=extra_permissions.find(x=>denied_permissions.includes(x));if(overlapping)throw new Error('Cannot allow and deny '+overlapping);
-   callback({limit_routes:on,route_ids:on?route_ids:[],extra_permissions,denied_permissions});
+   const corridor_tags=[...new Set((outer.querySelector('[name=corridor_tags]')?.value||'')
+     .split(',').map(x=>x.trim().toLowerCase()).filter(Boolean))];
+   if(corridor_tags.length>20||corridor_tags.some(x=>!/^[a-z0-9][a-z0-9_-]{0,31}$/.test(x)))
+    throw new Error('Enter up to 20 corridor tags using letters, numbers, underscores and hyphens');
+   callback({limit_routes:on,route_ids:on?route_ids:[],extra_permissions,denied_permissions,corridor_tags});
   },afterOpen:outer=>{
    outer.querySelectorAll('[data-limit]').forEach(btn=>btn.onclick=()=>{
     outer.querySelector('[name=limit_routes]').value=btn.dataset.limit;
@@ -154,8 +161,8 @@ function userEditor(user,kind,callback){
  const existing=!!user&&!user.staff_only;
  const u={...user};u.role||=(kind==='agents'?'agent':kind==='bus-staff'?'driver':'manager');
  u.name||='';u.phone||='';u.language||='English';u.agent_category||='agent';u.mode||='Online';u.status||='ACTIVE';
- u.branch_id??='';u.limit_routes??=false;u.route_ids??=[];u.extra_permissions??=[];u.denied_permissions??=[];
- let pending={limit_routes:u.limit_routes,route_ids:u.route_ids,extra_permissions:u.extra_permissions,denied_permissions:u.denied_permissions};
+ u.branch_id??='';u.limit_routes??=false;u.route_ids??=[];u.extra_permissions??=[];u.denied_permissions??=[];u.corridor_tags??=[];
+ let pending={limit_routes:u.limit_routes,route_ids:u.route_ids,extra_permissions:u.extra_permissions,denied_permissions:u.denied_permissions,corridor_tags:u.corridor_tags};
  const roles=view.data.roles.filter(x=>x.key!=='owner'||(view.data.grants.manage_users&&view.data.users.some(u=>u.role==='owner')));
  const choiceRole=kind==='agents'?roles.filter(x=>x.key==='agent'):
    kind==='bus-staff'?roles.filter(x=>['driver','helper','conductor','pickup_manager'].includes(x.key)):roles.filter(x=>!['driver','helper','conductor','agent'].includes(x.key));
