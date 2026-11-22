@@ -212,7 +212,7 @@ function bot(v){
  'metro','','bot')+
  note('AI responses and free metro tickets require separate operational integration and a valid metro agreement. Saving these preferences does not issue a ticket.');
 }
-const pages={pricing,office,vehicle,expenses,seats,monitoring,whatsapp,bot};
+const pages={pricing,office,vehicle,expenses,seats:legends,monitoring,whatsapp,bot};
 G.configurationExtraPages=pages;
 function bind({root,area,section}){
  if(!pages[section])return;
