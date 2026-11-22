@@ -8,12 +8,12 @@ const OTP_DEV = process.env.GDS_OTP || '1234'; // dev OTP (replace with SMS gate
 // Permission catalogue (service:action), grouped by area — mirrors operator role-permission areas.
 const CATALOG = {
   trips: ['trips.view', 'trips.update_passengers', 'trips.location', 'trips.call', 'trips.chat', 'trips.import_chart'],
-  bookings: ['bookings.create', 'bookings.view_all', 'bookings.modify', 'bookings.cancel', 'bookings.block_seats', 'bookings.release_hold'],
+  bookings: ['bookings.create', 'bookings.view_all', 'bookings.modify', 'bookings.cancel', 'bookings.block_seats', 'bookings.release_hold', 'bookings.comment', 'bookings.book_for_agents', 'bookings.view_phone'],
   schedules: ['schedules.view', 'schedules.modify', 'schedules.fares', 'schedules.toggle', 'schedules.delete', 'schedules.financial'],
   routes: ['routes.view', 'routes.create', 'routes.modify', 'routes.delete'],
   fleet: ['fleet.view', 'fleet.modify', 'fleet.delete', 'fleet.documents'],
   staff: ['staff.view', 'staff.modify', 'staff.payroll', 'staff.delete'],
-  accounts: ['accounts.view', 'accounts.reports', 'accounts.ledger', 'accounts.reconciliation', 'accounts.own_only'],
+  accounts: ['accounts.view', 'accounts.reports', 'accounts.export', 'accounts.ledger', 'accounts.reconciliation', 'accounts.own_only'],
   offers: ['offers.manage_coupons', 'offers.loyalty'],
   chats: ['chats.view', 'chats.send'],
   calls: ['calls.view', 'calls.make'],
@@ -25,6 +25,10 @@ const CATALOG = {
 const ALL = Object.values(CATALOG).flat();
 const pick = (...areas) => areas.flatMap((a) => CATALOG[a]);
 const DEFAULT_ROLES = {
+  viewer: { name: 'Viewer', permissions: ['bookings.view_all', 'schedules.view', 'routes.view', 'fleet.view'] },
+  service_associate: { name: 'Service Associate', permissions: ['trips.view', 'trips.update_passengers', 'trips.location', 'bookings.view_all', 'schedules.view', 'routes.view', 'fleet.view', 'chats.view', 'calls.view'] },
+  service_agent: { name: 'Service Agent', permissions: ['bookings.create', 'bookings.view_all', 'bookings.cancel', 'trips.view', 'schedules.view', 'routes.view', 'chats.view', 'chats.send'] },
+  branch_admin: { name: 'Branch Admin', permissions: ['settings.view', 'iam.manage_users', 'accounts.view', 'accounts.reports', 'bookings.create', 'bookings.view_all', 'bookings.modify', 'bookings.cancel', 'trips.view', 'schedules.view', 'routes.view', 'fleet.view', 'staff.view'], scopes: { 'View users': 'Branch', 'Add users (roles below their own)': 'Branch', 'Edit users (name, branch, status, routes)': 'Branch', 'Remove users': 'Branch', 'Branches': 'Branch' } },
   owner: { name: 'Organization Owner', permissions: ALL },
   admin: { name: 'Admin', permissions: ALL },
   manager: { name: 'Manager', permissions: ALL.filter((p) => !['iam.manage_roles', 'routes.delete', 'schedules.delete', 'fleet.delete', 'staff.delete'].includes(p)) },
