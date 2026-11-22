@@ -26,6 +26,8 @@ function format(v,type){
  if(type==='pct')return pct(v);
  if(type==='ratio')return Number(v).toFixed(2);
  if(type==='minutes')return num(v)+'m';
+ if(type==='duration'){const minutes=Math.round(Number(v));return minutes>=60?Math.floor(minutes/60)+'h '+minutes%60+'m':minutes+'m';}
+ if(type==='speed')return num(v)+' km/h';
  if(type==='delta')return (Number(v)>0?'+':'')+Number(v).toFixed(1)+'%';
  return E(v);
 }
