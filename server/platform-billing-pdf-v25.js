@@ -26,8 +26,8 @@ function metadata(pdf,info){
  p.text(25,174,'GSTIN: '+(op.gstin||'Not registered'),{size:7.5});
  const x=pdf.size.W/2+9;
  p.text(x,113,'Document No.: '+info.number,{size:8,bold:true});
- p.text(x,130,'Statement Date: '+info.date,{size:8});
- p.text(x,146,'Period: '+info.start+' to '+info.end,{size:8});
+ p.text(x,130,'Statement Date: '+info.issue_date,{size:8});
+ p.text(x,146,'Period: '+info.period_start+' to '+info.period_end,{size:8});
  p.text(x,162,'Operator ID: '+String(op.operator_id),{size:8});
  p.rule(17,184,pdf.right,184);
  pdf.y=196;
@@ -52,7 +52,7 @@ const sum=(pdf,items)=>{
  pdf.y+=8;
 };
 const table=(pdf,title,cols,rows,totals)=>{
- section(pdf,title);pdf.table({title,cols},rows||[],totals||{});
+ pdf.table({title,cols},rows||[],totals||{});
 };
 const footer=(pdf,issuer,words)=>{
  pdf.need(58);pdf.page.rule(18,pdf.y,pdf.right,pdf.y);
