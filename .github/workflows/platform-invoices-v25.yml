@@ -1,0 +1,38 @@
+name: Platform-issued Invoices v25
+on:
+  push:
+    branches: [feature/platform-issued-invoices-v25]
+  pull_request:
+    paths:
+      - 'server/**'
+      - 'public/**'
+      - 'tests/**'
+      - '.github/workflows/platform-invoices-v25.yml'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Syntax
+        run: |
+          node --check server/platform-billing-v25.js
+          node --check server/platform-billing-pdf-v25.js
+          node --check server/api/platform-billing-v25.js
+          node --check server/api/invoices-v24.js
+          node --check public/js/invoices-v24.js
+          node --check tests/check-platform-billing-v25.cjs
+      - name: Platform invoices issuance API, 7 PDFs, accounting
+        run: node tests/check-platform-billing-v25.cjs
+      - name: Screen standard dropdown, read-only action checks
+        run: node tests/invoices-v25-ui.cjs
+      - name: GDS regressions and all 13 reports
+        run: |
+          node tests/check-accounts-v10.mjs
+          node tests/check-reports-13-semantic-v23.cjs
+          npm test
