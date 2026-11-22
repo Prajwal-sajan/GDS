@@ -103,9 +103,10 @@ function render(root,state){
    ${button(`${ico('download',18)} PDF`,'current-pdf','textlink',!bal.statement_key?'disabled':'')}
  </div>
  <div class="inv24-month-list">${Object.entries(grouped).sort((a,b)=>b[0].localeCompare(a[0])).map(([month,items])=>`
-  <section class="inv24-month"><header><span>${e(titleMonth(month))}</span>
+  <section class="inv24-month"><header><span>${e(titleMonth(month))}</span><div class="inv24-month-tools">
+    ${button(`Reconcile`,'reconcile','subtle',`data-month="${e(month)}"`)}
     ${button(`${ico('archive',16)} Download all`,'all','textlink',`data-month="${e(month)}"`)}
-   </header>
+   </div></header>
    ${items.map(doc=>`<div class="inv24-row"><strong>${e(doc.label)}${doc.is_reference?' <small class="inv24-reference">Reference only</small>':''}</strong><span class="inv24-code">${e(doc.name||'—')}</span>
     ${docActions(doc)}</div>`).join('')}
   </section>`).join('')||'<div class="inv24-empty">No invoices or statements for these filters.</div>'}</div>
@@ -165,6 +166,19 @@ async function pdfAction(root,key){
  await saveBlob(await fetchPdf(key,true),doc.name.replace(/[/\\]/g,'-')+'.pdf');
  G.toast('Verified original PDF downloaded','ok');
 }
+async function reconcile(root,month){
+ const d=await G.get(path+'/reconcile/'+encodeURIComponent(month));
+ const status=x=>x==='match'?'Verified':x==='mismatch'?'Mismatch':x==='missing'?'Insufficient evidence':'Informational';
+ dialog(root,'Statement reconciliation · '+titleMonth(month),`
+ <p class="inv24-document-hint">Source evidence checks: ${e(d.summary.matched)} match · ${e(d.summary.mismatched)} mismatches · ${e(d.summary.insufficient_evidence)} require source records.</p>
+ <div class="inv24-table-scroll"><table class="inv24-table inv24-recon-table">
+ <thead><tr><th>Validation</th><th>Source A</th><th>Source B</th><th>Difference</th><th>Status</th></tr></thead>
+ <tbody>${d.checks.map(x=>`<tr><td><b>${e(x.label)}</b><small>${e(x.explanation||'')}</small></td>
+ <td>${x.left===null?'—':inMoney(x.left)}</td><td>${x.right===null?'—':inMoney(x.right)}</td>
+ <td>${x.difference===null?'—':inMoney(x.difference)}</td>
+ <td><span class="inv24-audit-status ${e(x.status)}">${status(x.status)}</span></td></tr>`).join('')}</tbody></table></div>
+ <p class="inv24-document-hint">Original PDFs are preserved as-is. Automatic reconciliation requires typed source records; it will not infer an amount from an uploaded PDF alone.</p>`,true);
+}
 async function allAction(root,month){
  const res=await fetch('/api'+path+'/bundle/'+encodeURIComponent(month),{headers:headers()});
  if(!res.ok){const j=await res.json().catch(()=>null);throw Error(j?.message||'Monthly download is unavailable');}
@@ -219,6 +233,7 @@ async function action(root,evt){
  if(op==='view'){await showDoc(root,key);return;}
  if(op==='pdf'){await pdfAction(root,key);return;}
  if(op==='all'){await allAction(root,month);return;}
+ if(op==='reconcile'){await reconcile(root,month);return;}
  if(op==='current-view'||op==='current-pdf'){
   const d=root.__inv24State.data.balance;
   if(!d.statement_key)throw Error('No operator statement is available');
