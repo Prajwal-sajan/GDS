@@ -97,13 +97,13 @@ class Pdf{
    const lineH=small*1.3,headerHeight=Math.max(17,Math.ceil(Math.max(...cols.map((c,i)=>lines(c.label,ws[i]-5,small).length))*lineH+5));
    const newHeader=()=>{
      this.need(35);
-     this.page.rule(margin,this.y,right,this.y,blue,1.2);
+     this.page.rule(margin,this.y,right,this.y,this.documentStyle?ink:blue,1.2);
      this.page.text(margin,this.y+3,sec.title[0]+sec.title.slice(1).toLowerCase(),{size:9,bold:true});
      this.y+=18;
-     this.page.rect(margin,this.y,available,headerHeight,blue);
+     this.page.rect(margin,this.y,available,headerHeight,this.documentStyle?[.92,.92,.92]:blue);
      let x=margin;
      cols.forEach((c,i)=>{
-       const ll=lines(c.label,ws[i]-5,small);ll.forEach((l,j)=>this.page.text(x+2.5,this.y+2+j*lineH,l,{size:small,bold:true,color:white}));
+       const ll=lines(c.label,ws[i]-5,small);ll.forEach((l,j)=>this.page.text(x+2.5,this.y+2+j*lineH,l,{size:small,bold:true,color:this.documentStyle?ink:white}));
        x+=ws[i];
      });
      this.y+=headerHeight;
@@ -174,4 +174,4 @@ function generate(key,data){
  }
  return pdf.file();
 }
-module.exports={generate};
+module.exports={generate,Pdf,portrait};
