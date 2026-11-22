@@ -106,6 +106,8 @@ const line=(description,rate,qty=1,sac='998551')=>{
   assert.equal(res.data.subarray(0,5).toString(),'%PDF-');
   assert.ok(res.data.subarray(-150).toString().includes('%%EOF'));
   assert.ok(res.data.toString('latin1').includes('Document No.'));
+  assert.ok(!res.data.toString('latin1').includes('undefined'),'Date/period and issuer metadata are populated');
+  assert.ok(res.data.toString('latin1').includes(last+'-01'),'Billing period start is printed');
   if(process.env.GDS_EXPORT_INVOICE_SAMPLES)fs.writeFileSync('artifacts/invoices-v25/'+doc.type+'.pdf',res.data);
   assert.ok(!res.data.toString('latin1').includes('SAVETRIP TECHNOLOGIES'),'Supplier brand not copied');
   assert.equal((await request('/accounts/invoices-v25/documents/'+doc.key,{token:agent})).status,403);
