@@ -23,6 +23,8 @@ const ico=(k,n=20)=>`<svg width="${n}" height="${n}" viewBox="0 0 24 24" aria-hi
 const button=(label,action,cls='',props='')=>`<button type="button" class="inv24-button ${cls}" data-inv24="${action}" ${props}>${label}</button>`;
 const nameAttr=x=>`data-key="${e(x.key)}"`;
 const cols={
+ metroSummary:['Payable to (Metro Rail Operator)','City','Billing basis','PNRs','Passengers','Metro fares'],
+ platformSummary:['Summary','Website','Paytm','Offline Sales','Total'],
  tax:['Description','Rate','Qty','Taxable','Total'],
  metro:['Date','PNR','Service','Metro','Passenger Station','Exchange Point','Pax','Fare/Pax','Fare'],
  cloud:['Date','Time','From','To','Duration','Charge'],
@@ -32,6 +34,8 @@ const cols={
  operator:['Date','Type','Particulars','Deducted / Paid','Collected','Balance','Reference']
 };
 const fields={
+ metroSummary:['provider','city','billing_basis','pnrs','passengers','metro_fares'],
+ platformSummary:['label','website','paytm','offline_sales','total'],
  tax:['description','rate','qty','taxable','total'],
  metro:['date','pnr','service','metro','passenger_station','exchange_point','pax','fare_per_pax','fare'],
  cloud:['date','time','from','to','duration','charge'],
@@ -50,19 +54,27 @@ function dataTable(type,rows){
 function previewSummary(doc,snapshot){
  let sections=[];
  if(doc.type==='tax'){
+  if(snapshot.invoice_meta)sections.push(['Invoice metadata',Object.entries(snapshot.invoice_meta).map(([k,v])=>`<div class="inv24-balance-detail"><span>${e(k.replaceAll('_',' '))}</span><strong>${e(v)}</strong></div>`).join('')]);
+  if(snapshot.billing_address)sections.push(['Billing address',`<p>${e(snapshot.billing_address)}</p>`]);
+  if(snapshot.shipping_address)sections.push(['Shipping address',`<p>${e(snapshot.shipping_address)}</p>`]);
   if(snapshot.line_items?.length)sections.push(['Invoice line items',dataTable('tax',snapshot.line_items)]);
+  if(snapshot.bank)sections.push(['Bank details',Object.entries(snapshot.bank).map(([k,v])=>`<div class="inv24-balance-detail"><span>${e(k.replaceAll('_',' '))}</span><strong>${e(v)}</strong></div>`).join('')]);
   if(snapshot.totals)sections.push(['Tax summary',Object.entries(snapshot.totals).map(([k,v])=>`<div class="inv24-balance-detail"><span>${e(k.replaceAll('_',' '))}</span><strong>${inMoney(v)}</strong></div>`).join('')]);
  }else if(doc.type==='metro'){
-  if(snapshot.summary_rows?.length)sections.push(['Metro operators',dataTable('metro',snapshot.summary_rows.map(x=>({...x,passenger_station:x.city,exchange_point:x.billing_basis,fare:x.metro_fares})))]);
+  if(snapshot.summary_rows?.length)sections.push(['Metro operators',dataTable('metroSummary',snapshot.summary_rows)]);
   sections.push(['Ticket-level detail',dataTable('metro',snapshot.lines)]);
  }else if(doc.type==='operator'){
   if(snapshot.summary_rows?.length)sections.push(['Statement summary',snapshot.summary_rows.map(r=>`<div class="inv24-balance-detail"><span>${e(r.label)}</span><strong>${inMoney(r.amount)}</strong></div>`).join('')]);
   sections.push(['Running statement ledger',dataTable('operator',snapshot.ledger)]);
+  if(snapshot.provisional_ledger?.length)sections.push(['Provisional entries — not posted or settled',dataTable('operator',snapshot.provisional_ledger)]);
  }else if(doc.type==='chat')sections.push(['Message charges',dataTable('chat',snapshot.summary_rows)]);
  else if(doc.type==='platform'){
-  if(snapshot.channel_summary?.length)sections.push(['Website / Paytm / Offline',dataTable('platform',snapshot.channel_summary)]);
+  if(snapshot.channel_summary?.length)sections.push(['Website / Paytm / Offline',dataTable('platformSummary',snapshot.channel_summary)]);
   sections.push(['Booking and cancellation lines',dataTable('platform',snapshot.lines)]);
- }else sections.push(['Call details',dataTable(doc.type,snapshot.lines)]);
+ }else{
+  if(snapshot.summary_rows?.length)sections.push(['Call billing summary',dataTable(doc.type,snapshot.summary_rows)]);
+  sections.push(['Call details',dataTable(doc.type,snapshot.lines)]);
+ }
  if(snapshot.notes?.length)sections.push(['Notes','<ol>'+snapshot.notes.map(x=>`<li>${e(x)}</li>`).join('')+'</ol>']);
  return sections.map(([heading,body])=>`<section class="inv24-preview-section"><h3>${e(heading)}</h3>${body}</section>`).join('');
 }
