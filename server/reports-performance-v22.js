@@ -98,7 +98,7 @@ function frequent(c){
    return b.trips-a.trips||b.spend-a.spend;
  });
  const rows=(c.top==='all'?qualified:qualified.slice(0,Number(c.top))).map((x,i)=>({...x,rank:i+1}));
- const summary={passengers:qualified.length,all_passengers:all.length,trips:sum(qualified,'trips'),spend:round(sum(qualified,'spend')),
+ const summary={passengers_label:qualified.length.toLocaleString('en-IN')+' of '+all.length.toLocaleString('en-IN'),passengers:qualified.length,all_passengers:all.length,trips:sum(qualified,'trips'),spend:round(sum(qualified,'spend')),
    avg_trip:sum(qualified,'trips')?round(sum(qualified,'spend')/sum(qualified,'trips')):0,
    upcoming:sum(qualified,'upcoming'),cancelled:sum(qualified,'cancelled'),shown:rows.length,
    total_trips:tripCount,total_spend:round(sum(all,'spend'))};
@@ -268,6 +268,9 @@ function station(c){
    end_to_end:endToEnd,end_to_end_pct:seatsTotal?round(endToEnd/seatsTotal*100):0,
    cancelled,cancelled_pct:pnrs+cancelled?round(cancelled/(pnrs+cancelled)*100):0,
    no_shows:noShows,no_show_pct:seatsTotal?round(noShows/seatsTotal*100):0};
+ summary.end_to_end_label=summary.end_to_end.toLocaleString('en-IN')+' ('+summary.end_to_end_pct.toFixed(1)+'%)';
+ summary.cancelled_label=summary.cancelled.toLocaleString('en-IN')+' ('+summary.cancelled_pct.toFixed(1)+'%)';
+ summary.no_show_label=summary.no_shows.toLocaleString('en-IN')+' ('+summary.no_show_pct.toFixed(1)+'%)';
  const totals={};
  for(const [key,rows] of Object.entries({pairs,boarding,dropping,by_schedule,by_schedule_pairs,sources,daily})){
     totals[key]={};for(const k of ['pnrs','seats','revenue','cancelled','no_shows','end_to_end','trips'])totals[key][k]=round(sum(rows,k));
