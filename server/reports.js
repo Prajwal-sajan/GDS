@@ -16,8 +16,8 @@ function cancelCharges(b) { return U.sum(b.cancellations || [], (c) => c.charge)
 
 function tripExpense(s, commission) {
   const r = routeOf(s);
-  if (s.status !== 'active') return { fixed: 0, running: 0, commission: 0, total: 0, items: [] };
-  let items = [...(r.expenses?.fixed || []).map((x) => ({ ...x, type: 'fixed' })), ...(r.expenses?.running || []).map((x) => ({ ...x, type: 'running' })), ...db.col('trip_expenses').filter((e) => e.schedule_id == s.id).map((e) => ({ id: e.id, key: e.key, label: e.label, per_day: e.amount, type: e.type === 'fixed' ? 'fixed' : 'running', source: e.source || '', manual: true }))];
+  const isActive = s.status === 'active';
+  let items = [...(r.expenses?.fixed || []).map((x) => ({ ...x, type: 'fixed' })), ...(isActive ? (r.expenses?.running || []) : []).map((x) => ({ ...x, type: 'running' })), ...db.col('trip_expenses').filter((e) => e.schedule_id == s.id && (isActive || e.type === 'fixed')).map((e) => ({ id: e.id, key: e.key, label: e.label, per_day: e.amount, type: e.type === 'fixed' ? 'fixed' : 'running', source: e.source || '', manual: true }))];
   const ov = s.expense_overrides || {};
   if (Object.keys(ov).length) { const idx = { fixed: 0, running: 0 }; items = items.map((x) => { const i = idx[x.type]++; const k = `${x.type}:${x.key || x.label || i}`; return ov[k] !== undefined ? { ...x, per_day: ov[k], original: x.per_day, overridden: true } : x; }); }
   const idx = { fixed: 0, running: 0 };
@@ -28,7 +28,8 @@ function tripExpense(s, commission) {
   });
   const fixed = U.sum(items.filter((i) => i.type === 'fixed'), (i) => i.per_day);
   const running = U.sum(items.filter((i) => i.type === 'running'), (i) => i.per_day);
-  return { fixed, running, running_total: U.round2(running + commission), commission: U.round2(commission), total: U.round2(fixed + running + commission), items };
+  const appliedCommission = isActive ? commission : 0;
+  return { fixed, running, running_total: U.round2(running + appliedCommission), commission: U.round2(appliedCommission), total: U.round2(fixed + running + appliedCommission), items };
 }
 
 function tripPnl(s) {
