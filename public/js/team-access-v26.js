@@ -171,14 +171,15 @@ function userEditor(user,kind,callback){
  <div data-role-preview>${preview(roleSelected,view.data)}</div>
  ${agent?`${choiceCards('agent_category',[['agent','Agent','Books on their own'],['master_agent','Master agent','Has sub-agents who book under them']],u.agent_category)}
  ${choiceCards('mode',[['Online','Online','Logs in and books themselves'],['Offline','Offline','Calls the branch; staff book On-Behalf']],u.mode)}
- ${selection('agent_type','Settlement terms',[['postpaid','Postpaid'],['prepaid','Prepaid']],u.agent_type||'postpaid')}`:''}
+ ${selection('agent_type','Settlement terms',[['postpaid','Postpaid'],['prepaid','Prepaid']],u.agent_type||'postpaid')}
+ ${selection('master_agent_id','Under master agent',[['','No master agent'],...view.data.users.filter(a=>a.role==='agent'&&a.agent_category==='master_agent'&&a.id!==u.id).map(a=>[String(a.id),a.name])],String(u.master_agent_id||''))}`:''}
  ${selection('branch_id','Branch',[['','Organization-wide'],...view.data.branches.map(b=>[String(b.id),b.name])],String(u.branch_id||''))}
  <button type="button" class="ta26-perm-card" data-perm-open><span><b>Permissions & routes</b><small data-route-summary>${u.limit_routes?u.route_ids.length+' selected routes':'Same as their role'}</small></span>${icon('chevronRight')}</button>
  <div class="ta26-active"><div><b>Active</b><small>${agent&&u.mode==='Offline'?'Offline agents cannot sign in':'User can sign in'}</small></div>${opt('status',u.status)}<button type="button" class="ta26-switch ${u.status==='ACTIVE'?'on':''}" data-status role="switch" aria-label="Active" aria-checked="${u.status==='ACTIVE'}"></button></div>`;
  showModal({title:existing?'Edit User':kind==='bus-staff'?'Add bus staff':agent?'Add agent':'Add office staff',action:existing?'Save':kind==='bus-staff'?'Add bus staff':agent?'Add agent':'Add office staff',body:form,
   onSave:async(form,outer)=>{
    const role=outer.querySelector('[name=role]').value;
-   const payload={...form,category:kind,...pending,role,
+   const payload={...form,category:kind,...pending,role,master_agent_id:form.master_agent_id||null,
     name:form.name.trim()||form.phone,phone:form.phone.replace(/\D/g,''),branch_id:form.branch_id||null,
     limit_routes:pending.limit_routes,route_ids:pending.route_ids};
    if(existing)await G.put(api+'/users/'+u.id,payload);
