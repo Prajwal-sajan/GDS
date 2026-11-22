@@ -1,4 +1,4 @@
-name: Reports v23 source snapshot and acceptance
+name: All 13 Reports deep audit v23
 on:
   push:
     branches: [feature/reports-13-deep-audit-v23]
@@ -17,6 +17,12 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: '22', cache: 'npm'}
       - run: npm ci
+      - name: Fleet Operations v20 regression
+        run: |
+          node tests/check-fleet-operations-v20.cjs
+          node tests/fleet-operations-v20-ui.cjs
+      - name: Independent all-13 semantic audit
+        run: node tests/check-reports-13-semantic-v23.cjs
       - name: Existing v21 and v22 verification
         run: |
           node tests/check-reports-suite-v21.cjs
