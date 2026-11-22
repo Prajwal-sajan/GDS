@@ -2,7 +2,15 @@
 'use strict';
 if(!window.G?.screens?.settings)return;
 const original=G.screens.settings;
-const icon=k=>G.settingsParityIcon?G.settingsParityIcon(k):G.svg(k);
+const icon=k=>{
+ const custom={
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  play:'<circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4z"/>',
+  chevronRight:'<path d="m9 5 7 7-7 7"/>'
+ };
+ if(custom[k])return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+custom[k]+'</svg>';
+ return G.settingsParityIcon?G.settingsParityIcon(k):G.svg(k);
+};
 const safe=x=>esc(String(x??''));
 const api='/team-access/v26';
 const tabs=[['office-staff','Office staff','users'],['bus-staff','Bus staff','bus'],['agents','Agents','agent'],['branches','Branches','building'],['access','Access','key']];
