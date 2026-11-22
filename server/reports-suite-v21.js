@@ -235,10 +235,7 @@ function staffDuty(ctx){
    const bus_avg=(()=>{const other=db.col('schedules').filter(z=>z.status==='active'&&within(z.travel_date,ctx.from,ctx.to)&&String(z.vehicle_id)===String(s.vehicle_id)&&n(z.km)>0&&n(z.fuel_l)>0);
      return other.length?round(sum(other,'km')/sum(other,'fuel_l')):null;})();
    const efficiency=pGps>0&&pFuel>0?round(pGps/pFuel):null;
-   const minutes=x=>{const m=String(x||'').match(/(?:^|T|\s)(\d{1,2}):(\d{2})(?::\d{2})?/);
-     return m?(Number(m[1])*60+Number(m[2])):null;};
-   const arrival=minutes(firstActual),expected=minutes(bp.time);
-   const observedDelay=arrival!==null&&expected!==null?((arrival-expected+720+1440)%1440)-720:null;
+   const observedDelay=U.clockDifference(firstActual,bp.time);
    const delay=num(start?.delay_minutes)??observedDelay,late=delay!==null&&delay>=8;
    rows.push({date:s.travel_date,dep:s.departure_time||r.departure_time||'',service:r.service_number||'',route:routeLabel(r),
      bus:vehi(s),status:s.status==='active'?'Worked':'Halt',crew_role:driver?.role||'',
