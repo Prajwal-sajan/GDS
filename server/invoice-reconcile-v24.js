@@ -50,7 +50,24 @@ function audit(month,{scope='reference'}={}){
    'The tax invoice is for the platform services supplied to the operator, not passenger fares');
  add('operator-tax','Operator statement invoice deduction = issued tax invoice',
    debits('^Invoice$'),grand,'Operator statement is a net payable ledger, tax invoice is the separate taxable source');
- const metroRows=metro?.summary_rows||[];
+ add('tax-lines','Tax invoice 12 line items = taxable total',
+    total(taxLines,'taxable'),taxable,'All service-line taxable values must sum to the printed tax base');
+ const cloudCalls=cloud?.lines||[],aiCalls=ai?.lines||[];
+ add('cloud-call-lines','Individual Cloud Calling charges sum to provider usage summary',
+    total(cloudCalls,'charge'),amount(cloud?.summary_rows?.find(x=>aliases.cloud.test(String(x.label||''))),'charge'),
+    'Per-call charges are not billable minutes; number rental is shown separately');
+ add('ai-call-lines','Individual AI Calling charges sum to provider usage summary',
+    total(aiCalls,'charge'),amount(ai?.totals,'before_gst'),
+    'Every AI call is counted once; billable minute units can be greater than call count');
+ const metroItems=metro?.lines||[];
+ add('metro-line-pax','Metro ticket passengers reconcile with provider summary',
+    total(metroItems,'pax'),amount(metro?.totals,'passengers'));
+ add('metro-line-fare','Metro ticket charges reconcile with provider summary',
+    total(metroItems,'fare'),amount(metro?.totals,'metro_fares'));
+ add('platform-cancellation-detail','Platform Sales cancellation charges: PNR detail versus monthly summary',
+    total(platform?.lines||[],'cancellation_charge'),amount(platform?.totals,'cancellation_charges_summary'),
+    'If a source PDF clips cancellation charge figures, record a mismatch and preserve the printed entries');
+  const metroRows=metro?.summary_rows||[];
  const metroFare=amount(metro?.totals,'metro_fares','total_fares','amount')??total(metroRows,'metro_fares');
  add('metro-total','Metro operator fares sum to feeder statement total',total(metroRows,'metro_fares'),metroFare,
    'Metro ticket fares are a pure-agent deduction; do not include in taxable platform-service invoice');
