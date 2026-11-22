@@ -320,6 +320,18 @@ r.put('/team-access/v26/roles/batch',A.can('iam.manage_roles'),wrap(req=>{
   if(matrix[byLabel.get('Block seats').key]==='Off'){
    limits.block_max_seats=null;limits.block_max_hours=null;
   }
+  // Fine-grained grants need the legacy parent operation to pass existing can()
+  // checks, while the v27 policy independently gates the specific action.
+  const implied={
+   'bookings.comments':['bookings.view_all'],
+   'bookings.on_behalf':['bookings.create'],
+   'bookings.see_phone':['bookings.view_all'],
+   'schedules.assign_bus':['schedules.modify'],
+   'schedules.assign_crew':['schedules.modify'],
+   'schedules.edit_expenses':['schedules.financial'],
+   'accounts.export':['accounts.view']
+  };
+  for(const code of [...enabled])for(const parent of implied[code]||[])enabled.add(parent);
   const codes=[...new Set([...role.permissions.filter(code=>!controlled.has(code)),...enabled])].filter(x=>catalog.includes(x));
   const update={...role,name:role.name,permissions:codes,scopes,ui_permissions:ui,matrix_v27:matrix,limits};
   delete update.key;
