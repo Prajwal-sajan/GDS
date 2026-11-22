@@ -8,7 +8,7 @@ const OTP_DEV = process.env.GDS_OTP || '1234'; // dev OTP (replace with SMS gate
 // Permission catalogue (service:action), grouped by area — mirrors operator role-permission areas.
 const CATALOG = {
   trips: ['trips.view', 'trips.update_passengers', 'trips.location', 'trips.call', 'trips.chat', 'trips.import_chart'],
-  bookings: ['bookings.create', 'bookings.view_all', 'bookings.modify', 'bookings.cancel', 'bookings.block_seats', 'bookings.release_hold'],
+  bookings: ['bookings.create', 'bookings.view_all', 'bookings.modify', 'bookings.cancel', 'bookings.block_seats', 'bookings.release_hold', 'bookings.comment', 'bookings.book_for_agents', 'bookings.view_phone'],
   schedules: ['schedules.view', 'schedules.modify', 'schedules.fares', 'schedules.toggle', 'schedules.delete', 'schedules.financial'],
   routes: ['routes.view', 'routes.create', 'routes.modify', 'routes.delete'],
   fleet: ['fleet.view', 'fleet.modify', 'fleet.delete', 'fleet.documents'],
