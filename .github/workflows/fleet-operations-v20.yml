@@ -1,0 +1,57 @@
+name: Fleet Operations report v20
+on:
+  push:
+    branches:
+      - feature/fleet-operations-report-v20
+  pull_request:
+    paths:
+      - "server/fleet-operations-v20.js"
+      - "server/fleet-operations-pdf-v20.js"
+      - "server/api/fleet-operations-v20.js"
+      - "public/js/fleet-operations-v20.js"
+      - "public/css/fleet-operations-v20.css"
+      - "tests/check-fleet-operations-v20.cjs"
+      - "tests/fleet-operations-v20-ui.cjs"
+jobs:
+  fleet-operations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: node --check server/fleet-operations-v20.js && node --check server/fleet-operations-pdf-v20.js && node --check server/api/fleet-operations-v20.js && node --check public/js/fleet-operations-v20.js
+      - run: node tests/check-fleet-operations-v20.cjs
+      - run: node tests/fleet-operations-v20-ui.cjs
+      - run: npm test
+      - name: Generate and render Fleet Operations PDF (demo data only)
+        run: |
+          mkdir -p .artifacts
+          node - <<'NODE'
+          process.env.GDS_DATA_DIR = process.cwd() + '/.tmp-fop-demo';
+          process.env.GDS_RESEED = '1';
+          require('./server/index');
+          const U = require('./server/util');
+          const from = U.addDays(U.today(), -8), to = U.addDays(U.today(), -2);
+          const report = require('./server/fleet-operations-v20').compute({from, to});
+          const pdf = require('./server/fleet-operations-pdf-v20').generate(report);
+          require('fs').writeFileSync('.artifacts/fleet-operations-preview.pdf', pdf);
+          process.exit(0);
+          NODE
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+          pdfinfo .artifacts/fleet-operations-preview.pdf
+          pdftotext -layout .artifacts/fleet-operations-preview.pdf .artifacts/fleet-operations-preview.txt
+          grep -q 'Fleet Operations' .artifacts/fleet-operations-preview.txt
+          grep -q 'By bus' .artifacts/fleet-operations-preview.txt
+          grep -q 'Trip-wise' .artifacts/fleet-operations-preview.txt
+          pdftoppm -f 1 -l 1 -scale-to 1600 -png -singlefile .artifacts/fleet-operations-preview.pdf .artifacts/fleet-operations-page1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fleet-operations-v20-pdf-preview
+          path: .artifacts/
+          retention-days: 14
+          include-hidden-files: true

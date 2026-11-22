@@ -1,0 +1,73 @@
+.ac10-root .fop-v20{--fop-blue:#2361f4;--fop-dark:#14223b;--fop-muted:#6d82a3;--fop-line:#e3e9f1;color:var(--fop-dark);font-family:Inter,Arial,system-ui,sans-serif;font-size:15px;width:100%;min-width:0;padding:2px 0 24px}
+.ac10-root .fop-v20 .fop-i{display:inline-block;vertical-align:middle;flex:none}
+.ac10-root .fop-title-row{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;margin:8px 0 16px}
+.ac10-root .fop-title-left{display:flex;align-items:center;gap:18px;flex-wrap:wrap;min-width:0}
+.ac10-root .fop-title-left h1{font-size:22px;font-weight:600;letter-spacing:-.6px;margin:0;color:#121e33;line-height:1.3}
+.ac10-root .fop-back{color:#2765fb;display:inline-flex;align-items:center;gap:4px;font-size:16px;font-weight:500;text-decoration:none;white-space:nowrap}
+.ac10-root .fop-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ac10-root .fop-actions>button{border:0;padding:11px 17px;border-radius:25px;min-height:46px;display:inline-flex;align-items:center;justify-content:center;gap:9px;font-weight:600;font-size:16px;white-space:nowrap;cursor:pointer}
+.ac10-root .fop-actions>button.fop-primary{background:#2563f4;color:white}
+.ac10-root .fop-actions>button.fop-muted{background:#e9eef6;color:#2462f1}
+.ac10-root .fop-actions>button:disabled{opacity:.55;cursor:wait}
+.ac10-root .fop-control-row{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin:0 0 13px}
+.ac10-root .fop-filter{min-height:51px;background:#e9eef6;border-radius:15px;display:flex;align-items:center;gap:12px;padding:0 14px;min-width:220px;flex:1 1 235px;color:#6d81a1;position:relative}
+.ac10-root .fop-filter select{min-width:0;width:100%;color:#1d2b44;border:0;background:transparent;appearance:none;outline:none;font-size:15px;cursor:pointer}
+.ac10-root .fop-filter select:focus{outline:0}
+.ac10-root .fop-filter .fop-i:last-child{pointer-events:none;color:#8ca2bd}
+.ac10-root .fop-date{min-height:59px;border:1px solid #dbe3ff;border-radius:19px;background:#fff;box-shadow:0 2px 6px #566cff15;display:flex;gap:11px;align-items:center;padding:6px 11px;min-width:190px;flex:0 1 212px}
+.ac10-root .fop-date .fop-i{background:linear-gradient(135deg,#2e61f8,#9250fa);color:white;width:42px;height:42px;padding:10px;border-radius:12px;box-sizing:border-box;box-shadow:0 2px 6px #7f59fc35}
+.ac10-root .fop-date input{min-width:0;width:100%;font-family:inherit;font-size:15px;font-weight:600;letter-spacing:.1px;color:#17233b;background:transparent;border:0;padding:6px 0;outline:0}
+.ac10-root .fop-date input::-webkit-calendar-picker-indicator{cursor:pointer}
+.ac10-root .fop-presets{display:flex;align-items:center;gap:3px;padding:4px;background:#e9eef6;border-radius:18px;min-height:51px;flex-wrap:wrap}
+.ac10-root .fop-presets button{border:0;background:transparent;color:#385371;border-radius:13px;padding:11px 12px;font-size:14px;font-weight:550;white-space:nowrap;cursor:pointer}
+.ac10-root .fop-presets button.active{color:#1b2b44;background:#fff;box-shadow:0 2px 5px #26375629}
+.ac10-root .fop-methodology{font-size:13px;color:#6f84a6;line-height:1.65;margin:14px 5px 14px;letter-spacing:.04px}
+.ac10-root .fop-summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;border:1px solid #dfe8f2;background:white;border-radius:20px;overflow:hidden;margin-bottom:20px}
+.ac10-root .fop-tile{min-height:80px;padding:14px 16px 10px;display:flex;flex-direction:column;gap:7px;border-right:1px solid #edf0f4;border-bottom:1px solid #edf0f4}
+.ac10-root .fop-tile:nth-child(6n){border-right:0}
+.ac10-root .fop-tile:nth-last-child(-n+6){border-bottom:0}
+.ac10-root .fop-tile span{font-size:13px;font-weight:400;color:#7188aa}
+.ac10-root .fop-tile b{font-size:22px;font-weight:600;line-height:1.1;color:#06132b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ac10-root .fop-report-section{min-width:0;margin:0 0 21px}
+.ac10-root .fop-section-title{font-size:13px;font-weight:700;letter-spacing:.035em;color:#7086a5;margin:0 0 8px 6px}
+.ac10-root .fop-section-title span{font-size:12px;color:#9daec6;font-weight:600}
+.ac10-root .fop-grid-scroll{overflow:auto;max-height:520px;border:1px solid #e0e9f5;border-radius:20px;background:white;scrollbar-width:thin;scrollbar-color:#9aa1ad transparent;overscroll-behavior:contain}
+.ac10-root .fop-grid{border-spacing:0;border-collapse:separate;width:100%;background:#fff;font-size:15px;line-height:1.48;color:#12243e}
+.ac10-root .fop-grid thead{position:sticky;top:0;z-index:2}
+.ac10-root .fop-grid th{font-weight:600;font-size:13px;color:#677d9b;text-align:left;padding:14px 15px;border-bottom:1px solid #e0e7f1;background:#fff;white-space:nowrap}
+.ac10-root .fop-grid tbody tr{background:#fff}
+.ac10-root .fop-grid tbody tr:hover{background:#f7f9fe}
+.ac10-root .fop-grid td{border-bottom:1px solid #edf1f6;padding:11px 15px;vertical-align:top;white-space:normal;line-height:1.45}
+.ac10-root .fop-grid td:not(:last-child){white-space:nowrap}
+.ac10-root .fop-grid th.fop-num,.ac10-root .fop-grid td.fop-num{text-align:right}
+.ac10-root .fop-grid tfoot{position:sticky;bottom:0;z-index:3}
+.ac10-root .fop-grid tfoot td{font-weight:650;border-top:1px solid #e0e8f2;border-bottom:0;background:#f8faff;padding:14px 15px;color:#19263d;white-space:nowrap}
+.ac10-root .fop-grid .fop-empty{text-align:center;color:#8b9fb8;padding:35px 14px;white-space:normal!important}
+.ac10-root .fop-grid-by_bus td:last-child{min-width:270px}
+.ac10-root .fop-grid-by_driver td:last-child{min-width:255px}
+.ac10-root .fop-grid-daily td:last-child{min-width:300px}
+.ac10-root .fop-grid-rows td:nth-child(6){min-width:310px}
+.ac10-root .fop-grid-rows td:nth-child(7){min-width:230px}
+.ac10-root .fop-grid-rows td:nth-child(4){min-width:170px}
+.ac10-root .fop-grid-by_bus{min-width:1500px}
+.ac10-root .fop-footnote{color:#7b8da7;font-size:12px;line-height:1.7;margin:3px 10px}
+.ac10-root .fop-error{border:1px solid #f4bdba;background:#fffafa;padding:24px;color:#8a3440;border-radius:16px}
+@media(max-width:1450px){.ac10-root .fop-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.ac10-root .fop-tile{border-bottom:1px solid #edf0f4}.ac10-root .fop-tile:nth-child(6n){border-right:1px solid #edf0f4}.ac10-root .fop-tile:nth-child(3n){border-right:0}.ac10-root .fop-tile:nth-last-child(-n+3){border-bottom:0}}
+@media(max-width:900px){.ac10-root .fop-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.ac10-root .fop-tile:nth-child(3n){border-right:1px solid #edf0f4}.ac10-root .fop-tile:nth-child(2n){border-right:0}.ac10-root .fop-tile:nth-last-child(-n+3){border-bottom:1px solid #edf0f4}.ac10-root .fop-tile:nth-last-child(-n+2){border-bottom:0}.ac10-root .fop-filter{flex-basis:45%}.ac10-root .fop-title-left h1{font-size:18px}}
+@media(max-width:530px){.ac10-root .fop-filter{flex-basis:100%}.ac10-root .fop-date{flex:1 1 180px}.ac10-root .fop-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.ac10-root .fop-tile{padding:10px;min-height:65px}.ac10-root .fop-tile span{font-size:12px}.ac10-root .fop-tile b{font-size:17px}.ac10-root .fop-actions>button{font-size:13px;padding:9px 13px;min-height:39px}.ac10-root .fop-grid{font-size:13px}}
+@media print{@page{size:A4 landscape;margin:8mm}
+ body .iconic-app-header,body [data-sub],body .ac10-nav,.ac10-root .fop-actions,.ac10-root .fop-control-row,.ac10-root .fop-back,.ac10-root .fop-footnote{display:none!important}
+ .ac10-root .fop-v20{padding:0;color:#14233a}
+ .ac10-root .fop-title-left h1{font-size:18px}
+ .ac10-root .fop-summary{grid-template-columns:repeat(6,1fr);break-inside:avoid}
+ .ac10-root .fop-tile{min-height:46px;padding:6px}.ac10-root .fop-tile b{font-size:12px}
+ .ac10-root .fop-methodology{font-size:9px}
+ .ac10-root .fop-grid-scroll{max-height:none!important;overflow:visible!important;border:0;border-radius:0}
+ .ac10-root .fop-report-section{break-inside:auto;margin:8px 0}
+ .ac10-root .fop-grid{min-width:0!important;width:100%;font-size:8px;line-height:1.1}
+ .ac10-root .fop-grid thead,.ac10-root .fop-grid tfoot{position:static;display:table-header-group}
+ .ac10-root .fop-grid tfoot{display:table-footer-group}
+ .ac10-root .fop-grid th,.ac10-root .fop-grid td{padding:4px!important;white-space:normal!important;min-width:0!important;overflow-wrap:anywhere;font-size:8px}
+ .ac10-root .fop-grid tbody tr{break-inside:avoid}
+ .ac10-root .fop-grid thead th{background:#245df4!important;color:white!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+}
