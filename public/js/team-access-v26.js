@@ -17,6 +17,7 @@ const tabs=[['office-staff','Office staff','users'],['bus-staff','Bus staff','bu
 const languages=['English','Hindi','Kannada','Tamil','Telugu','Malayalam','Marathi','Bengali','Gujarati','Punjabi','Odia','Assamese','Urdu'];
 const link=(t,extra='')=>`#/settings/team-access/${t}${extra?'/'+extra:''}`;
 let view={root:null,tab:'office-staff',access:'roles',data:null,role:'viewer'};
+let matrixMode='matrix',matrixFocus='viewer';
 const editable=()=>view.data?.grants?.manage_users;
 const attrs=(key,value)=>`data-${key}="${safe(value)}"`;
 const fmtTime=x=>{if(!x)return '—';const d=new Date(x);return Number.isNaN(+d)?'—':d.toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});};
@@ -274,32 +275,142 @@ function accessTabs(active){
  const items=[['roles','Roles'],['test-access','Test access'],['groups','Groups'],['advanced','Advanced']];
  return `<nav class="ta26-access-tabs">${items.map(([k,l])=>`<a href="${link('access',k+'/viewer')}" class="${active===k?'active':''}">${l}</a>`).join('')}</nav>`;
 }
-function cellValue(role,row){
- const granted=(role?.permissions||[]).includes(row.code);
- const value=role?.scopes?.[row.label]||(role?.ui_permissions&&Object.hasOwn(role.ui_permissions,row.label)?
-  (role.ui_permissions[row.label]?(row.kind==='scope'?'Company':'On'):'Off'):
-  granted?(row.kind==='scope'?'Company':'On'):'Off');
- return value;
+function roleValueV27(role,row){
+ if(row.roleImpossible?.includes(role?.key))return '—';
+ if(role?.matrix_v27 && Object.hasOwn(role.matrix_v27,row.key))return role.matrix_v27[row.key];
+ const legacy={
+  'Book tickets':'Book seats',
+  'View schedules & seat layouts':'View services & seat layouts',
+  'See who is booked on a schedule':'See who is booked on a service',
+  'View income & expenses':"View a service's revenue",
+  'Edit timings, coach & delay':'Edit services (timings, coach, bus & driver, delay)',
+  'Switch schedules on / off':'Switch services on / off',
+  'Create schedules / import trip sheets':'Create services / import trip sheets',
+  'Delete schedules':'Delete services',
+  'Edit general details (name, coach, settings, route map)':'Edit routes, fares, stops & route map'
+ };
+ const name=legacy[row.label]||row.label;
+ const scoped=role?.scopes?.[row.label]??role?.scopes?.[name];
+ if(scoped&&['Off','Own','Branch','Company'].includes(scoped))return scoped;
+ const stored=role?.ui_permissions?.[row.label]??role?.ui_permissions?.[name];
+ if(stored!==undefined)return stored?(row.kind==='scope'?'Company':'On'):'Off';
+ return (role?.permissions||[]).includes(row.code)?(row.kind==='scope'?'Company':'On'):'Off';
+}
+function roleOptionsV27(row,value){
+ const entries=row.kind==='scope'?[['Off','Off'],['Own','Own'],['Branch','Branch'],['Company','Company']]:[['Off','Off'],['On','On']];
+ return options(entries,value);
+}
+function limitInputV27(role,key,label,unit){
+ const value=role?.limits?.[key],str=value===null||value===undefined?'':String(value);
+ const max=view.data.matrix_limit_fields?.[key]?.max||8760;
+ return `<label class="ta27-limit"><input type="number" inputmode="numeric" data-matrix-limit="${safe(key)}" data-role="${safe(role.key)}" data-original="${safe(str)}" min="${key==='block_max_seats'?1:0}" max="${max}" step="1" value="${safe(str)}" placeholder="no limit" aria-label="${safe(role.name)}: ${safe(label)}" ${view.data.grants.manage_roles?'':'disabled'}><span>${safe(unit)}</span></label>`;
+}
+function matrixCellV27(role,row){
+ if(!role||row.roleImpossible?.includes(role.key))
+  return '<span class="ta27-unavailable" title="Not possible for this role" aria-label="Not possible for this role">—</span>';
+ const selected=roleValueV27(role,row);
+ const disabled=!view.data.grants.manage_roles;
+ let content=`<select aria-label="${safe(role.name)}: ${safe(row.label)}" data-matrix-cell data-role="${safe(role.key)}" data-key="${safe(row.key)}" data-label="${safe(row.label)}" data-original="${safe(selected)}" data-scope="${safe(selected)}" class="ta26-scope-select" ${disabled?'disabled':''}>${roleOptionsV27(row,selected)}</select>`;
+ if(row.limit==='cancel_cutoff_hours')content+=`<div class="ta27-limit-row" data-limit-row ${selected==='Off'?'hidden':''}>${limitInputV27(role,'cancel_cutoff_hours','Cancellation cut-off','h')}</div>`;
+ if(row.limit==='seat_block')content+=`<div class="ta27-limit-stack" data-limit-row ${selected==='Off'?'hidden':''}>${limitInputV27(role,'block_max_seats','Seat block maximum','seats')}${limitInputV27(role,'block_max_hours','Seat block duration','h')}</div>`;
+ return content;
 }
 function matrixScreen(data){
- const columns=[...data.role_columns,...data.roles.filter(x=>!data.role_columns.some(z=>z[0]===x.key)&&x.key!=='owner'&&x.key!=='admin').map(x=>[x.key,x.name])];
- const roleMap=Object.fromEntries(data.roles.map(x=>[x.key,x]));
- const query=`<p class="ta26-help">For one person only, use Edit user → Permissions & routes.</p><h3>What each role can do</h3><p class="ta26-help">Pick a role, tap an area, and choose what they can reach and whether they can make changes. Then press Save.</p>
-  <div class="ta26-matrix-toolbar"><button type="button" data-one-role>‹ Back to one role</button><button type="button" data-new-role ${data.grants.manage_roles?'':'disabled'}>${icon('plus')} New role</button></div>
-  <div class="ta26-matrix-toolbar"><input type="search" data-matrix-search placeholder="Search, e.g. cancel, routes, payouts">
-  <div class="ta26-legend"><span>Off</span><span>Own</span><span>Branch</span><span>Company / On</span><small>· — = not possible for this role</small></div></div>`;
- const headings=`<thead><tr><th class="what">WHAT</th>${columns.map(([key,label])=>`<th>${safe(label)}</th>`).join('')}</tr></thead>`;
- const sections=data.matrix.map(section=>`<tr class="ta26-matrix-section"><td colspan="${columns.length+1}">${safe(section.title)}</td></tr>
- ${section.rows.map(row=>`<tr data-matrix-row="${safe(row.label.toLowerCase())}"><th class="what">${safe(row.label)}</th>
- ${columns.map(([key])=>{
-  const role=roleMap[key];
-  if(!role)return '<td>—</td>';
-  const v=cellValue(role,row);
-  return `<td><select data-matrix-cell data-role="${safe(key)}" data-label="${safe(row.label)}" class="ta26-scope-select" data-scope="${safe(v)}" ${data.grants.manage_roles?'':'disabled'}>${options(row.kind==='scope'?[['Off','Off'],['Own','Own'],['Branch','Branch'],['Company','Company']]:[['Off','Off'],['On','On']],v)}</select></td>`;
- }).join('')}</tr>`).join('')}`).join('');
- return query+`<div class="ta26-matrix-scroll" tabindex="0" aria-label="Role permissions matrix"><table class="ta26-matrix">${headings}<tbody>${sections}</tbody></table></div>
- <div class="ta26-matrix-foot"><span>Changes to role grants sign affected users out. Own/Branch/Company row-level filtering remains a separate backend enforcement requirement.</span>
- <button class="ta26-primary" data-save-matrix type="button" ${data.grants.manage_roles?'':'disabled'}>${icon('check')} Save permissions</button></div>`;
+ const columns=[...data.role_columns,...data.roles.filter(r=>!data.role_columns.some(([k])=>k===r.key)&&!['owner','admin'].includes(r.key)).map(r=>[r.key,r.name])];
+ const roleMap=new Map(data.roles.map(r=>[r.key,r]));
+ const single=matrixMode==='single',focus=roleMap.get(matrixFocus)||roleMap.get('viewer')||data.roles[0];
+ const shown=single?[[focus.key,focus.name]]:columns;
+ const actions=`<div class="ta26-matrix-toolbar ta27-actions">
+  ${single?`<button type="button" data-all-roles>‹ All roles</button>`:`<button type="button" data-one-role>‹ Back to one role</button>`}
+  <button type="button" data-new-role ${data.grants.manage_roles?'':'disabled'}>${icon('plus')} New role</button>
+  ${single?`<label class="ta27-role-picker"><span>Role</span><select data-single-role data-nice>${options(data.roles.filter(r=>r.key!=='owner'&&r.key!=='admin').map(r=>[r.key,r.name]),focus.key)}</select></label>`:''}
+  </div>`;
+ const query=`<p class="ta26-help">For one person only, use Edit user → Permissions & routes.</p>
+  <h3>What each role can do</h3>
+  <p class="ta26-help">Pick a role, tap an area, and choose what they can reach and whether they can make changes. Then press Save.</p>
+  ${actions}
+  <div class="ta26-matrix-toolbar ta27-filter-bar"><input type="search" data-matrix-search aria-label="Search permissions" placeholder="Search, e.g. cancel, routes, payouts">
+  <div class="ta26-legend"><span>Off</span><span>Own</span><span>Branch</span><span>Company / On</span><small>· — = not possible for that role</small></div></div>`;
+ const headings=`<thead><tr><th class="what" scope="col">WHAT</th>${shown.map(([key,label])=>`<th scope="col" title="${safe(label)}">${safe(label)}</th>`).join('')}</tr></thead>`;
+ const rows=data.matrix.map((section,sectionIndex)=>{
+  const divider=`<tr class="ta26-matrix-section" data-matrix-group="${sectionIndex}"><td colspan="${shown.length+1}">${safe(section.title)}</td></tr>`;
+  const elements=section.rows.map(row=>`<tr data-matrix-row="${safe(row.label.toLowerCase())}" data-matrix-section="${sectionIndex}"><th scope="row" class="what">${safe(row.label)}</th>
+  ${shown.map(([roleKey])=>`<td class="ta27-matrix-cell" data-cell-role="${safe(roleKey)}">${matrixCellV27(roleMap.get(roleKey),row)}</td>`).join('')}</tr>`).join('');
+  return divider+elements;
+ }).join('');
+ return query+`<div class="ta26-matrix-scroll ${single?'ta27-single':''}" tabindex="0" aria-label="Role permissions matrix"><table class="ta26-matrix">${headings}<tbody>${rows}</tbody></table></div>
+ <div class="ta26-matrix-foot ta27-matrix-foot"><button class="ta26-primary" data-save-matrix type="button" ${data.grants.manage_roles?'disabled':''}>Save changes</button>
+ <span>Limits: seat blocks (seats, hours) and cancel cut-off (hours before departure); empty = no limit.</span>
+ <span class="ta27-dirty-count" data-dirty-count aria-live="polite"></span></div>
+ <p class="ta27-scope-note">Own / Branch access is enforced on supported booking APIs. Some other operational APIs still require endpoint-specific scope enforcement before production delegation.</p>`;
+}
+function attachMatrixEventsV27(root){
+ function updateDirty(){
+  const dirty=[...root.querySelectorAll('[data-matrix-cell],[data-matrix-limit]')].filter(el=>el.value!==el.dataset.original);
+  const save=root.querySelector('[data-save-matrix]');
+  if(save)save.disabled=!dirty.length||!view.data.grants.manage_roles;
+  const counter=root.querySelector('[data-dirty-count]');
+  if(counter)counter.textContent=dirty.length?dirty.length+' unsaved change'+(dirty.length===1?'':'s'):'';
+ }
+ root.querySelector('[data-matrix-search]')?.addEventListener('input',e=>{
+  const q=e.target.value.toLowerCase().trim();
+  const counts={};
+  root.querySelectorAll('[data-matrix-row]').forEach(tr=>{
+    tr.hidden=!!q&&!tr.dataset.matrixRow.includes(q);
+    if(!tr.hidden)counts[tr.dataset.matrixSection]=(counts[tr.dataset.matrixSection]||0)+1;
+  });
+  root.querySelectorAll('[data-matrix-group]').forEach(tr=>tr.hidden=!counts[tr.dataset.matrixGroup]);
+ });
+ root.querySelectorAll('[data-matrix-cell]').forEach(sel=>sel.addEventListener('change',()=>{
+  sel.dataset.scope=sel.value;
+  const cell=sel.closest('td');
+  cell.querySelectorAll('[data-limit-row]').forEach(el=>el.hidden=sel.value==='Off');
+  updateDirty();
+ }));
+ root.querySelectorAll('[data-matrix-limit]').forEach(inp=>inp.addEventListener('input',updateDirty));
+ root.querySelector('[data-save-matrix]')?.addEventListener('click',async e=>{
+  const changed=[...root.querySelectorAll('[data-matrix-cell],[data-matrix-limit]')].filter(el=>el.value!==el.dataset.original);
+  if(!changed.length)return;
+  const roles=new Map();
+  for(const el of changed){
+   const role=el.dataset.role;
+   if(!roles.has(role))roles.set(role,{key:role,matrix:{},limits:{}});
+   const obj=roles.get(role);
+   if(el.hasAttribute('data-matrix-cell'))obj.matrix[el.dataset.key]=el.value;
+   else{
+    if(el.value.trim()!==''&&(!/^\d+$/.test(el.value)||Number(el.value)>Number(el.max)||Number(el.value)<Number(el.min))){
+     G.err(new Error('Enter a whole number in the permitted range for '+el.getAttribute('aria-label')));el.focus();return;
+    }
+    obj.limits[el.dataset.matrixLimit]=el.value===''?null:Number(el.value);
+   }
+  }
+  const button=e.currentTarget;button.disabled=true;
+  try{
+   const out=await G.put(api+'/roles/batch',{roles:[...roles.values()],base_revision:view.data.matrix_revision});
+   toast('Saved permissions for '+out.roles.length+' role(s). '+out.revoked_sessions+' session(s) signed out.');
+   await refresh();
+  }catch(ex){G.err(ex);button.disabled=false;}
+ });
+ root.querySelector('[data-new-role]')?.addEventListener('click',()=>showModal({
+  title:'New role',
+  body:field('name','Role name','',{required:true,placeholder:'e.g. City Operations Supervisor',maxlength:70}),
+  action:'Create role',
+  onSave:async f=>{
+   const created=await G.post(api+'/roles',{name:f.name});
+   matrixFocus=created.key;matrixMode='single';toast('Role created');
+   await refresh();
+  }
+ }));
+ root.querySelector('[data-one-role]')?.addEventListener('click',()=>{
+  matrixMode='single';matrixFocus=view.role||'viewer';refresh().catch(G.err);
+ });
+ root.querySelector('[data-all-roles]')?.addEventListener('click',()=>{
+  matrixMode='matrix';refresh().catch(G.err);
+ });
+ root.querySelector('[data-single-role]')?.addEventListener('change',e=>{
+  matrixFocus=e.target.value;view.role=matrixFocus;refresh().catch(G.err);
+ });
+ updateDirty();
 }
 async function groupsScreen(){
  const rows=await G.get('/iam/groups');
@@ -325,7 +436,7 @@ function testScreen(){
  <button class="ta26-primary" type="button" data-test-access>Test access</button></div><div data-test-output class="ta26-test-output"></div>`;
 }
 function advancedScreen(){
- return `<p class="ta26-help">Role limits, exports and authorization notes. Limits are persisted as policy metadata and require enforcement by each booking/payment endpoint.</p>
+ return `<p class="ta26-help">Role limits and authorization notes. Cancellation cut-off and seat-block limits are editable inline on the Roles matrix and enforced by the booking APIs.</p>
  ${selection('role_key','Role',view.data.roles.filter(r=>r.key!=='owner').map(r=>[r.key,r.name]),view.role)}
  <div class="ta26-grid">${['max_blocked_seats','max_discount_percent','max_refund_percent','max_advance'].map(k=>field(k,k.replaceAll('_',' '),'0',{type:'number'})).join('')}</div>
  <div class="ta26-matrix-toolbar"><button class="ta26-primary" data-save-limits ${view.data.grants.manage_roles?'':'disabled'}>Save limits</button><button data-export-role class="ta26-cancel">Export role JSON</button></div>`;
@@ -335,26 +446,7 @@ async function accessScreen(tab,data){
  return accessTabs(tab)+`<div class="ta26-access-content">${content}</div>`;
 }
 function attachAccessEvents(root,tab){
- if(tab==='roles'){
- root.querySelector('[data-matrix-search]')?.addEventListener('input',e=>{
-  const term=e.target.value.toLowerCase();root.querySelectorAll('[data-matrix-row]').forEach(tr=>tr.hidden=!tr.dataset.matrixRow.includes(term));
- });
- root.querySelectorAll('[data-matrix-cell]').forEach(s=>s.onchange=()=>{s.dataset.scope=s.value;});
- root.querySelector('[data-save-matrix]')?.addEventListener('click',async()=>{
-  const roles=new Map();
-  root.querySelectorAll('[data-matrix-cell]').forEach(s=>{
-   if(!roles.has(s.dataset.role))roles.set(s.dataset.role,{key:s.dataset.role,matrix:{}});
-   roles.get(s.dataset.role).matrix[s.dataset.label]=s.value;
-  });
-  try{const out=await G.put(api+'/roles/batch',{roles:[...roles.values()]});toast(`Saved ${out.roles.length} roles; ${out.revoked_sessions} sessions signed out`);await refresh();}catch(e){G.err(e);}
- });
- root.querySelector('[data-new-role]')?.addEventListener('click',()=>showModal({title:'New role',body:field('name','Role name','',{required:true}),action:'Create role',onSave:async f=>{
-  await G.post(api+'/roles',{name:f.name});toast('Role created');await refresh();
- }}));
- root.querySelector('[data-one-role]')?.addEventListener('click',()=>{
-  root.querySelector('.ta26-matrix-scroll')?.scrollTo({left:0,behavior:'smooth'});
- });
- }
+ if(tab==='roles'){attachMatrixEventsV27(root);}
  if(tab==='test-access'){
  root.querySelector('[data-test-access]')?.addEventListener('click',async()=>{
   const id=root.querySelector('[name=user_id]')?.value;
