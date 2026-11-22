@@ -1,4 +1,5 @@
-'use strict';
+import { createRequire } from 'node:module';
+const require=createRequire(import.meta.url);
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
