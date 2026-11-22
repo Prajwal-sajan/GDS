@@ -1,0 +1,65 @@
+.ac10-root .rpt21-root{font-family:Poppins,Inter,Arial,sans-serif;color:#15243d;font-size:14px;max-width:100%;padding:2px 0 20px;--rpt21-line:#e1e9f3;--rpt21-soft:#e8edf5;--rpt21-blue:#2462f6}
+.ac10-root .rpt21-top{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;margin:7px 0 18px}
+.ac10-root .rpt21-heading{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.ac10-root .rpt21-heading h1{font-size:22px;color:#09162c;font-weight:600;line-height:1.2;margin:0;white-space:nowrap;letter-spacing:-.4px}
+.ac10-root .rpt21-back{display:flex;align-items:center;gap:4px;text-decoration:none;color:#2464fb;white-space:nowrap;font-size:16px}
+.ac10-root .rpt21-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ac10-root .rpt21-actions button{height:46px;padding:0 17px;border-radius:25px;border:0;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;background:#e9edf6;color:#2362f4;font-size:16px;font-weight:600;font-family:inherit}
+.ac10-root .rpt21-actions button.primary{background:#2262f4;color:#fff}
+.ac10-root .rpt21-actions button:disabled{opacity:.44;cursor:not-allowed}
+.ac10-root .rpt21-controls{display:flex;align-items:center;flex-wrap:wrap;gap:11px;margin-bottom:12px}
+.ac10-root .rpt21-filter{height:50px;min-width:190px;flex:0 1 285px;border-radius:15px;background:#e9eef6;color:#6f89a7;padding:0 13px;display:flex;align-items:center;gap:10px}
+.ac10-root .rpt21-filter.rpt21-needed{background:#dff6ff;color:#2262fa}
+.ac10-root .rpt21-filter select{border:0;outline:0;min-width:0;background:transparent;color:#192c44;font-family:inherit;font-size:15px;appearance:none;cursor:pointer;flex:1}
+.ac10-root .rpt21-filter.rpt21-needed select{color:#1b59eb}
+.ac10-root .rpt21-filter svg:last-child{pointer-events:none}
+.ac10-root .rpt21-date{height:62px;border-radius:18px;display:flex;align-items:center;gap:12px;padding:7px 10px;border:1px solid #d7dfff;box-shadow:0 2px 4px #5765fc14;background:#fff;flex:0 1 215px;min-width:184px}
+.ac10-root .rpt21-date svg{background:linear-gradient(135deg,#3a62f8,#9152f7);color:white;width:45px;height:45px;flex:none;padding:11px;box-sizing:border-box;border-radius:12px;box-shadow:0 3px 5px #8662fe28}
+.ac10-root .rpt21-date input{font-family:inherit;border:0;outline:0;background:transparent;font-size:16px;font-weight:600;color:#121c32;width:100%;min-width:0;padding:0}
+.ac10-root .rpt21-date input::-webkit-calendar-picker-indicator{cursor:pointer}
+.ac10-root .rpt21-presets,.ac10-root .rpt21-modes{display:flex;align-items:center;border-radius:16px;background:#e8edf5;padding:4px;gap:2px;flex-wrap:wrap;min-height:49px}
+.ac10-root .rpt21-presets button,.ac10-root .rpt21-modes button{border:0;background:transparent;color:#405779;font-size:14px;font-family:inherit;font-weight:550;padding:10px 13px;white-space:nowrap;border-radius:13px;cursor:pointer}
+.ac10-root .rpt21-presets button.selected,.ac10-root .rpt21-modes button.selected{background:#fff;box-shadow:0 2px 4px #23334e25;color:#152037}
+.ac10-root .rpt21-note{color:#6a85a8;font-size:13px;line-height:1.65;margin:13px 6px 17px;font-weight:400}
+.ac10-root .rpt21-select-empty{background:#fff;border:1px solid #dfe7f4;border-radius:20px;min-height:150px;display:grid;place-items:center;color:#6a84aa;font-size:15px;margin:7px 0 20px}
+.ac10-root .rpt21-summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));background:#fff;border:1px solid #dfe7f1;border-radius:20px;overflow:hidden;margin:16px 0 20px}
+.ac10-root .rpt21-stat{min-height:80px;padding:13px 16px 12px;display:flex;flex-direction:column;gap:8px;border-right:1px solid #edf0f5;border-bottom:1px solid #edf0f5;min-width:0}
+.ac10-root .rpt21-stat:nth-child(6n){border-right:0}
+.ac10-root .rpt21-stat span{color:#7185a4;font-size:12px;font-weight:450}
+.ac10-root .rpt21-stat strong{color:#101b32;font-size:22px;font-weight:650;letter-spacing:-.2px;line-height:1.13;overflow-wrap:anywhere}
+.ac10-root .rpt21-section{margin:0 0 22px;min-width:0}
+.ac10-root .rpt21-section h3{font-size:13px;letter-spacing:.045em;color:#6d84a4;text-transform:uppercase;font-weight:650;margin:0 0 8px 9px}
+.ac10-root .rpt21-section h3 span{color:#a0aec4;font-size:12px;font-weight:500}
+.ac10-root .rpt21-scroll{background:white;border:1px solid #e1e8f2;border-radius:20px;max-height:525px;min-width:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#9fa2a6 transparent;overscroll-behavior:contain}
+.ac10-root .rpt21-table{table-layout:auto;border-collapse:separate;border-spacing:0;background:white;width:100%;font-size:14px;color:#192944;line-height:1.47}
+.ac10-root .rpt21-table thead{position:sticky;top:0;z-index:2;background:#fff}
+.ac10-root .rpt21-table th{background:#fff;font-size:12.5px;color:#6a809e;font-weight:620;text-align:left;padding:14px 12px;border-bottom:1px solid #dfe7f0;white-space:nowrap;vertical-align:middle}
+.ac10-root .rpt21-table td{padding:11px 12px;border-bottom:1px solid #edf0f5;white-space:normal;vertical-align:middle;overflow-wrap:anywhere}
+.ac10-root .rpt21-table tbody tr:nth-child(even){background:#fcfdff}
+.ac10-root .rpt21-table tbody tr:hover{background:#f5f8ff}
+.ac10-root .rpt21-table .rpt21-num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ac10-root .rpt21-table td.rpt21-empty{text-align:center;padding:28px;color:#8295b3}
+.ac10-root .rpt21-table tfoot{position:sticky;bottom:0;z-index:3}
+.ac10-root .rpt21-table tfoot td{background:#f7f9fd;color:#16233a;font-weight:650;border-top:1px solid #e3e8f1;border-bottom:0;white-space:nowrap}
+.ac10-root .rpt21-table.rows td:nth-child(3),.ac10-root .rpt21-table.rows td:nth-child(4){white-space:nowrap}
+.ac10-root .rpt21-table.rows td:nth-child(5),.ac10-root .rpt21-table.rows td:nth-child(6){min-width:100px}
+.ac10-root .rpt21-table.boarding td:first-child,.ac10-root .rpt21-table.dropping td:first-child{min-width:270px}
+.ac10-root .rpt21-table.pairs td:nth-child(-n+2){min-width:275px}
+.ac10-root .rpt21-methodology{font-size:12px;line-height:1.6;margin:2px 10px;color:#8799b0}
+.ac10-root .rpt21-error{background:#fff5f5;border:1px solid #ffd1d1;padding:25px;border-radius:15px;color:#a33241}
+@media(max-width:1400px){.ac10-root .rpt21-summary{grid-template-columns:repeat(4,minmax(0,1fr))}.ac10-root .rpt21-stat:nth-child(6n){border-right:1px solid #edf0f5}.ac10-root .rpt21-stat:nth-child(4n){border-right:0}.ac10-root .rpt21-controls .rpt21-filter{flex-basis:230px}}
+@media(max-width:960px){.ac10-root .rpt21-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.ac10-root .rpt21-stat:nth-child(4n){border-right:1px solid #edf0f5}.ac10-root .rpt21-stat:nth-child(3n){border-right:0}.ac10-root .rpt21-filter{flex:1 1 180px}}
+@media(max-width:550px){.ac10-root .rpt21-heading{gap:10px}.ac10-root .rpt21-heading h1{font-size:17px;white-space:normal}.ac10-root .rpt21-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.ac10-root .rpt21-stat:nth-child(3n){border-right:1px solid #edf0f5}.ac10-root .rpt21-stat:nth-child(2n){border-right:0}.ac10-root .rpt21-stat{min-height:66px;padding:10px}.ac10-root .rpt21-stat strong{font-size:17px}.ac10-root .rpt21-filter{flex:1 1 100%}.ac10-root .rpt21-date{flex:1 1 155px}.ac10-root .rpt21-actions button{font-size:13px;padding:0 12px;height:39px}}
+@media print{@page{size:A4 landscape;margin:9mm}
+ .ac10-root .ac10-nav,.ac10-root .rpt21-controls,.ac10-root .rpt21-back,.ac10-root .rpt21-actions,.ac10-root .rpt21-methodology{display:none!important}
+ .ac10-root .rpt21-section{break-inside:auto;margin:8px 0}
+ .ac10-root .rpt21-scroll{max-height:none!important;overflow:visible!important;border:0;border-radius:0}
+ .ac10-root .rpt21-summary{grid-template-columns:repeat(6,1fr);break-inside:avoid}
+ .ac10-root .rpt21-stat{min-height:48px;padding:6px}.ac10-root .rpt21-stat strong{font-size:12px}
+ .ac10-root .rpt21-note{font-size:9px}.ac10-root .rpt21-table{min-width:0!important;width:100%;table-layout:fixed;font-size:7px}
+ .ac10-root .rpt21-table th,.ac10-root .rpt21-table td{padding:3px!important;min-width:0!important;white-space:normal!important;overflow-wrap:anywhere}
+ .ac10-root .rpt21-table thead{position:static;display:table-header-group}
+ .ac10-root .rpt21-table tfoot{position:static;display:table-footer-group}
+ .ac10-root .rpt21-table th{background:#2262f4!important;color:white!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+ .ac10-root .rpt21-table tr{break-inside:avoid}
+}
