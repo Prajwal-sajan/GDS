@@ -7,7 +7,7 @@
  const col=(k,l,t='text',w=1)=>({key:k,label:l,type:t,width:w});
  const N=(k,l,w=1)=>col(k,l,'number',w),M=(k,l,w=1)=>col(k,l,'money',w),P=(k,l,w=1)=>col(k,l,'pct',w),
   T=(k,l,w=1)=>col(k,l,'text',w),R=(k,l,w=1)=>col(k,l,'ratio',w),L=(k,l,w=1)=>col(k,l,'minutes',w),
-  D=(k,l,w=1)=>col(k,l,'delta',w);
+  D=(k,l,w=1)=>col(k,l,'delta',w),H=(k,l,w=1)=>col(k,l,'duration',w),V=(k,l,w=1)=>col(k,l,'speed',w);
  const section=(key,title,cols)=>({key,title,cols});
  const DEF={
  'staff-duty':{title:'Staff Duty Statement',pdf_orientation:'landscape',needsStaff:true,bus:true,staff:true,
@@ -51,12 +51,12 @@
       section('drivers','DRIVERS (WORST SCORE FIRST)',[
         T('driver','Driver',1.5),T('phone','Phone',1),N('trips','Trips',.5),N('shared','Shared',.6),
         N('km','Km',.85),N('score','Score',.55),N('hard_brake','Hard brake',.9),N('harsh_accel','Harsh accel',.9),
-        L('over_speed','Over-speed',.9),R('top_speed','Top speed',.9),L('idling','Idling',.8),N('freerun','Freerun',.7),T('buses','Buses',1.4)]),
+        H('over_speed','Over-speed',.9),V('top_speed','Top speed',.9),H('idling','Idling',.8),N('freerun','Freerun',.7),T('buses','Buses',1.4)]),
       section('rows','TRIP-WISE',[
         T('date','Date',.9),T('dep','Dep',.55),T('service','Service',.75),T('route','Route',1.3),T('bus','Bus',1),
         T('drivers','Drivers',2.4),N('km','Km',.6),N('score','Score',.6),
-        N('hard_brake','Hard brake',.9),N('harsh_accel','Harsh accel',.9),L('over_speed','Over-speed',.9),
-        R('top_speed','Top speed',.9),L('idling','Idling',.8),N('freerun','Freerun',.7)])
+        N('hard_brake','Hard brake',.9),N('harsh_accel','Harsh accel',.9),H('over_speed','Over-speed',.9),
+        V('top_speed','Top speed',.9),H('idling','Idling',.8),N('freerun','Freerun',.7)])
     ]},
  'expenses':{title:'Expenses',pdf_orientation:'landscape',bus:true,
     note:'Expense lines are the route defaults with each trip’s own entries and overrides on top, as in Trip P&L. A running trip carries fixed and running expenses plus channel commission; a turned-off trip carries configured fixed expenses only. By bus and trip-wise show the largest categories, with the rest under Other.',
