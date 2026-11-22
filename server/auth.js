@@ -35,7 +35,7 @@ const DEFAULT_ROLES = {
   driver: { name: 'Driver', permissions: ['trips.view', 'trips.update_passengers', 'trips.location', 'trips.call'] },
   conductor: { name: 'Conductor', permissions: ['trips.view','trips.update_passengers','trips.location','trips.call'] },
   helper: { name: 'Helper', permissions: ['trips.view','trips.update_passengers'] },
-  viewer: { name: 'Viewer', permissions: ['settings.view'] },
+  viewer: { name: 'Viewer', permissions: [] },
   service_associate: { name: 'Service Associate', permissions: ['trips.view','trips.update_passengers','schedules.view'] },
   service_agent: { name: 'Service Agent', permissions: ['trips.view','schedules.view','bookings.create','bookings.view_all'] },
   branch_admin: { name: 'Branch Admin', permissions: ['trips.view','trips.location','bookings.create','bookings.view_all','schedules.view','routes.view','dailyops.view','settings.view'] },
