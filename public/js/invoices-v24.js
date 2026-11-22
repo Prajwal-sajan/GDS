@@ -24,6 +24,8 @@ const button=(label,action,cls='',props='')=>`<button type="button" class="inv24
 const nameAttr=x=>`data-key="${e(x.key)}"`;
 const cols={
  metroSummary:['Payable to (Metro Rail Operator)','City','Billing basis','PNRs','Passengers','Metro fares'],
+ cloudSummary:['Service','Calls','Charge (₹)','GST at 18% (₹)','Total (₹)'],
+ aiSummary:['Service','Calls','Charge (₹)','GST at 18% (₹)','Total (₹)'],
  platformSummary:['Summary','Website','Paytm','Offline Sales','Total'],
  tax:['Description','Rate','Qty','Taxable','Total'],
  metro:['Date','PNR','Service','Metro','Passenger Station','Exchange Point','Pax','Fare/Pax','Fare'],
@@ -35,6 +37,8 @@ const cols={
 };
 const fields={
  metroSummary:['provider','city','billing_basis','pnrs','passengers','metro_fares'],
+ cloudSummary:['label','calls','charge','gst','total'],
+ aiSummary:['label','calls','charge','gst','total'],
  platformSummary:['label','website','paytm','offline_sales','total'],
  tax:['description','rate','qty','taxable','total'],
  metro:['date','pnr','service','metro','passenger_station','exchange_point','pax','fare_per_pax','fare'],
@@ -72,7 +76,7 @@ function previewSummary(doc,snapshot){
   if(snapshot.channel_summary?.length)sections.push(['Website / Paytm / Offline',dataTable('platformSummary',snapshot.channel_summary)]);
   sections.push(['Booking and cancellation lines',dataTable('platform',snapshot.lines)]);
  }else{
-  if(snapshot.summary_rows?.length)sections.push(['Call billing summary',dataTable(doc.type,snapshot.summary_rows)]);
+  if(snapshot.summary_rows?.length)sections.push(['Call billing summary',dataTable(doc.type+'Summary',snapshot.summary_rows)]);
   sections.push(['Call details',dataTable(doc.type,snapshot.lines)]);
  }
  if(snapshot.notes?.length)sections.push(['Notes','<ol>'+snapshot.notes.map(x=>`<li>${e(x)}</li>`).join('')+'</ol>']);
