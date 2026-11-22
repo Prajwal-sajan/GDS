@@ -33,6 +33,8 @@ jobs:
           node --check server/access-runtime-v27.js
           node --check server/api/team-access-v26.js
           node --check server/api/ops.js
+          node --check server/api/master.js
+          node --check server/api/accounts.js
           node --check server/domain.js
           node --check public/js/team-access-v26.js
           node --check server/api/settings-v16-iam-bridge.js
