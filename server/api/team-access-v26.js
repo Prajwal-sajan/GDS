@@ -91,6 +91,12 @@ function userPayload(b,req,old=null){
  const email=safeEmail(b.email??old?.email);
  const status=b.status??old?.status??'ACTIVE';
  if(!['ACTIVE','INACTIVE'].includes(status))error('Invalid account status');
+ const commission_pct=b.commission_pct===undefined?(old?.commission_pct||0):Number(b.commission_pct);
+ const credit_limit=b.credit_limit===undefined?(old?.credit_limit||0):Number(b.credit_limit);
+ const agent_type=b.agent_type??old?.agent_type??'postpaid';
+ if(!Number.isFinite(commission_pct)||commission_pct<0||commission_pct>100)error('Commission must be between 0 and 100%');
+ if(!Number.isFinite(credit_limit)||credit_limit<0)error('Credit limit cannot be negative');
+ if(!['prepaid','postpaid'].includes(agent_type))error('Invalid settlement type');
  const agent_category=b.agent_category??old?.agent_category??'agent';
  if(role==='agent'&&!['agent','master_agent'].includes(agent_category))error('Invalid agent type');
  const id=b.branch_id===undefined?(old?.branch_id||null):ensureBranch(b.branch_id);
@@ -113,8 +119,7 @@ function userPayload(b,req,old=null){
   {extra_permissions:old?.extra_permissions||[],denied_permissions:old?.denied_permissions||[]};
  return {name,email,language,role,branch_id:id,status,mode:role==='agent'?mode:'Online',
    agent_category:role==='agent'?agent_category:'agent',master_agent_id:role==='agent'?masterId:null,
-   agent_type:old?.agent_type||'postpaid',commission_pct:old?.commission_pct||0,
-   credit_limit:old?.credit_limit||0,limit_routes:limit,route_ids:routes,...permissions};
+   agent_type,commission_pct,credit_limit,limit_routes:limit,route_ids:routes,...permissions};
 }
 const branchInput=(b,old=null)=>{
  const code=text(b.code??old?.code,16).toUpperCase(),name=text(b.name??old?.name,120);
