@@ -56,7 +56,7 @@ async function save(){
  input.value='919731714358';
  input.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
  assert.ok(root.querySelector('[data-cfg31-chip="919731714358"]'));
- await save();assert.deepEqual(sections.vehicle.alert_recipients,['919731714358']);
+ await save();assert.deepEqual(Array.from(sections.vehicle.alert_recipients),['919731714358']);
  root.querySelector('[data-cfg31-delete-chip]').click();await save();
  assert.equal(sections.vehicle.alert_recipients.length,0);
  await page('expenses');
@@ -76,7 +76,7 @@ async function save(){
  assert.ok(root.querySelector('[name=enabled]'));
  input=root.querySelector('[data-cfg31-chips="recipients"] input');
  input.value='9731990033';input.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
- await save();assert.deepEqual(sections.whatsapp.recipients,['9731990033']);
+ await save();assert.deepEqual(Array.from(sections.whatsapp.recipients),['9731990033']);
  await page('bot');
  assert.ok(root.textContent.includes('RESPONSE DELAY (SECONDS)'));
  assert.ok(root.textContent.includes('METRO TICKET INSTRUCTIONS'));
