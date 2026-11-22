@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('nod
 process.env.GDS_DATA_DIR=fs.mkdtempSync(path.join(os.tmpdir(),'gds-reports-v21-'));
 process.env.GDS_RESEED='1';
 const app=require('../server/index'),db=require('../server/db'),U=require('../server/util'),
-  reports=require('../server/reports-suite-v21'),pdf=require('../server/report-suite-pdf-v21');
+  reports=require('../server/reports-suite-v21'),pdf=require('../server/report-suite-pdf-v21'),legacy=require('../server/reports');
 let srv,url,token,agent;
 async function call(route,{t=token,binary=false}={}){
  const response=await fetch(url+'/api'+route,{headers:t?{Authorization:'Bearer '+t}:{}});
@@ -71,6 +71,14 @@ async function signin(phone){
  assert.ok(Math.abs(e.summary.total_expense-e.sections.categories.reduce((n,x)=>n+x.amount,0))<2,'Expense category reconciliation');
  assert.ok(Math.abs(e.summary.total_expense-e.sections.by_bus.reduce((n,x)=>n+x.total,0))<2,'Expense bus reconciliation');
  assert.ok(e.sections.rows.filter(x=>x.off).every(x=>x.total>=0),'Turned-off trips have fixed-only costs');
+ for(const line of e.sections.rows){
+   const schedule=db.col('schedules').find(x=>x.travel_date===line.date&&db.col('routes').get(x.route_id)?.service_number===line.service&&x.departure_time===line.dep);
+   if(schedule){
+     const pnl=legacy.tripPnl(schedule);
+     assert.ok(Math.abs(line.total-pnl.expense)<.02,'Expense total must reconcile with Trip P&L for '+line.date+' '+line.service);
+     if(line.off)assert.equal(pnl.expense_breakdown.running,0,'Turned-off trip cannot carry running expenses');
+   }
+ }
  const no=reportsByName['no-shows'];
  assert.equal(no.sections.rows.length,no.summary.no_shows);
  const metro=reportsByName['metro-bookings'];
