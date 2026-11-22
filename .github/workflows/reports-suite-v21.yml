@@ -1,0 +1,69 @@
+name: Eight Accounts reports v21
+on:
+  push:
+    branches:
+      - feature/reports-suite-v21
+  pull_request:
+    paths:
+      - "server/reports-suite-v21.js"
+      - "server/report-suite-pdf-v21.js"
+      - "server/api/report-suite-v21.js"
+      - "public/js/report-suite-v21.js"
+      - "public/js/report-suite-specs-v21.js"
+      - "public/css/report-suite-v21.css"
+      - "tests/check-reports-suite-v21.cjs"
+      - "tests/reports-suite-v21-ui.cjs"
+jobs:
+  reports-v21:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: JavaScript syntax
+        run: |
+          node --check server/reports-suite-v21.js
+          node --check server/report-suite-pdf-v21.js
+          node --check server/api/report-suite-v21.js
+          node --check public/js/report-suite-specs-v21.js
+          node --check public/js/report-suite-v21.js
+      - run: node tests/check-reports-suite-v21.cjs
+      - run: node tests/reports-suite-v21-ui.cjs
+      - run: npm test
+      - name: Inspect PDF render & extract text
+        run: |
+          mkdir -p artifacts/reports-v21
+          node - <<'NODE'
+          const fs=require('fs'),path=require('path');
+          process.env.GDS_DATA_DIR=process.cwd()+'/tmp-reports-v21-ci';
+          process.env.GDS_RESEED='1';
+          require('./server/index');
+          const U=require('./server/util');
+          const R=require('./server/reports-suite-v21');
+          const P=require('./server/report-suite-pdf-v21');
+          const from=U.addDays(U.today(),-8),to=U.addDays(U.today(),-2);
+          const staff=R.options().staff.find(x=>x.role==='driver');
+          for(const key of R.keys){
+            const q={from,to,...(key==='staff-duty'?{staff_id:staff.id}:{})};
+            const d=R.compute(key,q);
+            fs.writeFileSync(path.join('artifacts/reports-v21',key+'.pdf'),P.generate(key,d));
+          }
+          process.exit(0);
+          NODE
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+          for report in artifacts/reports-v21/*.pdf; do
+            pdfinfo "$report" | grep -E 'Pages:|Page size:'
+            pdftotext -layout "$report" "${report%.pdf}.txt"
+            test -s "${report%.pdf}.txt"
+            pdftoppm -f 1 -l 1 -scale-to 1400 -singlefile -png "$report" "${report%.pdf}-p1"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reports-suite-v21-pdf-samples
+          path: artifacts/reports-v21/
+          retention-days: 14
