@@ -1,0 +1,26 @@
+name: Vehicle View and Edit v19
+on:
+  push:
+    branches:
+      - feature/vehicles-details-docs-maintenance-v19
+  pull_request:
+    paths:
+      - "public/js/vehicle-detail-v19.js"
+      - "public/css/vehicle-detail-v19.css"
+      - "public/js/vehicles-parity-v9.js"
+      - "server/api/vehicle-details-v19.js"
+      - "tests/check-vehicle-detail-v19.cjs"
+jobs:
+  vehicle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: node --check public/js/vehicle-detail-v19.js && node --check public/js/vehicles-parity-v9.js && node --check server/api/vehicle-details-v19.js
+      - run: node tests/check-vehicle-detail-v19.cjs
+      - run: npm test
