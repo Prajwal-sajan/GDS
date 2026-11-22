@@ -125,6 +125,7 @@ function blockedSeatsFor(s) {
   const out = {};
   const fromRoute = s.sync_with_route !== false ? (r.seat_blocks || []) : [];
   for (const blk of [...fromRoute, ...(s.seat_blocks || [])]) {
+    if (blk.expires_at && Date.now() >= Date.parse(blk.expires_at)) continue;
     if (blk.from && s.travel_date < blk.from) continue;
     if (blk.to && s.travel_date > blk.to) continue;
     if (blk.auto_release_hours) {
