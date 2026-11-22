@@ -82,4 +82,4 @@ async function login(phone){
     await new Promise(r=>server.close(r));
     fs.rmSync(process.env.GDS_DATA_DIR,{recursive:true,force:true});
   }
-})().catch(err=>{console.error(err);process.exitCode=1;});
+})().then(()=>process.exit(0)).catch(err=>{console.error(err);process.exit(1);});
