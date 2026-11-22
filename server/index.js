@@ -23,6 +23,7 @@ app.use('/api', require('./api/vehicle-details-v19'));
 app.use('/api', require('./api/master'));
 app.use('/api', require('./api/fleet-operations-v20'));
 app.use('/api', require('./api/report-suite-v21'));
+app.use('/api', require('./api/report-performance-v22'));
 app.use('/api', require('./api/accounts'));
 app.use('/api', require('./api/settings-complete'));
 app.use('/api', require('./api/settings-v16-iam-bridge'));
