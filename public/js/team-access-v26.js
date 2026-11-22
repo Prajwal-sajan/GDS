@@ -392,16 +392,21 @@ function attachMatrixEventsV27(root){
    await refresh();
   }catch(ex){G.err(ex);button.disabled=false;}
  });
- root.querySelector('[data-new-role]')?.addEventListener('click',()=>showModal({
-  title:'New role',
-  body:field('name','Role name','',{required:true,placeholder:'e.g. City Operations Supervisor',maxlength:70}),
-  action:'Create role',
-  onSave:async f=>{
-   const created=await G.post(api+'/roles',{name:f.name});
-   matrixFocus=created.key;matrixMode='single';toast('Role created');
-   await refresh();
-  }
- }));
+ root.querySelector('[data-new-role]')?.addEventListener('click',()=>{
+  if(G.teamAccessV28?.newRole)
+   return G.teamAccessV28.newRole(root,view.data,async created=>{
+    matrixFocus=created.key;matrixMode='single';view.role=created.key;await refresh();
+   });
+  // Legacy v27 test harness and deployments without the v28 script.
+  return showModal({
+   title:'New role',
+   body:field('name','Role name','',{required:true,placeholder:'e.g. City Operations Supervisor',maxlength:70}),
+   action:'Create role',onSave:async f=>{
+    const created=await G.post(api+'/roles',{name:f.name});
+    matrixFocus=created.key;matrixMode='single';toast('Role created');await refresh();
+   }
+  });
+ });
  root.querySelector('[data-one-role]')?.addEventListener('click',()=>{
   matrixMode='single';matrixFocus=matrixFocus||view.role||'viewer';refresh().catch(G.err);
  });
