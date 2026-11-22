@@ -7,7 +7,7 @@ const C={ink:[.10,.15,.25],muted:[.32,.38,.48],blue:[.105,.35,.97],
 const escPDF=s=>String(s).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)')
   .replace(/[\u0000-\u001f]/g,' ');
 const ascii=s=>String(s??'').replace(/[₹]/g,'Rs. ').replace(/[→]/g,'->').replace(/[–—]/g,'-')
-  .replace(/[×]/g,'x').replace(/[’‘]/g,"'").replace(/[“”]/g,'"').replace(/[•]/g,'-')
+  .replace(/[’‘]/g,"'").replace(/[“”]/g,'"').replace(/[•]/g,'-')
   .replace(/[^\x20-\x7e\xA0-\xFF]/g,'?');
 const india=v=>Math.round(Number(v)||0).toLocaleString('en-IN');
 const decimal=(v,n=1)=>Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:n});
@@ -145,8 +145,8 @@ class Builder{
    // Builtin Type1 Helvetica gives portable/searchable vector text. No external font dependency.
    const objects=[
      '<< /Type /Catalog /Pages 2 0 R >>','', // 1 Catalog, 2 Pages
-     '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
-     '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>'
+     '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>',
+     '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>'
    ];
    const kids=[];
    for(const page of this.pages){
@@ -187,7 +187,7 @@ function generate(report){
    [150,88,42,41,78,76,55,85,179],
    ['text','text','number','number','number','decimal','ratio','delta','text']),
    report.by_driver,report.totals.by_driver);
- pdf.section('Driver x bus',cols([
+ pdf.section('Driver × bus',cols([
    ['driver','Driver'],['vehicle','Bus'],['trips','Trips'],['km','Km (GPS)'],
    ['fuel_l','Fuel (L)'],['kmpl','km/L'],['bus_avg_kmpl','Bus avg km/L'],['vs_bus_avg_pct','vs bus avg']],
    [126,122,46,87,70,55,66,222],
