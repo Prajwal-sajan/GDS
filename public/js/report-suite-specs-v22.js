@@ -95,5 +95,17 @@ Object.assign(S.DEF,{
     M('net_sales','Net sales',1.3),M('expense','Expense',1.3),M('profit','Profit',1.3)])
  ]}
 });
+const inheritedSections=S.sections;
+S.sections=function(key,data){
+ return inheritedSections(key,data).map(section=>{
+  if(key==='point-performance'&&section.key==='ranking')return {...section,
+    title:'ALL '+(data?.mode==='drop'?'DROP':'PICKUP')+' POINTS',
+    cols:section.cols.map(c=>c.key==='point'?{...c,label:data?.mode==='drop'?'Drop point':'Pickup point'}:c)};
+  if(key==='frequent-travellers'&&section.key==='rows')return {...section,
+    title:'FREQUENT TRAVELLERS — '+(data?.top==='all'?'ALL':'TOP '+(data?.top||'100'))+
+      ' OF '+Number(data?.summary?.passengers||0).toLocaleString('en-IN')};
+  return section;
+ });
+};
 return {DEF:S.DEF,sections:S.sections};
 });
