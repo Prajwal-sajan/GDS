@@ -101,7 +101,9 @@ r.put('/iam/groups/:id',allowed('iam.manage_roles'),wrap(req=>{
 }));
 r.delete('/iam/groups/:id',allowed('iam.manage_roles'),wrap(req=>({success:db.col('iam_groups').remove(req.params.id)})));
 r.get('/iam/access-evaluate/:id',allowed('settings.view'),wrap(req=>{
-  const u=db.col('users').get(req.params.id);if(!u)invalid('User not found',404);
+  const u=db.col('users').get(req.params.id);if(!u||u.deleted_at)invalid('User not found',404);
+  const me=db.col('users').get(own(req));
+  if(!['owner','admin','manager'].includes(me?.role)&&u.id!==me?.id&&(!me?.branch_id||String(u.branch_id)!==String(me.branch_id)))invalid('User outside your branch scope',403);
   return {user:A.publicUser(u),status:u.status,role_name:A.roles()[u.role]?.name||u.role,groups:db.col('iam_groups').filter(g=>(g.user_ids||[]).includes(Number(u.id))).map(g=>({id:g.id,name:g.name})),note:'Role scope metadata is stored for UI parity; enforcement must be added per endpoint before production.'};
 }));
 r.delete('/iam/users/:id',allowed('iam.manage_users'),wrap(req=>{
