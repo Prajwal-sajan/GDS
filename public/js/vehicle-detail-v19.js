@@ -68,7 +68,7 @@ function renderDetails(s){
     <div class="vd19-col"><h4>VEHICLE DETAILS</h4><div class="vd19-card">${top}</div>
       <div class="vd19-card vd19-segment-card">${segment('Vehicle Ownership','ownership_type',[['permanent','Permanent'],['temporary','Temporary']])}
       ${segment('Vehicle Type','vehicle_role',[['main','Main Bus'],['pickup_van','Pickup Bus']])}</div>
-      <p class="vd19-help">Own fleet. Fleet utilization counts it every day. Runs the trip. Counted in fleet utilization.</p>
+      <p class="vd19-help">${v.ownership_type==='permanent'?'Own fleet. Fleet utilization counts it every day. Runs the trip. Counted in fleet utilization.':'Temporary or attached vehicle. Fleet ownership and utilization are determined by its actual assignment.'}</p>
       <h4>GPS & DRIVER MONITORING</h4><div class="vd19-card">${gps}</div>
       <p class="vd19-help">Enable GPS for real-time vehicle tracking and DMS for driver safety monitoring. Configuration alone does not establish a live GPS connection.</p>
     </div>
@@ -86,7 +86,7 @@ function renderDocuments(s){
   const list=[...DOCS,...more];
   return `<section class="vd19-single"><h4>VEHICLE DOCUMENTS</h4><div class="vd19-document-card">
     ${list.map(([type,label])=>{
-      const doc=map.get(type),isPublic=doc?.visibility==='public',active=s.mode==='edit',exp=doc?.expiry_date;
+      const doc=map.get(type),isPublic=doc?.visibility==='public',active=s.mode==='edit'&&s.canDocs,exp=doc?.expiry_date;
       return `<article class="vd19-document-row"><div class="vd19-doc-left"><span class="vd19-file-icon">${ic('file',19)}</span>
         <div><b>${E(label)}</b><div class="vd19-doc-links">
         ${doc?.has_file?`<button data-vd19-doc-open="${doc.id}">Open document ${ic('external',15)}</button>`:
@@ -132,7 +132,7 @@ function renderArchive(s){
     ${filtered.length?`<div class="vd19-archive-list">${filtered.map(x=>`<article class="vd19-archive-entry">
      <span>${ic(x.kind==='document'?'file':'wrench',19)}</span><div><strong>${E(x.document_name||x.label||x.document_type)}</strong>
      <small>${x.kind==='document'?'Document':'Maintenance'} · Archived ${x.archived_at?new Date(x.archived_at).toLocaleDateString('en-IN'):'—'} ${x.archive_reason?'· '+E(x.archive_reason):''}</small></div>
-     ${x.kind==='document'&&x.has_file&&s.mode==='edit'?`<button data-vd19-doc-open="${x.id}">Open ${ic('external',15)}</button>`:''}</article>`).join('')}</div>`:
+     ${x.kind==='document'&&x.has_file&&s.canDocs?`<button data-vd19-doc-open="${x.id}">Open ${ic('external',15)}</button>`:''}</article>`).join('')}</div>`:
     `<div class="vd19-empty vd19-archive-empty">${ic('archive',34)}<span>Nothing archived yet. Archived documents and files you replace appear here.</span></div>`}</section>`;
 }
 function render(s,root){
@@ -302,7 +302,7 @@ async function open({id,mode='view',host,onDone}){
     }catch(ex){err(ex);}
   });
   await reload();
-  root.scrollIntoView({behavior:'instant',block:'start'});
+  root.scrollIntoView({behavior:'auto',block:'start'});
   return {refresh,close:leave};
 }
 window.VehicleDetailV19={open,DOCS};
