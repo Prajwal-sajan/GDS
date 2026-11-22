@@ -66,4 +66,4 @@ const get=(p,who)=>call('GET',p,undefined,who),post=(p,b,who)=>call('POST',p,b,w
   assert.ok(db.col('edit_history').all().length>0,'Mutations are audited');
   console.log('PASS Configuration v30 API: persisted sections, strict validations, role gates, dial CRUD, subscription CRUD, provider fail-closed, delivery log');
  }finally{server.close();}
-})().catch(e=>{console.error(e);server.close();process.exitCode=1});
+})().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1);});
