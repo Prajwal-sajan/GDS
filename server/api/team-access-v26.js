@@ -116,7 +116,7 @@ function userPayload(b,req,old=null){
  const language=text(b.language??old?.language??'English',40)||'English';
  if(!['English','Hindi','Kannada','Tamil','Telugu','Malayalam','Marathi','Bengali','Gujarati','Punjabi','Odia','Assamese','Urdu'].includes(language))
   error('Unsupported language');
- let masterId=b.master_agent_id??old?.master_agent_id??null;
+ let masterId=b.master_agent_id===undefined?(old?.master_agent_id||null):b.master_agent_id;
  if(masterId){
   if(Number(masterId)===Number(old?.id))error('An agent cannot be their own master');
   const master=db.col('users').get(Number(masterId));
