@@ -13,7 +13,7 @@ $ErrorActionPreference = 'Stop'
 $BaseUrl = $BaseUrl.TrimEnd('/')
 $manifest = Join-Path $ReferenceDirectory 'manifest.json'
 if (-not (Test-Path $manifest)) { throw "Missing reference package manifest: $manifest" }
-$manifestObject = Get-Content $manifest -Raw | ConvertFrom-Json
+$manifestObject = Get-Content $manifest -Raw -Encoding UTF8 | ConvertFrom-Json
 if ($manifestObject.scope -ne 'reference_only') { throw 'This importer accepts reference-only packages, never operational billing records.' }
 
 # Token stays in this local PowerShell process; do not paste it into chats or files.
@@ -31,7 +31,7 @@ function ApiGet([string]$uri) {
 }
 function ApiSend([string]$method,[string]$uri,$data) {
   $json = $data | ConvertTo-Json -Compress -Depth 80
-  Invoke-RestMethod -Method $method -Uri ($BaseUrl+$uri) -Headers $headers -ContentType 'application/json' -Body $json
+  Invoke-RestMethod -Method $method -Uri ($BaseUrl+$uri) -Headers $headers -ContentType 'application/json; charset=utf-8' -Body $json
 }
 $catalog = ApiGet '/api/accounts/invoices-v24'
 $year = '2026'
@@ -44,7 +44,7 @@ foreach ($item in $manifestObject.source_documents) {
   $jsonPath = Join-Path $ReferenceDirectory $item.snapshot_file
   $pdfPath = Join-Path $PdfDirectory $name
   if (-not (Test-Path $jsonPath)) { throw "Missing source mapping JSON: $jsonPath" }
-  $entry = Get-Content $jsonPath -Raw | ConvertFrom-Json
+  $entry = Get-Content $jsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
   if (-not $entry.reference_only) { throw "Refusing nonreference data: $name" }
   if ($entry.sha256 -ne $item.sha256) { throw "Manifest/source mismatch: $name" }
   $stem = [IO.Path]::GetFileNameWithoutExtension($name)
