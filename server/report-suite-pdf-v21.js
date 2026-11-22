@@ -1,5 +1,6 @@
 'use strict';
-const {DEF,sections}=require('../public/js/report-suite-specs-v21');
+const Specs=require('../public/js/report-suite-specs-v21');
+const DEF=Specs.DEF;
 const landscape={W:841.89,H:595.28},portrait={W:595.28,H:841.89};
 const ink=[.09,.15,.25],slate=[.34,.39,.49],grid=[.82,.85,.89],
  blue=[.09,.34,.96],shade=[.965,.975,.99],totalColor=[.90,.92,.95],white=[1,1,1];
@@ -69,7 +70,10 @@ class Pdf{
    const base=[['Period:',report.from+' to '+report.to],['Generated:',generated]];
    if(report.staff?.name)base.push(['Staff:',report.staff.name]);
    if(report.mode&&def.modes)base.push(['Feeder leg:',report.mode==='both'?'Pickup + Drop':report.mode]);
-   const all=base.concat(def.metrics.map(m=>{const [k,v]=labelValue(report,m);return [k+':',v]}));
+   if(Array.isArray(report.pdf_context))for(const line of report.pdf_context)if(Array.isArray(line)&&line.length>=2)base.push([String(line[0]),String(line[1])]);
+   const all=base.concat(def.metrics.map(m=>{const [k,v]=labelValue(report,m);
+     const label=report.report==='station-performance'&&m[1]==='trips'?'Trips ('+String(report.summary?.schedules??0)+' schedules)':k;
+     return [label+':',v];}));
    const split=Math.ceil(all.length/2),left=all.slice(0,split),right=all.slice(split);
    const starting=this.y,leftW=this.size.W*.60,labelX=this.M+this.size.W*.17;
    left.forEach(([a,b],i)=>{
@@ -162,7 +166,7 @@ function generate(key,data){
  const def=DEF[key];if(!def)throw new Error('Unsupported report');
  if(def.needsStaff&&!data.staff?.id)throw new Error('Select a driver or staff member before exporting PDF');
  const pdf=new Pdf(def.pdf_orientation==='portrait'?portrait:landscape);pdf.heading(data,def);
- for(const sec of sections(key,data)){
+ for(const sec of Specs.sections(key,data)){
     const rows=data.sections?.[sec.key]||[];
     pdf.table(sec,rows,data.totals?.[sec.key]||{});
  }
