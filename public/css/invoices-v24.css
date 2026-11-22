@@ -76,3 +76,11 @@
 
 .ac10-root .inv24-reference{font-size:10px;font-weight:500;color:#8b99af;margin-left:6px}
 .ac10-root .inv24-form textarea{border:1px solid #d3dff1;border-radius:9px;padding:11px 13px;font:inherit;font-size:13px;resize:vertical;min-height:78px;color:#12213c}
+
+.ac10-root .inv24-month-tools{display:flex;gap:9px;align-items:center}
+.ac10-root .inv24-recon-table td:first-child{white-space:normal;min-width:240px}
+.ac10-root .inv24-recon-table td small{display:block;max-width:350px;color:#7185a1;margin-top:4px;line-height:1.4}
+.ac10-root .inv24-audit-status{display:inline-block;padding:5px 9px;border-radius:7px;font-size:12px;background:#eef2f8;color:#64758c}
+.ac10-root .inv24-audit-status.match{background:#e6f8ed;color:#087c47}
+.ac10-root .inv24-audit-status.mismatch{background:#fff1e9;color:#bc4d23}
+
