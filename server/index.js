@@ -19,6 +19,17 @@ app.use('/api', misc.pub);
 // Platform-key only; explicitly outside operator login/session routes.
 app.use('/api/platform-billing/v25', require('./api/platform-billing-v25').internal);
 app.use('/api', auth.middleware);
+// A restrictive read-only access rule must cover all mutation endpoints,
+// not only the screenshot's individually mapped handler checks.
+const AccessRules=require('./team-access-policy-v28');
+app.use('/api',(req,res,next)=>{
+ if(['GET','HEAD','OPTIONS'].includes(req.method))return next();
+ if(['/team-access/v28/test','/bookings/quote','/auth/logout'].includes(req.path))return next();
+ const effective=db.col('users').get(req.user?.id);
+ if(AccessRules.isReadOnly(effective))
+  return res.status(403).json({success:false,message:'Read-only access rule blocks changes'});
+ next();
+});
 app.use('/api', require('./api/pnl-v18'));
 app.use('/api', require('./api/ops'));
 app.use('/api', require('./api/vehicle-details-v19'));
@@ -30,6 +41,7 @@ app.use('/api', require('./api/accounts'));
 app.use('/api', require('./api/invoices-v24'));
 app.use('/api', require('./api/platform-billing-v25').operator);
 app.use('/api', require('./api/team-access-v26'));
+app.use('/api', require('./api/team-access-v28'));
 app.use('/api', require('./api/settings-complete'));
 app.use('/api', require('./api/settings-v16-iam-bridge'));
 app.use('/api', misc.r);

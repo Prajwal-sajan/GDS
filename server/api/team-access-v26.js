@@ -74,6 +74,7 @@ const exposeUser=u=>({
  agent_type:u.agent_type||'postpaid',master_agent_id:u.master_agent_id||null,
  branch_id:u.branch_id||null,limit_routes:!!u.limit_routes,route_ids:u.route_ids||[],
  extra_permissions:u.extra_permissions||[],denied_permissions:u.denied_permissions||[],
+ corridor_tags:Array.isArray(u.corridor_tags)?u.corridor_tags:[],
  created_at:u.created_at,last_login:u.last_login||null,login_count:Number(u.login_count)||0,
  commission_pct:Number(u.commission_pct)||0,credit_limit:Number(u.credit_limit)||0,
  deleted_at:u.deleted_at||null
@@ -113,6 +114,11 @@ function userPayload(b,req,old=null){
  const limit=!!(b.limit_routes??old?.limit_routes??false);
  const routes=b.route_ids===undefined?(old?.route_ids||[]):routeIds(b.route_ids,limit);
  if(limit&&!routes.length)error('At least one allowed route is required');
+ const tagsInput=b.corridor_tags??old?.corridor_tags??[];
+ if(!Array.isArray(tagsInput)||tagsInput.length>20)error('Corridor tags must be a short list');
+ const corridor_tags=uniq(tagsInput.map(x=>text(x,32).toLowerCase()).filter(Boolean));
+ if(corridor_tags.some(t=>!/^[a-z0-9][a-z0-9_-]{0,31}$/.test(t)))
+  error('Corridor tags must use letters, numbers, hyphens or underscores');
  const language=text(b.language??old?.language??'English',40)||'English';
  if(!['English','Hindi','Kannada','Tamil','Telugu','Malayalam','Marathi','Bengali','Gujarati','Punjabi','Odia','Assamese','Urdu'].includes(language))
   error('Unsupported language');
@@ -131,7 +137,7 @@ function userPayload(b,req,old=null){
   {extra_permissions:old?.extra_permissions||[],denied_permissions:old?.denied_permissions||[]};
  return {name,email,language,role,branch_id:id,status:role==='agent'&&mode==='Offline'?'INACTIVE':status,mode:role==='agent'?mode:'Online',
    agent_category:role==='agent'?agent_category:'agent',master_agent_id:role==='agent'?masterId:null,
-   agent_type,commission_pct,credit_limit,limit_routes:limit,route_ids:routes,...permissions};
+   agent_type,commission_pct,credit_limit,limit_routes:limit,route_ids:routes,corridor_tags,...permissions};
 }
 const branchInput=(b,old=null)=>{
  const code=text(b.code??old?.code,16).toUpperCase(),name=text(b.name??old?.name,120);
@@ -255,7 +261,7 @@ r.delete('/team-access/v26/branches/:id',A.can('settings.modify'),wrap(req=>{
 }));
 // Role matrix save is atomic at the document-policy level: validate every cell,
  // numeric limit, role and stale revision before changing the stored roles.
-const allowedValue=(row,v)=>row.kind==='scope'?['Off','Own','Branch','Company'].includes(v):['Off','On'].includes(v);
+const allowedValue=(row,v)=>row.choices?row.choices.includes(v):row.kind==='scope'?['Off','Own','Branch','Company'].includes(v):['Off','On'].includes(v);
 const roleValue=(role,row)=>{
  if(!permissionAvailable(row,role.key))return '—';
  const matrix=role.matrix_v27||{};
@@ -302,7 +308,8 @@ r.put('/team-access/v26/roles/batch',A.can('iam.manage_roles'),wrap(req=>{
        Object.hasOwn(item.matrix,row.label)?item.matrix[row.label]:undefined;
    const current=roleValue(role,row);
    const v=supplied===undefined?(current==='—'?'Off':current):supplied;
-   if(!allowedValue(row,v))error('Invalid access selection for '+row.label);
+   if(!allowedValue(row,v) && !(supplied===undefined&&allowedValue({...row,choices:null},v)))
+    error('Invalid access selection for '+row.label);
    if(!permissionAvailable(row,item.key)&&v!=='Off')error(row.label+' is not available to '+role.name,403);
    if(permissionAvailable(row,item.key)){
     matrix[row.key]=v;
@@ -351,9 +358,19 @@ r.put('/team-access/v26/roles/batch',A.can('iam.manage_roles'),wrap(req=>{
 r.post('/team-access/v26/roles',A.can('iam.manage_roles'),wrap(req=>{
  const name=text(req.body?.name,70),key=name.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
  if(name.length<3||!key||key==='owner'||key.length>40||A.roles()[key])error('Role name is unavailable');
+ const sourceKey=text(req.body?.starts_from,60);
+ if(sourceKey&&(!A.roles()[sourceKey]||['owner','admin'].includes(sourceKey)))
+  error('Choose an available starting role');
+ const source=sourceKey?A.roles()[sourceKey]:null;
  const next={...(db.meta('roles')||{})};
- next[key]={name,permissions:[],scopes:{},ui_permissions:{},limits:{}};
- db.meta('roles',next);D.audit('iam',key,'role-created',{created:name},req.user);
+ next[key]=source?
+  {name,permissions:[...(source.permissions||[])],
+   scopes:{...(source.scopes||{})},
+   ui_permissions:{...(source.ui_permissions||{})},
+   matrix_v27:{...(source.matrix_v27||{})},
+   limits:{...(source.limits||{})},starts_from:sourceKey}:
+  {name,permissions:[],scopes:{},ui_permissions:{},matrix_v27:{},limits:{}};
+ db.meta('roles',next);D.audit('iam',key,'role-created',{created:name,starts_from:sourceKey||null},req.user);
  return {key,...next[key]};
 }));
 r.delete('/team-access/v26/roles/:key',A.can('iam.manage_roles'),wrap(req=>{

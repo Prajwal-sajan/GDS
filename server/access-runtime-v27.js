@@ -3,16 +3,18 @@
 // Scope-grant metadata is NOT interpreted as a blanket ability to see other branches.
 const db=require('./db'),A=require('./auth'),D=require('./domain');
 const {byLabel}=require('./team-access-schema-v27');
+const Advanced=require('./team-access-policy-v28');
 function lookup(user,label){
  const row=byLabel.get(label);
  if(!row||!user)return null;
  const role=A.roles()[user.role]||{};
  return {row,role,selected:role.matrix_v27?.[row.key]??null};
 }
-function explicitAccess(req,label){
+function explicitAccess(req,label,context={}){
  const me=db.col('users').get(req.user?.id);
  const m=lookup(me,label);
  if(!m)return null;
+ Advanced.enforce(req,label,context);
  if(m.row.roleImpossible.includes(me.role)&&m.role.matrix_v27)
   throw D.httpErr(403,'Action is unavailable for this role: '+label);
  if(m.selected===null)return null; // Keep legacy modules working until role edited.
@@ -29,12 +31,14 @@ function limit(req,key){
 function checkCancel(req,booking){
  explicitAccess(req,'Cancel tickets');
  const cutoff=limit(req,'cancel_cutoff_hours');
- if(cutoff==='')return;
  const schedule=db.col('schedules').get(booking?.schedule_id);
  if(!schedule)throw D.httpErr(404,'Schedule not found');
  const depart=Date.parse(schedule.travel_date+'T'+schedule.departure_time+':00');
  if(!Number.isFinite(depart))throw D.httpErr(409,'Cannot evaluate departure cut-off');
- if((depart-Date.now())/3600000<Number(cutoff))
+ const hours=(depart-Date.now())/3600000;
+ // Enforce action-specific rules with actual journey context, not a UI-only preview.
+ Advanced.enforce(req,'Cancel tickets',{hours_before_departure:hours,route_id:schedule.route_id},{requireContext:true});
+ if(cutoff!==''&&hours<Number(cutoff))
   throw D.httpErr(403,'Cancellation requires at least '+cutoff+' hours before departure');
 }
 function checkBlock(req,seats,action){
@@ -42,15 +46,29 @@ function checkBlock(req,seats,action){
  explicitAccess(req,'Block seats');
  if(!Array.isArray(seats)||!seats.length||seats.some(x=>typeof x!=='string'))
   throw D.httpErr(400,'Choose valid seats to block');
- const maximum=limit(req,'block_max_seats');
- if(maximum!==''&&new Set(seats).size>Number(maximum))
-  throw D.httpErr(403,'Seat block exceeds '+maximum+' seats');
- const hours=limit(req,'block_max_hours');
- if(hours==='')return null;
- const n=Number(req.body?.duration_hours??hours);
- if(!Number.isFinite(n)||n<=0||n>Number(hours))
-  throw D.httpErr(400,'Block duration must be within '+hours+' hours');
- return new Date(Date.now()+n*3600000).toISOString();
+ const schedule=db.col('schedules').get(req.params?.id);
+ if(!schedule)throw D.httpErr(404,'Schedule not found');
+ const configuredMax=limit(req,'block_max_seats'),configuredHours=limit(req,'block_max_hours');
+ const context={route_id:schedule.route_id,seat_count:new Set(seats).size};
+ if(req.body?.duration_hours!==undefined)context.block_duration_hours=Number(req.body.duration_hours);
+ const rules=Advanced.enforce(req,'Block seats',context,{requireContext:true});
+ const ruleMax=rules.limits.max_seats,ruleHours=rules.limits.max_hours;
+ const max= Math.min(configuredMax===''?Infinity:Number(configuredMax),ruleMax??Infinity);
+ if(Number.isFinite(max)&&context.seat_count>max)
+  throw D.httpErr(403,'Seat block exceeds '+max+' seats');
+ const hoursCap=Math.min(configuredHours===''?Infinity:Number(configuredHours),ruleHours??Infinity);
+ if(hoursCap===Infinity){
+  // No role/preset cap means "no limit", not "duration is forbidden".
+  if(req.body?.duration_hours===undefined)return null;
+  const requested=Number(req.body.duration_hours);
+  if(!Number.isFinite(requested)||requested<=0||requested>8760)
+   throw D.httpErr(400,'Block duration must be 1–8760 hours');
+  return new Date(Date.now()+requested*3600000).toISOString();
+ }
+ const duration=context.block_duration_hours===undefined?hoursCap:context.block_duration_hours;
+ if(!Number.isFinite(duration)||duration<=0||duration>hoursCap)
+  throw D.httpErr(403,'Block duration must be within '+hoursCap+' hours');
+ return new Date(Date.now()+duration*3600000).toISOString();
 }
 function checkOnBehalf(req,body){
  if(req.user.role!=='agent'&&body.agent_phone)explicitAccess(req,'Book on behalf of agents');

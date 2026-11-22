@@ -121,6 +121,16 @@ const groups=[
 const ROWS=groups.map(([title,definitions])=>({
  title,rows:definitions.map(d=>make(title,d))
 }));
+// Exact native-dropdown options in the new screenshot captures. These three
+// scoped actions expose only their supported reach levels (no synthetic option).
+const SCREENSHOT_SCOPES={
+ 'View call history':['Off','Own','Company'],
+ 'Daily report':['Off','Branch','Company'],
+ 'View users':['Off','Branch','Company']
+};
+for(const section of ROWS)for(const row of section.rows){
+ if(SCREENSHOT_SCOPES[row.label]){row.kind='scope';row.choices=SCREENSHOT_SCOPES[row.label];}
+}
 const ALL_ROWS=ROWS.flatMap(x=>x.rows);
 const byKey=new Map(ALL_ROWS.map(x=>[x.key,x]));
 const byLabel=new Map(ALL_ROWS.map(x=>[x.label,x]));
