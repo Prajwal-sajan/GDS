@@ -10,7 +10,7 @@ const READ_ONLY=new Set([
  'View income & expenses','View routes','View vehicles & fleet map',
  'View coaches / seat layouts','View trip chats','View call history',
  'Listen to recordings','Sales','Transactions & receivables','Reports',
- 'Invoices & statements (view / pay)','Settlements (view)','Daily report',
+ 'Settlements (view)','Daily report',
  'View ratings','View staff','View users'
 ]);
 const ACTIONS=new Set(ALL_ROWS.map(r=>r.key));
@@ -30,6 +30,8 @@ function groupsFor(user){
 }
 function applies(rule,user,groupIds){
  if(!rule||rule.enabled===false)return false;
+ // The organization owner must retain the ability to recover from an overly broad rule.
+ if(user.role==='owner'&&rule.subject_type==='all')return false;
  const st=rule.subject_type;
  if(st==='all')return true;
  if(st==='role')return rule.subject_id===user.role;
@@ -127,6 +129,13 @@ function evaluate(user,actionKey,context={}){
   selected,base_grant:baseAllowed,groups:groupNames,applied_rules:rule.applied,
   pending_rules:rule.unknown,limits:rule.limits,reasons};
 }
+function isReadOnly(user){
+ if(!user||user.role==='owner')return false;
+ const groupIds=groupsFor(user).map(g=>g.id);
+ return db.col('iam_access_rules_v28').all().some(rule=>
+  rule.action_key==='*'&&rule.effect==='deny'&&rule.condition?.kind==='write_action'&&
+  applies(rule,user,groupIds));
+}
 function enforce(req,label,context={},options={}){
  const user=db.col('users').get(req.user?.id);
  if(!user)return null;
@@ -139,4 +148,4 @@ function enforce(req,label,context={},options={}){
   throw D.httpErr(403,'Access rule needs '+match.unknown.map(x=>x.needs).join(', '));
  return match;
 }
-module.exports={RULE_TEMPLATES,ACTIONS,READ_ONLY,groupsFor,ruleEffect,evaluate,enforce};
+module.exports={RULE_TEMPLATES,ACTIONS,READ_ONLY,groupsFor,ruleEffect,evaluate,enforce,isReadOnly};
