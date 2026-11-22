@@ -90,7 +90,7 @@
   }
   function decorate(overlay,canEdit){
     const f=overlay?.querySelector('.sx-modal-footer');if(!f)return;
-    f.innerHTML=`<span class="sxp-help" data-sxp-help></span><div class="sxp-buttons"><button class="sxp-close" data-sx-close type="button">${ic('x',19)} Close</button><button class="sxp-save" data-sxp-save type="button">Save Expenses</button><span class="sxp-caution">!</span></div>`;
+    f.innerHTML=`<span class="sxp-help" data-sxp-help></span><div class="sxp-buttons"><button class="sxp-close" data-sx-close type="button">${ic('x',19)} Close</button><button class="sxp-save" data-sxp-save type="button" disabled>Save Expenses</button><span class="sxp-caution">!</span></div>`;
     update(overlay);
   }
   function update(overlay){
