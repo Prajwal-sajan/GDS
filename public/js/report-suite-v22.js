@@ -171,7 +171,12 @@ async function event(root,key,d,state,evt){
   nav(root,key);
  }else if(action==='sort'||action==='top'){root.dataset[action]=val;nav(root,key);}
  else if(action==='pdf'||action==='excel')await download(key,d,action,button);
- else if(action==='print')window.print();
+ else if(action==='print'){
+   const old=state.visible;
+   if(key==='frequent-travellers')root.innerHTML=render(d,state.opts,key,{...state,visible:Number.MAX_SAFE_INTEGER});
+   try{window.print();}
+   finally{if(key==='frequent-travellers')root.innerHTML=render(d,state.opts,key,{...state,visible:old});}
+ }
  else if(action==='share'){
   const url=location.href;
   if(navigator.share){try{await navigator.share({title:S.DEF[key].title,url});return;}catch(e){if(e.name==='AbortError')return;}}
@@ -190,7 +195,7 @@ function wire(root,key,d,state){
  root.addEventListener('input',e=>{
    if(!e.target.matches('[name=search]'))return;
    clearTimeout(debounce);const v=e.target.value;
-   debounce=setTimeout(()=>{const item=root.querySelector('[name=search]');if(item)item.value=v;nav(root,key);},450);
+   debounce=setTimeout(()=>{const item=root.querySelector('[name=search]');if(item)item.value=v;window.__rpt22RefocusSearch=true;nav(root,key);},450);
  });
  root.addEventListener('keydown',e=>{
    if(e.target.matches('[name=search]')&&e.key==='Enter'){e.preventDefault();clearTimeout(debounce);nav(root,key);}
@@ -229,6 +234,11 @@ async function show(el,p){
    root.innerHTML=render(d,opts,key,state);root.dataset.mode=d.mode||'pickup';
    root.dataset.sort=d.sort||'trips';root.dataset.top=d.top||'100';
    wire(root,key,d,state);
+   if(window.__rpt22RefocusSearch&&key==='frequent-travellers'){
+     window.__rpt22RefocusSearch=false;
+     const field=root.querySelector('[name=search]');
+     if(field){field.focus();const end=field.value.length;field.setSelectionRange(end,end);}
+   }
  }catch(error){root.innerHTML=`<div class="rpt21-error">Unable to load ${E(S.DEF[key].title)}: ${E(error.message)}</div>`;G.err(error);}
 }
 G.screens.accounts=async function(el,p={}){
