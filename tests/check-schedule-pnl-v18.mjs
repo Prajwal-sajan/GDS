@@ -1,9 +1,11 @@
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 const require=createRequire(import.meta.url);
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const __dirname=path.dirname(fileURLToPath(import.meta.url));
 const vm = require('node:vm');
 process.env.GDS_DATA_DIR=fs.mkdtempSync(path.join(os.tmpdir(),'gds-pnl18-'));
 process.env.GDS_RESEED='1';
