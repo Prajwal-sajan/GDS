@@ -57,6 +57,20 @@ function viewPhone(req){
  try{const result=explicitAccess(req,'See passenger phone numbers');return result!=='Off';}
  catch(e){if(e.status===403)return false;throw e;}
 }
+function bookingAllowed(req,booking,label='View bookings'){
+ const selected=explicitAccess(req,label);
+ if(selected===null||selected==='Company'||selected==='On')return true;
+ const me=db.col('users').get(req.user?.real_user_id||req.user?.id);
+ if(!me||!booking)return false;
+ if(selected==='Own')return booking.booked_by?.phone===me.phone||booking.agent_phone===me.phone;
+ if(selected==='Branch')return !!me.branch_id&&String(booking.branch_id)===String(me.branch_id);
+ return false;
+}
+function requireBooking(req,booking,label='View bookings'){
+ if(!booking)throw D.httpErr(404,'Booking not found');
+ if(!bookingAllowed(req,booking,label))throw D.httpErr(403,'Booking is outside your allowed '+label+' scope');
+ return booking;
+}
 function maskedBooking(booking,allowed){
  if(allowed)return booking;
  const b=JSON.parse(JSON.stringify(booking));
@@ -65,4 +79,4 @@ function maskedBooking(booking,allowed){
  if(b.passengers)for(const p of b.passengers)if(p.phone)p.phone='••••••••••';
  return b;
 }
-module.exports={lookup,explicitAccess,limit,checkCancel,checkBlock,checkOnBehalf,checkComment,viewPhone,maskedBooking};
+module.exports={lookup,explicitAccess,limit,checkCancel,checkBlock,checkOnBehalf,checkComment,viewPhone,maskedBooking,bookingAllowed,requireBooking};
