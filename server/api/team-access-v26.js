@@ -118,9 +118,11 @@ function userPayload(b,req,old=null){
   error('Unsupported language');
  let masterId=b.master_agent_id??old?.master_agent_id??null;
  if(masterId){
+  if(Number(masterId)===Number(old?.id))error('An agent cannot be their own master');
   const master=db.col('users').get(Number(masterId));
   if(!master||master.role!=='agent'||master.agent_category!=='master_agent'||master.deleted_at)
    error('Master agent not found');
+  if(master.master_agent_id)error('Nested master-agent structures are not supported');
   masterId=Number(masterId);
  }
  const permissions=b.extra_permissions!==undefined||b.denied_permissions!==undefined?
@@ -202,6 +204,9 @@ r.put('/team-access/v26/users/:id',A.can('iam.manage_users'),wrap(req=>{
  const b=req.body||{};
  if(b.phone!==undefined&&normPhone(b.phone)!==u.phone)error('Phone number cannot be modified. Create a new identity.');
  const p=userPayload(b,req,u);
+ if(u.role==='agent'&&u.agent_category==='master_agent'&&p.agent_category!=='master_agent'&&
+   db.col('users').count(x=>x.master_agent_id===u.id&&!x.deleted_at))
+   error('Move sub-agents before changing a master agent to a regular agent',409);
  const changed=Object.keys(p).filter(k=>JSON.stringify(p[k])!==JSON.stringify(u[k]));
  if(!changed.length)return exposeUser(u);
  const update=db.col('users').update(u.id,p);
