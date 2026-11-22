@@ -10,7 +10,7 @@ function lookup(user,label){
  return {row,role,selected:role.matrix_v27?.[row.key]??null};
 }
 function explicitAccess(req,label){
- const me=db.col('users').get(req.user?.real_user_id||req.user?.id);
+ const me=db.col('users').get(req.user?.id);
  const m=lookup(me,label);
  if(!m)return null;
  if(m.row.roleImpossible.includes(me.role)&&m.role.matrix_v27)
@@ -22,7 +22,7 @@ function explicitAccess(req,label){
  return m.selected;
 }
 function limit(req,key){
- const me=db.col('users').get(req.user?.real_user_id||req.user?.id);
+ const me=db.col('users').get(req.user?.id);
  const value=A.roles()[me?.role]?.limits?.[key];
  return value===null||value===undefined?'':value;
 }
@@ -63,7 +63,7 @@ function viewPhone(req){
 function bookingAllowed(req,booking,label='View bookings'){
  const selected=explicitAccess(req,label);
  if(selected===null||selected==='Company'||selected==='On')return true;
- const me=db.col('users').get(req.user?.real_user_id||req.user?.id);
+ const me=db.col('users').get(req.user?.id);
  if(!me||!booking)return false;
  if(selected==='Own')return booking.booked_by?.phone===me.phone||booking.agent_phone===me.phone;
  if(selected==='Branch')return !!me.branch_id&&String(booking.branch_id)===String(me.branch_id);
