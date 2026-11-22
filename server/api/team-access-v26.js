@@ -351,9 +351,19 @@ r.put('/team-access/v26/roles/batch',A.can('iam.manage_roles'),wrap(req=>{
 r.post('/team-access/v26/roles',A.can('iam.manage_roles'),wrap(req=>{
  const name=text(req.body?.name,70),key=name.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
  if(name.length<3||!key||key==='owner'||key.length>40||A.roles()[key])error('Role name is unavailable');
+ const sourceKey=text(req.body?.starts_from,60);
+ if(sourceKey&&(!A.roles()[sourceKey]||['owner','admin'].includes(sourceKey)))
+  error('Choose an available starting role');
+ const source=sourceKey?A.roles()[sourceKey]:null;
  const next={...(db.meta('roles')||{})};
- next[key]={name,permissions:[],scopes:{},ui_permissions:{},limits:{}};
- db.meta('roles',next);D.audit('iam',key,'role-created',{created:name},req.user);
+ next[key]=source?
+  {name,permissions:[...(source.permissions||[])],
+   scopes:{...(source.scopes||{})},
+   ui_permissions:{...(source.ui_permissions||{})},
+   matrix_v27:{...(source.matrix_v27||{})},
+   limits:{...(source.limits||{})},starts_from:sourceKey}:
+  {name,permissions:[],scopes:{},ui_permissions:{},matrix_v27:{},limits:{}};
+ db.meta('roles',next);D.audit('iam',key,'role-created',{created:name,starts_from:sourceKey||null},req.user);
  return {key,...next[key]};
 }));
 r.delete('/team-access/v26/roles/:key',A.can('iam.manage_roles'),wrap(req=>{
