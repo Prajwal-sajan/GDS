@@ -33,6 +33,12 @@ const DEFAULT_ROLES = {
   pickup_manager: { name: 'Pickup Manager', permissions: [...pick('trips', 'chats', 'calls'), 'schedules.view', 'bookings.view_all', 'fleet.view', 'dailyops.view'] },
   agent: { name: 'Agent', permissions: ['bookings.create', 'bookings.cancel', 'schedules.view', 'accounts.view', 'accounts.own_only'] },
   driver: { name: 'Driver', permissions: ['trips.view', 'trips.update_passengers', 'trips.location', 'trips.call'] },
+  conductor: { name: 'Conductor', permissions: ['trips.view','trips.update_passengers','trips.location','trips.call'] },
+  helper: { name: 'Helper', permissions: ['trips.view','trips.update_passengers'] },
+  viewer: { name: 'Viewer', permissions: ['settings.view'] },
+  service_associate: { name: 'Service Associate', permissions: ['trips.view','trips.update_passengers','schedules.view'] },
+  service_agent: { name: 'Service Agent', permissions: ['trips.view','schedules.view','bookings.create','bookings.view_all'] },
+  branch_admin: { name: 'Branch Admin', permissions: ['trips.view','trips.location','bookings.create','bookings.view_all','schedules.view','routes.view','dailyops.view','settings.view'] },
 };
 
 function roles() {
@@ -63,7 +69,7 @@ function verify(token) {
 
 const otps = new Map();
 function requestOtp(phone) {
-  const u = db.col('users').find((x) => x.phone === phone && x.status === 'ACTIVE');
+  const u = db.col('users').find((x) => x.phone === phone && x.status === 'ACTIVE' && !x.deleted_at && !(x.role === 'agent' && x.mode === 'Offline'));
   if (!u) return { ok: false, message: 'This number is not registered with the operator' };
   otps.set(phone, { otp: OTP_DEV, exp: Date.now() + 5 * 60e3, tries: 0 });
   return { ok: true, message: 'OTP sent', dev_hint: process.env.NODE_ENV === 'production' ? undefined : OTP_DEV };
@@ -75,6 +81,7 @@ function verifyOtp(phone, otp, client = {}) {
   if (rec.otp !== String(otp)) return { ok: false, message: 'Incorrect OTP' };
   otps.delete(phone);
   const u = db.col('users').find((x) => x.phone === phone);
+  if(!u || u.status!=='ACTIVE' || u.deleted_at || (u.role==='agent' && u.mode==='Offline'))return {ok:false,message:'Sign-in disabled'};
   const stamp=new Date().toISOString();
   db.col('users').update(u.id,{last_login:stamp,login_count:(Number(u.login_count)||0)+1});
   const session = db.col('auth_sessions').insert({ user_id:u.id, user_agent:String(client.user_agent||'Unknown browser').slice(0,300), last_seen:stamp, revoked_at:null });
@@ -97,7 +104,7 @@ function middleware(req, res, next) {
   const p = verify(tok);
   if (!p) return res.status(401).json({ success: false, message: 'Sign in required' });
   const u = db.col('users').get(p.uid);
-  if (!u || u.status !== 'ACTIVE') return res.status(401).json({ success: false, message: 'User inactive' });
+  if (!u || u.status !== 'ACTIVE' || u.deleted_at || (u.role==='agent'&&u.mode==='Offline')) return res.status(401).json({ success: false, message: 'User inactive or sign-in disabled' });
   if (p.sid) {
     const session=db.col('auth_sessions').get(p.sid);
     if (!session || session.user_id !== u.id || session.revoked_at) return res.status(401).json({success:false,message:'Session signed out'});
