@@ -12,7 +12,10 @@ function lookup(user,label){
 function explicitAccess(req,label){
  const me=db.col('users').get(req.user?.real_user_id||req.user?.id);
  const m=lookup(me,label);
- if(!m||m.selected===null)return null; // Keep legacy modules working until role edited.
+ if(!m)return null;
+ if(m.row.roleImpossible.includes(me.role)&&m.role.matrix_v27)
+  throw D.httpErr(403,'Action is unavailable for this role: '+label);
+ if(m.selected===null)return null; // Keep legacy modules working until role edited.
  if(m.selected==='Off')throw D.httpErr(403,'Permission denied: '+label);
  if(m.selected==='Own'||m.selected==='Branch')
   return m.selected; // Operation's row scope must also be constrained by its resource handler.
