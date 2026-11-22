@@ -190,6 +190,16 @@ function userEditor(user,kind,callback){
       outer.querySelector('[data-role-preview]').innerHTML=preview(e.target.value,view.data);
     });
     bindChoices(outer);
+    const syncMode=()=>{
+     const offline=agent&&outer.querySelector('[name=mode]')?.value==='Offline';
+     const toggle=outer.querySelector('[data-status]'),status=outer.querySelector('[name=status]');
+     if(offline){status.value='INACTIVE';toggle.classList.remove('on');toggle.setAttribute('aria-checked','false');}
+     toggle.disabled=!!offline;
+     const caption=outer.querySelector('.ta26-active small');
+     if(caption)caption.textContent=offline?'Sign-in disabled for offline agents':'User can sign in';
+    };
+    outer.querySelectorAll('[data-choice=mode]').forEach(btn=>btn.addEventListener('click',syncMode));
+    syncMode();
     outer.querySelector('[data-status]').onclick=e=>{
      const current=outer.querySelector('[name=status]');current.value=current.value==='ACTIVE'?'INACTIVE':'ACTIVE';
      e.currentTarget.classList.toggle('on',current.value==='ACTIVE');
@@ -212,10 +222,15 @@ function viewUser(u,kind){
   ['shield','PERMISSIONS',u.limit_routes?`${u.route_ids?.length||0} selected routes`:'Inherited from role']];
  const markup=`<div class="ta26-view-hero"><span class="ta26-avatar large" style="--avatar:${color}">${safe(initials(u.name))}</span><div><strong>${safe(u.name)}</strong><span class="ta26-role-chip" style="--role:${color}">${safe(roleName(u.role))}</span></div></div>
   <div class="ta26-info-list">${info.map(([ico,label,value])=>`<div><span class="ta26-info-icon">${icon(ico)}</span><div><small>${safe(label)}</small><strong class="${label==='STATUS'&&u.status==='ACTIVE'?'good':''}">${safe(value)}</strong></div></div>`).join('')}</div>`;
- showModal({title:'View User',header:`<div class="ta26-header-user"><span class="ta26-avatar" style="--avatar:${color}">${safe(initials(u.name))}</span><div><h2>${safe(u.name)}</h2><span class="ta26-role-chip" style="--role:${color}">${safe(roleName(u.role))}</span></div></div>`,body:markup,
+ const dialog=showModal({title:'View User',header:`<div class="ta26-header-user"><span class="ta26-avatar" style="--avatar:${color}">${safe(initials(u.name))}</span><div><h2>${safe(u.name)}</h2><span class="ta26-role-chip" style="--role:${color}">${safe(roleName(u.role))}</span></div></div>`,body:markup,
  action:u.staff_only?'Create login':'Edit',onSave:editable()?async(_,shade,close)=>{
   close();userEditor(u.staff_only?{...u,id:null}:u,kind,refresh);return false;
  }:null});
+ const footer=dialog.shade.querySelector('.ta26-dialog-foot');
+ const edit=footer?.querySelector('[data-submit]');
+ if(edit)footer.prepend(edit);
+ const close=footer?.querySelector('[data-close]');
+ if(close)close.textContent='Close';
 }
 async function branchEditor(b){
  const existing=!!b;const current={...b};current.operations_area||='sales_only';
