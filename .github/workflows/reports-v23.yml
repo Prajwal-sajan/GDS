@@ -1,0 +1,42 @@
+name: All 13 Reports deep audit v23
+on:
+  push:
+    branches: [feature/reports-13-deep-audit-v23]
+  pull_request:
+    paths:
+      - 'server/**'
+      - 'public/**'
+      - 'tests/**'
+      - '.github/workflows/reports-v23.yml'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: 'npm'}
+      - run: npm ci
+      - name: Fleet Operations v20 regression
+        run: |
+          node tests/check-fleet-operations-v20.cjs
+          node tests/fleet-operations-v20-ui.cjs
+      - name: Independent all-13 semantic audit
+        run: node tests/check-reports-13-semantic-v23.cjs
+      - name: Existing v21 and v22 verification
+        run: |
+          node tests/check-reports-suite-v21.cjs
+          node tests/reports-suite-v21-ui.cjs
+          node tests/check-reports-performance-v22.cjs
+          node tests/reports-performance-v22-ui.cjs
+          npm test
+      - name: Export complete source snapshot for independent audit
+        run: |
+          tar czf /tmp/gds-reports-v23-source.tgz --exclude=.git --exclude=node_modules .
+          mkdir -p artifacts
+          mv /tmp/gds-reports-v23-source.tgz artifacts/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reports-v23-source-checkout
+          path: artifacts/gds-reports-v23-source.tgz
+          retention-days: 3

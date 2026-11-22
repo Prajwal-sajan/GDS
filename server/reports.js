@@ -20,11 +20,24 @@ function tripExpense(s, commission) {
   let items = [...(r.expenses?.fixed || []).map((x) => ({ ...x, type: 'fixed' })), ...(isActive ? (r.expenses?.running || []) : []).map((x) => ({ ...x, type: 'running' })), ...db.col('trip_expenses').filter((e) => e.schedule_id == s.id && (isActive || e.type === 'fixed')).map((e) => ({ id: e.id, key: e.key, label: e.label, per_day: e.amount, type: e.type === 'fixed' ? 'fixed' : 'running', source: e.source || '', manual: true }))];
   const ov = s.expense_overrides || {};
   if (Object.keys(ov).length) { const idx = { fixed: 0, running: 0 }; items = items.map((x) => { const i = idx[x.type]++; const k = `${x.type}:${x.key || x.label || i}`; return ov[k] !== undefined ? { ...x, per_day: ov[k], original: x.per_day, overridden: true } : x; }); }
+  // Completed-trip Intangles diesel supersedes a route estimate unless the operator explicitly overrode that line.
+  // Share this source with Expenses, Trip P&L and Fleet Operations.
+  const recordedDiesel = s.trip_status === 'completed' && s.status === 'active' ? s.telemetry?.diesel_cost : null;
+  if (recordedDiesel !== null && recordedDiesel !== undefined && recordedDiesel !== '' && Number.isFinite(Number(recordedDiesel)) && Number(recordedDiesel) >= 0) {
+    let replaced = false;
+    items = items.map((x) => {
+      if (!replaced && x.type === 'running' && !x.manual && !x.overridden && /diesel|fuel/i.test(String(x.key || x.label || ''))) {
+        replaced = true;
+        return { ...x, original: x.per_day, per_day: Number(recordedDiesel), source: 'Intangles telematics', telemetry_diesel: true };
+      }
+      return x;
+    });
+  }
   const idx = { fixed: 0, running: 0 };
   items = items.map((x) => {
     const key = x.manual ? `manual:${x.id}` : `${x.type}:${x.key || x.label || idx[x.type]}`;
     idx[x.type]++;
-    return { ...x, edit_key: key, source: x.manual ? (x.source || '') : (s.pnl_expense_sources?.[key] || '') };
+    return { ...x, edit_key: key, source: x.manual ? (x.source || '') : (x.source || s.pnl_expense_sources?.[key] || '') };
   });
   const fixed = U.sum(items.filter((i) => i.type === 'fixed'), (i) => i.per_day);
   const running = U.sum(items.filter((i) => i.type === 'running'), (i) => i.per_day);

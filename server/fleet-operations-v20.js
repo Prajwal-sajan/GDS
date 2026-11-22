@@ -3,6 +3,7 @@
 const db=require('./db');
 const U=require('./util');
 const D=require('./domain');
+const Rp=require('./reports');
 
 const datePattern=/^\d{4}-\d{2}-\d{2}$/;
 const dayOk=s=>typeof s==='string'&&datePattern.test(s)&&
@@ -58,14 +59,13 @@ function compute(input={}){
        phone:person.phone||''};
    });
  const dieselFor=(s,r)=>{
-   // Source precedence: explicit per-trip telemetry/cost, then trip override, then configured route diesel.
-   const observed=s.telemetry?.diesel_cost??s.diesel_cost??s.diesel_amount;
-   if(safeNum(observed)!==null)return {amount:amount(observed),source:'telemetry'};
-   const override=s.expense_overrides||{};
-   for(const [k,val] of Object.entries(override))
-     if(/^running:diesel(?:$|_)/i.test(k)&&safeNum(val)!==null)return {amount:amount(val),source:'trip override'};
-   const routeItem=list(r?.expenses?.running).find(x=>/diesel|fuel/i.test(String(x.key||x.label||'')));
-   return {amount:amount(routeItem?.per_day||0),source:routeItem?'route fallback':'unavailable'};
+   // Match the shared trip P&L expense breakdown rather than running a separate diesel calculation.
+   const details=Rp.tripPnl(s).expense_breakdown?.items||[];
+   const lines=details.filter(x=>x.type==='running'&&/diesel|fuel/i.test(String(x.key||x.label||'')));
+   if(!lines.length)return {amount:0,source:'unavailable'};
+   const telemetry=lines.some(x=>x.telemetry_diesel),overridden=lines.some(x=>x.overridden||x.manual);
+   return {amount:amount(lines.reduce((a,x)=>a+(Number(x.per_day)||0),0)),
+     source:telemetry?'telemetry':overridden?'trip override':'route fallback'};
  };
  const rows=active.map(s=>{
    const v=vm.get(Number(s.vehicle_id)),r=routes.get(Number(s.route_id)),drivers=crewInfo(s,true),crew=crewInfo(s,false);

@@ -21,6 +21,8 @@ const fmt=(row,c)=>{
  if(c.type==='pct')return Number(v).toFixed(1).replace(/\.0$/,'')+'%';
  if(c.type==='delta')return (v>0?'+':'')+Number(v).toFixed(1)+'%';
  if(c.type==='minutes')return Number(v).toFixed(0)+'m';
+ if(c.type==='duration'){const minutes=Math.round(Number(v));return minutes>=60?Math.floor(minutes/60)+'h '+minutes%60+'m':minutes+'m';}
+ if(c.type==='speed')return number(v)+' km/h';
  return String(v);
 };
 const labelValue=(d,metric)=>{
@@ -115,7 +117,7 @@ class Pdf{
      if(i%2===0)this.page.rect(margin,this.y,available,height,shade);
      let x=margin;
      cols.forEach((c,j)=>{
-       const align=['number','money','pct','ratio','delta','minutes'].includes(c.type)?'right':'left';
+       const align=['number','money','pct','ratio','delta','minutes','duration','speed'].includes(c.type)?'right':'left';
        cell[j].forEach((l,n)=>this.page.text(align==='right'?x+ws[j]-3:x+3,this.y+2+n*lineH,l,{size:small,color:slate,align}));
        this.page.rule(x,this.y,x,this.y+height,grid,.28);
        x+=ws[j];
@@ -132,7 +134,7 @@ class Pdf{
      this.page.rect(margin,this.y,available,h,totalColor);
      let x=margin;
      cols.forEach((c,j)=>{
-       const align=['number','money','pct','ratio','delta','minutes'].includes(c.type)?'right':'left';
+       const align=['number','money','pct','ratio','delta','minutes','duration','speed'].includes(c.type)?'right':'left';
        rowLines[j].forEach((str,k)=>this.page.text(align==='right'?x+ws[j]-3:x+3,this.y+3+k*lineH,str,{size:small,bold:true,align}));
        this.page.rule(x,this.y,x,this.y+h,grid,.35);x+=ws[j];
      });

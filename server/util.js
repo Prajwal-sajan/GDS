@@ -10,6 +10,24 @@ const dateRange = (from, to) => { const out = []; for (let d = from; d <= to; d 
 const dow = (dateStr) => new Date(dateStr + 'T00:00:00').getDay();
 const toMin = (hhmm) => { const [h, m] = String(hhmm || '0:0').split(':').map(Number); return h * 60 + (m || 0); };
 const fromMin = (m) => { m = ((m % 1440) + 1440) % 1440; return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`; };
+ // Operator stop times can be local HH:mm or offset-aware ISO timestamps.
+ const localMinutes = (value, timeZone='Asia/Kolkata') => {
+   const s=String(value??'').trim();if(!s)return null;
+   const hasOffset=/^\d{4}-\d{2}-\d{2}T.+(?:Z|[+-]\d{2}:?\d{2})$/i.test(s);
+   if(hasOffset){
+     const d=new Date(s);if(!Number.isFinite(d.getTime()))return null;
+     const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(d).filter(x=>x.type==='hour'||x.type==='minute').map(x=>[x.type,Number(x.value)]));
+     return parts.hour*60+parts.minute;
+   }
+   const m=s.match(/(?:^|T|\s)(\d{1,2}):(\d{2})(?::\d{2})?/);
+   if(!m||Number(m[1])>23||Number(m[2])>59)return null;
+   return Number(m[1])*60+Number(m[2]);
+ };
+ const clockDifference = (actual,scheduled,zone='Asia/Kolkata') => {
+   const a=localMinutes(actual,zone),s=localMinutes(scheduled,zone);
+   return a===null||s===null?null:((a-s+720+1440)%1440)-720;
+ };
+ 
 const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 const sum = (arr, f = (x) => x) => arr.reduce((a, x) => a + (Number(f(x)) || 0), 0);
 const groupBy = (arr, f) => arr.reduce((m, x) => { const k = f(x); (m[k] = m[k] || []).push(x); return m; }, {});
@@ -33,4 +51,4 @@ function haversineKm(a, b) {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-module.exports = { pad, ymd, today, addDays, daysBetween, dateRange, dow, toMin, fromMin, round2, sum, groupBy, uid, nowIso, rng, haversineKm };
+module.exports = { pad, ymd, today, addDays, daysBetween, dateRange, dow, toMin, fromMin, localMinutes, clockDifference, round2, sum, groupBy, uid, nowIso, rng, haversineKm };

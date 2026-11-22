@@ -1,0 +1,74 @@
+name: Render all thirteen report PDF samples
+on:
+  push:
+    branches: [feature/reports-13-deep-audit-v23]
+  pull_request:
+    paths:
+      - 'server/**'
+      - 'public/**'
+      - 'tests/**'
+      - '.github/workflows/reports-13-pdf-v23.yml'
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Generate all 13 PDFs and XLSX
+        run: |
+          mkdir -p artifacts/reports-v23
+          node - <<'NODE'
+          const fs=require('fs');
+          process.env.GDS_DATA_DIR=process.cwd()+'/tmp-v23-render';
+          process.env.GDS_RESEED='1';
+          require('./server/index');
+          const U=require('./server/util');
+          const F=require('./server/fleet-operations-v20'),FP=require('./server/fleet-operations-pdf-v20');
+          const R21=require('./server/reports-suite-v21'),R22=require('./server/reports-performance-v22');
+          require('./public/js/report-suite-specs-v22');
+          const P=require('./server/report-suite-pdf-v21'),X=require('./server/report-performance-xlsx-v22');
+          const from=U.addDays(U.today(),-8),to=U.addDays(U.today(),-2);
+          const save=(key,b)=>fs.writeFileSync('artifacts/reports-v23/'+key+'.pdf',b);
+          save('fleet-operations',FP.generate(F.compute({from,to})));
+          const staff=R21.options().staff.find(x=>x.role==='driver');
+          for(const key of R21.keys)save(key,P.generate(key,R21.compute(key,{from,to,...(key==='staff-duty'?{staff_id:staff.id}:{})})));
+          for(const key of R22.KEYS){
+            const q={from,to};
+            if(key==='point-performance'){
+              const first=R22.compute(key,q);
+              q.point=first.sections.ranking[0]?.point_key||first.points[0]?.key;
+              if(!q.point)throw Error('No selectable point found');
+            }
+            const d=R22.compute(key,q);save(key,P.generate(key,d));
+            if(key==='frequent-travellers')fs.writeFileSync('artifacts/reports-v23/frequent-travellers.xlsx',X.generate(key,d));
+          }
+          process.exit(0);
+          NODE
+          test "$(find artifacts/reports-v23 -name '*.pdf' | wc -l)" -eq 13
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+          for f in artifacts/reports-v23/*.pdf; do
+            pdfinfo "$f" | grep -E 'Pages:|Page size:'
+            pdftotext -layout "$f" "${f%.pdf}.txt"
+            test -s "${f%.pdf}.txt"
+            pdftoppm -f 1 -l 1 -scale-to 1300 -singlefile -png "$f" "${f%.pdf}-p1"
+          done
+          python3 - <<'PY'
+          import zipfile,xml.etree.ElementTree as ET
+          with zipfile.ZipFile('artifacts/reports-v23/frequent-travellers.xlsx') as z:
+              assert z.testzip() is None
+              for n in z.namelist():
+                  if n.endswith('.xml') or n.endswith('.rels'): ET.fromstring(z.read(n))
+              assert 'xl/worksheets/sheet2.xml' in z.namelist()
+          print('PASS: 13 PDFs rendered and 2-sheet Excel parsed')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: all-thirteen-reports-v23-verified-pdf-examples
+          path: artifacts/reports-v23/
+          retention-days: 14
