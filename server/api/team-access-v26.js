@@ -255,7 +255,7 @@ r.delete('/team-access/v26/branches/:id',A.can('settings.modify'),wrap(req=>{
 }));
 // Role matrix save is atomic at the document-policy level: validate every cell,
  // numeric limit, role and stale revision before changing the stored roles.
-const allowedValue=(row,v)=>row.kind==='scope'?['Off','Own','Branch','Company'].includes(v):['Off','On'].includes(v);
+const allowedValue=(row,v)=>row.choices?row.choices.includes(v):row.kind==='scope'?['Off','Own','Branch','Company'].includes(v):['Off','On'].includes(v);
 const roleValue=(role,row)=>{
  if(!permissionAvailable(row,role.key))return '—';
  const matrix=role.matrix_v27||{};
@@ -302,7 +302,8 @@ r.put('/team-access/v26/roles/batch',A.can('iam.manage_roles'),wrap(req=>{
        Object.hasOwn(item.matrix,row.label)?item.matrix[row.label]:undefined;
    const current=roleValue(role,row);
    const v=supplied===undefined?(current==='—'?'Off':current):supplied;
-   if(!allowedValue(row,v))error('Invalid access selection for '+row.label);
+   if(!allowedValue(row,v) && !(supplied===undefined&&allowedValue({...row,choices:null},v)))
+    error('Invalid access selection for '+row.label);
    if(!permissionAvailable(row,item.key)&&v!=='Off')error(row.label+' is not available to '+role.name,403);
    if(permissionAvailable(row,item.key)){
     matrix[row.key]=v;
