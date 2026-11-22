@@ -9,6 +9,10 @@ const safe=fn=>(req,res)=>{try{fn(req,res);}catch(e){
 const privateData=res=>res.set({'Cache-Control':'private, no-store, max-age=0','X-Content-Type-Options':'nosniff'});
 const protect=can('accounts.ledger');
 router.get('/accounts/invoices-v24',protect,safe((req,res)=>{privateData(res);res.json(S.list());}));
+router.get('/accounts/invoices-v24/reconcile/:month',protect,safe((req,res)=>{
+ privateData(res);
+ res.json(require('../invoice-reconcile-v24').audit(req.params.month,{scope:req.query.scope||'reference'}));
+}));
 router.get('/accounts/invoices-v24/current',protect,safe((req,res)=>{
  privateData(res);
  const d=S.latestStatement();if(!d)return res.status(404).json({message:'No current operator statement'});
