@@ -54,3 +54,4 @@ jobs:
           name: fleet-operations-v20-pdf-preview
           path: .artifacts/
           retention-days: 14
+          include-hidden-files: true
