@@ -57,7 +57,7 @@ const del=(p,id)=>call('DELETE',p,null,id);
    name:'Office Administrator',role:'branch_admin',status:'ACTIVE',branch_id:branch.id});
   assert.equal(branchAdmin.status,200,'Branch Admin creation');
   const scoped=await get('/team-access/v26',branchAdmin.data.id);
-  assert.equal(scoped.status,200);
+  assert.equal(scoped.status,200,'Branch Admin current API: '+JSON.stringify(scoped.data));
   assert.ok(scoped.data.users.every(x=>x.id===branchAdmin.data.id||x.branch_id===branch.id),'Branch users only');
   assert.ok(!scoped.data.users.some(x=>x.role==='owner'),'Owners in other branches are not exposed');
   const legacyScoped=await get('/iam/users',branchAdmin.data.id);
