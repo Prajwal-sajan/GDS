@@ -1,0 +1,43 @@
+name: Configuration v30 — screenshot API and UI acceptance
+on:
+  push:
+    branches:
+      - savetrip-screenshotcomplete
+    paths:
+      - 'public/js/configuration-v30.js'
+      - 'public/css/configuration-v30.css'
+      - 'server/api/configuration-v30.js'
+      - 'server/index.js'
+      - 'public/index.html'
+      - 'tests/configuration-v30-ui.cjs'
+      - 'tests/configuration-v30-api.cjs'
+      - '.github/workflows/configuration-v30.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Syntax
+        run: |
+          node --check server/api/configuration-v30.js
+          node --check public/js/configuration-v30.js
+          node --check tests/configuration-v30-ui.cjs
+          node --check tests/configuration-v30-api.cjs
+      - name: New Configuration screenshot and API checks
+        run: |
+          node tests/configuration-v30-api.cjs
+          node tests/configuration-v30-ui.cjs
+      - name: Existing Access and GDS regressions
+        run: |
+          node tests/check-team-access-v28.cjs
+          node tests/team-access-v28-ui.cjs
+          node tests/team-access-v29-ui.cjs
+          node tests/check-settings-v16-backend.cjs
+          npm test
