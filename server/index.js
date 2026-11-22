@@ -12,6 +12,7 @@ D.ensureSchedules(U.addDays(U.today(), -1), U.addDays(U.today(), 30));
 
 const app = express();
 app.use(express.json({ limit: '15mb' }));
+app.use('/', require('./api/branding-public-v17')); // read-only public PWA metadata
 app.use((req, res, next) => { res.setHeader('X-Content-Type-Options', 'nosniff'); next(); });
 
 const misc = require('./api/misc');
@@ -19,6 +20,13 @@ app.use('/api', misc.pub);
 // Platform-key only; explicitly outside operator login/session routes.
 app.use('/api/platform-billing/v25', require('./api/platform-billing-v25').internal);
 app.use('/api', auth.middleware);
+app.use('/api/accounts', (req,res,next)=>{
+ if(req.method==='GET' && (/^\/reports\/[^/]+\.(pdf|xlsx|csv)$/i.test(req.path)||/^\/invoices-v24\/bundle\/[^/]+$/i.test(req.path)||/^\/invoices-v24\/documents\/[^/]+\/pdf$/i.test(req.path))) {
+   if(!req.user?.permissions?.includes('accounts.export'))return res.status(403).json({success:false,message:'Missing permission: accounts.export'});
+ }
+ next();
+});
+
 app.use('/api', require('./api/pnl-v18'));
 app.use('/api', require('./api/ops'));
 app.use('/api', require('./api/vehicle-details-v19'));
