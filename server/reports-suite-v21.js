@@ -273,13 +273,13 @@ function ticketRecord(b,leg){
  const local=obj(b.metro);
  const val=match.sort((a,b)=>String(b.updated_at||b.created_at||'').localeCompare(String(a.updated_at||a.created_at||'')))[0]||local[leg]||{};
  const present=x=>x===true||x===1||x==='1'||String(x).toLowerCase()==='true';
- const link=!!(val.ticket_link||val.tracking_link||val.ticket_link_sent_at||val.link_sent_at||val.tracking_link_sent_at)||present(val.link_sent);
+ const link=!!(val.ticket_link_sent_at||val.link_sent_at||val.tracking_link_sent_at)||present(val.link_sent);
  const status=String(val.billing_status||val.status||'').trim().toLowerCase();
  const billed=link||['billed','charged','paid','settled','completed'].includes(status);
- const price=num(val.fare??val.ticket_fare??val.metro_fare??val.billed_fare);
+ const price=num(val.total_fare??val.total_amount??val.fare??val.ticket_fare??val.metro_fare??val.billed_fare);
  const count=num(val.passenger_count??val.metro_pax??val.pax??val.seats);
  return {fare:billed?price:null,billed,link_sent:link,ticket_issued:!!(val.ticket_no||val.ticket_number),
-   pax:billed?(count??arr(b.passengers).length):null,status:billed?(val.status||'Billed'):'Not billed'};
+   pax:billed?count:null,status:billed?(val.status||'Billed'):'Not billed'};
 }
 function feeder(ctx,type){
  const rows=[];
