@@ -189,23 +189,12 @@ function expenses(ctx){
    cat.amount+=amount;cat.trips++;cmap.set(key,cat);
  };
  for(const s of all){
-   const r=routeInfo(s.route_id),on=s.status==='active',p=on?Rp.tripPnl(s):null;
+   const r=routeInfo(s.route_id),on=s.status==='active',p=Rp.tripPnl(s);
    const row={date:s.travel_date,dep:s.departure_time||'',service:r.service_number||'',route:routeLabel(r),
      bus:on?vehi(s):'Turned off',vehicle_id:s.vehicle_id||null,off:!on,trips:on?1:0,_cats:{},total:0};
-   if(on){
-     for(const it of arr(p.expense_breakdown?.items))addItem({key:(it.key||it.label||'Other').toLowerCase().replace(/\W+/g,'_'),label:it.label||it.key||'Other',type:it.type||'running',amount:it.per_day},row);
-     addItem({key:'channel_commission',label:'Channel commission',type:'running',amount:p.commission},row);
-     const totalFromPnl=n(p.expense);
-     row.total=round(totalFromPnl);
-   }else{
-     const fixedIt=arr(r.expenses?.fixed);
-     for(let i=0;i<fixedIt.length;i++){
-       const it=fixedIt[i],key='fixed:'+(it.key||it.label||i);
-       addItem({key:(it.key||it.label||'Fixed').toLowerCase().replace(/\W+/g,'_'),label:it.label||it.key||'Fixed',type:'fixed',
-         amount:s.expense_overrides?.[key]??it.per_day},row);
-     }
-     row.total=round(sum(Object.values(row._cats),x=>x));
-   }
+   for(const it of arr(p.expense_breakdown?.items))addItem({key:(it.key||it.label||'Other').toLowerCase().replace(/\W+/g,'_'),label:it.label||it.key||'Other',type:it.type||'running',amount:it.per_day},row);
+   if(on)addItem({key:'channel_commission',label:'Channel commission',type:'running',amount:p.commission},row);
+   row.total=round(p.expense);
    rows.push(row);
  }
  const categories=[...cmap.values()].map(x=>({...x,amount:round(x.amount),share_pct:0,avg_per_trip:x.trips?round(x.amount/x.trips):0})).sort((a,b)=>b.amount-a.amount);
