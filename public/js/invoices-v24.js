@@ -106,7 +106,7 @@ function render(root,state){
   <section class="inv24-month"><header><span>${e(titleMonth(month))}</span>
     ${button(`${ico('archive',16)} Download all`,'all','textlink',`data-month="${e(month)}"`)}
    </header>
-   ${items.map(doc=>`<div class="inv24-row"><strong>${e(doc.label)}</strong><span class="inv24-code">${e(doc.name||'—')}</span>
+   ${items.map(doc=>`<div class="inv24-row"><strong>${e(doc.label)}${doc.is_reference?' <small class="inv24-reference">Reference only</small>':''}</strong><span class="inv24-code">${e(doc.name||'—')}</span>
     ${docActions(doc)}</div>`).join('')}
   </section>`).join('')||'<div class="inv24-empty">No invoices or statements for these filters.</div>'}</div>
  <p class="inv24-footnote">PDF downloads preserve the original uploaded statement. Charges, settlement balances, GST and payment status are never fabricated from missing provider records.</p>
@@ -145,7 +145,7 @@ async function showDoc(root,key){
  if(doc.has_pdf){
    const blob=await fetchPdf(key);const url=URL.createObjectURL(blob);
    dialog(root,doc.label+' · '+doc.name,`<iframe title="${e(doc.label)}" class="inv24-pdf-frame" src="${url}"></iframe>
-   <p class="inv24-document-hint">Original document · SHA-256 verified · ${e(doc.original_filename||'PDF')}</p>`,true);
+   <p class="inv24-document-hint">${doc.is_reference?'Reference-only document · excluded from settlement · ':'Original issued document · '}SHA-256 verified · ${e(doc.original_filename||'PDF')}</p>`,true);
    root.__inv24Blob=url;
  }else{
    const snapshot=d.snapshot;
@@ -186,6 +186,8 @@ async function addDocument(root){
  <label>Document reference<input name="name" placeholder="e.g. PSS-2026-00091" required maxlength="80"></label>
  <label>Period month<input type="month" name="month" value="${defaultMonth}" required></label>
  <label>Document date<input type="date" name="date" value="${new Date().toISOString().slice(0,10)}" required></label>
+ <label>Purpose<select name="reference_only"><option value="true">Reference only — not included in settlement</option><option value="false">Operational — auditable statement data required</option></select></label>
+ <label>Verified statement data (JSON, optional for reference-only documents)<textarea name="snapshot" rows="4" placeholder='{"opening_balance":0,"ledger":[],"posted_closing_balance":0}'></textarea></label>
  <p>Use the number on the original issued document. This creates a catalogue record only, not a tax invoice or financial transaction.</p>
  <button type="submit" class="inv24-button primary">Add document</button></form>`);
 }
@@ -239,7 +241,9 @@ async function wire(root){
   const f=evt.target;
   if(f.matches('[data-inv24-new]')){
    evt.preventDefault();const body=Object.fromEntries(new FormData(f));
-   try{await G.post(path+'/documents',body);closeModal(root);await refresh(root);G.toast('Document added; import its original PDF next','ok');}
+   body.reference_only=body.reference_only!=='false';
+   try{if(body.snapshot?.trim())body.snapshot=JSON.parse(body.snapshot);else delete body.snapshot;
+   await G.post(path+'/documents',body);closeModal(root);await refresh(root);G.toast('Document added; import its original PDF next','ok');}
    catch(e){G.err(e);}
   }else if(f.matches('[data-inv24-pay]')){
    evt.preventDefault();const body=Object.fromEntries(new FormData(f));
