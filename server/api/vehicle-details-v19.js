@@ -9,7 +9,7 @@ const fail = (status,message)=>{throw D.httpErr(status,message);};
 const getVehicle=req=>{const v=db.col('vehicles').get(req.params.id);if(!v)fail(404,'Vehicle not found');return v;};
 const textValue=(v,max=240)=>String(v??'').trim().slice(0,max);
 const required=(v,label,max=100)=>{if(typeof v!=='string'||!v.trim()||v.trim().length>max)fail(400,label+' required (max '+max+' characters)');return v.trim();};
-const cleanDate=(v,label='Date')=>{if(v===null||v==='')return null;if(typeof v!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(v)||!Number.isFinite(Date.parse(v+'T12:00:00Z'))||new Date(v+'T12:00:00Z').toISOString().slice(0,10)!==v)fail(400,'Invalid '+label);return v;};
+const cleanDate=(v,label='Date')=>{if(v===null||v===undefined||v==='')return null;if(typeof v!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(v)||!Number.isFinite(Date.parse(v+'T12:00:00Z'))||new Date(v+'T12:00:00Z').toISOString().slice(0,10)!==v)fail(400,'Invalid '+label);return v;};
 const number=(v,label,max=100000000)=>{if(v===''||v===null)return null;if(v===undefined||typeof v==='boolean'||!Number.isFinite(Number(v))||Number(v)<0||Number(v)>max)fail(400,'Invalid '+label);return Number(v);};
 const own=(v,list,label)=>{if(!list.includes(v))fail(400,'Invalid '+label);return v;};
 const audit=(v,section,changes,user)=>D.audit('vehicle',v.id,section,changes,user);
