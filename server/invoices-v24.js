@@ -54,6 +54,8 @@ const latestStatement=()=>{
  const docs=catalogue().filter(d=>d.type==='operator'&&!d.is_reference);
  return docs.sort((a,b)=>b.document_date.localeCompare(a.document_date)||b.period_month.localeCompare(a.period_month))[0]||null;
 };
+const latestReferenceStatement=()=>catalogue().filter(d=>d.type==='operator'&&d.is_reference)
+ .sort((a,b)=>b.document_date.localeCompare(a.document_date)||b.period_month.localeCompare(a.period_month))[0]||null;
 const balance=()=>{
  const statement=latestStatement(),r=statement?resolve(statement.key).row:null;
  const snap=r?.snapshot||{};
@@ -67,7 +69,7 @@ const balance=()=>{
   payable_by_operator:amount===null?null:money(Math.max(0,-amount)),pending_payments:pending,
   statement_type: 'posted',has_evidence:!!r};
 };
-const list=()=>({documents:catalogue(),balance:balance(),types:Object.entries(TYPES).map(([id,x])=>({id,label:x.label})),
+const list=()=>({documents:catalogue(),balance:balance(),reference_current:latestReferenceStatement(),types:Object.entries(TYPES).map(([id,x])=>({id,label:x.label})),
   years:[...new Set(catalogue().map(x=>x.period_month.slice(0,4)).filter(Boolean))].sort().reverse()});
 const pdfDir=path.join(path.dirname(db.DB_FILE),'invoice-pdfs');
 const pdfFile=row=>{
@@ -168,6 +170,10 @@ function create(body,user){
 function attachSnapshot(key,snapshot,user){
  const {row,table,document}=resolve(key);
  const normalized=validateSnapshot(document.type,snapshot);
+ if(document.type==='operator'&&!document.is_reference &&
+    (normalized.posted_closing_balance===undefined||!Array.isArray(normalized.ledger))){
+   throw bad('An operational operator statement needs a reconciled posted ledger and closing balance');
+ }
  const before=row.snapshot?crypto.createHash('sha256').update(JSON.stringify(row.snapshot)).digest('hex'):null;
  db.col(table).update(row.id,{
    snapshot:normalized,
