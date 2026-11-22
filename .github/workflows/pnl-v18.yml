@@ -1,0 +1,27 @@
+name: Schedule P&L screenshot parity
+on:
+  push:
+    branches:
+      - feature/schedule-pnl-screenshot-v18
+  pull_request:
+    paths:
+      - "public/js/schedule-pnl-v18.js"
+      - "public/js/schedules-screenshot-v6.js"
+      - "public/css/schedule-pnl-v18.css"
+      - "server/api/pnl-v18.js"
+      - "server/reports.js"
+      - "tests/check-schedule-pnl-v18.mjs"
+jobs:
+  pnl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: node --check public/js/schedule-pnl-v18.js && node --check public/js/schedules-screenshot-v6.js && node --check server/api/pnl-v18.js
+      - run: node tests/check-schedule-pnl-v18.mjs
+      - run: npm test

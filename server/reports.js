@@ -17,12 +17,18 @@ function cancelCharges(b) { return U.sum(b.cancellations || [], (c) => c.charge)
 function tripExpense(s, commission) {
   const r = routeOf(s);
   if (s.status !== 'active') return { fixed: 0, running: 0, commission: 0, total: 0, items: [] };
-  let items = [...(r.expenses?.fixed || []).map((x) => ({ ...x, type: 'fixed' })), ...(r.expenses?.running || []).map((x) => ({ ...x, type: 'running' })), ...db.col('trip_expenses').filter((e) => e.schedule_id == s.id).map((e) => ({ key: e.key, label: e.label, per_day: e.amount, type: 'running', manual: true }))];
+  let items = [...(r.expenses?.fixed || []).map((x) => ({ ...x, type: 'fixed' })), ...(r.expenses?.running || []).map((x) => ({ ...x, type: 'running' })), ...db.col('trip_expenses').filter((e) => e.schedule_id == s.id).map((e) => ({ id: e.id, key: e.key, label: e.label, per_day: e.amount, type: e.type === 'fixed' ? 'fixed' : 'running', source: e.source || '', manual: true }))];
   const ov = s.expense_overrides || {};
   if (Object.keys(ov).length) { const idx = { fixed: 0, running: 0 }; items = items.map((x) => { const i = idx[x.type]++; const k = `${x.type}:${x.key || x.label || i}`; return ov[k] !== undefined ? { ...x, per_day: ov[k], original: x.per_day, overridden: true } : x; }); }
+  const idx = { fixed: 0, running: 0 };
+  items = items.map((x) => {
+    const key = x.manual ? `manual:${x.id}` : `${x.type}:${x.key || x.label || idx[x.type]}`;
+    idx[x.type]++;
+    return { ...x, edit_key: key, source: x.manual ? (x.source || '') : (s.pnl_expense_sources?.[key] || '') };
+  });
   const fixed = U.sum(items.filter((i) => i.type === 'fixed'), (i) => i.per_day);
   const running = U.sum(items.filter((i) => i.type === 'running'), (i) => i.per_day);
-  return { fixed, running, commission: U.round2(commission), total: U.round2(fixed + running + commission), items };
+  return { fixed, running, running_total: U.round2(running + commission), commission: U.round2(commission), total: U.round2(fixed + running + commission), items };
 }
 
 function tripPnl(s) {
@@ -42,7 +48,7 @@ function tripPnl(s) {
   return {
     schedule_id: s.id, date: s.travel_date, departure_time: s.departure_time, service: r.service_number, route: `${D.cityName(r.origin_city_id)} → ${D.cityName(r.destination_city_id)}`,
     vehicle: vehicleOf(s)?.registration_number || '', running: s.status === 'active', capacity, seats, occupancy_pct: capacity ? U.round2(seats / capacity * 100) : 0,
-    net_sales: U.round2(netSales), gst: U.round2(gst), commission: U.round2(commission), cancellation_charges: U.round2(cxl), expense: exp.total, expense_breakdown: exp,
+    net_sales: U.round2(netSales), gst: U.round2(gst), commission: U.round2(commission), cancellation_charges: U.round2(cxl), expense: exp.total, expense_breakdown: exp, expense_version: s.pnl_expense_version || 0,
     profit: U.round2(netSales + cxl - exp.total), by_channel: Object.values(byChannel).map((x) => ({ ...x, net: U.round2(x.net), commission: U.round2(x.commission) })),
   };
 }

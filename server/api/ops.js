@@ -176,6 +176,7 @@ r.put('/schedules/:id', can('schedules.modify'), h((req) => {
     if (!isObj(expense_overrides)) throw D.httpErr(400, 'expense_overrides must be an object');
     if (!req.user.permissions.includes('schedules.financial')) throw D.httpErr(403, 'Financial permission required');
     s.expense_overrides = Object.fromEntries(Object.entries(expense_overrides).map(([k, v]) => [k, Math.max(0, Number(v) || 0)]));
+    s.pnl_expense_version = (s.pnl_expense_version || 0) + 1;
   }
   if (ui_settings !== undefined) { if (!isObj(ui_settings)) throw D.httpErr(400, 'ui_settings must be an object'); s.ui_settings = ui_settings; }
   db.persist(); if (Object.keys(req.body).some((k) => k !== 'ui_settings')) D.audit('schedule', s.id, 'fields', { before, after: req.body }, req.user);
@@ -229,7 +230,22 @@ r.post('/schedules/:id/blocks', can('bookings.block_seats'), h((req) => {
 }));
 
 r.get('/schedules/:id/pnl', can('schedules.financial'), h((req) => Rp.tripPnl(db.col('schedules').get(req.params.id))));
-r.post('/schedules/:id/expenses', can('schedules.financial'), h((req) => db.col('trip_expenses').insert({ schedule_id: Number(req.params.id), key: req.body.key || 'other', label: req.body.label, amount: Number(req.body.amount), by: req.user.name })));
+r.post('/schedules/:id/expenses', can('schedules.financial'), h((req) => {
+  const schedule = db.col('schedules').get(req.params.id);
+  if (!schedule) throw D.httpErr(404, 'Schedule not found');
+  if (schedule.status !== 'active') throw D.httpErr(409, 'Cannot add expense to disabled schedule');
+  const amount = Number(req.body.amount), label = String(req.body.label || '').trim();
+  if (req.body.amount == null || req.body.amount === '' || !Number.isFinite(amount) || amount < 0 || amount > 100000000)
+    throw D.httpErr(400, 'Expense amount must be ₹0–₹10 crore');
+  if (!label || label.length > 80) throw D.httpErr(400, 'Expense name must be 1–80 characters');
+  const row = db.col('trip_expenses').insert({ schedule_id: schedule.id, key: String(req.body.key || 'manual').slice(0, 80),
+    label, amount: Math.round(amount * 100) / 100, type: req.body.type === 'fixed' ? 'fixed' : 'running',
+    source: '', by: req.user.name });
+  schedule.pnl_expense_version = (schedule.pnl_expense_version || 0) + 1;
+  db.persist();
+  D.audit('schedule', schedule.id, 'pnl_expenses', { added: row.id, label: row.label, amount: row.amount }, req.user);
+  return row;
+}));
 r.get('/schedules/:id/history', can('schedules.view'), h((req) => ({ history: db.col('edit_history').filter((e) => e.entity === 'schedule' && e.entity_id == req.params.id).sort((a, b) => b.at.localeCompare(a.at)).slice(0, Number(req.query.limit) || 100) })));
 r.get('/schedules/:id/booking-history', can('schedules.view'), h((req) => ({ history: db.col('bookings').filter((b) => b.schedule_id == req.params.id).map((b) => ({ pnr: b.pnr, ticket_number: b.ticket_number, source: b.source, status: b.status, contact_name: b.contact.name, total_seats: b.passengers.length, total_amount: b.fare.total, blocked_at: b.booked_at, confirmed_at: b.status !== 'hold' ? b.booked_at : null, cancelled_at: b.cancelled_at || null, expired_at: b.expired_at || null, passengers: b.passengers })).sort((a, b) => b.blocked_at.localeCompare(a.blocked_at)) })));
 
