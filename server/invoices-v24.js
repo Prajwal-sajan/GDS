@@ -33,7 +33,7 @@ const asDoc=(r,source)=>{
  return {key:source+'-'+r.id,id:r.id,type,label:TYPES[type].label,name:r.name||r.number||'',
   period_month:month,document_date:r.statement_date||r.date||'',period_start:r.period_start||month+'-01',
   period_end:r.period_end||'',status:r.status||null,amount:r.amount??r.snapshot?.total??null,
-  has_pdf:hasPdf,has_snapshot:hasSnapshot,pdf_sha256:hasPdf?r.pdf_sha256:null,
+  is_reference:!!(r.reference_only||r.is_demo_reference),has_pdf:hasPdf,has_snapshot:hasSnapshot,pdf_sha256:hasPdf?r.pdf_sha256:null,
   original_filename:r.original_filename||null,source,rank:TYPES[type].rank,
   imported_at:r.pdf_uploaded_at||null};
 };
@@ -51,7 +51,7 @@ const catalogue=()=>{
    (b.document_date||'').localeCompare(a.document_date||'')||a.rank-b.rank||a.key.localeCompare(b.key));
 };
 const latestStatement=()=>{
- const docs=catalogue().filter(d=>d.type==='operator');
+ const docs=catalogue().filter(d=>d.type==='operator'&&!d.is_reference);
  return docs.sort((a,b)=>b.document_date.localeCompare(a.document_date)||b.period_month.localeCompare(a.period_month))[0]||null;
 };
 const balance=()=>{
@@ -156,11 +156,13 @@ function create(body,user){
  if(!name||name.length>80||!/^[A-Za-z0-9/_. -]+$/.test(name))throw bad('Valid document reference required');
  if(catalogue().some(x=>x.name===name&&x.period_month===month&&x.type===type))throw bad('A document with this reference already exists',409);
  const snapshot=body.snapshot===undefined?null:validateSnapshot(type,body.snapshot);
+ const referenceOnly=body.reference_only!==false&&body.reference_only!=='false';
+ if(type==='operator'&&!referenceOnly&&(!snapshot||snapshot.posted_closing_balance===undefined||!Array.isArray(snapshot.ledger)))throw bad('Operational operator statements require an auditable, reconciled ledger snapshot');
  const record=db.col('billing_documents').insert({type,label:TYPES[type].label,kind:type,name,month,date:when,
    period_start:validDate(body.period_start)?body.period_start:month+'-01',
    period_end:validDate(body.period_end)?body.period_end:when,
    amount:snapshot?.posted_closing_balance??snapshot?.closing_balance??snapshot?.totals?.total??null,
-   snapshot,status:'import_pending',created_by:user?.id||user?.name||null});
+   snapshot,reference_only:referenceOnly,status:'import_pending',created_by:user?.id||user?.name||null});
  return asDoc(record,'issued');
 }
 function recordPayment(body,user){
