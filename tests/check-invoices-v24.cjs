@@ -64,7 +64,7 @@ const login=async phone=>{
  // Typed financial evidence can be imported separately from exact original PDF bytes.
  const docsByType=Object.fromEntries(docs.map(x=>[x.type,x]));
  const samples={
-  tax:{line_items:[{description:'WhatsApp Charges',taxable:.72},{description:'AI Messages',taxable:.25},
+  tax:{line_items:[{description:'Other service',taxable:88.78},{description:'WhatsApp Charges',taxable:.72},{description:'AI Messages',taxable:.25},
     {description:'SMS Charges',taxable:.25},{description:'Cloud Calling',taxable:1},
     {description:'Cloud Telephony Number Rental',taxable:2},{description:'AI Calling',taxable:2},
     {description:'Bus ticket reservation service (commission)',taxable:5}],
