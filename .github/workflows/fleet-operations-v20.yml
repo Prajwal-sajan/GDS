@@ -1,0 +1,29 @@
+name: Fleet Operations report v20
+on:
+  push:
+    branches:
+      - feature/fleet-operations-report-v20
+  pull_request:
+    paths:
+      - "server/fleet-operations-v20.js"
+      - "server/fleet-operations-pdf-v20.js"
+      - "server/api/fleet-operations-v20.js"
+      - "public/js/fleet-operations-v20.js"
+      - "public/css/fleet-operations-v20.css"
+      - "tests/check-fleet-operations-v20.cjs"
+      - "tests/fleet-operations-v20-ui.cjs"
+jobs:
+  fleet-operations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: node --check server/fleet-operations-v20.js && node --check server/fleet-operations-pdf-v20.js && node --check server/api/fleet-operations-v20.js && node --check public/js/fleet-operations-v20.js
+      - run: node tests/check-fleet-operations-v20.cjs
+      - run: node tests/fleet-operations-v20-ui.cjs
+      - run: npm test
