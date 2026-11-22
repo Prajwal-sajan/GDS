@@ -148,18 +148,6 @@ r.put('/vehicles/:id', can('fleet.modify'), h((req) => { need(db.col('vehicles')
 r.delete('/vehicles/:id', can('fleet.delete'), h((req) => { if (db.col('schedules').count((s) => s.vehicle_id == req.params.id && s.travel_date >= U.today() && s.status === 'active')) throw D.httpErr(409, 'Vehicle is assigned to upcoming trips'); db.col('vehicles').remove(req.params.id); return { success: true }; }));
 
 // ---------------- Documents (vehicles & staff) ----------------
-r.get('/documents/:owner_type/:owner_id', h((req) => {
-  const type = req.params.owner_type;
-  if (!['vehicle','staff'].includes(type)) throw D.httpErr(400, 'Invalid document owner type');
-  const required = type === 'vehicle' ? 'fleet.view' : 'staff.view';
-  if (!req.user.permissions.includes(required)) throw D.httpErr(403, 'Document access denied');
-  const documents = db.col('documents').filter(d => d.owner_type === type && d.owner_id == req.params.owner_id && !d.archived_at)
-    .map(({file_data, ...d}) => ({...d, has_file: !!file_data}));
-  return { documents };
-}));
-r.post('/documents/:owner_type/:owner_id', can('fleet.documents'), h((req) => db.col('documents').insert({ owner_type: req.params.owner_type, owner_id: Number(req.params.owner_id), document_type: req.body.document_type || 'OTHER', document_name: req.body.document_name || req.body.document_type, document_number: req.body.document_number || null, expiry_date: req.body.expiry_date || null, issue_date: req.body.issue_date || null, visibility: req.body.visibility || 'private', file_name: req.body.file_name || null, file_data: req.body.file_data || null, category: 'compliance', verification_status: 'pending' })));
-r.put('/documents/:id', can('fleet.documents'), h((req) => db.col('documents').update(req.params.id, req.body)));
-r.delete('/documents/:id', can('fleet.documents'), h((req) => ({ success: db.col('documents').remove(req.params.id) })));
 r.get('/documents/:id/file', h((req, res) => {
   const d = need(db.col('documents').get(req.params.id));
   const permission = d.owner_type === 'vehicle' ? 'fleet.view' : d.owner_type === 'staff' ? 'staff.view' : null;
@@ -174,6 +162,19 @@ r.get('/documents/:id/file', h((req, res) => {
   res.setHeader('Content-Disposition', 'attachment');
   res.send(Buffer.from(match[2], 'base64'));
 }));
+
+r.get('/documents/:owner_type/:owner_id', h((req) => {
+  const type = req.params.owner_type;
+  if (!['vehicle','staff'].includes(type)) throw D.httpErr(400, 'Invalid document owner type');
+  const required = type === 'vehicle' ? 'fleet.view' : 'staff.view';
+  if (!req.user.permissions.includes(required)) throw D.httpErr(403, 'Document access denied');
+  const documents = db.col('documents').filter(d => d.owner_type === type && d.owner_id == req.params.owner_id && !d.archived_at)
+    .map(({file_data, ...d}) => ({...d, has_file: !!file_data}));
+  return { documents };
+}));
+r.post('/documents/:owner_type/:owner_id', can('fleet.documents'), h((req) => db.col('documents').insert({ owner_type: req.params.owner_type, owner_id: Number(req.params.owner_id), document_type: req.body.document_type || 'OTHER', document_name: req.body.document_name || req.body.document_type, document_number: req.body.document_number || null, expiry_date: req.body.expiry_date || null, issue_date: req.body.issue_date || null, visibility: req.body.visibility || 'private', file_name: req.body.file_name || null, file_data: req.body.file_data || null, category: 'compliance', verification_status: 'pending' })));
+r.put('/documents/:id', can('fleet.documents'), h((req) => db.col('documents').update(req.params.id, req.body)));
+r.delete('/documents/:id', can('fleet.documents'), h((req) => ({ success: db.col('documents').remove(req.params.id) })));
 
 // ---------------- Staff ----------------
 function staffView(s) { const T = U.today(); const m = T.slice(0, 7); const att = db.col('attendance').filter((a) => a.staff_id === s.id && a.date.startsWith(m)); const adv = db.col('advances').filter((a) => a.staff_id === s.id && a.status !== 'recovered'); return { ...s, trips_this_month: att.filter((a) => a.status === 'present').length, advance_outstanding: U.sum(adv, (a) => a.amount - a.amount_recovered), license_state: !s.license_expiry ? null : s.license_expiry < T ? 'EXPIRED' : s.license_expiry <= U.addDays(T, 30) ? 'EXPIRING SOON' : 'ok' }; }
