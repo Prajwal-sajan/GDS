@@ -297,6 +297,7 @@ r.delete('/team-access/v26/roles/:key',A.can('iam.manage_roles'),wrap(req=>{
 }));
 r.get('/team-access/v26/evaluate/:id',A.can('settings.view'),wrap(req=>{
  const u=db.col('users').get(req.params.id);if(!u||u.deleted_at)error('User not found',404);
+ if(!visibleTo(actor(req),[u]).length)error('User outside your branch scope',403);
  return {user:exposeUser(u),role:A.roles()[u.role]||null,
   branches:u.branch_id?[db.col('branches').get(u.branch_id)].filter(Boolean):[],
   routes:(u.route_ids||[]).map(x=>db.col('routes').get(x)).filter(Boolean),
