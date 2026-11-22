@@ -2,7 +2,7 @@
 // Operator Team & Access v26. All mutations are server-authorized and audited.
 // Store remains JSON for local pilot; do not treat UI scopes as domain-row security.
 const express=require('express'),db=require('../db'),A=require('../auth'),D=require('../domain');
-const {ROWS,ROLE_COLUMNS,ROLE_DESCRIPTIONS,ROLE_HUES}=require('../team-access-schema-v26');
+const {ROWS,ALL_ROWS,byKey,byLabel,role_columns,ROLE_COLUMNS,ROLE_DESCRIPTIONS,ROLE_HUES,LIMIT_FIELDS,permissionAvailable,legacyFor}=require('../team-access-schema-v27');
 const r=express.Router();
 const error=(message,status=400)=>{throw D.httpErr(status,message);};
 const wrap=fn=>(req,res)=>{try{res.set('Cache-Control','private, no-store');const out=fn(req,res);if(out!==undefined)res.json(out);}catch(e){res.status(e.status||500).json({success:false,message:e.status?e.message:'Team & access operation failed'});}};
@@ -181,6 +181,8 @@ r.get('/team-access/v26',A.can('settings.view'),wrap(req=>{
   catalog:A.CATALOG,routes:db.col('routes').all().map(x=>({id:x.id,name:x.name||x.route_name||x.service_number||'Route '+x.id})),
   cities:db.col('cities').all().map(x=>({id:x.id,name:x.name})),
   matrix:ROWS,role_columns:ROLE_COLUMNS,role_descriptions:ROLE_DESCRIPTIONS,role_hues:ROLE_HUES,
+  matrix_revision:db.meta('team_matrix_revision_v27')||0,matrix_version:27,
+  matrix_limit_fields:LIMIT_FIELDS,
   grants:{manage_users:A.permsFor(actor(req)).includes('iam.manage_users'),
    manage_roles:A.permsFor(actor(req)).includes('iam.manage_roles'),
    manage_branches:['owner','admin'].includes(actor(req)?.role)},
@@ -251,39 +253,100 @@ r.delete('/team-access/v26/branches/:id',A.can('settings.modify'),wrap(req=>{
  D.audit('iam',row.id,'branch-deleted',{deleted:true},req.user);
  return {deleted:true};
 }));
+// Role matrix save is atomic at the document-policy level: validate every cell,
+ // numeric limit, role and stale revision before changing the stored roles.
+const allowedValue=(row,v)=>row.kind==='scope'?['Off','Own','Branch','Company'].includes(v):['Off','On'].includes(v);
+const roleValue=(role,row)=>{
+ if(!permissionAvailable(row,role.key))return '—';
+ const matrix=role.matrix_v27||{};
+ if(Object.hasOwn(matrix,row.key))return matrix[row.key];
+ const legacy=legacyFor[row.label]||row.label;
+ if(role.scopes&&Object.hasOwn(role.scopes,row.label))return role.scopes[row.label];
+ if(role.scopes&&Object.hasOwn(role.scopes,legacy))return role.scopes[legacy];
+ if(role.ui_permissions&&Object.hasOwn(role.ui_permissions,row.label))
+  return role.ui_permissions[row.label]?(row.kind==='scope'?'Company':'On'):'Off';
+ if(role.ui_permissions&&Object.hasOwn(role.ui_permissions,legacy))
+  return role.ui_permissions[legacy]?(row.kind==='scope'?'Company':'On'):'Off';
+ return (role.permissions||[]).includes(row.code)?(row.kind==='scope'?'Company':'On'):'Off';
+};
+function limitValue(value,key){
+ if(value===''||value===undefined||value===null)return null;
+ const n=Number(value),max=LIMIT_FIELDS[key]?.max;
+ if(!max||!Number.isInteger(n)||n<0||n>max||(key==='block_max_seats'&&n===0))
+  error('Invalid '+key+' limit');
+ return n;
+}
 r.put('/team-access/v26/roles/batch',A.can('iam.manage_roles'),wrap(req=>{
  const list=req.body?.roles;
- if(!Array.isArray(list)||list.length<1||list.length>30)error('Invalid role matrix');
- const existing=db.meta('roles')||{},next={...existing},catalog=Object.values(A.CATALOG).flat();
- const allRows=ROWS.flatMap(s=>s.rows),lookup=new Map(allRows.map(x=>[x.label,x]));
- const controlled=new Set(allRows.map(x=>x.code));
- const known=new Set(Object.keys(A.roles()));
+ if(!Array.isArray(list)||!list.length||list.length>30)error('Invalid role matrix');
+ const revision=db.meta('team_matrix_revision_v27')||0;
+ if(req.body.base_revision!==undefined&&Number(req.body.base_revision)!==revision)
+  error('Permission matrix changed in another session. Reload and review before saving.',409);
+ const saved=db.meta('roles')||{},next={...saved};
+ const existingRoles=A.roles(),catalog=Object.values(A.CATALOG).flat();
+ const controlled=new Set(ALL_ROWS.map(row=>row.code));
+ const seen=new Set(),changes=[];
  for(const item of list){
-  if(!item||typeof item.key!=='string'||item.key==='owner'||!known.has(item.key))
-   error('Unknown or owner role');
-  const role=A.roles()[item.key],matrix=item.matrix;
-  if(!matrix||typeof matrix!=='object'||Array.isArray(matrix))error('Invalid role matrix data');
-  if(Object.keys(matrix).some(label=>!lookup.has(label)))error('Unknown matrix permission row');
-  const ui={},scopes={},enabled=new Set();
-  for(const row of allRows){
-   const inherited=Object.hasOwn(role.ui_permissions||{},row.label)?role.ui_permissions[row.label]:
-    role.permissions.includes(row.code);
-   const prev=role.scopes?.[row.label]||(inherited?(row.kind==='scope'?'Company':'On'):'Off');
-   const v=Object.hasOwn(matrix,row.label)?matrix[row.label]:prev;
-   if(!['Off','On','Own','Branch','Company'].includes(v)||
-     (row.kind==='toggle'&&!['Off','On'].includes(v)))error('Invalid role permission scope for '+row.label);
-   ui[row.label]=v!=='Off';if(row.kind==='scope')scopes[row.label]=v;
-   if(v!=='Off')enabled.add(row.code);
+  if(!item||typeof item.key!=='string'||item.key==='owner'||!existingRoles[item.key]||seen.has(item.key))
+   error('Unknown, repeated or owner role');
+  seen.add(item.key);
+  if(!item.matrix||typeof item.matrix!=='object'||Array.isArray(item.matrix))error('Invalid role matrix data');
+  if(Object.keys(item.matrix).some(k=>!byKey.has(k)&&!byLabel.has(k)))error('Unknown matrix permission row');
+  if(item.limits!==undefined && (!item.limits||typeof item.limits!=='object'||Array.isArray(item.limits)||
+      Object.keys(item.limits).some(k=>!LIMIT_FIELDS[k])))error('Unknown role limit');
+  const role={...existingRoles[item.key],key:item.key};
+  const matrix={...(role.matrix_v27||{})},ui={...(role.ui_permissions||{})},scopes={...(role.scopes||{})};
+  const enabled=new Set(),limits={...(role.limits||{})};
+  for(const row of ALL_ROWS){
+   const supplied=Object.hasOwn(item.matrix,row.key)?item.matrix[row.key]:
+       Object.hasOwn(item.matrix,row.label)?item.matrix[row.label]:undefined;
+   const current=roleValue(role,row);
+   const v=supplied===undefined?(current==='—'?'Off':current):supplied;
+   if(!allowedValue(row,v))error('Invalid access selection for '+row.label);
+   if(!permissionAvailable(row,item.key)&&v!=='Off')error(row.label+' is not available to '+role.name,403);
+   if(permissionAvailable(row,item.key)){
+    matrix[row.key]=v;
+    ui[row.label]=v!=='Off';
+    if(row.kind==='scope')scopes[row.label]=v;
+    if(v!=='Off')enabled.add(row.code);
+   }else{
+    delete matrix[row.key];delete ui[row.label];delete scopes[row.label];
+   }
   }
-  const previous=role.permissions||[];
-  const codes=[...new Set([...previous.filter(code=>!controlled.has(code)),...enabled])].filter(x=>catalog.includes(x));
-  next[item.key]={...role,name:role.name,permissions:codes,ui_permissions:ui,scopes,limits:role.limits||{}};
+  if(item.limits){
+   for(const [key,value] of Object.entries(item.limits))limits[key]=limitValue(value,key);
+  }
+  if(matrix[byLabel.get('Cancel tickets').key]==='Off')limits.cancel_cutoff_hours=null;
+  if(matrix[byLabel.get('Block seats').key]==='Off'){
+   limits.block_max_seats=null;limits.block_max_hours=null;
+  }
+  // Fine-grained grants need the legacy parent operation to pass existing can()
+  // checks, while the v27 policy independently gates the specific action.
+  const implied={
+   'bookings.comments':['bookings.view_all'],
+   'bookings.on_behalf':['bookings.create'],
+   'bookings.see_phone':['bookings.view_all'],
+   'schedules.assign_bus':['schedules.modify'],
+   'schedules.assign_crew':['schedules.modify'],
+   'schedules.edit_expenses':['schedules.financial'],
+   'accounts.export':['accounts.view']
+  };
+  for(const code of [...enabled])for(const parent of implied[code]||[])enabled.add(parent);
+  const codes=[...new Set([...role.permissions.filter(code=>!controlled.has(code)),...enabled])].filter(x=>catalog.includes(x));
+  const update={...role,name:role.name,permissions:codes,scopes,ui_permissions:ui,matrix_v27:matrix,limits};
+  delete update.key;
+  next[item.key]=update;
+  if(JSON.stringify(role.permissions)!==JSON.stringify(codes)||
+    JSON.stringify(role.matrix_v27||{})!==JSON.stringify(matrix)||
+    JSON.stringify(role.limits||{})!==JSON.stringify(limits))changes.push(item.key);
  }
+ if(!changes.length)return {saved:true,roles:[],revoked_sessions:0,matrix_revision:revision};
  db.meta('roles',next);
- D.audit('iam','role-matrix','batch-update',{updated_roles:list.map(x=>x.key)},req.user);
- // Revoke every active session on role-policy changes, preventing stale access.
- let revoked=0;for(const u of db.col('users').all().filter(x=>list.some(item=>item.key===x.role)))revoked+=sessionsOff(u.id);
- return {saved:true,roles:list.map(x=>x.key),revoked_sessions:revoked};
+ db.meta('team_matrix_revision_v27',revision+1);
+ D.audit('iam','role-matrix','batch-update-v27',{updated_roles:changes},req.user);
+ let revoked=0;
+ for(const user of db.col('users').all().filter(u=>changes.includes(u.role)))revoked+=sessionsOff(user.id);
+ return {saved:true,roles:changes,revoked_sessions:revoked,matrix_revision:revision+1};
 }));
 r.post('/team-access/v26/roles',A.can('iam.manage_roles'),wrap(req=>{
  const name=text(req.body?.name,70),key=name.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');

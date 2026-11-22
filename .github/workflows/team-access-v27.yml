@@ -1,0 +1,53 @@
+name: Access matrix v27 screenshot + security acceptance
+on:
+  push:
+    branches: [feature/team-access-roles-matrix-v27]
+  pull_request:
+    paths:
+      - 'server/team-access-schema-v27.js'
+      - 'server/access-runtime-v27.js'
+      - 'server/api/team-access-v26.js'
+      - 'server/auth.js'
+      - 'server/api/ops.js'
+      - 'server/domain.js'
+      - 'server/api/settings-v16-iam-bridge.js'
+      - 'public/js/team-access-v26.js'
+      - 'public/css/team-access-v26.css'
+      - 'public/index.html'
+      - 'tests/*team-access-v27*'
+      - '.github/workflows/team-access-v27.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: JavaScript syntax checks
+        run: |
+          node --check server/team-access-schema-v27.js
+          node --check server/access-runtime-v27.js
+          node --check server/api/team-access-v26.js
+          node --check server/api/ops.js
+          node --check server/api/master.js
+          node --check server/api/accounts.js
+          node --check server/domain.js
+          node --check public/js/team-access-v26.js
+          node --check server/api/settings-v16-iam-bridge.js
+      - name: Screenshot inventory, matrix, limits and enforcement
+        run: |
+          node tests/check-team-access-v27.cjs
+          node tests/team-access-v27-ui.cjs
+      - name: Earlier Team and other GDS regressions
+        run: |
+          node tests/check-team-access-v26.cjs
+          node tests/team-access-v26-ui.cjs
+          node tests/check-settings-v16-backend.cjs
+          node tests/check-communications-access.mjs
+          node tests/check-staff-v11.mjs
+          node tests/check-accounts-v10.mjs
+          npm test

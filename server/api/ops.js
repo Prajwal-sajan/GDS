@@ -7,6 +7,7 @@ const Rp = require('../reports');
 const { can, checkStepUp } = require('../auth');
 
 const r = express.Router();
+const Policy=require('../access-runtime-v27');
 const h = (fn) => (req, res) => { try { const out = fn(req, res); if (out !== undefined) res.json(out); } catch (e) { res.status(e.status || 500).json({ success: false, message: e.message }); } };
 
 const staff = (id) => db.col('staff').get(id);
@@ -157,6 +158,10 @@ r.put('/schedules/:id', can('schedules.modify'), h((req) => {
   const s = db.col('schedules').get(req.params.id); if (!s) throw D.httpErr(404, 'Schedule not found');
   const before = { vehicle_id: s.vehicle_id, crew: s.crew, departure_time: s.departure_time, sync_with_route: s.sync_with_route };
   const { vehicle_id, crew, departure_time, sync_with_route, stage_overrides, seat_fare_rules, expense_overrides, ui_settings } = req.body;
+  if(vehicle_id!==undefined)Policy.explicitAccess(req,'Assign bus');
+  if(crew!==undefined)Policy.explicitAccess(req,'Assign crew (driver, conductor, helper)');
+  if(expense_overrides!==undefined)Policy.explicitAccess(req,'Edit expenses');
+  if(departure_time!==undefined)Policy.explicitAccess(req,'Edit timings, coach & delay');
   if (vehicle_id !== undefined) s.vehicle_id = vehicle_id || null;
   if (crew) s.crew = crew;
   if (departure_time) { if (!/^\d{1,2}:\d{2}$/.test(departure_time)) throw D.httpErr(400, 'Departure time must be HH:MM'); s.departure_time = departure_time; }
@@ -222,15 +227,17 @@ r.post('/schedules/:id/apply-recommendation', can('schedules.fares'), h((req) =>
 r.post('/schedules/:id/blocks', can('bookings.block_seats'), h((req) => {
   const s = db.col('schedules').get(req.params.id);
   const { seats, reason, gender, action } = req.body;
+  const expires_at=Policy.checkBlock(req,seats,action);
   if (action === 'unblock') { s.unblocked = [...new Set([...(s.unblocked || []), ...seats])]; s.seat_blocks = (s.seat_blocks || []).map((b) => ({ ...b, seats: b.seats.filter((x) => !seats.includes(x)) })).filter((b) => b.seats.length); }
   else if (action === 'follow_route') { s.unblocked = (s.unblocked || []).filter((x) => !seats.includes(x)); }
-  else { s.seat_blocks = [...(s.seat_blocks || []), { seats, reason: reason || 'Blocked', gender: gender || null, source: 'schedule', by: req.user.name, at: U.nowIso() }]; s.unblocked = (s.unblocked || []).filter((x) => !seats.includes(x)); }
+  else { s.seat_blocks = [...(s.seat_blocks || []), { seats, reason: reason || 'Blocked', gender: gender || null, source: 'schedule', by: req.user.name, at: U.nowIso(),expires_at }]; s.unblocked = (s.unblocked || []).filter((x) => !seats.includes(x)); }
   db.persist(); D.audit('schedule', s.id, 'block', { op: action || 'block', seats, reason }, req.user);
   return D.seatMap(s);
 }));
 
 r.get('/schedules/:id/pnl', can('schedules.financial'), h((req) => Rp.tripPnl(db.col('schedules').get(req.params.id))));
 r.post('/schedules/:id/expenses', can('schedules.financial'), h((req) => {
+  Policy.explicitAccess(req,'Edit expenses');
   const schedule = db.col('schedules').get(req.params.id);
   if (!schedule) throw D.httpErr(404, 'Schedule not found');
   if (schedule.status !== 'active') throw D.httpErr(409, 'Cannot add expense to disabled schedule');
@@ -253,6 +260,7 @@ r.get('/schedules/:id/booking-history', can('schedules.view'), h((req) => ({ his
 r.get('/payment-options', can('bookings.create'), h((req) => { const amt = Number(req.query.amount) || 0; const me = db.col('users').get(req.user.id); const isAgent = me?.role === 'agent'; const comm = isAgent ? me.commission_pct || 0 : 0; return { agent_type: isAgent ? me.agent_type : 'staff', ticket_amount: amt, commission_percent: comm, ticket_net_payable: U.round2(amt * (1 - comm / 100)), options: ['paid', 'unpaid', 'settle_later'], credit_limit: me?.credit_limit || null }; }));
 r.post('/bookings', can('bookings.create'), h((req) => {
   const body = { ...req.body };
+  Policy.checkOnBehalf(req,body);
   if (req.user.role === 'agent') { body.source = 'agent'; body.agent_phone = req.user.phone; delete body.override_rules; }
   return D.createBooking(body, req.user);
 }));
@@ -264,23 +272,34 @@ r.post('/bookings/quote', can('bookings.create'), h((req) => {
 }));
 r.get('/bookings/search', can('bookings.view_all'), h((req) => {
   const q = String(req.query.q || '').toLowerCase().trim(); if (q.length < 3) return { results: [] };
-  const res = db.col('bookings').filter((b) => b.pnr.toLowerCase().includes(q) || b.ticket_number.includes(q) || b.contact.phone.includes(q) || b.contact.name.toLowerCase().includes(q)).slice(-50).reverse();
-  return { results: res.map((b) => ({ pnr: b.pnr, ticket: b.ticket_number, name: b.contact.name, phone: b.contact.phone, travel_date: b.travel_date, schedule_id: b.schedule_id, service: db.col('routes').get(b.route_id)?.service_number, seats: b.passengers.map((p) => p.seat), status: b.status, total: b.fare.total, source: b.source })) };
+  const res = db.col('bookings').filter((b) => b.pnr.toLowerCase().includes(q) || b.ticket_number.includes(q) || b.contact.phone.includes(q) || b.contact.name.toLowerCase().includes(q))
+   .filter(b=>Policy.bookingAllowed(req,b)).slice(-50).reverse();
+  return { results: res.map((b) => ({ pnr: b.pnr, ticket: b.ticket_number, name: b.contact.name, phone: Policy.viewPhone(req)?b.contact.phone:'••••••••••', travel_date: b.travel_date, schedule_id: b.schedule_id, service: db.col('routes').get(b.route_id)?.service_number, seats: b.passengers.map((p) => p.seat), status: b.status, total: b.fare.total, source: b.source })) };
 }));
 r.get('/bookings/:pnr', can('bookings.view_all'), h((req) => {
   const b = db.col('bookings').find((x) => x.pnr === req.params.pnr || x.ticket_number === req.params.pnr); if (!b) throw D.httpErr(404, 'Booking not found');
+  Policy.requireBooking(req,b);
   const rt = db.col('routes').get(b.route_id);
-  return { ...b, service_number: rt.service_number, from: D.cityName(b.from_city_id), to: D.cityName(b.to_city_id), boarding: rt.stages.find((x) => x.id == b.boarding_stage_id), dropping: rt.stages.find((x) => x.id == b.dropping_stage_id), refund_quote: b.status === 'confirmed' ? D.refundFor(b) : null };
+  return Policy.maskedBooking({ ...b, service_number: rt.service_number, from: D.cityName(b.from_city_id), to: D.cityName(b.to_city_id), boarding: rt.stages.find((x) => x.id == b.boarding_stage_id), dropping: rt.stages.find((x) => x.id == b.dropping_stage_id), refund_quote: b.status === 'confirmed' ? D.refundFor(b) : null }, Policy.viewPhone(req));
 }));
 r.get('/bookings/:pnr/refund-quote', can('bookings.cancel'), h((req) => { const b = db.col('bookings').find((x) => x.pnr === req.params.pnr); return D.refundFor(b, req.query.by || 'passenger', req.query.refund_pct ?? null); }));
-r.post('/bookings/:pnr/cancel', can('bookings.cancel'), h((req) => D.cancelBooking(req.params.pnr, req.body, req.user)));
-r.post('/bookings/:pnr/shift', can('bookings.modify'), h((req) => D.shiftBooking(req.params.pnr, req.body, req.user)));
+r.post('/bookings/:pnr/cancel', can('bookings.cancel'), h((req) => {
+  const booking=db.col('bookings').find(x=>x.pnr===req.params.pnr);
+  Policy.requireBooking(req,booking,'Cancel tickets');
+  Policy.checkCancel(req,booking);
+  return D.cancelBooking(req.params.pnr,req.body,req.user);
+}));
+r.post('/bookings/:pnr/shift', can('bookings.modify'), h((req) => {
+  Policy.requireBooking(req,db.col('bookings').find(x=>x.pnr===req.params.pnr),'Shift seat / date');
+  return D.shiftBooking(req.params.pnr,req.body,req.user);
+}));
 r.post('/bookings/:pnr/confirm-payment', can('bookings.modify'), h((req) => { const b = db.col('bookings').find((x) => x.pnr === req.params.pnr); if (b.status !== 'hold') throw D.httpErr(400, 'Not on hold'); b.status = 'confirmed'; b.payment = 'paid'; b.payment_method = req.body.method || 'upi'; b.hold_expires_at = null; db.persist(); D.notify('payment.received', b); return b; }));
 r.post('/bookings/:pnr/release', can('bookings.release_hold'), h((req) => { const b = db.col('bookings').find((x) => x.pnr === req.params.pnr); if (b.status !== 'hold') throw D.httpErr(400, 'Not on hold'); b.status = 'released'; b.release_reason = req.body.reason || 'Force release'; b.cancelled_at = U.nowIso(); db.persist(); D.audit('schedule', b.schedule_id, 'bookings', { op: 'release', pnr: b.pnr, reason: b.release_reason }, req.user); return b; }));
 r.post('/bookings/:pnr/mark-paid', can('accounts.ledger'), h((req) => { const b = db.col('bookings').find((x) => x.pnr === req.params.pnr); b.payment = 'paid'; db.persist(); return b; }));
-r.post('/bookings/:pnr/comments', can('bookings.view_all'), h((req) => { const b = db.col('bookings').find((x) => x.pnr === req.params.pnr); b.comments = b.comments || []; b.comments.push({ text: req.body.text, by: req.user.name, at: U.nowIso() }); db.persist(); return b.comments; }));
+r.post('/bookings/:pnr/comments', can('bookings.view_all'), h((req) => { Policy.checkComment(req);
+  const b=Policy.requireBooking(req,db.col('bookings').find(x=>x.pnr===req.params.pnr)); b.comments = b.comments || []; b.comments.push({ text: req.body.text, by: req.user.name, at: U.nowIso() }); db.persist(); return b.comments; }));
 r.put('/bookings/:pnr', can('bookings.modify'), h((req) => {
-  const b = db.col('bookings').find((x) => x.pnr === req.params.pnr);
+  const b=Policy.requireBooking(req,db.col('bookings').find(x=>x.pnr===req.params.pnr),'Edit passengers & points');
   const { contact, passengers, boarding_stage_id, dropping_stage_id } = req.body;
   if (contact) Object.assign(b.contact, contact);
   if (passengers) for (const p of passengers) { const t = b.passengers.find((x) => x.seat === p.seat); if (t) Object.assign(t, { name: p.name ?? t.name, age: p.age ?? t.age, gender: p.gender ?? t.gender }); }

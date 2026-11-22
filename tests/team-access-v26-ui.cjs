@@ -1,7 +1,7 @@
 (function teamAccessUITestV26(){
 'use strict';
 const assert=require('node:assert/strict'),fs=require('fs'),{JSDOM}=require('jsdom');
-const schema=require('../server/team-access-schema-v26');
+const schema=require('../server/team-access-schema-v27');
 const dom=new JSDOM('<body><div id="app"></div></body>',{url:'http://localhost:3000/#/settings/team-access/agents',runScripts:'outside-only'});
 const w=dom.window,root=w.document.getElementById('app');
 w.esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -23,7 +23,7 @@ const original={
  staff:[],branches:[],roles,catalog:{trips:['trips.view','trips.location'],bookings:['bookings.create','bookings.view_all']},
  routes:[{id:1,name:'Bengaluru — Hyderabad'},{id:2,name:'Hyderabad — Bengaluru'}],
  cities:[{id:1,name:'Bengaluru'},{id:2,name:'Hyderabad'}],
- matrix:schema.ROWS,role_columns:schema.ROLE_COLUMNS,
+ matrix:schema.ROWS,matrix_version:27,matrix_revision:0,matrix_limit_fields:schema.LIMIT_FIELDS,role_columns:schema.ROLE_COLUMNS,
  role_descriptions:schema.ROLE_DESCRIPTIONS,role_hues:schema.ROLE_HUES,
  grants:{manage_users:true,manage_roles:true,manage_branches:true}
 };
@@ -132,7 +132,7 @@ const formSubmit=async overlay=>{const f=overlay.querySelector('form');f.dispatc
  fire(root.querySelector('[data-save-matrix]'));
  await settle();
  const batch=actions.findLast(x=>x.method==='PUT'&&x.p==='/team-access/v26/roles/batch');
- assert.ok(batch);assert.equal(batch.body.roles.length,10);
+ assert.ok(batch);assert.equal(batch.body.roles.length,1);
  await w.G.screens.settings(root,['team-access','access','test-access','viewer']);
  assert.ok(root.querySelector('[data-test-access]'));
  await w.G.screens.settings(root,['team-access','access','groups','viewer']);

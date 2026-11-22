@@ -6,6 +6,7 @@ const D = require('../domain');
 const { can, checkStepUp } = require('../auth');
 
 const r = express.Router();
+const Policy=require('../access-runtime-v27');
 const h = (fn) => (req, res) => { try { const out = fn(req, res); if (out !== undefined) res.json(out); } catch (e) { res.status(e.status || 500).json({ success: false, message: e.message }); } };
 const need = (x, msg = 'Not found') => { if (!x) throw D.httpErr(404, msg); return x; };
 
@@ -26,9 +27,9 @@ function routeSummary(rt) {
   const upcoming = db.col('schedules').count((s) => s.route_id === rt.id && s.travel_date >= U.today() && s.status === 'active');
   return { id: rt.id, service_number: rt.service_number, name: rt.name, alt_name: rt.alt_name || null, coach_template_id: rt.coach_template_id, arrival_day: rt.arrival_day || null, start_date: rt.start_date || null, end_date: rt.end_date || null, via_names: D.routeCities(rt).slice(1,-1).map(c => D.cityName(c.city_id)), origin: D.cityName(rt.origin_city_id), destination: D.cityName(rt.destination_city_id), origin_city_id: rt.origin_city_id, destination_city_id: rt.destination_city_id, departure_time: rt.departure_time, arrival_time: rt.arrival_time, duration_minutes: rt.duration_minutes, distance_km: rt.distance_km, status: rt.status, vehicle: v?.registration_number || null, coach: coach?.name || null, pickups: rt.stages.filter((s) => s.type === 'pickup').length, drops: rt.stages.filter((s) => s.type === 'drop').length, breaks: rt.stages.filter((s) => s.type === 'break').length, main_fare: main || null, upcoming_trips: upcoming, run_pattern: rt.run_pattern, tags: rt.tags };
 }
-r.get('/routes', can('routes.view'), h((req) => { const st = req.query.status || 'active'; return { routes: db.col('routes').filter((x) => st === 'all' || x.status === st).map(routeSummary) }; }));
+r.get('/routes', can('routes.view'), h((req) => { Policy.explicitAccess(req,"View routes"); const st = req.query.status || 'active'; return { routes: db.col('routes').filter((x) => st === 'all' || x.status === st).map(routeSummary) }; }));
 r.get('/routes/:id', can('routes.view'), h((req) => { const rt = need(db.col('routes').get(req.params.id)); return { ...rt, summary: routeSummary(rt), via_cities: D.routeCities(rt).map((c) => ({ ...c, name: D.cityName(c.city_id) })), fares: (rt.fares || []).map((f) => ({ ...f, from: D.cityName(f.from_city_id), to: D.cityName(f.to_city_id) })) }; }));
-r.post('/routes', can('routes.create'), h((req) => {
+r.post('/routes', can('routes.create'), h((req) => { Policy.explicitAccess(req,"Create routes");
   const b = req.body;
   if (!b.service_number || !b.origin_city_id || !b.destination_city_id || !b.departure_time) throw D.httpErr(400, 'Service number, origin, destination and departure time are required');
   if (db.col('routes').find((x) => x.service_number === b.service_number && x.status !== 'deleted')) throw D.httpErr(409, 'Service number already in use');
@@ -47,6 +48,20 @@ r.post('/routes', can('routes.create'), h((req) => {
 }));
 const ROUTE_SECTIONS = ['service_number', 'name', 'departure_time', 'arrival_time', 'duration_minutes', 'distance_km', 'coach_template_id', 'vehicle_id', 'assignments', 'status', 'run_pattern', 'start_date', 'end_date', 'via_cities', 'stages', 'fares', 'seat_fare_rules', 'seat_blocks', 'refund_slabs', 'expenses', 'call_settings', 'auto_pricing', 'tags', 'sub_routes', 'business_rules', 'alt_name', 'origin_city_id', 'destination_city_id', 'departure_day', 'arrival_day', 'alternate_assignment', 'fare_groups', 'hub', 'cabs', 'escalation_contacts'];
 r.put('/routes/:id', can('routes.modify'), h((req) => {
+  const fieldRules=[
+   ['Change fares',['fares','seat_fare_rules','fare_groups']],
+   ['Change cities & timings',['via_cities','departure_time','arrival_time','origin_city_id','destination_city_id','departure_day','arrival_day']],
+   ['Change pickups, drops & breaks',['stages']],
+   ['Block seats on the route',['seat_blocks']],
+   ['Change cancellation rules',['refund_slabs','business_rules']],
+   ['Change expenses',['expenses']]
+  ];
+  let specialized=false;
+  for(const [label,fields] of fieldRules)if(fields.some(k=>Object.hasOwn(req.body,k))){
+   Policy.explicitAccess(req,label);specialized=true;
+  }
+  if(!specialized||Object.keys(req.body).some(k=>!fieldRules.some(([,fields])=>fields.includes(k))))
+   Policy.explicitAccess(req,'Edit general details (name, coach, settings, route map)');
   const rt = need(db.col('routes').get(req.params.id));
   const changes = {};
   for (const k of ROUTE_SECTIONS) if (req.body[k] !== undefined) { changes[k] = [rt[k], req.body[k]]; rt[k] = req.body[k]; }
@@ -77,14 +92,14 @@ r.get('/routes/:id/validate', can('routes.view'), h((req) => {
   for (let i = 1; i < stops.length; i++) { const a = stops[i - 1], b = stops[i]; if (a.lat && b.lat) { const km = U.haversineKm(a, b); const mins = (b.day - a.day) * 1440 + U.toMin(b.time) - U.toMin(a.time); if (mins > 0 && km / (mins / 60) > 100) issues.push({ level: 'warn', stage_id: b.id, message: `${b.name}: ${Math.round(km)} km from ${a.name} in ${mins} min — time or pin probably wrong` }); } }
   return { ok: !issues.some((i) => i.level === 'error'), issues };
 }));
-r.post('/routes/:id/shift-time', can('routes.modify'), h((req) => {
+r.post('/routes/:id/shift-time', can('routes.modify'), h((req) => { Policy.explicitAccess(req,"Update (shift the timings of its schedules)");
   const rt = need(db.col('routes').get(req.params.id)); const delta = (Number(req.body.hours) || 0) * 60 + (Number(req.body.minutes) || 0) * (req.body.direction === 'advance' ? -1 : 1);
   const mv = (o) => { const m = U.toMin(o.time) + (o.day - 1) * 1440 + delta; o.time = U.fromMin(m); o.day = 1 + Math.floor(m / 1440); };
   rt.departure_time = U.fromMin(U.toMin(rt.departure_time) + delta); rt.stages.forEach(mv); rt.via_cities.forEach(mv);
   for (const s of db.col('schedules').filter((x) => x.route_id === rt.id && x.travel_date >= (req.body.from_date || U.today()) && x.sync_with_route !== false)) s.departure_time = rt.departure_time;
   db.persist(); D.audit('route', rt.id, 'fields', { op: 'shift_time', minutes: delta }, req.user); return routeSummary(rt);
 }));
-r.post('/routes/:id/stops/import', can('routes.modify'), h((req) => {
+r.post('/routes/:id/stops/import', can('routes.modify'), h((req) => { Policy.explicitAccess(req,"Change pickups, drops & breaks");
   // body: { rows: [{type,name,city,day,time,lat,lng,address,landmark,contact}], mode: 'append'|'replace' }
   const rt = need(db.col('routes').get(req.params.id)); const rows = req.body.rows || []; const errs = []; const out = [];
   let n = Math.max(10000, ...db.col('routes').all().flatMap((x) => x.stages.map((s) => s.id || 0)));
@@ -102,7 +117,7 @@ r.get('/routes/:id/halts', can('routes.view'), h((req) => {
   return { route_id: rt.id, days, trips: trips.length, stops };
 }));
 r.post('/routes/:id/delete-otp', can('routes.delete'), h((req) => require('../auth').requestStepUp(req.user, `route_delete_${req.params.id}`)));
-r.delete('/routes/:id', can('routes.delete'), h((req) => {
+r.delete('/routes/:id', can('routes.delete'), h((req) => { Policy.explicitAccess(req,"Delete routes");
   const rt = need(db.col('routes').get(req.params.id));
   if (!checkStepUp(req.user, `route_delete_${rt.id}`, req.body?.otp || req.query.otp)) throw D.httpErr(403, 'Valid OTP required to delete route');
   rt.status = 'deleted'; for (const s of db.col('schedules').filter((x) => x.route_id === rt.id && x.travel_date >= U.today())) { s.status = 'disabled'; s.is_active = false; }
@@ -112,11 +127,11 @@ r.post('/routes/:id/restore', can('routes.modify'), h((req) => { const rt = need
 r.post('/routes/:id/duplicate', can('routes.create'), h((req) => { const rt = need(db.col('routes').get(req.params.id)); const { id, created_at, updated_at, ...rest } = JSON.parse(JSON.stringify(rt)); return db.col('routes').insert({ ...rest, service_number: req.body.service_number || `${rt.service_number}-COPY`, status: 'inactive', deleted_trips: [] }); }));
 
 // ---------------- Coaches ----------------
-r.get('/coaches', can('fleet.view'), h(() => ({ coaches: db.col('coaches').all().map((c) => ({ ...c, capacity: c.layout.capacity, vehicles: db.col('vehicles').count((v) => v.coach_template_id === c.id), routes: db.col('routes').count((x) => x.coach_template_id === c.id && x.status !== 'deleted') })) })));
+r.get('/coaches', can('fleet.view'), h((req) => { Policy.explicitAccess(req,'View coaches / seat layouts'); return { coaches: db.col('coaches').all().map((c) => ({ ...c, capacity: c.layout.capacity, vehicles: db.col('vehicles').count((v) => v.coach_template_id === c.id), routes: db.col('routes').count((x) => x.coach_template_id === c.id && x.status !== 'deleted') })) }; }));
 r.get('/coaches/:id', can('fleet.view'), h((req) => need(db.col('coaches').get(req.params.id))));
-r.post('/coaches', can('fleet.modify'), h((req) => { const b = req.body; const layout = b.layout || D.buildLayout({ kind: b.kind || 'seater_sleeper', pattern: b.pattern || '2+1' }); return db.col('coaches').insert({ name: b.name || 'New coach', bus_type: b.bus_type || '', pattern: b.pattern || '2+1', layout, amenities: b.amenities || [], emergency_exits: b.emergency_exits || [] }); }));
-r.put('/coaches/:id', can('fleet.modify'), h((req) => { const c = need(db.col('coaches').get(req.params.id)); const b = req.body; if (b.kind) b.layout = D.buildLayout({ kind: b.kind, pattern: b.pattern || c.pattern }); if (b.layout) b.layout.capacity = b.layout.decks.reduce((a, d) => a + d.seats.length, 0); return db.col('coaches').update(c.id, b); }));
-r.delete('/coaches/:id', can('fleet.delete'), h((req) => { if (db.col('vehicles').count((v) => v.coach_template_id == req.params.id) || db.col('routes').count((x) => x.coach_template_id == req.params.id && x.status !== 'deleted')) throw D.httpErr(409, 'Coach is in use'); db.col('coaches').remove(req.params.id); return { success: true }; }));
+r.post('/coaches', can('fleet.modify'), h((req) => { Policy.explicitAccess(req,"Create & edit coaches"); const b = req.body; const layout = b.layout || D.buildLayout({ kind: b.kind || 'seater_sleeper', pattern: b.pattern || '2+1' }); return db.col('coaches').insert({ name: b.name || 'New coach', bus_type: b.bus_type || '', pattern: b.pattern || '2+1', layout, amenities: b.amenities || [], emergency_exits: b.emergency_exits || [] }); }));
+r.put('/coaches/:id', can('fleet.modify'), h((req) => { Policy.explicitAccess(req,"Create & edit coaches"); const c = need(db.col('coaches').get(req.params.id)); const b = req.body; if (b.kind) b.layout = D.buildLayout({ kind: b.kind, pattern: b.pattern || c.pattern }); if (b.layout) b.layout.capacity = b.layout.decks.reduce((a, d) => a + d.seats.length, 0); return db.col('coaches').update(c.id, b); }));
+r.delete('/coaches/:id', can('fleet.delete'), h((req) => { Policy.explicitAccess(req,"Delete coaches"); if (db.col('vehicles').count((v) => v.coach_template_id == req.params.id) || db.col('routes').count((x) => x.coach_template_id == req.params.id && x.status !== 'deleted')) throw D.httpErr(409, 'Coach is in use'); db.col('coaches').remove(req.params.id); return { success: true }; }));
 
 // ---------------- Vehicles ----------------
 function vehicleView(v) {
@@ -124,7 +139,7 @@ function vehicleView(v) {
   const next = db.col('schedules').filter((s) => s.vehicle_id === v.id && s.travel_date >= T && s.status === 'active').sort((a, b) => a.travel_date.localeCompare(b.travel_date) || a.departure_time.localeCompare(b.departure_time))[0];
   return { ...v, coach: db.col('coaches').get(v.coach_template_id)?.name, documents: docs.map(({ file_data, ...d }) => ({ ...d, has_file: !!file_data, state: !d.expiry_date ? 'ok' : d.expiry_date < T ? 'EXPIRED' : d.expiry_date <= U.addDays(T, 30) ? 'EXPIRING SOON' : 'ok' })), doc_alerts: docs.filter((d) => d.expiry_date && d.expiry_date <= U.addDays(T, 30)).length, next_trip: next ? { schedule_id: next.id, service: db.col('routes').get(next.route_id)?.service_number, travel_date: next.travel_date, departure_time: next.departure_time } : null };
 }
-r.get('/vehicles', can('fleet.view'), h(() => ({ vehicles: db.col('vehicles').all().map(vehicleView) })));
+r.get('/vehicles', can('fleet.view'), h((req) => { Policy.explicitAccess(req,'View vehicles & fleet map'); return { vehicles: db.col('vehicles').all().map(vehicleView) }; }));
 r.get('/vehicles/positions', can('fleet.view'), h(() => {
   // Simulated live positions: moving buses interpolate along their route during a live trip.
   const out = []; const now = Date.now();
@@ -143,9 +158,9 @@ r.get('/vehicles/:id/live', can('fleet.view'), h((req) => {
   const rt = s ? db.col('routes').get(s.route_id) : null;
   return { vehicleId: v.id, plate: v.registration_number, fix: v.position, service: s ? { scheduleId: s.id, travelDate: s.travel_date, serviceNumber: rt.service_number, serviceName: rt.name, origin: D.cityName(rt.origin_city_id), destination: D.cityName(rt.destination_city_id), departure: `${s.travel_date}T${s.departure_time}`, staff: (s.crew || []).map((c) => ({ name: db.col('staff').get(c.staff_id)?.name, phone: db.col('staff').get(c.staff_id)?.phone, role: c.role })), path: rt.stages.filter((x) => x.lat).map((x) => [x.lat, x.lng]) } : null, health: v.health };
 }));
-r.post('/vehicles', can('fleet.modify'), h((req) => { const b = req.body; if (!b.registration_number) throw D.httpErr(400, 'Registration number required'); if (db.col('vehicles').find((v) => v.registration_number.replace(/\s/g, '') === b.registration_number.replace(/\s/g, ''))) throw D.httpErr(409, 'Vehicle already exists'); return db.col('vehicles').insert({ status: 'active', ownership_type: 'permanent', vehicle_role: 'main', gps_enabled: false, dms_enabled: false, position: { lat: 17.385, lng: 78.4867, speed: 0, state: 'STOPPED', ts: Date.now() }, health: { status: 'GOOD', alerts: [] }, tags: {}, ...b, coach_template_id: b.coach_template_id ? Number(b.coach_template_id) : null }); }));
-r.put('/vehicles/:id', can('fleet.modify'), h((req) => { need(db.col('vehicles').get(req.params.id)); const b = { ...req.body }; if (b.coach_template_id) b.coach_template_id = Number(b.coach_template_id); return db.col('vehicles').update(req.params.id, b); }));
-r.delete('/vehicles/:id', can('fleet.delete'), h((req) => { if (db.col('schedules').count((s) => s.vehicle_id == req.params.id && s.travel_date >= U.today() && s.status === 'active')) throw D.httpErr(409, 'Vehicle is assigned to upcoming trips'); db.col('vehicles').remove(req.params.id); return { success: true }; }));
+r.post('/vehicles', can('fleet.modify'), h((req) => { Policy.explicitAccess(req,"Add vehicles"); const b = req.body; if (!b.registration_number) throw D.httpErr(400, 'Registration number required'); if (db.col('vehicles').find((v) => v.registration_number.replace(/\s/g, '') === b.registration_number.replace(/\s/g, ''))) throw D.httpErr(409, 'Vehicle already exists'); return db.col('vehicles').insert({ status: 'active', ownership_type: 'permanent', vehicle_role: 'main', gps_enabled: false, dms_enabled: false, position: { lat: 17.385, lng: 78.4867, speed: 0, state: 'STOPPED', ts: Date.now() }, health: { status: 'GOOD', alerts: [] }, tags: {}, ...b, coach_template_id: b.coach_template_id ? Number(b.coach_template_id) : null }); }));
+r.put('/vehicles/:id', can('fleet.modify'), h((req) => { Policy.explicitAccess(req,"Edit vehicles & documents"); need(db.col('vehicles').get(req.params.id)); const b = { ...req.body }; if (b.coach_template_id) b.coach_template_id = Number(b.coach_template_id); return db.col('vehicles').update(req.params.id, b); }));
+r.delete('/vehicles/:id', can('fleet.delete'), h((req) => { Policy.explicitAccess(req,"Delete vehicles"); if (db.col('schedules').count((s) => s.vehicle_id == req.params.id && s.travel_date >= U.today() && s.status === 'active')) throw D.httpErr(409, 'Vehicle is assigned to upcoming trips'); db.col('vehicles').remove(req.params.id); return { success: true }; }));
 
 // ---------------- Documents (vehicles & staff) ----------------
 r.get('/documents/:id/file', h((req, res) => {
@@ -178,11 +193,11 @@ r.delete('/documents/:id', can('fleet.documents'), h((req) => ({ success: db.col
 
 // ---------------- Staff ----------------
 function staffView(s) { const T = U.today(); const m = T.slice(0, 7); const att = db.col('attendance').filter((a) => a.staff_id === s.id && a.date.startsWith(m)); const adv = db.col('advances').filter((a) => a.staff_id === s.id && a.status !== 'recovered'); return { ...s, trips_this_month: att.filter((a) => a.status === 'present').length, advance_outstanding: U.sum(adv, (a) => a.amount - a.amount_recovered), license_state: !s.license_expiry ? null : s.license_expiry < T ? 'EXPIRED' : s.license_expiry <= U.addDays(T, 30) ? 'EXPIRING SOON' : 'ok' }; }
-r.get('/staff', can('staff.view'), h((req) => { const role = req.query.role; const q = (req.query.q || '').toLowerCase(); return { staff: db.col('staff').filter((s) => (!role || role === 'all' || s.role === role) && (!q || `${s.name} ${s.phone}`.toLowerCase().includes(q)) && (req.query.status === 'all' || s.status === (req.query.status || 'active'))).map(staffView) }; }));
+r.get('/staff', can('staff.view'), h((req) => { Policy.explicitAccess(req,'View staff'); const role = req.query.role; const q = (req.query.q || '').toLowerCase(); return { staff: db.col('staff').filter((s) => (!role || role === 'all' || s.role === role) && (!q || `${s.name} ${s.phone}`.toLowerCase().includes(q)) && (req.query.status === 'all' || s.status === (req.query.status || 'active'))).map(staffView) }; }));
 r.get('/staff/:id', can('staff.view'), h((req) => staffView(need(db.col('staff').get(req.params.id)))));
-r.post('/staff', can('staff.modify'), h((req) => { const b = req.body; if (!b.name || !/^\d{10}$/.test(b.phone || '')) throw D.httpErr(400, 'Name and 10-digit mobile number are required'); if (b.aadhaar && !/^\d{12}$/.test(b.aadhaar)) throw D.httpErr(400, 'Aadhaar must be 12 digits'); if (b.pan && !/^[A-Z]{5}\d{4}[A-Z]$/.test(b.pan)) throw D.httpErr(400, 'PAN format: 5 letters + 4 digits + 1 letter'); if (db.col('staff').find((s) => s.phone === b.phone)) throw D.httpErr(409, 'Staff with this phone exists'); return db.col('staff').insert({ status: 'active', salary_type: 'monthly', salary_amount: 0, bank: {}, ...b }); }));
-r.put('/staff/:id', can('staff.modify'), h((req) => { need(db.col('staff').get(req.params.id)); return db.col('staff').update(req.params.id, req.body); }));
-r.delete('/staff/:id', can('staff.delete'), h((req) => { const s = need(db.col('staff').get(req.params.id)); s.status = 'inactive'; db.persist(); return { success: true }; }));
+r.post('/staff', can('staff.modify'), h((req) => { Policy.explicitAccess(req,"Add / edit staff"); const b = req.body; if (!b.name || !/^\d{10}$/.test(b.phone || '')) throw D.httpErr(400, 'Name and 10-digit mobile number are required'); if (b.aadhaar && !/^\d{12}$/.test(b.aadhaar)) throw D.httpErr(400, 'Aadhaar must be 12 digits'); if (b.pan && !/^[A-Z]{5}\d{4}[A-Z]$/.test(b.pan)) throw D.httpErr(400, 'PAN format: 5 letters + 4 digits + 1 letter'); if (db.col('staff').find((s) => s.phone === b.phone)) throw D.httpErr(409, 'Staff with this phone exists'); return db.col('staff').insert({ status: 'active', salary_type: 'monthly', salary_amount: 0, bank: {}, ...b }); }));
+r.put('/staff/:id', can('staff.modify'), h((req) => { Policy.explicitAccess(req,"Add / edit staff"); need(db.col('staff').get(req.params.id)); return db.col('staff').update(req.params.id, req.body); }));
+r.delete('/staff/:id', can('staff.delete'), h((req) => { Policy.explicitAccess(req,"Add / edit staff"); const s = need(db.col('staff').get(req.params.id)); s.status = 'inactive'; db.persist(); return { success: true }; }));
 r.post('/staff/match', can('staff.view'), h((req) => { const s = db.col('staff').find((x) => x.phone === req.body.phone); if (s) return { matched: true, staff: s }; if (req.body.auto_create && req.body.name) return { matched: false, created: true, staff: db.col('staff').insert({ name: req.body.name, phone: req.body.phone, role: req.body.role || 'driver', status: 'active', salary_type: 'per_trip', salary_amount: 0, bank: {} }) }; return { matched: false }; }));
 
 // Attendance — auto-generated from trip crew; draft → approved.
