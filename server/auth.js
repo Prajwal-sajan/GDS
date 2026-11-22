@@ -13,7 +13,7 @@ const CATALOG = {
   routes: ['routes.view', 'routes.create', 'routes.modify', 'routes.delete'],
   fleet: ['fleet.view', 'fleet.modify', 'fleet.delete', 'fleet.documents'],
   staff: ['staff.view', 'staff.modify', 'staff.payroll', 'staff.delete'],
-  accounts: ['accounts.view', 'accounts.reports', 'accounts.ledger', 'accounts.reconciliation', 'accounts.own_only'],
+  accounts: ['accounts.view', 'accounts.reports', 'accounts.export', 'accounts.ledger', 'accounts.reconciliation', 'accounts.own_only'],
   offers: ['offers.manage_coupons', 'offers.loyalty'],
   chats: ['chats.view', 'chats.send'],
   calls: ['calls.view', 'calls.make'],
