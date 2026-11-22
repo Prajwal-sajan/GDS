@@ -52,8 +52,8 @@ w.eval(fs.readFileSync('public/js/report-suite-v21.js','utf8'));
  for(const [key] of defs){
    const d=data[key],def=w.ReportSuiteSpecsV21.DEF[key];
    const html=w.ReportSuiteV21.render(d,options,key);
-   assert.ok(html.includes(def.title),'Missing report title '+key);
    root.innerHTML=html;
+   assert.ok(root.textContent.includes(def.title),'Missing report title '+key);
    assert.equal(root.querySelectorAll('.rpt21-stat').length,def.needsStaff?0:def.metrics.length,'KPI count '+key);
    assert.equal(root.querySelectorAll('.rpt21-section').length,def.needsStaff?0:w.ReportSuiteSpecsV21.sections(key,d).length,'section count '+key);
    assert.equal(root.querySelectorAll('.rpt21-actions button').length,3,'print PDF share '+key);
