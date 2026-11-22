@@ -44,7 +44,7 @@
       T('phone','Phone',1.1),T('boarding','Boarding',2.25),T('source','Source',1.1),T('by','By',.9),
       N('seats','Seats',.55),M('amount','Amount',.95),M('charge','Charge',.9),T('resold_label','Resold',.7),M('recovered','Recovered',1.0)])]},
  'driver-behavior':{title:'Driver Behaviour',pdf_orientation:'landscape',bus:true,staff:true,
-    note:'Available telematics alerts over each trip’s journey. Every driver on a trip is credited with its alerts; a two-driver trip is Shared. Score 0–100 uses the provider score when present or the reference penalty formula. Trips still running or missing sensor readings show —.',
+    note:'Intangles alerts over each trip’s journey (first to last GPS stop stamp — the same window as diesel). Every driver on a trip is charged all its alerts; a two-driver trip is Shared. Score 0–100 = 100 − 5 × penalty points per 100 km: 1 per hard brake, harsh acceleration or freerun, 0.5 per 10 min over-speed, 0.2 per 10 min idling. Over-speed = above the Intangles speed limit. Trips still running or missing Intangles readings show —.',
     metrics:[['Trips recorded','trips_recorded','recorded'],['Drivers','drivers','number'],['Avg driver score','avg_driver_score','number'],
       ['Below 65','below_65','number'],['Trips without driver','trips_without_driver','number']],
     sections:[
@@ -59,7 +59,7 @@
         V('top_speed','Top speed',.9),H('idling','Idling',.8),N('freerun','Freerun',.7)])
     ]},
  'expenses':{title:'Expenses',pdf_orientation:'landscape',bus:true,
-    note:'Expense lines are the route defaults with each trip’s own entries and overrides on top, as in Trip P&L. A running trip carries fixed and running expenses plus channel commission; a turned-off trip carries configured fixed expenses only. By bus and trip-wise show the largest categories, with the rest under Other.',
+    note:'Expense lines = route defaults with each trip’s own entries on top, as in Trip P&L. A running trip carries fixed + running lines + channel commission; a turned-off trip only fixed lines, so the total matches Trip P&L. Diesel uses completed-trip telematics where recorded, otherwise the route figure (explicit operator overrides take precedence). By bus and trip-wise show the largest categories as columns; the rest add up under Other.',
     metrics:[['Total expense','total_expense','money'],['Fixed','fixed','money'],['Running','running','money'],
       ['Channel commission','channel_commission','money'],['Per trip','per_trip','money'],['Trips','trips','number'],
       ['Trips turned off','trips_turned_off','number'],['Buses','buses','number']],
@@ -68,7 +68,7 @@
       section('by_bus','BY BUS',[]),section('rows','TRIP-WISE',[])
     ]},
  'metro-bookings':{title:'Metro Bookings',pdf_orientation:'landscape',bus:true,modes:true,
-    note:'PNRs (all sources, OTAs included) confirmed or completed, by travel date, whose boarding or dropping point is a Metro feeder stage. Revenue is booking amount. Pickup + Drop keeps a PNR with either leg once. Metro fare, pax and billed legs come from recorded ticket billing where available; without billing, a PNR is Not billed.',
+    note:'PNRs (all sources, OTAs included) confirmed or completed, by travel date, whose boarding or dropping point is a Metro feeder stage — the same stages metro billing reads. Revenue = booking amount. Pickup / Drop keeps PNRs with that metro leg; a PNR with both counts under either. Metro fare, Metro pax and Billed are the same figures as the Metro Feeder Statement: a metro leg is charged once the tracking link carrying its ticket was sent, at the ticket price where issued. A PNR with no link sent shows Not billed. PNRs cancelled after the link, or with a ticket on a stage not marked Metro, are listed too because they are charged.',
     metrics:[['Metro PNRs','metro_pnrs','number'],['Seats','seats','number'],['Revenue','revenue','money'],
       ['Billed metro legs','billed_metro_legs','number'],['Metro pax','metro_pax','number'],['Metro fare','metro_fare','money'],
       ['With metro pickup','with_pickup','number'],['With metro drop','with_drop','number'],['Both legs','both_legs','number']],
@@ -89,7 +89,7 @@
       T('passenger','Passenger',1.5),T('phone','Phone',1.15),T('boarding','Boarding',1.7),
       T('source','Source',.8),T('seat','Seat',.55),M('fare','Fare',.85),T('resold_label','Resold',.75),M('recovered','Recovered',.95)])]},
  'van-bookings':{title:'Pickup Van Bookings',pdf_orientation:'landscape',bus:true,modes:true,
-    note:'PNRs (all sources, OTAs included) confirmed or completed, by travel date, whose boarding or dropping point is a Pickup Van feeder stage. Revenue is booking amount. Pickup + Drop keeps a PNR with either leg once. Meets bus at the exchange point. Van lists only feeder vans assigned to a trip.',
+    note:'PNRs (all sources, OTAs included) confirmed or completed, by travel date, whose boarding or dropping point is a Pickup Van feeder stage. Revenue = booking amount. Pickup / Drop keeps PNRs with that van leg; a PNR with both counts under either. Meets bus at = the exchange point where the van hands over to the main bus. Van = feeder vans assigned to the trip; a trip with two vans lists both since the booking does not say which van carried the passenger. Not assigned = no van on the trip.',
     metrics:[['Van PNRs','van_pnrs','number'],['Seats','seats','number'],['Revenue','revenue','money'],
       ['With van pickup','with_pickup','number'],['Both legs','both_legs','number'],['Vans used','vans_used','number'],['PNRs without van','pnrs_without_van','number']],
     sections:[section('rows','PNRS',[
