@@ -137,7 +137,7 @@ const branchInput=(b,old=null)=>{
   old?.operation_route_ids||[];
  if(['cities','both'].includes(operations_area)&&!city_ids.length&&!cid)error('Choose at least one operating city');
  if(['routes','both'].includes(operations_area)&&!route_ids.length)error('Choose at least one operating route');
- const phone=normPhone(b.phone??old?.phone||'');
+ const phone=normPhone((b.phone??old?.phone) || '');
  if(phone&&!validPhone(phone))error('Enter a valid 10-digit contact phone');
  return {code,name,city_id:cid||null,city:text(b.city??old?.city,100),
    phone,address:text(b.address??old?.address,300),operations_area,operation_city_ids:city_ids,
