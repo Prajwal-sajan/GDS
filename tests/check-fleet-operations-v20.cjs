@@ -76,7 +76,7 @@ async function auth(phone){
  assert.ok(ascii.startsWith('%PDF-1.4'),'PDF magic bytes');
  assert.match(ascii,/\/MediaBox \[0 0 841\.89 595\.28\]/,'A4 landscape page');
  assert.match(ascii,/Fleet Operations/,'Title in PDF content stream');
- for(const title of ['By bus','By driver','Driver x bus','Daily','Trip-wise'])
+ for(const title of ['By bus','By driver','Driver × bus','Daily','Trip-wise'])
    assert.ok(ascii.includes(title),'Missing PDF section '+title);
  assert.ok(ascii.includes('xref')&&ascii.includes('startxref')&&ascii.includes('%%EOF'),'PDF trailer');
  const preview=path.join(process.env.GDS_DATA_DIR,'fleet-report-a4.pdf');
