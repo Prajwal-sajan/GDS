@@ -109,6 +109,11 @@ const action=label=>schema.byLabel.get(label)?.key;
   assert.equal((await del('/team-access/v28/rules/'+limit.data.id)).status,200);
   // Missing person's corridor tag must fail closed, not silently give block access.
   const route=db.col('routes').get(schedule.route_id);
+  const tagUpdate=await put('/team-access/v26/users/'+manager.id,{corridor_tags:['south']});
+  assert.equal(tagUpdate.status,200,'Corridor tags can be saved from Edit User');
+  assert.deepEqual(tagUpdate.data.corridor_tags,['south']);
+  assert.equal((await put('/team-access/v26/users/'+manager.id,
+   {corridor_tags:['bad tag with spaces']})).status,400,'Malformed tags rejected');
   const oldTags=route.tags||[];route.tags=['north'];manager.corridor_tags=['south'];
   const corridor=await post('/team-access/v28/rules',{
    name:'Seat blocks only on routes with the person’s corridor tag',subject_type:'role',
