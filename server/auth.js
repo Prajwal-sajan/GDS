@@ -25,6 +25,10 @@ const CATALOG = {
 const ALL = Object.values(CATALOG).flat();
 const pick = (...areas) => areas.flatMap((a) => CATALOG[a]);
 const DEFAULT_ROLES = {
+  viewer: { name: 'Viewer', permissions: ['bookings.view_all', 'schedules.view', 'routes.view', 'fleet.view'] },
+  service_associate: { name: 'Service Associate', permissions: ['trips.view', 'trips.update_passengers', 'trips.location', 'bookings.view_all', 'schedules.view', 'routes.view', 'fleet.view', 'chats.view', 'calls.view'] },
+  service_agent: { name: 'Service Agent', permissions: ['bookings.create', 'bookings.view_all', 'bookings.cancel', 'trips.view', 'schedules.view', 'routes.view', 'chats.view', 'chats.send'] },
+  branch_admin: { name: 'Branch Admin', permissions: ['settings.view', 'iam.manage_users', 'accounts.view', 'accounts.reports', 'bookings.create', 'bookings.view_all', 'bookings.modify', 'bookings.cancel', 'trips.view', 'schedules.view', 'routes.view', 'fleet.view', 'staff.view'], scopes: { 'View users': 'Branch', 'Add users (roles below their own)': 'Branch', 'Edit users (name, branch, status, routes)': 'Branch', 'Remove users': 'Branch', 'Branches': 'Branch' } },
   owner: { name: 'Organization Owner', permissions: ALL },
   admin: { name: 'Admin', permissions: ALL },
   manager: { name: 'Manager', permissions: ALL.filter((p) => !['iam.manage_roles', 'routes.delete', 'schedules.delete', 'fleet.delete', 'staff.delete'].includes(p)) },
