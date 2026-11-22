@@ -37,9 +37,9 @@ const get=(p,who)=>call('GET',p,undefined,who),post=(p,b,who)=>call('POST',p,b,w
   assert.equal((await put('/settings/config-v30/communications',{ring_order:'reverse'})).status,400);
   assert.equal((await put('/settings/config-v30/communications',
    {city_contacts:[{city:'A',phones:[]},{city:'a',phones:[]}]})).status,400);
-  const dial=await post('/settings/config-v30/dials',{code:'1',kind:'number',phone:'9019207599',label:'Support'});
+  const dial=await post('/settings/config-v30/dials',{code:'98',kind:'number',phone:'9019207599',label:'Support'});
   assert.equal(dial.status,200,JSON.stringify(dial.data));
-  assert.equal((await post('/settings/config-v30/dials',{code:'1',kind:'number',phone:'9019207599'})).status,409);
+  assert.equal((await post('/settings/config-v30/dials',{code:'98',kind:'number',phone:'9019207599'})).status,409);
   assert.equal((await put('/settings/config-v30/dials/'+dial.data.id,{label:'New label'})).status,200);
   assert.equal((await del('/settings/config-v30/dials/'+dial.data.id)).status,200);
   const note=await put('/settings/config-v30/notifications',{boarding_point_cutoff:45,
