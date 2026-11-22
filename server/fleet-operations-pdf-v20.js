@@ -61,11 +61,11 @@ class Page{
  }
 }
 class Builder{
- constructor(){this.pages=[new Page()];this.y=20;}
+ constructor(){this.pages=[new Page()];this.y=13;}
  page(){return this.pages[this.pages.length-1];}
  newPage(){this.pages.push(new Page());this.y=19;}
  need(space){if(this.y+space>H-20)this.newPage();}
- title(title){this.need(27);this.page().text(W/2,this.y,title,{size:15,bold:true,align:'center'});this.y+=27;}
+ title(title){this.need(24);this.page().text(W/2,this.y,title,{size:13,bold:true,align:'center'});this.y+=20;}
  intro(r){
    this.title('Fleet Operations');
    const left=[['',r.operator_name],['Period:',r.from+' to '+r.to],
@@ -78,15 +78,15 @@ class Builder{
     ['Trips without driver:',r.summary.trips_without_driver]];
    const y0=this.y;
    left.forEach(([label,val],i)=>{
-     if(!label)this.page().text(M,y0+i*13,ascii(val),{size:10,bold:true});
-     else{this.page().text(M,y0+i*13,label,{size:8.5,bold:true});this.page().text(M+66,y0+i*13,ascii(val),{size:8.5});}
+     if(!label)this.page().text(M,y0+i*12,ascii(val),{size:10,bold:true});
+     else{this.page().text(M,y0+i*12,label,{size:8.5,bold:true});this.page().text(M+66,y0+i*12,ascii(val),{size:8.5});}
    });
    right.forEach(([label,val],i)=>{
      const x=680;
-     this.page().text(x,y0+13+i*13,label,{size:8.4,bold:true});
-     this.page().text(RIGHT-3,y0+13+i*13,ascii(val),{size:8.4,align:'right'});
+     this.page().text(x,y0+12+i*12,label,{size:8.4,bold:true});
+     this.page().text(RIGHT-3,y0+12+i*12,ascii(val),{size:8.4,align:'right'});
    });
-   this.y=y0+112;
+   this.y=y0+99;
  }
  section(name,cols,rows,total){
    const widths=cols.map(c=>c.w),full=widths.reduce((a,b)=>a+b,0);
