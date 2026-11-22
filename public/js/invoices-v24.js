@@ -77,6 +77,8 @@ function render(root,state){
  const data=state.data,bal=data.balance||{},docs=(data.documents||[]).filter(x=>
  (state.type==='all'||x.type===state.type)&&(state.year==='all'||x.period_month?.startsWith(state.year)));
  const grouped={};for(const x of docs)(grouped[x.period_month]??=[]).push(x);
+ const currentKey=bal.statement_key||data.reference_current?.key||null;
+ const currentReference=!bal.statement_key&&!!data.reference_current;
  const canPay=(bal.payable_by_operator||0)>0;
  const heading=bal.closing_balance===null?'No statement balance':bal.closing_balance<0?'Payable by operator':'Payable to operator';
  root.innerHTML=`<div class="inv24-root">
@@ -98,9 +100,9 @@ function render(root,state){
     ${(data.years||[]).map(y=>`<option value="${e(y)}" ${state.year===y?'selected':''}>${e(y)}</option>`).join('')}</select></label>
    ${button(`${ico('plus',17)} Add document`,'new','subtle')}
    <div class="inv24-spacer"></div>
-   <div class="inv24-current">${ico('file',19)} Current statement</div>
-   ${button(`${ico('eye',18)} View`,'current-view','quiet',!bal.statement_key?'disabled':'')}
-   ${button(`${ico('download',18)} PDF`,'current-pdf','textlink',!bal.statement_key?'disabled':'')}
+   <div class="inv24-current">${ico('file',19)} Current statement ${currentReference?'<small>(reference only)</small>':''}</div>
+   ${button(`${ico('eye',18)} View`,'current-view','quiet',!currentKey?'disabled':'')}
+   ${button(`${ico('download',18)} PDF`,'current-pdf','textlink',!currentKey?'disabled':'')}
  </div>
  <div class="inv24-month-list">${Object.entries(grouped).sort((a,b)=>b[0].localeCompare(a[0])).map(([month,items])=>`
   <section class="inv24-month"><header><span>${e(titleMonth(month))}</span><div class="inv24-month-tools">
@@ -235,9 +237,10 @@ async function action(root,evt){
  if(op==='all'){await allAction(root,month);return;}
  if(op==='reconcile'){await reconcile(root,month);return;}
  if(op==='current-view'||op==='current-pdf'){
-  const d=root.__inv24State.data.balance;
-  if(!d.statement_key)throw Error('No operator statement is available');
-  if(op==='current-view')await showDoc(root,d.statement_key);else await pdfAction(root,d.statement_key);
+  const d=root.__inv24State.data;
+  const key=d.balance?.statement_key||d.reference_current?.key;
+  if(!key)throw Error('No operator statement is available');
+  if(op==='current-view')await showDoc(root,key);else await pdfAction(root,key);
  }
 }
 async function wire(root){
