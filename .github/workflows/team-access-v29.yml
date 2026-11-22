@@ -1,0 +1,46 @@
+name: Access v29 — Situation screenshot field coverage
+on:
+  push:
+    branches:
+      - savetrip-screenshotcomplete
+    paths:
+      - 'public/js/team-access-v29.js'
+      - 'public/css/team-access-v29.css'
+      - 'public/index.html'
+      - 'server/team-access-situation-v29.js'
+      - 'server/api/team-access-v28.js'
+      - 'tests/team-access-v29-ui.cjs'
+      - 'tests/check-team-access-v28.cjs'
+      - '.github/workflows/team-access-v29.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Syntax
+        run: |
+          node --check public/js/team-access-v29.js
+          node --check server/team-access-situation-v29.js
+          node --check server/api/team-access-v28.js
+          node --check tests/team-access-v29-ui.cjs
+          node --check tests/check-team-access-v28.cjs
+      - name: Screenshot Situation UI and typed context validation
+        run: node tests/team-access-v29-ui.cjs
+      - name: Existing v28 policy, CRUD, simulator and UI
+        run: |
+          node tests/check-team-access-v28.cjs
+          node tests/team-access-v28-ui.cjs
+      - name: Access matrix and core GDS regressions
+        run: |
+          node tests/check-team-access-v27.cjs
+          node tests/team-access-v27-ui.cjs
+          node tests/check-team-access-v26.cjs
+          node tests/team-access-v26-ui.cjs
+          npm test

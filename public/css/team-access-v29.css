@@ -1,0 +1,17 @@
+/* SaveTrip Situation selector — continuation screenshots, 22 Nov 2026. */
+.ta26-root .ta28-situation.ta29-situation-editor{display:block;background:#fff;padding:0 16px 14px}
+.ta26-root .ta29-rows{display:grid;gap:9px;padding:12px 0 2px}
+.ta26-root .ta29-row{display:grid;grid-template-columns:minmax(240px,1fr) minmax(145px,220px) 28px;gap:12px;align-items:center;min-height:44px}
+.ta26-root .ta29-row>[data-v29-field],.ta26-root .ta29-value>input,.ta26-root .ta29-value>select{width:100%;min-width:0;min-height:44px;border:0;border-radius:12px;background:#eef2f7;color:#172e4d;padding:9px 13px;font-size:14px}
+.ta26-root .ta29-row>[data-v29-field]{cursor:pointer}
+.ta26-root .ta29-value{min-width:0}
+.ta26-root .ta29-value>input:disabled{opacity:1;color:#91a1ba}
+.ta26-root .ta29-value>input::placeholder{color:#91a1ba;opacity:1}
+.ta26-root .ta29-row button.ta29-remove{border:0;background:transparent;font-size:23px;cursor:pointer;color:#6d83a4;padding:2px}
+.ta26-root .ta29-row button.ta29-remove[hidden],.ta26-root .ta29-actions [hidden]{display:none!important}
+.ta26-root .ta29-actions{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ta26-root .ta29-actions button{border:0;background:transparent;padding:10px 0;color:#2467fa;cursor:pointer;font-weight:600;font-size:13px}
+.ta26-root .ta29-actions span[role=alert]{color:#bb334b;font-size:13px}
+.ta26-root .ta29-row select:focus-visible,.ta26-root .ta29-row input:focus-visible{outline:2px solid #6794ff;outline-offset:1px}
+@media(max-width:650px){.ta26-root .ta29-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 26px;gap:7px}
+ .ta26-root .ta29-row>[data-v29-field],.ta26-root .ta29-value>input,.ta26-root .ta29-value>select{font-size:12px;padding:9px 6px}}

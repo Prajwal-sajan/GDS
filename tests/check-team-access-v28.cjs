@@ -71,6 +71,22 @@ const action=label=>schema.byLabel.get(label)?.key;
   const unknown=await post('/team-access/v28/test',{phone:manager.phone,action_key:action('Cancel tickets'),
    situation:{}});
   assert.equal(unknown.data.decision,'conditional','Missing time makes denial conditional');
+  // New screenshot Situation dropdown values are typed, normalized and not privilege grants.
+  const situation=await post('/team-access/v28/test',{phone:manager.phone,action_key:action('Cancel tickets'),
+   situation:{caller_id:'91'+manager.phone,calling_app:'gds',
+    hours_before_departure:1,discount_percent:25,already_blocked_seats:2}});
+  assert.equal(situation.status,200,JSON.stringify(situation.data));
+  assert.ok(situation.data.situation_evidence.policy_fields.includes('hours_before_departure'));
+  assert.ok(situation.data.situation_evidence.context_only_fields.includes('calling_app'));
+  assert.ok(situation.data.situation_evidence.context_only_fields.includes('discount_percent'));
+  assert.equal((await post('/team-access/v28/test',{phone:manager.phone,action_key:action('Cancel tickets'),
+   situation:{caller_id:'919999999997'}})).status,400,'Caller identity cannot be spoofed');
+  assert.equal((await post('/team-access/v28/test',{phone:manager.phone,action_key:action('Cancel tickets'),
+   situation:{discount_percent:150}})).status,400,'Discount is bounded');
+  assert.equal((await post('/team-access/v28/test',{phone:manager.phone,action_key:action('Cancel tickets'),
+   situation:{unknown_field:'x'}})).status,400,'Unlisted scenario variables are rejected');
+  assert.equal((await post('/team-access/v28/test',{phone:manager.phone,action_key:action('Cancel tickets'),
+   situation:{request_time_utc:'2026-11-23T00:00:00Z',days_before_departure:0.05}})).status,200);
   const malformed=await post('/team-access/v28/test',{phone:'notaphone',action_key:action('Cancel tickets')});
   assert.equal(malformed.status,400);
   const notFound=await post('/team-access/v28/test',{phone:'0000000000',action_key:action('Cancel tickets')});

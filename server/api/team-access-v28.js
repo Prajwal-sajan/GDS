@@ -4,6 +4,7 @@ const express=require('express');
 const db=require('../db'),A=require('../auth'),D=require('../domain');
 const {ALL_ROWS,byKey}=require('../team-access-schema-v27');
 const Policy=require('../team-access-policy-v28');
+const SituationV29=require('../team-access-situation-v29');
 const r=express.Router();
 const fail=(message,status=400)=>{throw D.httpErr(status,message);};
 const wrap=fn=>(req,res)=>{try{
@@ -186,6 +187,8 @@ r.post('/team-access/v28/test',A.can('settings.view'),wrap(req=>{
   const id=Number(raw.owner_user_id);if(!Number.isInteger(id)||!db.col('users').get(id))fail('Unknown owner');
   context.owner_user_id=id;
  }
+ // Validate every screenshot Situation field, without accepting an invented caller identity.
+ const evidence=SituationV29.normalize(raw,{user,db,visible:u=>visible(req,u),fail,context});
  const decision=Policy.evaluate(user,action.key,context);
  const enforcedLabels=new Set([
   'Cancel tickets','Block seats','Unblock seats / book a blocked seat','View bookings','Edit passengers & points',
@@ -195,7 +198,8 @@ r.post('/team-access/v28/test',A.can('settings.view'),wrap(req=>{
   'View staff','Add / edit staff','Export / download'
  ]);
  return {person:{id:user.id,name:user.name,role:user.role,branch_id:user.branch_id||null},
-  ...decision,runtime_enforced:enforcedLabels.has(action.label),
+  ...decision,situation_evidence:{provided:evidence.supplied,policy_fields:evidence.policyKeys,
+   context_only_fields:evidence.contextOnly},runtime_enforced:enforcedLabels.has(action.label),
   note:enforcedLabels.has(action.label)?
    'Policy evaluator and some live API paths use this action; scenario-based tests do not execute a real transaction.':
    'This is a policy simulation, not proof that every GDS endpoint currently enforces this control.'};
