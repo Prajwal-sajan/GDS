@@ -73,7 +73,7 @@ const del=(p,id)=>call('DELETE',p,null,id);
   assert.equal(off.status,200,'Create offline master agent: '+JSON.stringify(off.data));
   assert.equal(off.data.agent_category,'master_agent');assert.equal(off.data.mode,'Offline');
   assert.equal(A.requestOtp('9876543214').ok,false,'Offline agent cannot request OTP');
-  assert.equal((await get('/team-access/v26',off.data.id)).status,403,'Agent has no access');
+  assert.equal((await get('/team-access/v26',off.data.id)).status,401,'Offline agent cannot authenticate at all');
   const aUpdate=await put('/team-access/v26/users/'+off.data.id,{mode:'Online',
    commission_pct:3.5,credit_limit:25000,agent_type:'prepaid',agent_category:'master_agent'});
   assert.equal(aUpdate.status,200,'Commission update: '+JSON.stringify(aUpdate.data));
