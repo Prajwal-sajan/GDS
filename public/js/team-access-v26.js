@@ -356,7 +356,8 @@ function attachMatrixEventsV27(root){
   const q=e.target.value.toLowerCase().trim();
   const counts={};
   root.querySelectorAll('[data-matrix-row]').forEach(tr=>{
-    tr.hidden=!!q&&!tr.dataset.matrixRow.includes(q);
+    const group=view.data.matrix[Number(tr.dataset.matrixSection)]?.title.toLowerCase()||'';
+    tr.hidden=!!q&&!tr.dataset.matrixRow.includes(q)&&!group.includes(q);
     if(!tr.hidden)counts[tr.dataset.matrixSection]=(counts[tr.dataset.matrixSection]||0)+1;
   });
   root.querySelectorAll('[data-matrix-group]').forEach(tr=>tr.hidden=!counts[tr.dataset.matrixGroup]);
@@ -402,7 +403,7 @@ function attachMatrixEventsV27(root){
   }
  }));
  root.querySelector('[data-one-role]')?.addEventListener('click',()=>{
-  matrixMode='single';matrixFocus=view.role||'viewer';refresh().catch(G.err);
+  matrixMode='single';matrixFocus=matrixFocus||view.role||'viewer';refresh().catch(G.err);
  });
  root.querySelector('[data-all-roles]')?.addEventListener('click',()=>{
   matrixMode='matrix';refresh().catch(G.err);
