@@ -4,6 +4,7 @@ const {can}=require('../auth'),B=require('../platform-billing-v25');
 const internal=express.Router(),operator=express.Router();
 const noCache=res=>res.set({'Cache-Control':'private, no-store, max-age=0','X-Content-Type-Options':'nosniff'});
 const wrap=fn=>(req,res)=>{try{return fn(req,res);}catch(err){
+ if(!err.status&&process.env.NODE_ENV!=='production')console.error('[platform billing v25]',err.stack||err.message);
  if(!res.headersSent)res.status(err.status||500).json({success:false,message:err.status?err.message:'Billing service failure'});
 }};
 const serviceOnly=(req,res,next)=>{
