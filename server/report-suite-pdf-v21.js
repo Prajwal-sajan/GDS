@@ -1,5 +1,6 @@
 'use strict';
-const {DEF,sections}=require('../public/js/report-suite-specs-v21');
+const Specs=require('../public/js/report-suite-specs-v21');
+const DEF=Specs.DEF;
 const landscape={W:841.89,H:595.28},portrait={W:595.28,H:841.89};
 const ink=[.09,.15,.25],slate=[.34,.39,.49],grid=[.82,.85,.89],
  blue=[.09,.34,.96],shade=[.965,.975,.99],totalColor=[.90,.92,.95],white=[1,1,1];
@@ -165,7 +166,7 @@ function generate(key,data){
  const def=DEF[key];if(!def)throw new Error('Unsupported report');
  if(def.needsStaff&&!data.staff?.id)throw new Error('Select a driver or staff member before exporting PDF');
  const pdf=new Pdf(def.pdf_orientation==='portrait'?portrait:landscape);pdf.heading(data,def);
- for(const sec of sections(key,data)){
+ for(const sec of Specs.sections(key,data)){
     const rows=data.sections?.[sec.key]||[];
     pdf.table(sec,rows,data.totals?.[sec.key]||{});
  }
