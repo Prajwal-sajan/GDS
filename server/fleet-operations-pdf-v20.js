@@ -86,7 +86,7 @@ class Builder{
      this.page().text(x,y0+12+i*12,label,{size:8.4,bold:true});
      this.page().text(RIGHT-3,y0+12+i*12,ascii(val),{size:8.4,align:'right'});
    });
-   this.y=y0+99;
+   this.y=y0+112;
  }
  section(name,cols,rows,total){
    const widths=cols.map(c=>c.w),full=widths.reduce((a,b)=>a+b,0);
