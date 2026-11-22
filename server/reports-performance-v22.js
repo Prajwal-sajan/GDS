@@ -3,6 +3,7 @@ const db=require('./db'),U=require('./util'),D=require('./domain'),Rp=require('.
 const KEYS=['frequent-travellers','point-performance','station-performance','trip-pnl'];
 const num=x=>x===null||x===undefined||x===''?null:Number.isFinite(Number(x))?Number(x):null;
 const n=x=>num(x)??0,round=x=>U.round2(x),arr=x=>Array.isArray(x)?x:[],sum=(a,fn)=>a.reduce((s,x)=>s+n(typeof fn==='function'?fn(x):x[fn]),0);
+const round1=x=>Math.round(n(x)*10)/10;
 const unique=a=>[...new Set(a.filter(x=>x!==null&&x!==undefined&&x!=='').map(String))];
 const eq=(a,b)=>String(a)===String(b);
 const err=(status,message)=>{const e=new Error(message);e.status=status;throw e};
@@ -153,7 +154,7 @@ function point(c){
  const eligible=[...map.values()].filter(x=>x.seats>0).sort((a,b)=>b.seats-a.seats||b.bookings-a.bookings||a.point.localeCompare(b.point));
  const allSeats=sum(eligible,'seats');
  const ranking=eligible.map((x,i)=>({rank:i+1,point:x.point,point_key:x.key,pnrs:x.bookings,seats:x.seats,
-    share_pct:allSeats?round(x.seats/allSeats*100):0,trips_booked:x.booked.size,seats_per_trip:x.booked.size?round(x.seats/x.booked.size):0,
+    share_pct:allSeats?round(x.seats/allSeats*100):0,trips_booked:x.booked.size,seats_per_trip:x.booked.size?round1(x.seats/x.booked.size):0,
     revenue:round(x.amount),trips_serving:x.serving.size,cancelled:x.cancelled,no_shows:x.no_shows,
     on_time:x.gps_count?round(x.on_time_count/x.gps_count*100):null,gps_count:x.gps_count}));
  const choices=[...map.values()].sort((a,b)=>a.point.localeCompare(b.point)).map(x=>({key:x.key,point:x.point}));
@@ -164,7 +165,7 @@ function point(c){
  const selRows=selected?allRows.filter(x=>x.point_key===selected.key):[];
  const byService=group(selRows,x=>x.service,r=>({service:r.service,pnrs:0,seats:0,revenue:0,trips:new Set()}),(x,r)=>{
    x.pnrs+=r.bookings;x.seats+=r.seats;x.revenue+=r.amount;if(r.bookings)x.trips.add(String(r.schedule_id));
- }).map(({trips,...x})=>({...x,trips_booked:trips.size,revenue:round(x.revenue),seats_per_trip:trips.size?round(x.seats/trips.size):0})).sort((a,b)=>b.seats-a.seats);
+ }).map(({trips,...x})=>({...x,trips_booked:trips.size,revenue:round(x.revenue),seats_per_trip:trips.size?round1(x.seats/trips.size):0})).sort((a,b)=>b.seats-a.seats);
  const bySource=group(selRows,x=>x.source,r=>({source:r.source,pnrs:0,seats:0,revenue:0}),(x,r)=>{x.pnrs+=r.bookings;x.seats+=r.seats;x.revenue+=r.amount})
    .map(x=>({...x,revenue:round(x.revenue)})).sort((a,b)=>b.seats-a.seats);
  const daily=group(selRows,x=>x.date,r=>({date:r.date,pnrs:0,seats:0,revenue:0,cancelled:0,no_shows:0}),(x,r)=>{
@@ -212,7 +213,7 @@ function station(c){
    const tripsServing=running.filter(s=>serves(s,from,to)).length;
    return {from:x.from,to:x.to,pnrs:x.pnrs,seats:x.seats,share_pct:seatsTotal?round(x.seats/seatsTotal*100):0,
    avg_fare:x.seats?round(x.revenue/x.seats):0,revenue:round(x.revenue),trips_serving:tripsServing,trips_booked:x.bookings.size,
-   seats_per_trip:tripsServing?round(x.seats/tripsServing):0,cancelled:cancelMap.get(k)||0,no_shows:noMap.get(k)||0,
+   seats_per_trip:tripsServing?round1(x.seats/tripsServing):0,cancelled:cancelMap.get(k)||0,no_shows:noMap.get(k)||0,
    schedules:x.schedules.size};
  }).sort((a,b)=>b.seats-a.seats||b.revenue-a.revenue);
  const stationAgg=(which)=>{
@@ -231,7 +232,7 @@ function station(c){
    const best=byPairs.sort((a,b)=>b.n-a.n)[0];
    const endSeats=sum(records.filter(b=>eq(b.from_city_id,r.origin_city_id)&&eq(b.to_city_id,r.destination_city_id)),seats);
    return {service:r.service_number,route:city(r.origin_city_id)+' → '+city(r.destination_city_id),dep:r.departure_time,
-     trips:x.schedules.length,pnrs:records.length,seats:seatsN,seats_per_trip:x.schedules.length?round(seatsN/x.schedules.length):0,
+     trips:x.schedules.length,pnrs:records.length,seats:seatsN,seats_per_trip:x.schedules.length?round1(seatsN/x.schedules.length):0,
      avg_fare:seatsN?round(spent/seatsN):0,revenue:round(spent),pairs:byPairs.length,top_pair:best?.pair||'',
      end_to_end_pct:seatsN?round(endSeats/seatsN*100):0,route_id:r.id};
  }).sort((a,b)=>b.revenue-a.revenue);
@@ -245,7 +246,7 @@ function station(c){
    const cancelled=c.bookings.filter(b=>eq(b.route_id,x.route_id)&&eq(b.from_city_id,x.from_id)&&eq(b.to_city_id,x.to_id)&&arr(b.cancellations).length).length;
    const no_shows=sum(c.bookings.filter(b=>eq(b.route_id,x.route_id)&&eq(b.from_city_id,x.from_id)&&eq(b.to_city_id,x.to_id)),b=>arr(b.passengers).filter(p=>p.status==='no_show').length);
    return {...x,revenue:round(x.revenue),avg_fare:x.seats?round(x.revenue/x.seats):0,
-     trips_serving:tripsServing,trips_booked:_booked.size,seats_per_trip:tripsServing?round(x.seats/tripsServing):0,
+     trips_serving:tripsServing,trips_booked:_booked.size,seats_per_trip:tripsServing?round1(x.seats/tripsServing):0,
      cancelled,no_shows,from_id:undefined,to_id:undefined};
  }).sort((a,b)=>a.from.localeCompare(b.from)||a.to.localeCompare(b.to)||a.service.localeCompare(b.service));
  const sources=group(confirmed,b=>b.source||'Unknown',b=>({source:b.source||'Unknown',pnrs:0,seats:0,revenue:0}),(x,b)=>{
@@ -264,7 +265,7 @@ function station(c){
  const noShows=sum(c.bookings,b=>arr(b.passengers).filter(x=>x.status==='no_show').length);
  const summary={seats:seatsTotal,pnrs,revenue,avg_fare:seatsTotal?round(revenue/seatsTotal):0,
    station_pairs:pairs.length,stations:unique([...boarding.map(x=>x.station),...dropping.map(x=>x.station)]).length,
-   trips:running.length,schedules:by_schedule.length,seats_per_trip:running.length?round(seatsTotal/running.length):0,
+   trips:running.length,schedules:by_schedule.length,seats_per_trip:running.length?round1(seatsTotal/running.length):0,
    end_to_end:endToEnd,end_to_end_pct:seatsTotal?round(endToEnd/seatsTotal*100):0,
    cancelled,cancelled_pct:pnrs+cancelled?round(cancelled/(pnrs+cancelled)*100):0,
    no_shows:noShows,no_show_pct:seatsTotal?round(noShows/seatsTotal*100):0};
