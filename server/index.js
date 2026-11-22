@@ -30,6 +30,7 @@ app.use('/api', require('./api/accounts'));
 app.use('/api', require('./api/invoices-v24'));
 app.use('/api', require('./api/platform-billing-v25').operator);
 app.use('/api', require('./api/team-access-v26'));
+app.use('/api', require('./api/team-access-v28'));
 app.use('/api', require('./api/settings-complete'));
 app.use('/api', require('./api/settings-v16-iam-bridge'));
 app.use('/api', misc.r);
