@@ -79,6 +79,16 @@ async function auth(phone){
  for(const title of ['By bus','By driver','Driver x bus','Daily','Trip-wise'])
    assert.ok(ascii.includes(title),'Missing PDF section '+title);
  assert.ok(ascii.includes('xref')&&ascii.includes('startxref')&&ascii.includes('%%EOF'),'PDF trailer');
+ const preview=path.join(process.env.GDS_DATA_DIR,'fleet-report-a4.pdf');
+ fs.writeFileSync(preview,bytes);
+ const {spawnSync}=require('node:child_process');
+ const pop=spawnSync('pdfinfo',[preview],{encoding:'utf8'});
+ if(pop.status===0){
+   assert.match(pop.stdout,/Page size:\s*841\.89 x 595\.28 pts \(A4\)/,'Poppler confirms landscape A4 PDF');
+   assert.ok(Number((pop.stdout.match(/Pages:\s*(\d+)/)||[])[1])>=2,'Poppler confirms multiple pages');
+   const textPDF=spawnSync('pdftotext',['-layout',preview,'-'],{encoding:'utf8'});
+   if(textPDF.status===0){for(const sec of ['Fleet Operations','By bus','By driver','Daily','Trip-wise'])assert.ok(textPDF.stdout.includes(sec),'PDF extracted text missing '+sec);}
+ }else{console.log('Poppler utilities not available, checking structural PDF markers only');}
  const pageCount=(ascii.match(/\/Type \/Page \/Parent/g)||[]).length;
  assert.ok(pageCount>=2&&pageCount<30,`Paginated report expected; got ${pageCount} pages`);
  const pdf2=pdf.generate(Fleet.compute({from,to,bus_id:chosen.vehicle_id}));
