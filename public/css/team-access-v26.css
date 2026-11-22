@@ -191,3 +191,64 @@
 .ui-dd-menu{z-index:99999!important;max-height:min(380px,60vh);overflow-y:auto}
 @media(max-width:1200px){.ta26-nav{margin:15px}.ta26-main{margin:0 15px}.ta26-search{width:min(100%,380px);margin-left:0}.ta26-tab{padding:7px 11px}}
 @media(max-width:700px){.ta26-page-heading{padding:13px 15px}.ta26-page-title strong{font-size:18px}.ta26-how{display:none}.ta26-page-icon{width:39px;height:39px}.ta26-nav{padding:9px;gap:8px}.ta26-tab{font-size:13px;min-height:43px}.ta26-tab-icon{width:27px;height:27px}.ta26-tab-icon svg{width:18px;height:18px}.ta26-tab em{padding:3px 6px}.ta26-grid,.ta26-code-row,.ta26-choice-row,.ta26-check-grid,.ta26-route-checks{grid-template-columns:1fr}.ta26-dialog{width:100%;max-height:96vh}.ta26-shade{padding:10px}.ta26-dialog-head{padding:15px;min-height:73px;height:auto}.ta26-dialog-scroll{padding:18px}.ta26-dialog-foot{padding:12px;min-height:73px}.ta26-matrix-foot{flex-direction:column;align-items:stretch}.ta26-branch-intro{flex-direction:column;align-items:stretch}.ta26-primary{min-height:43px;font-size:14px}}
+
+
+/* v27: complete screenshot Access matrix (13 modules, 89 controls). */
+.ta26-root .ta27-actions{margin:17px 0 15px;min-height:40px}
+.ta26-root .ta27-actions button[data-one-role],.ta26-root .ta27-actions button[data-all-roles]{
+  background:transparent;border:none;padding:8px 3px;color:#1767fa;font-weight:700;
+  font-size:15px;box-shadow:none;
+}
+.ta26-root .ta27-actions button[data-new-role]{background:#edf1f7;border-radius:26px;color:#2469f8;padding:12px 18px;font-size:16px}
+.ta26-root .ta27-filter-bar{margin:8px 0 8px;gap:10px}
+.ta26-root .ta27-filter-bar input{border-radius:16px;height:48px;width:min(326px,100%);color:#344b6e;background:#fff}
+.ta26-root .ta27-filter-bar .ta26-legend{gap:6px;color:#61799b}
+.ta26-root .ta27-filter-bar .ta26-legend span{border-radius:6px;padding:6px 9px}
+.ta26-root .ta27-filter-bar .ta26-legend small{font-size:13px;padding-left:6px}
+.ta26-root .ta26-matrix-scroll{max-height:min(68vh,650px);overflow:auto;border-radius:22px;scrollbar-color:#a9b6c9 transparent;scrollbar-width:thin}
+.ta26-root .ta26-matrix{width:100%;min-width:1685px;border-collapse:separate;border-spacing:0}
+.ta26-root .ta26-matrix thead th{height:101px;font-size:14px;font-weight:650;text-align:center;background:#fff;line-height:1.3;border-bottom:1px solid #dce5f3;min-width:130px;padding:12px 6px;white-space:normal}
+.ta26-root .ta26-matrix thead th.what{text-align:left;font-weight:550;color:#506c93;min-width:293px;max-width:293px;padding-left:13px}
+.ta26-root .ta26-matrix th.what{min-width:293px;max-width:293px;width:293px;background:#fff;font-weight:450;color:#233756;padding:13px 13px;line-height:1.5;word-break:normal}
+.ta26-root .ta26-matrix tbody tr:not(.ta26-matrix-section) td{min-width:130px;max-width:147px;background:#fff}
+.ta26-root .ta26-matrix tr.ta26-matrix-section td{padding:10px 13px!important;background:#f6f8fb!important;color:#5f7698;text-transform:uppercase;letter-spacing:0;font-size:13px;font-weight:650}
+.ta26-root .ta26-matrix td,.ta26-root .ta26-matrix th{border-color:#edf2f8;vertical-align:middle}
+.ta26-root .ta27-matrix-cell{padding:5px 6px}
+.ta26-root .ta27-unavailable{color:#cad6e7;font-size:17px;display:block;text-align:center;user-select:none}
+.ta26-root select.ta26-scope-select{height:39px;min-height:39px;padding:8px 27px 8px 12px;font-size:15px;font-weight:450;appearance:none;border:0;border-radius:13px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6' fill='none' stroke='%235c779c' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;background-size:16px 16px;box-shadow:none;transition:background .15s ease;cursor:pointer}
+.ta26-root select.ta26-scope-select[data-scope="Off"]{background-color:#f5f7fa;color:#98aac5}
+.ta26-root select.ta26-scope-select[data-scope="Own"]{background-color:#edf8ff;color:#136a9d}
+.ta26-root select.ta26-scope-select[data-scope="Branch"]{background-color:#eceeff;color:#5146d3}
+.ta26-root select.ta26-scope-select[data-scope="Company"],
+.ta26-root select.ta26-scope-select[data-scope="On"]{background-color:#eafcf4;color:#00735a}
+.ta26-root select.ta26-scope-select:focus-visible{outline:2px solid #4d72f2;outline-offset:1px}
+.ta26-root select.ta26-scope-select:disabled{opacity:.72;cursor:default}
+.ta26-root .ta27-limit-row{display:flex;justify-content:center;gap:2px;margin:5px 0 0}
+.ta26-root .ta27-limit-stack{display:flex;flex-direction:column;gap:4px;margin:5px 0 0}
+.ta26-root .ta27-limit-row[hidden],.ta26-root .ta27-limit-stack[hidden]{display:none!important}
+.ta26-root .ta27-limit{display:flex;align-items:center;justify-content:center;gap:5px;width:100%;font-size:12px;color:#6d84a2}
+.ta26-root .ta27-limit input{height:32px;min-width:0;max-width:114px;flex:1;border:0;background:#eef2f7;border-radius:8px;padding:4px 8px;font-size:13px;color:#566f91;text-align:center;font-family:inherit}
+.ta26-root .ta27-limit input::placeholder{color:#9ab0ce;opacity:1}
+.ta26-root .ta27-limit input:focus{outline:2px solid #5e79f5}
+.ta26-root .ta27-limit input::-webkit-inner-spin-button,.ta26-root .ta27-limit input::-webkit-outer-spin-button{-webkit-appearance:none}
+.ta26-root .ta27-limit input{appearance:textfield;-moz-appearance:textfield}
+.ta26-root .ta27-matrix-foot{display:flex;justify-content:flex-start;gap:15px;align-items:center;margin:2px 0 0;padding:9px 4px 6px;min-height:60px}
+.ta26-root .ta27-matrix-foot .ta26-primary{font-size:15px;min-height:44px;border-radius:27px;padding:9px 18px;background:#3975f9}
+.ta26-root .ta27-matrix-foot .ta26-primary:disabled{color:#fff;opacity:.46;cursor:default}
+.ta26-root .ta27-matrix-foot>span{color:#8097ba;font-size:13px}
+.ta26-root .ta27-matrix-foot .ta27-dirty-count{margin-left:auto;color:#356cf2;white-space:nowrap}
+.ta26-root .ta27-scope-note{color:#96a6c1;font-size:12px;line-height:1.5;margin:0 5px 9px}
+.ta26-root .ta27-single{max-width:970px;max-height:66vh}
+.ta26-root .ta27-single .ta26-matrix{min-width:690px}
+.ta26-root .ta27-single .ta26-matrix thead th:not(.what),.ta26-root .ta27-single .ta26-matrix td{min-width:245px}
+.ta26-root .ta27-role-picker{display:inline-flex;align-items:center;gap:10px;margin-left:14px;color:#516d93;font-weight:600}
+.ta26-root .ta27-role-picker select,.ta26-root .ta27-role-picker .ui-dd-btn{min-height:41px;border:1px solid #dce5f4;background:#fff;border-radius:12px;padding:7px 12px;min-width:205px}
+.ta26-root .ta26-matrix tr[data-matrix-row][hidden]{display:none}
+.ta26-root .ta26-matrix tr[data-matrix-group][hidden]{display:none}
+@media(max-width:650px){
+ .ta26-root .ta26-matrix-scroll{max-height:57vh}
+ .ta26-root .ta26-matrix thead th.what,.ta26-root .ta26-matrix th.what{min-width:205px;max-width:205px;width:205px}
+ .ta26-root .ta27-filter-bar{align-items:flex-start}
+ .ta26-root .ta27-actions{flex-wrap:wrap}
+ .ta26-root .ta27-matrix-foot{flex-wrap:wrap}
+}
