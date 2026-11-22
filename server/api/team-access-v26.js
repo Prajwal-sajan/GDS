@@ -74,6 +74,7 @@ const exposeUser=u=>({
  agent_type:u.agent_type||'postpaid',master_agent_id:u.master_agent_id||null,
  branch_id:u.branch_id||null,limit_routes:!!u.limit_routes,route_ids:u.route_ids||[],
  extra_permissions:u.extra_permissions||[],denied_permissions:u.denied_permissions||[],
+ corridor_tags:Array.isArray(u.corridor_tags)?u.corridor_tags:[],
  created_at:u.created_at,last_login:u.last_login||null,login_count:Number(u.login_count)||0,
  commission_pct:Number(u.commission_pct)||0,credit_limit:Number(u.credit_limit)||0,
  deleted_at:u.deleted_at||null
@@ -113,6 +114,11 @@ function userPayload(b,req,old=null){
  const limit=!!(b.limit_routes??old?.limit_routes??false);
  const routes=b.route_ids===undefined?(old?.route_ids||[]):routeIds(b.route_ids,limit);
  if(limit&&!routes.length)error('At least one allowed route is required');
+ const tagsInput=b.corridor_tags??old?.corridor_tags??[];
+ if(!Array.isArray(tagsInput)||tagsInput.length>20)error('Corridor tags must be a short list');
+ const corridor_tags=uniq(tagsInput.map(x=>text(x,32).toLowerCase()).filter(Boolean));
+ if(corridor_tags.some(t=>!/^[a-z0-9][a-z0-9_-]{0,31}$/.test(t)))
+  error('Corridor tags must use letters, numbers, hyphens or underscores');
  const language=text(b.language??old?.language??'English',40)||'English';
  if(!['English','Hindi','Kannada','Tamil','Telugu','Malayalam','Marathi','Bengali','Gujarati','Punjabi','Odia','Assamese','Urdu'].includes(language))
   error('Unsupported language');
@@ -131,7 +137,7 @@ function userPayload(b,req,old=null){
   {extra_permissions:old?.extra_permissions||[],denied_permissions:old?.denied_permissions||[]};
  return {name,email,language,role,branch_id:id,status:role==='agent'&&mode==='Offline'?'INACTIVE':status,mode:role==='agent'?mode:'Online',
    agent_category:role==='agent'?agent_category:'agent',master_agent_id:role==='agent'?masterId:null,
-   agent_type,commission_pct,credit_limit,limit_routes:limit,route_ids:routes,...permissions};
+   agent_type,commission_pct,credit_limit,limit_routes:limit,route_ids:routes,corridor_tags,...permissions};
 }
 const branchInput=(b,old=null)=>{
  const code=text(b.code??old?.code,16).toUpperCase(),name=text(b.name??old?.name,120);
