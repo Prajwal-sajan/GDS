@@ -30,6 +30,7 @@ const del=(p,id)=>call('DELETE',p,null,id);
   assert.ok(r.data.matrix.length>=8);
   assert.ok(r.data.roles.some(x=>x.key==='viewer')&&r.data.roles.some(x=>x.key==='service_agent'));
   assert.equal((await get('/team-access/v26',agent.id)).status,403,'Agent must not read staff identities');
+  assert.equal((await get('/accounts/invoices-v25',agent.id)).status,403,'Invoice RBAC remains finance-only after router scope fix');
   const cities=db.col('cities');
   const city=cities.all()[0]||cities.insert({name:'Bengaluru'});
   const routes=db.col('routes');
@@ -93,6 +94,18 @@ const del=(p,id)=>call('DELETE',p,null,id);
   assert.equal(aUpdate.data.commission_pct,3.5);
   assert.equal(aUpdate.data.agent_type,'prepaid');
   assert.equal(A.requestOtp('9876543214').ok,true,'Online agent can request OTP');
+  const child=await post('/team-access/v26/users',{category:'agents',phone:'9876543215',name:'Sub Agent',
+   role:'agent',agent_category:'agent',mode:'Online',status:'ACTIVE',master_agent_id:off.data.id});
+  assert.equal(child.status,200,'Create agent under assigned master');
+  assert.equal(child.data.master_agent_id,off.data.id);
+  assert.equal((await put('/team-access/v26/users/'+off.data.id,{agent_category:'agent'})).status,409,
+   'Cannot demote a master without moving sub-agent');
+  assert.equal((await put('/team-access/v26/users/'+child.data.id,{master_agent_id:child.data.id})).status,400,
+   'Self-parenting forbidden');
+  assert.equal((await del('/team-access/v26/users/'+off.data.id)).status,409,
+   'Master with sub-agents cannot be archived');
+  assert.equal((await put('/team-access/v26/users/'+child.data.id,{master_agent_id:null})).status,200);
+  assert.equal((await del('/team-access/v26/users/'+off.data.id)).status,200);
   const session=db.col('auth_sessions').insert({user_id:driver.id,last_seen:new Date().toISOString(),revoked_at:null});
   r=await put('/team-access/v26/users/'+driver.id,{limit_routes:true,route_ids:[route.id],
    denied_permissions:['trips.location'],language:'Kannada'});
