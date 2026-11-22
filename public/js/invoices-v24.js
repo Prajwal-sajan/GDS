@@ -101,7 +101,7 @@ function render(root,state){
  <div class="inv24-outstanding">
   <div class="inv24-wallet">${ico('wallet',28)}</div>
   <div class="inv24-outstanding-main"><div class="inv24-eyebrow">OUTSTANDING BALANCE</div>
-    <h2>${inMoney(bal.payable_by_operator??0)}</h2>
+    <h2>${inMoney(bal.payable_by_operator)}</h2>
     <p>As per Operator Statement <span>${e(bal.statement||'—')}</span>
      ${bal.statement_key?button('View','current-view','inline-link'):''}</p>
     <small>${e(heading)}${bal.closing_balance!==null?' · Signed statement balance '+inMoney(bal.closing_balance):''}
