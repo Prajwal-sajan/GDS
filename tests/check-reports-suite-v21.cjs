@@ -35,7 +35,7 @@ async function signin(phone){
    assert.ok(d.summary&&d.sections&&d.totals,`Missing report body for ${key}`);
    assert.ok(d.methodology?.length>0,`Methodology missing ${key}`);
    const file=await call('/accounts/reports/'+key+'.pdf?'+qs,{binary:true});
-   if(key==='staff-duty'){assert.equal(file.status,500,'Staff duty PDF cannot be generated without selection');continue;}
+   if(key==='staff-duty'){assert.equal(file.status,400,'Staff duty PDF must require a selected staff member');continue;}
    assert.equal(file.status,200,`${key} PDF download`);
    assert.match(file.response.headers.get('content-type'),/application\/pdf/);
    assert.ok(file.data.toString('latin1').startsWith('%PDF-1.4'));
