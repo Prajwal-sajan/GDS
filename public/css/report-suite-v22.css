@@ -1,0 +1,48 @@
+.ac10-root .rpt22-root .rpt21-top{margin-bottom:16px}
+.ac10-root .rpt22-controls{display:flex;flex-direction:column;align-items:stretch;gap:10px;margin-bottom:15px;max-width:100%}
+.ac10-root .rpt22-filter-line{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.ac10-root .rpt22-root .rpt21-filter{flex:0 1 335px;height:50px}
+.ac10-root .rpt22-frequent-top{gap:10px}
+.ac10-root .rpt22-search{display:flex;align-items:center;gap:10px;background:#e9eef5;color:#8ba1b7;padding:0 14px;border-radius:15px;min-width:220px;flex:1 1 220px;max-width:308px;height:46px}
+.ac10-root .rpt22-search input{outline:none;border:0;background:transparent;font:inherit;font-size:14px;color:#22334b;width:100%;min-width:0}
+.ac10-root .rpt22-search input::placeholder{color:#8798b3}
+.ac10-root .rpt22-trip-label{font-size:14px;color:#243956;font-weight:550}
+.ac10-root .rpt22-small{background:#e8edf5;border:0;outline:0;border-radius:11px;width:78px;padding:0 11px;box-sizing:border-box;height:40px;font:inherit;color:#263955}
+.ac10-root .rpt22-small::placeholder{color:#9aaac0}
+.ac10-root .rpt22-dates .rpt21-presets{margin-left:3px}
+.ac10-root .rpt22-frequent-top .rpt21-presets{min-height:43px}
+.ac10-root .rpt22-frequent-top .rpt21-presets button{padding:9px 12px}
+.ac10-root .rpt22-root .rpt21-note{margin:13px 5px 16px;max-width:100%;font-size:13px;line-height:1.62}
+.ac10-root .rpt22-root .rpt21-summary{grid-template-columns:repeat(6,minmax(0,1fr));margin:14px 0 18px}
+.ac10-root .rpt22-root .rpt21-stat{min-height:78px}
+.ac10-root .rpt22-root .rpt21-section{margin-bottom:20px}
+.ac10-root .rpt22-root .rpt21-scroll{max-height:490px}
+.ac10-root .rpt22-root .rpt21-table th{font-size:12px}
+.ac10-root .rpt22-root [data-section=rows] .rpt21-table td:nth-child(2){min-width:125px}
+.ac10-root .rpt22-root [data-section=bands] .rpt21-table{min-width:720px!important}
+.ac10-root .rpt22-root [data-section=pairs] .rpt21-table{min-width:1400px!important}
+.ac10-root .rpt22-root [data-section=by_schedule_pairs] .rpt21-table{min-width:1350px!important}
+.ac10-root .rpt22-root [data-section=by_schedule] .rpt21-table{min-width:1200px!important}
+.ac10-root .rpt22-root [data-section=rows] .rpt21-table{min-width:1050px}
+.ac10-root .rpt22-root[data-report-v22=frequent-travellers] [data-section=rows] .rpt21-table{min-width:1700px!important}
+.ac10-root .rpt22-root[data-report-v22=frequent-travellers] [data-section=rows] .rpt21-table td:nth-child(13){min-width:225px;max-width:400px}
+.ac10-root .rpt22-root[data-report-v22=frequent-travellers] [data-section=rows] .rpt21-table td:nth-child(14){min-width:190px}
+.ac10-root .rpt22-pick-hint{font-size:15px;color:#275381;margin:16px 3px 29px}
+.ac10-root .rpt22-pick-row{cursor:pointer}
+.ac10-root .rpt22-pick-row:focus{outline:2px solid #2563eb;outline-offset:-3px}
+.ac10-root .rpt22-pick-row.rpt22-chosen,.ac10-root .rpt22-pick-row.rpt22-chosen:hover{background:#e9f3ff}
+.ac10-root .rpt22-more{display:flex;align-items:center;justify-content:center;gap:14px;padding:12px;color:#7487a2;font-size:13px}
+.ac10-root .rpt22-more button{border:1px solid #d2dffd;border-radius:12px;background:#fff;color:#2462f4;padding:9px 15px;font:inherit;cursor:pointer}
+.ac10-root .rpt22-root .rpt21-actions button:disabled{background:#e9edf6;color:#9db8ed}
+.ac10-root .rpt22-root .rpt21-methodology{margin:15px 8px;font-size:12px;color:#8195b1}
+.ac10-root .rpt22-root .rpt21-table tfoot td{position:sticky;bottom:0;z-index:2;background:#f6f8fc}
+@media(max-width:1500px){.ac10-root .rpt22-frequent-top{row-gap:12px}.ac10-root .rpt22-root .rpt21-summary{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:950px){.ac10-root .rpt22-root .rpt21-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.ac10-root .rpt22-root .rpt21-filter{flex:1 1 190px}.ac10-root .rpt22-search{max-width:none}}
+@media(max-width:570px){.ac10-root .rpt22-root .rpt21-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.ac10-root .rpt22-root .rpt21-filter,.ac10-root .rpt22-search{flex:1 1 100%}.ac10-root .rpt22-root .rpt21-presets{max-width:100%}.ac10-root .rpt22-frequent-top .rpt21-presets{flex:1 1 100%}}
+@media print{@page{size:A4 landscape;margin:8mm}
+.ac10-root .rpt22-controls,.ac10-root .rpt22-more,.ac10-root .rpt22-pick-hint,.ac10-root .rpt22-root .rpt21-actions{display:none!important}
+.ac10-root .rpt22-root .rpt21-scroll{overflow:visible!important;max-height:none!important}
+.ac10-root .rpt22-root .rpt21-table{table-layout:fixed!important;min-width:0!important;font-size:7pt!important}
+.ac10-root .rpt22-root .rpt21-table td{min-width:0!important;max-width:none!important}
+.ac10-root .rpt22-root .rpt21-summary{grid-template-columns:repeat(6,1fr)!important}
+}
