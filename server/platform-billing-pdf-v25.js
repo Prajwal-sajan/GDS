@@ -38,13 +38,13 @@ function metadata(pdf,info){
   ];
   let y=185;const half=(pdf.size.W-34)/2;
   for(const [l,v,r,w] of entries){
-   p.rule(17,y+18,pdf.right,y+18,.4);
-   p.rule(17+half,y,17+half,y+18,.4);
+   p.rule(17,y+18,pdf.right,y+18);
+   p.rule(17+half,y,17+half,y+18);
    p.text(24,y+3,l+': '+v,{size:7.6,bold:l==='Invoice Number'});
    p.text(23+half,y+3,r+': '+w,{size:7.6});
    y+=18;
   }
-  p.rule(17,185,17,y,.4);p.rule(pdf.right,185,pdf.right,y,.4);
+  p.rule(17,185,17,y);p.rule(pdf.right,185,pdf.right,y);
   pdf.y=y+10;
  }else{
   p.text(x,113,'Document No.: '+info.number,{size:8,bold:true});
