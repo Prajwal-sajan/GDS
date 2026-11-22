@@ -91,8 +91,8 @@ const rules={
   passenger_masking:v=>boolean(v,'passenger masking'),
   direct_to_vehicle:v=>boolean(v,'direct to vehicle'),
   call_individual_drivers:v=>boolean(v,'call individual drivers'),
-  savetrip_line:v=>string(v,'managed calling line',60),
-  whatsapp_sender:v=>string(v,'WhatsApp sender',60),
+  savetrip_line:v=>fail('Managed calling line is configured by the connected provider'),
+  whatsapp_sender:v=>fail('Managed WhatsApp sender is configured by the connected provider'),
   support_number:v=>string(v,'support number',60),
   published_office_numbers:v=>cleanArray(v,'office numbers'),
   escalation_contacts:v=>cleanArray(v,'escalation contacts'),
@@ -138,11 +138,15 @@ function update(section,payload,req){
  D.audit('settings','configuration_v30',section,{fields:Object.keys(patch)},req.user);
  return {section,value:next[section],saved:true,delivery_connected:false};
 }
-r.get('/settings/config-v30',grant('settings.view'),run(()=>({
+r.get('/settings/config-v30',grant('settings.view'),run(req=>({
  sections:getAll(),
  dials:db.col('speed_dials').all(),
  subscriptions:db.col('notification_subscriptions').all(),
- users:db.col('users').filter(u=>!u.deleted_at).map(u=>({id:u.id,name:u.name,phone:u.phone,role:u.role})),
+ users:db.col('users').filter(u=>{
+  const me=db.col('users').get(req.user?.real_user_id||req.user?.id);
+  return !u.deleted_at&&!!me&&(['owner','admin','manager'].includes(me.role)||u.id===me.id||
+   !!me.branch_id&&String(me.branch_id)===String(u.branch_id));
+ }).map(u=>({id:u.id,name:u.name,phone:u.phone,role:u.role})),
  delivery_connected:false,
  provider_note:'Cloud calls, WhatsApp and push delivery need separately configured authorized providers.'
 })));
