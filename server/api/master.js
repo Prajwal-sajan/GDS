@@ -120,9 +120,9 @@ r.delete('/coaches/:id', can('fleet.delete'), h((req) => { if (db.col('vehicles'
 
 // ---------------- Vehicles ----------------
 function vehicleView(v) {
-  const T = U.today(); const docs = db.col('documents').filter((d) => d.owner_type === 'vehicle' && d.owner_id === v.id);
+  const T = U.today(); const docs = db.col('documents').filter((d) => d.owner_type === 'vehicle' && d.owner_id === v.id && !d.archived_at);
   const next = db.col('schedules').filter((s) => s.vehicle_id === v.id && s.travel_date >= T && s.status === 'active').sort((a, b) => a.travel_date.localeCompare(b.travel_date) || a.departure_time.localeCompare(b.departure_time))[0];
-  return { ...v, coach: db.col('coaches').get(v.coach_template_id)?.name, documents: docs.map((d) => ({ ...d, state: !d.expiry_date ? 'ok' : d.expiry_date < T ? 'EXPIRED' : d.expiry_date <= U.addDays(T, 30) ? 'EXPIRING SOON' : 'ok' })), doc_alerts: docs.filter((d) => d.expiry_date && d.expiry_date <= U.addDays(T, 30)).length, next_trip: next ? { schedule_id: next.id, service: db.col('routes').get(next.route_id)?.service_number, travel_date: next.travel_date, departure_time: next.departure_time } : null };
+  return { ...v, coach: db.col('coaches').get(v.coach_template_id)?.name, documents: docs.map(({ file_data, ...d }) => ({ ...d, has_file: !!file_data, state: !d.expiry_date ? 'ok' : d.expiry_date < T ? 'EXPIRED' : d.expiry_date <= U.addDays(T, 30) ? 'EXPIRING SOON' : 'ok' })), doc_alerts: docs.filter((d) => d.expiry_date && d.expiry_date <= U.addDays(T, 30)).length, next_trip: next ? { schedule_id: next.id, service: db.col('routes').get(next.route_id)?.service_number, travel_date: next.travel_date, departure_time: next.departure_time } : null };
 }
 r.get('/vehicles', can('fleet.view'), h(() => ({ vehicles: db.col('vehicles').all().map(vehicleView) })));
 r.get('/vehicles/positions', can('fleet.view'), h(() => {
@@ -148,11 +148,33 @@ r.put('/vehicles/:id', can('fleet.modify'), h((req) => { need(db.col('vehicles')
 r.delete('/vehicles/:id', can('fleet.delete'), h((req) => { if (db.col('schedules').count((s) => s.vehicle_id == req.params.id && s.travel_date >= U.today() && s.status === 'active')) throw D.httpErr(409, 'Vehicle is assigned to upcoming trips'); db.col('vehicles').remove(req.params.id); return { success: true }; }));
 
 // ---------------- Documents (vehicles & staff) ----------------
-r.get('/documents/:owner_type/:owner_id', h((req) => ({ documents: db.col('documents').filter((d) => d.owner_type === req.params.owner_type && d.owner_id == req.params.owner_id) })));
+r.get('/documents/:id/file', h((req, res) => {
+  const d = need(db.col('documents').get(req.params.id));
+  const permission = d.owner_type === 'vehicle' ? 'fleet.view' : d.owner_type === 'staff' ? 'staff.view' : null;
+  if (!permission || !req.user.permissions.includes(permission)) throw D.httpErr(403, 'Document access denied');
+  if (d.archived_at && !req.user.permissions.includes('fleet.documents')) throw D.httpErr(403, 'Archived document access denied');
+  if (!d.file_data) throw D.httpErr(404, 'No file uploaded');
+  const match = /^data:([^;,]+);base64,([A-Za-z0-9+/]+={0,2})$/.exec(d.file_data);
+  if (!match) throw D.httpErr(415, 'Invalid document file');
+  const mime = ['application/pdf','image/png','image/jpeg','image/webp'].includes(match[1]) ? match[1] : 'application/octet-stream';
+  res.setHeader('Content-Type', mime);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Disposition', 'attachment');
+  res.send(Buffer.from(match[2], 'base64'));
+}));
+
+r.get('/documents/:owner_type/:owner_id', h((req) => {
+  const type = req.params.owner_type;
+  if (!['vehicle','staff'].includes(type)) throw D.httpErr(400, 'Invalid document owner type');
+  const required = type === 'vehicle' ? 'fleet.view' : 'staff.view';
+  if (!req.user.permissions.includes(required)) throw D.httpErr(403, 'Document access denied');
+  const documents = db.col('documents').filter(d => d.owner_type === type && d.owner_id == req.params.owner_id && !d.archived_at)
+    .map(({file_data, ...d}) => ({...d, has_file: !!file_data}));
+  return { documents };
+}));
 r.post('/documents/:owner_type/:owner_id', can('fleet.documents'), h((req) => db.col('documents').insert({ owner_type: req.params.owner_type, owner_id: Number(req.params.owner_id), document_type: req.body.document_type || 'OTHER', document_name: req.body.document_name || req.body.document_type, document_number: req.body.document_number || null, expiry_date: req.body.expiry_date || null, issue_date: req.body.issue_date || null, visibility: req.body.visibility || 'private', file_name: req.body.file_name || null, file_data: req.body.file_data || null, category: 'compliance', verification_status: 'pending' })));
 r.put('/documents/:id', can('fleet.documents'), h((req) => db.col('documents').update(req.params.id, req.body)));
 r.delete('/documents/:id', can('fleet.documents'), h((req) => ({ success: db.col('documents').remove(req.params.id) })));
-r.get('/documents/:id/file', h((req, res) => { const d = need(db.col('documents').get(req.params.id)); if (!d.file_data) throw D.httpErr(404, 'No file uploaded'); const [meta, b64] = d.file_data.split(','); res.setHeader('Content-Type', meta.replace('data:', '').replace(';base64', '')); res.send(Buffer.from(b64, 'base64')); }));
 
 // ---------------- Staff ----------------
 function staffView(s) { const T = U.today(); const m = T.slice(0, 7); const att = db.col('attendance').filter((a) => a.staff_id === s.id && a.date.startsWith(m)); const adv = db.col('advances').filter((a) => a.staff_id === s.id && a.status !== 'recovered'); return { ...s, trips_this_month: att.filter((a) => a.status === 'present').length, advance_outstanding: U.sum(adv, (a) => a.amount - a.amount_recovered), license_state: !s.license_expiry ? null : s.license_expiry < T ? 'EXPIRED' : s.license_expiry <= U.addDays(T, 30) ? 'EXPIRING SOON' : 'ok' }; }

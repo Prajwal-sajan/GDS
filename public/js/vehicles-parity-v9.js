@@ -144,8 +144,8 @@
       if(action.dataset.action==='fleet-map'){await fleetMap(V);return}
       if(action.dataset.action==='add-vehicle'){await vehicleForm(null,C,()=>vehiclesPage(el));return}
       if(!v)return;
-      if(action.dataset.action==='view'){await vehicleOverview(v,C);return}
-      if(action.dataset.action==='edit'){await vehicleForm(v,C,()=>vehiclesPage(el));return}
+      if(action.dataset.action==='view'){if(window.VehicleDetailV19)await VehicleDetailV19.open({id:v.id,mode:'view',host:el,onDone:()=>vehiclesPage(el)});else await vehicleOverview(v,C);return}
+      if(action.dataset.action==='edit'){if(window.VehicleDetailV19)await VehicleDetailV19.open({id:v.id,mode:'edit',host:el,onDone:()=>vehiclesPage(el)});else await vehicleForm(v,C,()=>vehiclesPage(el));return}
       if(action.dataset.action==='duplicate'){if(!can('fleet.modify'))return;const ok=await G.confirm(`Duplicate ${E(plate(v))}? A new unique registration is required.`);if(!ok)return;let vals=await G.prompt('Duplicate vehicle',[{name:'registration_number',label:'New registration number',required:true}]);if(!vals)return;try{await G.post('/vehicles',{registration_number:vals.registration_number,coach_template_id:v.coach_template_id,make:v.make,model:v.model,ownership_type:v.ownership_type,vehicle_role:v.vehicle_role,gps_enabled:false,status:'inactive'});G.toast('Vehicle copied; GPS disabled until configured','ok');vehiclesPage(el)}catch(err){G.err(err)}return}
       if(action.dataset.action==='delete'){if(!can('fleet.delete'))return;if(!await G.confirm(`Delete vehicle ${E(plate(v))}?`,{danger:1}))return;try{await G.del(`/vehicles/${v.id}`);G.toast('Vehicle deleted','ok');vehiclesPage(el)}catch(err){G.err(err)}return}
       if(action.dataset.action==='health'){await healthModal(v);return}
