@@ -22,7 +22,7 @@ internal.post('/source',wrap((req,res)=>{
 }));
 internal.post('/issue-due',wrap((req,res)=>{noCache(res);res.json(B.runDue());}));
 internal.get('/health',wrap((req,res)=>{noCache(res);res.json({platform_billing_configured:!!B.configured(),month:new Date().toISOString().slice(0,7)});}));
-operator.use(can('accounts.ledger'));
+operator.use('/accounts/invoices-v25',can('accounts.ledger'));
 operator.get('/accounts/invoices-v25',wrap((req,res)=>{noCache(res);res.json(B.list());}));
 operator.get('/accounts/invoices-v25/documents/:key',wrap((req,res)=>{
  const doc=B.ensureIssued(req.params.key);
