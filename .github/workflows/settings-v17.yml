@@ -1,0 +1,44 @@
+name: Settings v17 screenshot and HAR audit
+on:
+  push:
+    branches:
+      - feature/settings-v17-har-audit
+  pull_request:
+    paths:
+      - 'server/auth.js'
+      - 'server/api/ops.js'
+      - 'server/api/settings-complete.js'
+      - 'server/api/settings-v16-iam-bridge.js'
+      - 'server/api/branding-public-v17.js'
+      - 'server/index.js'
+      - 'public/js/settings-complete.js'
+      - 'public/js/settings-parity.js'
+      - 'public/index.html'
+      - 'tests/check-settings-v17-security.cjs'
+jobs:
+  settings-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Syntax check
+        run: |
+          node --check server/auth.js
+          node --check server/api/ops.js
+          node --check server/api/settings-complete.js
+          node --check server/api/settings-v16-iam-bridge.js
+          node --check server/api/branding-public-v17.js
+          node --check public/js/settings-complete.js
+          node --check public/js/settings-parity.js
+          node --check tests/check-settings-v17-security.cjs
+      - name: v17 security and UI contract
+        run: node tests/check-settings-v17-security.cjs
+      - name: v16 compatibility
+        run: node tests/check-settings-v16-backend.cjs
+      - name: full app HTTP regression
+        run: npm test
