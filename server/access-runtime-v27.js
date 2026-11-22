@@ -58,9 +58,12 @@ function checkBlock(req,seats,action){
   throw D.httpErr(403,'Seat block exceeds '+max+' seats');
  const hoursCap=Math.min(configuredHours===''?Infinity:Number(configuredHours),ruleHours??Infinity);
  if(hoursCap===Infinity){
-  if(req.body?.duration_hours!==undefined)
-   throw D.httpErr(400,'Role has no duration limit: leave duration_hours empty or configure a policy');
-  return null;
+  // No role/preset cap means "no limit", not "duration is forbidden".
+  if(req.body?.duration_hours===undefined)return null;
+  const requested=Number(req.body.duration_hours);
+  if(!Number.isFinite(requested)||requested<=0||requested>8760)
+   throw D.httpErr(400,'Block duration must be 1–8760 hours');
+  return new Date(Date.now()+requested*3600000).toISOString();
  }
  const duration=context.block_duration_hours===undefined?hoursCap:context.block_duration_hours;
  if(!Number.isFinite(duration)||duration<=0||duration>hoursCap)
