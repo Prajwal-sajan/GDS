@@ -70,6 +70,36 @@ try{
  t.link_sent=false;t.status='Not billed';t.ticket_link='https://unsent.example.com/unused-link';
  const unbilled=V21.compute('metro-bookings',{...range,mode:'pickup'}).sections.rows.find(x=>x.pnr===metroBooking.pnr);
  assert.equal(unbilled.metro_fare,null);assert.equal(unbilled.billing_status,'Not billed','An unsent link URL is not a billed leg');
+ // Distinct pickup and drop Metro tickets are charged as two legs, never two PNRs.
+ t.link_sent=true;t.status='Billed';t.ticket_link='';
+ const metroRoute=db.col('routes').get(metroBooking.route_id);
+ const metroDrop=metroRoute.stages.find(x=>x.id===metroBooking.dropping_stage_id);
+ const oldDropType=metroDrop.feeder_type;
+ metroDrop.feeder_type='metro';
+ db.col('metro_tickets').insert({pnr:metroBooking.pnr,leg:'drop',ticket_no:'M-124',fare:75,link_sent:true,passenger_count:2,status:'Billed'});
+ const both=V21.compute('metro-bookings',{...range,mode:'both'}).sections.rows.find(x=>x.pnr===metroBooking.pnr);
+ assert.equal(both.billed_legs,2);assert.equal(both.metro_fare,130,'Billed pickup + drop fares sum');
+ metroDrop.feeder_type=oldDropType;
+ // Same-seat resale requires the later booking timestamp, same run and same seat.
+ const cancelled=db.col('bookings').find(x=>x.travel_date>=from&&x.travel_date<=to&&x.cancellations?.some(c=>c.seats?.length&&c.at));
+ assert.ok(cancelled,'Cancelled booking fixture');
+ const event=cancelled.cancellations.find(c=>c.seats?.length&&c.at);
+ const oldSeat=cancelled.passengers.find(p=>event.seats.includes(p.seat));
+ const {id:ignored,...cancelSource}=cancelled;
+ db.col('bookings').insert({...cancelSource,pnr:'QA-RESOLD-13',status:'confirmed',
+   cancellations:[],booked_at:new Date(new Date(event.at).getTime()+3600000).toISOString(),
+   passengers:[{...oldSeat,status:'confirmed',fare:999}]});
+ const resaleRow=V21.compute('cancellations',range).sections.rows.find(x=>x.pnr===cancelled.pnr&&x.cancelled_at===event.at);
+ assert.ok(resaleRow?.resold>=1&&resaleRow.recovered>=999,'Cancellation after-event seat resale');
+ // Exact explicit van marker is valid feeder evidence; do not invent an assignment.
+ const stagePick=route.stages.find(x=>x.type==='pickup'&&!/metro/i.test(x.name||''));
+ if(stagePick){
+   const saved={name:stagePick.name,feeder_type:stagePick.feeder_type,pickup_type:stagePick.pickup_type,transport_type:stagePick.transport_type};
+   stagePick.name=(stagePick.name||'Pickup')+' (Pickup Van)';stagePick.feeder_type='';stagePick.pickup_type='';stagePick.transport_type='';
+   const v=V21.compute('van-bookings',range);
+   assert.ok(v.sections.rows.some(x=>x.boarding===stagePick.name),'Explicit Pickup Van marker detected');
+   Object.assign(stagePick,saved);
+ }
  for(const key of ['cancellations','no-shows']){
   const x=V21.compute(key,range);
   near(x.summary[key==='no-shows'?'fare':'amount'],x.sections.rows.reduce((v,r)=>v+r[key==='no-shows'?'fare':'amount'],0),key+' reconciliation');
