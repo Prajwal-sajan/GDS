@@ -114,6 +114,7 @@ const line=(description,rate,qty=1,sac='998551')=>{
  }
  const taxDoc=d.data.documents.find(x=>x.type==='tax');
  const taxPdf=(await request('/accounts/invoices-v25/documents/'+taxDoc.key+'/pdf',{token,binary:true})).data.toString('latin1');
+ assert.ok(taxPdf.includes('Shipping Address'),'Shipping details are present');
  assert.ok(taxPdf.includes('TAX INVOICE')&&taxPdf.includes('SAC')&&taxPdf.includes('CGST')&&taxPdf.includes('SGST')&&taxPdf.includes('Bank details'),'PDF follows uploaded tax structure');
  assert.equal((await request('/accounts/invoices-v25/documents/legacy-1',{token})).status,404,
   'Old reference documents not exposed through issued catalogue');
