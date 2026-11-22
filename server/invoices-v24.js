@@ -165,6 +165,18 @@ function create(body,user){
    snapshot,reference_only:referenceOnly,status:'import_pending',created_by:user?.id||user?.name||null});
  return asDoc(record,'issued');
 }
+function attachSnapshot(key,snapshot,user){
+ const {row,table,document}=resolve(key);
+ const normalized=validateSnapshot(document.type,snapshot);
+ const before=row.snapshot?crypto.createHash('sha256').update(JSON.stringify(row.snapshot)).digest('hex'):null;
+ db.col(table).update(row.id,{
+   snapshot:normalized,
+   snapshot_updated_at:new Date().toISOString(),
+   snapshot_updated_by:user?.id||user?.name||'operator',
+   previous_snapshot_sha256:before
+ });
+ return {document:asDoc(row,key.split('-')[0]),snapshot_hash:crypto.createHash('sha256').update(JSON.stringify(normalized)).digest('hex')};
+}
 function recordPayment(body,user){
  const due=balance().payable_by_operator;
  if(!(due>0))throw bad('No payable-by-operator balance is recorded. A positive statement balance is payable to the operator.');
@@ -204,4 +216,4 @@ function bundle(month){
  }));
 }
 module.exports={TYPES,typeOf,asDoc,catalogue,latestStatement,balance,list,resolve,create,attachPdf,getPdf,
- validateSnapshot,recordPayment,bundle,zip,validMonth};
+ validateSnapshot,attachSnapshot,recordPayment,bundle,zip,validMonth};
