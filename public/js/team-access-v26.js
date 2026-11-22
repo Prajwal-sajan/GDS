@@ -297,8 +297,9 @@ function roleValueV27(role,row){
  return (role?.permissions||[]).includes(row.code)?(row.kind==='scope'?'Company':'On'):'Off';
 }
 function roleOptionsV27(row,value){
- const entries=row.kind==='scope'?[['Off','Off'],['Own','Own'],['Branch','Branch'],['Company','Company']]:[['Off','Off'],['On','On']];
- return options(entries,value);
+ const list=row.choices||(row.kind==='scope'?['Off','Own','Branch','Company']:['Off','On']);
+ const choices=list.includes(value)?list:[value,...list]; // preserve any previously saved legacy reach
+ return options(choices.map(x=>[x,list.includes(x)?x:x+' (legacy)']),value);
 }
 function limitInputV27(role,key,label,unit){
  const value=role?.limits?.[key],str=value===null||value===undefined?'':String(value);
