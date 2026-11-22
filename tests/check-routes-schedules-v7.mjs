@@ -2,7 +2,7 @@ import fs from 'node:fs';import path from 'node:path';import assert from 'node:a
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const index=read('public/index.html'),route=read('public/js/routes-screenshot-v5.js'),schedule=read('public/js/schedules-screenshot-v6.js'),css=read('public/css/routes-schedules-visual-v7.css');
-for(const file of ['routes-screenshot-v5.css','schedules-screenshot-v6.css','routes-schedules-visual-v7.css','routes-screenshot-v5.js','schedules-screenshot-v6.js']) assert(index.includes(`${file}?build=7`),`cache-busted ${file} is missing`);
+for(const file of ['routes-screenshot-v5.css','schedules-screenshot-v6.css','routes-schedules-visual-v7.css','routes-screenshot-v5.js','schedules-screenshot-v6.js']) assert(new RegExp(file.replace(/\./g,"\\.")+"\\?build=\\d+").test(index),`cache-busted ${file} is missing`);
 assert(route.includes('2026-11-21-routes-schedules-v7'));
 assert(schedule.includes('2026-11-21-routes-schedules-v7'));
 assert(route.includes('selected.length?'),'Route list should use valid conditional rendering');

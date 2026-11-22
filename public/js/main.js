@@ -63,6 +63,7 @@
         <button class="stp-head-btn" type="button" data-settings-btn aria-haspopup="true" aria-expanded="false">${i('settings')}Settings${i('chevronDown')}</button>
         ${menus.language||''}${menus.settings||''}
       </div></div></div></header><div data-sub></div><main class="page" data-content></main></div>`;
+    {const hdr=$('.iconic-app-header');const setH=()=>{if(hdr)document.documentElement.style.setProperty('--hdr-h',hdr.offsetHeight+'px');};setH();addEventListener('resize',setH);if(window.ResizeObserver&&hdr)new ResizeObserver(setH).observe(hdr);}
     const lb=$('[data-language-btn]'),sb=$('[data-settings-btn]');
     const lp=$('[data-lang-pop]'),sp=$('[data-settings-pop]');
     function close(){if(lp)lp.hidden=true;if(sp)sp.hidden=true;if(lb)lb.setAttribute('aria-expanded','false');if(sb)sb.setAttribute('aria-expanded','false');}
@@ -106,7 +107,7 @@
       if (alertsSince) for (const a of r.alerts.slice().reverse()) G.toast(`🔔 ${a.title || a.message || a.type}`, a.level === 'critical' ? 'bad' : '');
       unreadAlerts = [...r.alerts, ...unreadAlerts].slice(0, 50); alertsSince = r.server_time;
       const bc = $('[data-bc]'); if (bc) { bc.textContent = unreadAlerts.length; bc.style.display = unreadAlerts.length ? '' : 'none'; }
-      if (can('chats.view')) { const c = await G.get('/chats').catch(() => null); const el = $('[data-cnt="chats"]'); if (c && el) { el.textContent = c.unread_total; el.style.display = c.unread_total ? '' : 'none'; } }
+      if (can('chats.view')) { const c = await G.get('/chats').catch(() => null); const el = $('[data-cnt="chats"]'); if (c && el) { el.textContent = ''; el.style.display = 'none'; } }
     } catch (e) { /* ignore transient */ }
   }
   function showAlerts() {

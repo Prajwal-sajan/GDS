@@ -127,3 +127,9 @@ body[data-stp-scheme="Dark"] .stp-root .stp-name,
 body[data-stp-scheme="Dark"] .stp-root .stp-card-head h3,
 body[data-stp-scheme="Dark"] .stp-root .stp-perm-row,
 body[data-stp-scheme="Dark"] .stp-root .stp-user b{color:#eef4ff}
+
+/* Header: align top menu bar with the submenu's left edge */
+.iconic-app-header .hdr-in{width:90%;max-width:none;margin-left:auto;margin-right:auto;padding-left:0;padding-right:0}
+.iconic-app-header .hdr-l{justify-content:flex-start}
+.subnav{padding-left:0;margin-left:0}
+@media(max-width:700px){.iconic-app-header .hdr-in{width:96%}}

@@ -151,3 +151,15 @@ body{background:linear-gradient(180deg,#f5f8ff 0%,#f8fafc 40%,#faf7ff 100%);back
 .login{background:linear-gradient(135deg,#eff6ff,#fff 40%,#f5f3ff)}
 .login .card{border-radius:1rem}
 @media(max-width:700px){.hdr-in,.page{width:96%}.hdr-in{flex-direction:column;align-items:stretch}.iconic-nav-cluster{width:100%}.iconic-nav-cluster .iconic-tab-pill{flex:1;justify-content:center}}
+
+/* ===== Global: no text caret on read-only content (headings, labels, readonly/disabled fields, popups) ===== */
+html,body,body *{caret-color:transparent}
+input:not([readonly]):not([disabled]):not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=range]):not([type=color]),textarea:not([readonly]):not([disabled]),[contenteditable="true"],[contenteditable=""]{caret-color:auto}
+input[readonly],textarea[readonly],input[disabled],select[disabled]{cursor:default;user-select:none}
+/* ===== GDS submenu: sticky under header and full screen width ===== */
+[data-sub]{position:sticky;top:var(--hdr-h,64px);z-index:45;width:100%;background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(248,250,255,.97));backdrop-filter:blur(10px)}
+[data-sub]:not(:empty){border-bottom:1px solid rgba(99,102,241,.14)}
+[data-sub] .page{width:90%;max-width:none;padding:6px 0 0}
+[data-sub] .subnav{width:100%;margin-bottom:6px}
+[data-sub] .subnav>a{flex:1 1 0;justify-content:center;min-width:max-content}
+@media(max-width:700px){[data-sub] .page{width:96%}}

@@ -9,8 +9,13 @@
     "dev": "node --watch server/index.js",
     "test": "node tests/regression.js"
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "jsdom": "^22.1.0"
   }
 }

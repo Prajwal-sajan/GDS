@@ -18,7 +18,23 @@ r.get('/accounts/receivables', can('accounts.view'), h((req, res) => { const out
 r.get('/accounts/ledger', can('accounts.ledger'), h((req) => Rp.ledger(req.query.channel_key)));
 r.post('/accounts/ledger', can('accounts.ledger'), h((req) => { const b = req.body; if (!b.channel_key || !(Number(b.amount) > 0)) throw D.httpErr(400, 'Channel and amount required'); return db.col('ledger').insert({ channel_key: b.channel_key, channel_type: b.channel_key.split(':')[0], type: b.type === 'debit' ? 'debit' : 'credit', amount: Number(b.amount), note: b.note || '', date: b.date || U.today(), by: req.user.name }); }));
 r.delete('/accounts/ledger/:id', can('accounts.ledger'), h((req) => ({ success: db.col('ledger').remove(req.params.id) })));
-r.get('/accounts/channels', can('accounts.view'), h(() => ({ agents: db.col('users').filter((u) => u.role === 'agent').map((u) => ({ channel_key: `agent:${u.phone}`, name: u.name, phone: u.phone, commission_pct: u.commission_pct })), branches: db.col('users').filter((u) => ['booking_executive', 'manager', 'owner'].includes(u.role)).map((u) => ({ channel_key: `branch:${u.phone}`, name: u.name })), otas: ['redbus', 'abhibus', 'paytm'].map((o) => ({ channel_key: `ota:${o}`, name: o })) })));
+r.get('/accounts/channels', can('accounts.view'), h(() => ({ agents: db.col('users').filter((u) => u.role === 'agent').map((u) => ({ channel_key: `agent:${u.phone}`, id: u.id, name: u.name, phone: u.phone, commission_pct: u.commission_pct, credit_limit: u.credit_limit, is_active: u.status !== 'INACTIVE', ...(u.agent_terms || {}) })), branches: db.col('users').filter((u) => ['booking_executive', 'manager', 'owner'].includes(u.role)).map((u) => ({ channel_key: `branch:${u.phone}`, name: u.name })), otas: ['redbus', 'abhibus', 'paytm'].map((o) => ({ channel_key: `ota:${o}`, name: o })) })));
+// Agent financial terms (commission, credit, settlement). Creates the agent user when the phone is new.
+r.put('/accounts/channels/agents', can('accounts.reconciliation'), h((req) => {
+  const b = req.body || {}; const phone = String(b.phone || '').trim(); const num = (x, d = 0) => (x === undefined || x === '' ? d : Number(x));
+  if (!/^\d{10}$/.test(phone)) throw D.httpErr(400, 'Agent phone must be 10 digits');
+  if (!String(b.name || '').trim()) throw D.httpErr(400, 'Agent name required');
+  const pct = num(b.commission_pct); if (!(pct >= 0 && pct <= 100)) throw D.httpErr(400, 'Commission must be 0–100%');
+  for (const k of ['balance', 'credit_limit', 'settlement_cycle_days', 'tax_on_fare_percent', 'tds_percent', 'gst_on_commission_percent', 'match_tolerance']) if (num(b[k]) < 0) throw D.httpErr(400, `${k.replace(/_/g, ' ')} cannot be negative`);
+  const terms = { balance: num(b.balance), settlement_cycle_days: num(b.settlement_cycle_days, 7), commission_base: b.commission_base === 'fare_plus_gst' ? 'fare_plus_gst' : 'fare_only', settlement_mode: ['DOJ', 'DOB', 'weekly'].includes(b.settlement_mode) ? b.settlement_mode : 'DOJ', tax_on_fare_percent: num(b.tax_on_fare_percent), tds_percent: num(b.tds_percent), gst_on_commission_percent: num(b.gst_on_commission_percent, 18), match_tolerance: num(b.match_tolerance, 1), independent_commission: !!b.independent_commission };
+  const status = b.is_active === false || b.is_active === 'false' ? 'INACTIVE' : 'ACTIVE';
+  let u = db.col('users').find((x) => x.phone === phone);
+  if (u && u.role !== 'agent') throw D.httpErr(409, 'This phone belongs to a non-agent user');
+  if (u) u = db.col('users').update(u.id, { name: String(b.name).trim(), commission_pct: pct, credit_limit: num(b.credit_limit), status, agent_terms: terms });
+  else u = db.col('users').insert({ phone, name: String(b.name).trim(), role: 'agent', status, commission_pct: pct, credit_limit: num(b.credit_limit), agent_terms: terms, branch_id: null });
+  D.audit('user', u.id, 'agent_terms', { op: 'update', commission_pct: pct }, req.user);
+  return { channel_key: `agent:${u.phone}`, id: u.id, name: u.name, phone: u.phone, commission_pct: u.commission_pct, credit_limit: u.credit_limit, is_active: u.status !== 'INACTIVE', ...terms };
+}));
 
 r.get('/accounts/reports', can('accounts.reports'), h(() => ({ reports: Object.keys(Rp.REPORTS) })));
 r.get('/accounts/reports/:key', can('accounts.reports'), h((req, res) => {

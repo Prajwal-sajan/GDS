@@ -1,0 +1,91 @@
+/* Shared calendar popup, popup minimise dock, and size caps for all popups. */
+.ui-calpop{position:fixed;z-index:100002;width:320px;padding:14px;border-radius:20px;font:13px Poppins,Arial,sans-serif;color:#14213a;border:1px solid color-mix(in srgb,var(--brand) 30%,#fff);background:linear-gradient(145deg,color-mix(in srgb,var(--brand) 14%,#fff) 0%,rgba(255,255,255,.96) 45%,color-mix(in srgb,var(--brand) 10%,#fff) 100%);backdrop-filter:blur(14px);box-shadow:0 18px 40px color-mix(in srgb,var(--brand) 22%,transparent),inset 0 1px 0 #fff}
+.ui-calpop button{font:inherit;cursor:pointer}
+.ui-cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.ui-cal-head button{width:32px;height:32px;border-radius:10px;border:1px solid color-mix(in srgb,var(--brand) 25%,#fff);background:#fff;color:var(--brand);font-size:18px;line-height:1}
+.ui-cal-week,.ui-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.ui-cal-week span{font-size:11px;font-weight:700;color:#7a88a3;padding:4px 0}
+.ui-cal-grid button{height:34px;border-radius:10px;border:1px solid transparent;background:rgba(255,255,255,.75);color:#1b2740;font-weight:600}
+.ui-cal-grid button:hover{border-color:var(--brand);color:var(--brand)}
+.ui-cal-grid button.today{border-color:color-mix(in srgb,var(--brand) 55%,#fff);color:var(--brand)}
+.ui-cal-grid button.selected{background:linear-gradient(135deg,var(--brand),color-mix(in srgb,var(--brand) 60%,#8b5cf6));color:#fff}
+.ui-cal-quick{display:flex;gap:6px;margin-top:12px;padding-top:10px;border-top:1px solid color-mix(in srgb,var(--brand) 18%,#fff)}
+.ui-cal-quick button{flex:1;padding:8px 4px;border-radius:12px;border:1px solid color-mix(in srgb,var(--brand) 30%,#fff);background:color-mix(in srgb,var(--brand) 9%,#fff);color:var(--brand);font-weight:700}
+.ui-cal-quick button:hover{background:var(--brand);color:#fff}
+.sx-calendar-popup{display:none!important}
+
+/* minimise */
+.ui-min-btn{display:inline-grid;place-items:center;width:32px;height:32px;margin:0 6px 0 auto;border-radius:10px;border:1px solid rgba(120,130,170,.35);background:rgba(255,255,255,.6);color:inherit;cursor:pointer;flex:0 0 auto}
+.ui-min-btn:hover{background:#fff;color:var(--brand)}
+.ui-minimised{display:none!important}
+.ui-min-dock{position:fixed;left:16px;bottom:14px;z-index:100003;display:flex;gap:8px;flex-wrap:wrap;max-width:calc(100vw - 32px);pointer-events:none}
+.ui-min-chip{pointer-events:auto;display:inline-flex;align-items:center;gap:7px;max-width:260px;padding:8px 13px;border-radius:12px;border:1px solid color-mix(in srgb,var(--brand) 30%,#fff);background:#fff;color:#14213a;font:600 12.5px Poppins,Arial,sans-serif;box-shadow:0 8px 22px #1a2a5a2e;cursor:pointer}
+.ui-min-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ui-min-chip svg{color:var(--brand);flex:0 0 auto}
+.ui-min-chip:hover{background:color-mix(in srgb,var(--brand) 8%,#fff)}
+
+/* size caps: no popup fills the whole screen on desktop */
+@media(min-width:900px){
+ .ov .md{max-width:min(1180px,88vw)!important;max-height:86vh!important}
+ .tp13-history-modal .md,.tp13-map-modal .md{width:min(1180px,88vw)!important;min-height:0!important}
+ .tp13-history-modal .md .bd{min-height:0!important}
+ .tp13-mappanel{height:min(55vh,520px)!important}
+ .ov .md:has(.sv-modal-layout){width:min(1180px,88vw)!important}
+ .vp-overlay .md.lg{width:min(1180px,88vw)!important;height:min(760px,86vh)!important}
+ .sx-modal{width:min(1180px,88vw)!important;height:min(720px,86vh)!important}
+ .rv-modal{max-height:86vh!important}
+}
+
+@media(min-width:900px){.ov .md{overflow:auto}}
+
+/* standard dropdown */
+.ui-dd-native{position:absolute!important;opacity:0!important;pointer-events:none!important;width:1px!important;height:1px!important}
+.vp-select:has(.ui-dd-btn)>.vp-i:last-child{display:none}
+.ui-dd-btn{flex:1;display:flex;align-items:center;justify-content:space-between;gap:8px;border:0;background:transparent;font:inherit;font-size:12px;font-weight:650;color:#304360;cursor:pointer;padding:4px 2px;white-space:nowrap;min-width:0}
+.ui-dd-btn span{overflow:hidden;text-overflow:ellipsis}
+.ui-dd-btn svg{color:var(--brand,#5f55ff);flex:none}
+.ui-dd-menu{position:fixed;z-index:3000;background:#fff;border:1px solid #dce5f2;border-radius:12px;box-shadow:0 12px 30px #14213a26;padding:6px;max-height:300px;overflow:auto;display:flex;flex-direction:column;gap:2px}
+.ui-dd-menu button{border:0;background:transparent;text-align:left;padding:8px 12px;border-radius:8px;font:inherit;font-size:13px;color:#304360;cursor:pointer;white-space:nowrap}
+.ui-dd-menu button:hover{background:var(--brand-100,#eef1ff)}
+.ui-dd-menu button.sel{background:var(--brand,#5f55ff);color:#fff;font-weight:650}
+
+/* calendar popup = Trips calendar look */
+.ui-calpop{width:330px;padding:14px;border-radius:20px;border:1px solid color-mix(in srgb,var(--brand) 30%,#fff);background:linear-gradient(145deg,color-mix(in srgb,var(--brand) 14%,#fff) 0%,rgba(255,255,255,.96) 45%,color-mix(in srgb,var(--brand) 10%,#fff) 100%);backdrop-filter:blur(14px);box-shadow:0 18px 40px color-mix(in srgb,var(--brand) 22%,transparent),inset 0 1px 0 #fff}
+.ui-calpop .ui-cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;color:#14213a}
+.ui-calpop .ui-cal-head button{width:32px;height:32px;border-radius:10px;border:1px solid color-mix(in srgb,var(--brand) 25%,#fff);background:#fff;color:var(--brand);font-size:18px;line-height:1;cursor:pointer}
+.ui-calpop .ui-cal-week,.ui-calpop .ui-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.ui-calpop .ui-cal-week span{font-size:11px;font-weight:700;color:#7a88a3;padding:4px 0}
+.ui-calpop .ui-cal-grid button{height:36px;border-radius:10px;border:1px solid transparent;background:rgba(255,255,255,.7);color:#1b2740;font-size:13px;font-weight:600;cursor:pointer}
+.ui-calpop .ui-cal-grid button:hover{border-color:var(--brand);color:var(--brand)}
+.ui-calpop .ui-cal-grid button.today{border-color:color-mix(in srgb,var(--brand) 55%,#fff);color:var(--brand)}
+.ui-calpop .ui-cal-grid button.selected{background:linear-gradient(135deg,var(--brand),color-mix(in srgb,var(--brand) 60%,#8b5cf6));color:#fff;box-shadow:0 4px 10px color-mix(in srgb,var(--brand) 35%,transparent)}
+.ui-calpop .ui-cal-quick{display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid color-mix(in srgb,var(--brand) 18%,#fff)}
+.ui-calpop .ui-cal-quick button{flex:1;padding:8px 6px;border-radius:12px;border:1px solid color-mix(in srgb,var(--brand) 30%,#fff);background:color-mix(in srgb,var(--brand) 9%,#fff);color:var(--brand);font-size:13px;font-weight:700;cursor:pointer}
+.ui-calpop .ui-cal-quick button:hover{background:var(--brand);color:#fff}
+
+/* v12.3 trips-identical calendar popup (shared) + compact controls */
+.ui-calpop{width:300px!important;padding:12px!important;border-radius:18px!important;border:1px solid color-mix(in srgb,var(--brand) 30%,#fff)!important;background:linear-gradient(145deg,color-mix(in srgb,var(--brand) 14%,#fff) 0%,rgba(255,255,255,.94) 45%,color-mix(in srgb,var(--brand) 10%,#fff) 100%)!important;backdrop-filter:blur(14px);box-shadow:0 18px 40px color-mix(in srgb,var(--brand) 22%,transparent),inset 0 1px 0 #fff!important}
+.ui-calpop .ui-cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;color:#14213a}
+.ui-calpop .ui-cal-head button{width:30px;height:30px;border-radius:10px;border:1px solid color-mix(in srgb,var(--brand) 25%,#fff);background:#fff;color:var(--brand);font-size:18px;line-height:1;cursor:pointer}
+.ui-calpop .ui-cal-week,.ui-calpop .ui-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.ui-calpop .ui-cal-week span{font-size:11px;font-weight:700;color:#7a88a3;padding:4px 0}
+.ui-calpop .ui-cal-grid button{height:32px;border-radius:10px;border:1px solid transparent;background:rgba(255,255,255,.7);color:#1b2740;font-size:12px;font-weight:600;cursor:pointer}
+.ui-calpop .ui-cal-grid button:hover{border-color:var(--brand);color:var(--brand)}
+.ui-calpop .ui-cal-grid button.today{border-color:color-mix(in srgb,var(--brand) 55%,#fff);color:var(--brand)}
+.ui-calpop .ui-cal-grid button.selected{background:linear-gradient(135deg,var(--brand),color-mix(in srgb,var(--brand) 60%,#8b5cf6));color:#fff;box-shadow:0 4px 10px color-mix(in srgb,var(--brand) 35%,transparent)}
+.ui-calpop .ui-cal-quick{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid color-mix(in srgb,var(--brand) 18%,#fff)}
+.ui-calpop .ui-cal-quick button{flex:1;padding:7px 6px;border-radius:12px;border:1px solid color-mix(in srgb,var(--brand) 30%,#fff);background:color-mix(in srgb,var(--brand) 9%,#fff);color:var(--brand);font-size:12px;font-weight:700;cursor:pointer}
+.ui-calpop .ui-cal-quick button:hover{background:var(--brand);color:#fff}
+
+/* dropdown: consistent left-aligned menu */
+.ui-dd-btn{text-align:left}
+.ui-dd-menu{max-width:min(360px,calc(100vw - 16px))}
+.ui-dd-menu button{display:block;width:100%;overflow:hidden;text-overflow:ellipsis}
+
+/* single-action dropdowns: wrapper owns the frame, inner button is flat */
+.ui-dd-hosted{cursor:pointer;position:relative}
+.ui-dd-hosted>select.ui-dd-native,.ui-dd-hosted select.ui-dd-native{display:block}
+.vp-select .ui-dd-btn,.ac10-select .ui-dd-btn{border:0!important;box-shadow:none!important;background:transparent!important;outline:0;padding:0 2px!important;height:100%!important;border-radius:0!important;min-height:0!important}
+.ac10-select.ui-dd-hosted>svg{display:none}
+.vp-select:has(.ui-dd-btn)>.vp-i:last-child{display:none}
+.ui-dd-btn:focus-visible{outline:2px solid var(--brand,#5f55ff);outline-offset:2px;border-radius:6px}

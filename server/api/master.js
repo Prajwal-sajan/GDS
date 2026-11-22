@@ -45,7 +45,7 @@ r.post('/routes', can('routes.create'), h((req) => {
   D.audit('route', rt.id, 'fields', { op: 'create' }, req.user);
   return rt;
 }));
-const ROUTE_SECTIONS = ['service_number', 'name', 'departure_time', 'arrival_time', 'duration_minutes', 'distance_km', 'coach_template_id', 'vehicle_id', 'assignments', 'status', 'run_pattern', 'start_date', 'end_date', 'via_cities', 'stages', 'fares', 'seat_fare_rules', 'seat_blocks', 'refund_slabs', 'expenses', 'call_settings', 'auto_pricing', 'tags', 'sub_routes', 'business_rules'];
+const ROUTE_SECTIONS = ['service_number', 'name', 'departure_time', 'arrival_time', 'duration_minutes', 'distance_km', 'coach_template_id', 'vehicle_id', 'assignments', 'status', 'run_pattern', 'start_date', 'end_date', 'via_cities', 'stages', 'fares', 'seat_fare_rules', 'seat_blocks', 'refund_slabs', 'expenses', 'call_settings', 'auto_pricing', 'tags', 'sub_routes', 'business_rules', 'alt_name', 'origin_city_id', 'destination_city_id', 'departure_day', 'arrival_day', 'alternate_assignment', 'fare_groups', 'hub', 'cabs', 'escalation_contacts'];
 r.put('/routes/:id', can('routes.modify'), h((req) => {
   const rt = need(db.col('routes').get(req.params.id));
   const changes = {};

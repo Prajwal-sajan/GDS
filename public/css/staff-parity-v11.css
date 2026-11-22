@@ -70,3 +70,13 @@
 @media(max-width:1100px){.sp-filter-bar .sp-search{flex:1 1 330px}.sp-dialog{width:min(950px,98vw)}}
 @media(max-width:760px){.sp-staff-top{flex-wrap:wrap}.sp-subnav{gap:6px}.sp-subpill{padding:10px;font-size:13px;min-height:41px}.sp-filter{flex:1;min-width:145px}.sp-filter-bar .sp-search{flex-basis:100%}.sp-dialog{max-height:96dvh;min-height:0}.sp-overlay{padding:7px}.sp-dialog-head{padding:16px;height:88px;min-height:88px}.sp-dialog-icon{width:49px;height:49px}.sp-dialog-head h2{font-size:18px}.sp-modal-tabs{display:flex;overflow-x:auto;padding:8px 12px 0}.sp-modal-tabs button{min-width:120px;font-size:13px}.sp-dialog-scroll{padding:14px}.sp-fields{grid-template-columns:1fr;gap:14px}.sp-field.wide{grid-column:auto}.sp-pay-cards{gap:8px}.sp-pay-cards button{min-height:110px;font-size:14px;padding:12px}.sp-form-card>header{min-height:67px;padding:12px}.sp-card-main{padding:13px}.sp-dialog .sp-btn{font-size:13px}.sp-document{padding:10px;gap:8px}.sp-doc-name strong{font-size:13px}.sp-doc-name small{font-size:11px}.sp-document-icon{height:42px;width:42px}.sp-kpis{grid-template-columns:1fr}.sp-modal-footer{padding:12px;min-height:68px}}
 @media(prefers-reduced-motion:reduce){.sp-root *,.sp-overlay *{transition:none!important}}
+
+/* v11.1 standard dropdowns + bank alignment */
+.sp-filter{position:relative}
+.sp-filter .ui-dd-btn{height:54px;width:100%;border:1px solid #d4dcf9;border-radius:14px;background:#fff;padding:0 16px;box-shadow:0 3px 4px #283f6c0d;font-size:14px;font-weight:600;color:#172948}
+.sp-filter .ui-dd-btn:hover{border-color:var(--brand,#5f55ff)}
+.sp-bank-fields .sp-fields{grid-template-columns:repeat(2,minmax(0,1fr));align-items:end}
+.sp-bank-fields .sp-field.wide{grid-column:auto}
+.sp-bank-fields .sp-field>span:first-child{min-height:22px;display:flex;align-items:center}
+.sp-bank-fields .sp-input{height:58px}
+.sp-action svg{display:block;margin:auto}

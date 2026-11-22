@@ -17,7 +17,9 @@ function cancelCharges(b) { return U.sum(b.cancellations || [], (c) => c.charge)
 function tripExpense(s, commission) {
   const r = routeOf(s);
   if (s.status !== 'active') return { fixed: 0, running: 0, commission: 0, total: 0, items: [] };
-  const items = [...(r.expenses?.fixed || []).map((x) => ({ ...x, type: 'fixed' })), ...(r.expenses?.running || []).map((x) => ({ ...x, type: 'running' })), ...db.col('trip_expenses').filter((e) => e.schedule_id == s.id).map((e) => ({ key: e.key, label: e.label, per_day: e.amount, type: 'running', manual: true }))];
+  let items = [...(r.expenses?.fixed || []).map((x) => ({ ...x, type: 'fixed' })), ...(r.expenses?.running || []).map((x) => ({ ...x, type: 'running' })), ...db.col('trip_expenses').filter((e) => e.schedule_id == s.id).map((e) => ({ key: e.key, label: e.label, per_day: e.amount, type: 'running', manual: true }))];
+  const ov = s.expense_overrides || {};
+  if (Object.keys(ov).length) { const idx = { fixed: 0, running: 0 }; items = items.map((x) => { const i = idx[x.type]++; const k = `${x.type}:${x.key || x.label || i}`; return ov[k] !== undefined ? { ...x, per_day: ov[k], original: x.per_day, overridden: true } : x; }); }
   const fixed = U.sum(items.filter((i) => i.type === 'fixed'), (i) => i.per_day);
   const running = U.sum(items.filter((i) => i.type === 'running'), (i) => i.per_day);
   return { fixed, running, commission: U.round2(commission), total: U.round2(fixed + running + commission), items };

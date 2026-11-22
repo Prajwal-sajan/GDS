@@ -24,7 +24,7 @@ r.put('/settings/branding',allowed('settings.modify'),wrap(req=>{
   if(!['Light','Dark','System'].includes(scheme))invalid('Invalid color scheme');
   const family=txt(b.font_family||op.font_family||'Poppins',80);
   if(!['Poppins','Inter','Manrope','Roboto','System'].includes(family)) invalid('Font family is not supported');
-  const updated={...op,app_name:txt(b.app_name??op.app_name,100),tagline:txt(b.tagline??op.tagline,180),helpline_number:txt(b.helpline_number??op.helpline_number,80),support_email:txt(b.support_email??op.support_email,150),brand_hex:color,font_family:family};
+  const updated={...op,app_name:txt(b.app_name??op.app_name,100),tagline:txt(b.tagline??op.tagline,180),helpline_number:txt(b.helpline_number??op.helpline_number,80),support_email:txt(b.support_email??op.support_email,150),brand_hex:color,font_family:family,color_scheme:scheme};
   const next={...previous,color_scheme:scheme,pwa_name:txt(b.pwa_name??previous.pwa_name,100),pwa_short_name:txt(b.pwa_short_name??previous.pwa_short_name,30),assets:{...(previous.assets||{})}};
   db.meta('operator',updated); db.meta('branding',next);
   D.audit('settings','branding','branding',{fields:['app_name','tagline','helpline_number','support_email','brand_hex','font_family','pwa_name','pwa_short_name','color_scheme']},req.user);
@@ -108,6 +108,7 @@ r.delete('/iam/users/:id',allowed('iam.manage_users'),wrap(req=>{
   const u=db.col('users').get(req.params.id);if(!u)invalid('User not found',404);
   if(u.role==='owner'||u.id===own(req))invalid('You cannot delete an owner or your own account',403);
   if(!authAdmin(req)&&['admin','manager'].includes(u.role))invalid('Insufficient privileges',403);
+  db.col('auth_sessions').filter(s=>s.user_id===u.id&&!s.revoked_at).forEach(s=>db.col('auth_sessions').update(s.id,{revoked_at:new Date().toISOString()}));
   const removed=db.col('users').remove(u.id);D.audit('iam','user',u.id,{deleted:u.name},req.user);return {success:removed};
 }));
 r.get('/auth/sessions',wrap(req=>{

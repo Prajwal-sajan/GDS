@@ -37,3 +37,9 @@
 .vp-map-three[aria-pressed=true]{background:#3964ff;color:white}
 .vp-map.is-3d .vp-map-tiles{transform:perspective(850px) rotateX(20deg) scale(1.1);transform-origin:50% 80%}
 @media(max-width:680px){.vp-vehicle-table td{padding:12px}.vp-overlay-coach .vp-modal-title strong{font-size:18px}.vp-overlay-coach .vp-modal-tabs button{font-size:11px}.vp-overlay-coach .vp-field{font-size:13px}}
+
+/* v9.1 separators + add-coach alignment */
+.vp-metrics .vp-metric{border-right:0!important}
+.vp-metrics .vp-metric.total+.vp-metric{border-left:1px solid #d5deea;margin-left:14px}
+.vp-metrics .vp-metric.stopped{border-right:1px solid #d5deea!important}
+@media(min-width:900px){.vp-coaches-tools .vp-toolbar-actions{position:absolute;top:27px;right:18px;margin:0}.vp-coach-controls{padding-right:18px}}

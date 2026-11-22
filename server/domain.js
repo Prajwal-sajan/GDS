@@ -185,7 +185,7 @@ function fareFor(s, seat, fromCity, toCity) {
   const r = db.col('routes').get(s.route_id);
   fromCity = fromCity || r.origin_city_id; toCity = toCity || r.destination_city_id;
   let fare = baseFare(r, s, fromCity, toCity, seatClass(seat));
-  for (const rule of r.seat_fare_rules || []) {
+  for (const rule of [...(r.seat_fare_rules || []), ...(s.seat_fare_rules || [])]) {
     if (!(rule.seats || []).includes(seat.code)) continue;
     if (rule.days && rule.days.length && !rule.days.includes(U.dow(s.travel_date))) continue;
     fare += rule.kind === 'percent' ? (fare * rule.value) / 100 : rule.value;
@@ -292,7 +292,7 @@ function createBooking(input, actor) {
     contact: { name: input.contact.name || input.passengers[0].name, phone: input.contact.phone, email: input.contact.email || '' },
     from_city_id: fromCity, to_city_id: toCity, boarding_stage_id: input.boarding_stage_id, dropping_stage_id: input.dropping_stage_id,
     passengers: input.passengers.map((p, i) => ({ seat: p.seat, name: p.name, gender: p.gender || 'M', age: Number(p.age) || 30, fare: fares[i], status: 'booked', call_status: null })),
-    fare: price, coupon: input.coupon || null, comments: input.comment ? [{ text: input.comment, by: actor?.name, at: U.nowIso() }] : [],
+    fare: price, coupon: input.coupon || null, comments: (input.comment || input.remarks) ? [{ text: String(input.comment || input.remarks).slice(0, 500), by: actor?.name, at: U.nowIso() }] : [],
     hold_expires_at: payMode === 'unpaid' ? new Date(Date.now() + holdMin * 60e3).toISOString() : null,
     miles_used: input.miles_used || 0,
   });

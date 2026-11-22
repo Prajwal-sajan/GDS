@@ -12,3 +12,34 @@
 @media(max-width:800px){.ds-subnav-btn{min-height:48px;font-size:14px}.ds-report-head,.ds-ratings-head{align-items:flex-start;flex-direction:column}.ds-title h2{font-size:21px}.ds-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.ds-kpi{padding:10px 6px;gap:6px}.ds-kpi-text b{font-size:16px}.ds-rating-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ds-rating-kpis .ds-kpi{min-height:100px}.ds-rating-tabs{gap:6px}.ds-rating-tabs .ds-btn{font-size:13px;min-height:45px;padding:10px 12px}.ds-filter-panel>label:first-child{width:100%;max-width:unset}.ds-reviews-head{flex-direction:column;align-items:stretch}.ds-review-controls{grid-template-columns:1fr}.ds-search{width:100%;min-width:unset}.ds-title-icon{width:50px;height:50px}}
 @media(max-width:450px){.ds-kpi-grid,.ds-rating-kpis{grid-template-columns:1fr}.ds-report-controls{flex-wrap:wrap}.ds-filter-panel{padding:12px}.ds-filter-panel>label{flex:1 1 135px;min-width:135px}.ds-review-person{min-width:0}.ds-title h2{font-size:19px}}
 @media(prefers-reduced-motion:reduce){.ds-root *{transition:none!important}}
+
+/* v12.1 calendar button */
+.ds-calbtn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border:1px solid #cbd8e9;border-radius:12px;background:#fff;color:#304360;font:inherit;font-size:13px;font-weight:650;cursor:pointer;box-shadow:0 2px 3px #1e31431a;white-space:nowrap}
+.ds-calbtn svg{color:var(--brand,#5f55ff)}
+.ds-calbtn:hover{border-color:var(--brand,#5f55ff)}
+.ds-calbtn-wrap{border:0!important;padding:0!important;background:none!important;box-shadow:none!important}
+
+/* v12.2 trips-style compact calendar */
+.ds-report-controls{display:flex;align-items:center;gap:10px}
+.ds-calbtn{height:36px;padding:0 10px 0 5px;gap:8px;font-size:12px;border-radius:10px;border:1px solid #d5deea}
+.ds-calbtn-ic{display:grid;place-items:center;width:26px;height:26px;border-radius:8px;background:var(--brand,#5f55ff);color:#fff}
+.ds-calbtn-ic svg{color:#fff}
+.ds-calbtn>svg:last-child{color:#8394ad}
+
+/* v12.3 trips-identical calendar + refresh sizing */
+.ds-report-head{flex-direction:row!important;align-items:center!important;justify-content:space-between}
+.ds-report-controls{margin-left:auto;display:flex;align-items:center;gap:10px;justify-content:flex-end}
+.ds-calbtn{height:44px;min-width:210px;padding:4px 12px 4px 4px;gap:10px;border:1px solid #dce5f2;border-radius:15px;background:#fff;box-shadow:0 2px 6px #6877a314;font-size:14px;font-weight:650;color:#0e192d;justify-content:flex-start}
+.ds-calbtn>span:nth-child(2){flex:1;text-align:left}
+.ds-calbtn-ic{width:36px;height:36px;border-radius:11px;background:linear-gradient(138deg,#2169f4,#8555ee);box-shadow:0 5px 9px #536bde29}
+.ds-calbtn-ic svg{width:18px;height:18px}
+.ds-report-controls .ds-btn{height:44px;min-height:44px!important;padding:0 16px!important;font-size:14px!important;border-radius:15px}
+.ds-report-controls .ds-btn svg{width:17px;height:17px}
+
+/* v12.3 trips-style date control + matching refresh, right aligned */
+.ds-report-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ds-report-controls{margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:10px}
+.ds-calbtn{height:42px!important;min-width:210px;padding:0 12px 0 6px!important;border-radius:14px!important;border:1px solid #dfe6f1!important;box-shadow:0 2px 6px #6877a314!important;font-size:13px!important;font-weight:650;color:#101b32!important;gap:10px!important;caret-color:transparent;user-select:none}
+.ds-calbtn>span:nth-child(2){flex:1;text-align:left}
+.ds-calbtn-ic{width:30px!important;height:30px!important;border-radius:10px!important}
+.ds-report-controls .ds-btn[data-ds-action="refresh"]{height:42px;padding:0 16px;border-radius:14px;display:inline-flex;align-items:center;gap:8px;font-size:13px}

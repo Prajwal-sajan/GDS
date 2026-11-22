@@ -181,3 +181,81 @@
 .tp13-history-modal .tp13-history-scroll{flex:1}
 .tp13-history-tabs button small{font-size:13px;color:inherit;font-weight:400}
 .tp13-history-tabs button span{font-size:15px}
+
+/* v13.1  Trips: calendar, service dropdown, one-line trip menu, fit-to-screen tables, Documents panel */
+.tp13-root .tp13-field{position:relative}
+.tp13-root .tp13-dropbtn{text-align:left;cursor:pointer;color:inherit;font:inherit}
+.tp13-root .tp13-hidden-select{position:absolute!important;width:1px!important;height:1px!important;opacity:0;pointer-events:none}
+.tp13-root .tp13-cal{position:absolute;z-index:60;top:calc(100% + 8px);left:0;width:330px;padding:14px;border-radius:20px;border:1px solid color-mix(in srgb,var(--brand) 30%,#fff);background:linear-gradient(145deg,color-mix(in srgb,var(--brand) 14%,#fff) 0%,rgba(255,255,255,.92) 45%,color-mix(in srgb,var(--brand) 10%,#fff) 100%);backdrop-filter:blur(14px);box-shadow:0 18px 40px color-mix(in srgb,var(--brand) 22%,transparent),inset 0 1px 0 #fff}
+.tp13-root .tp13-cal[hidden],.tp13-root .tp13-svc-list[hidden]{display:none}
+.tp13-root .tp13-cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;color:#14213a}
+.tp13-root .tp13-cal-head button{width:32px;height:32px;border-radius:10px;border:1px solid color-mix(in srgb,var(--brand) 25%,#fff);background:#fff;color:var(--brand);font-size:18px;line-height:1}
+.tp13-root .tp13-cal-week,.tp13-root .tp13-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.tp13-root .tp13-cal-week span{font-size:11px;font-weight:700;color:#7a88a3;padding:4px 0}
+.tp13-root .tp13-cal-day{height:36px;border-radius:10px;border:1px solid transparent;background:rgba(255,255,255,.7);color:#1b2740;font-size:13px;font-weight:600}
+.tp13-root .tp13-cal-day:hover{border-color:var(--brand);color:var(--brand)}
+.tp13-root .tp13-cal-day.today{border-color:color-mix(in srgb,var(--brand) 55%,#fff);color:var(--brand)}
+.tp13-root .tp13-cal-day.selected{background:linear-gradient(135deg,var(--brand),color-mix(in srgb,var(--brand) 60%,#8b5cf6));color:#fff;box-shadow:0 4px 10px color-mix(in srgb,var(--brand) 35%,transparent)}
+.tp13-root .tp13-cal-quick{display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid color-mix(in srgb,var(--brand) 18%,#fff)}
+.tp13-root .tp13-cal-quick button{flex:1;padding:8px 6px;border-radius:12px;border:1px solid color-mix(in srgb,var(--brand) 30%,#fff);background:color-mix(in srgb,var(--brand) 9%,#fff);color:var(--brand);font-size:13px;font-weight:700}
+.tp13-root .tp13-cal-quick button:hover{background:var(--brand);color:#fff}
+.tp13-root .tp13-svc-current{flex:1;min-width:0;display:flex;align-items:center;gap:8px;font-size:17px;overflow:hidden;white-space:nowrap}
+.tp13-root .tp13-svc-list{position:absolute;z-index:60;top:calc(100% + 8px);left:0;right:0;max-height:360px;overflow:auto;padding:6px;border-radius:18px;border:1px solid var(--tp13-border);background:#fff;box-shadow:0 18px 40px #2b3a7a26}
+.tp13-root .tp13-svc-opt{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border:0;border-radius:12px;background:transparent;text-align:left;color:#14213a}
+.tp13-root .tp13-svc-opt:hover,.tp13-root .tp13-svc-opt.selected{background:color-mix(in srgb,var(--brand) 9%,#fff)}
+.tp13-root .tp13-svc-bus svg,.tp13-root .tp13-svc-current .tp13-svc-bus svg{width:28px;height:28px;padding:5px;border-radius:8px;background:color-mix(in srgb,var(--brand) 12%,#fff);color:var(--brand)}
+.tp13-root .tp13-svc-id{font-weight:800;font-size:15px}
+.tp13-root .tp13-svc-reg{font-size:12px;color:#6b7a93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.tp13-root .tp13-svc-staff{margin-left:auto;display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:#4b5873;background:#f1f4fb;border-radius:20px;padding:3px 8px}
+.tp13-root .tp13-svc-staff svg{width:14px;height:14px}
+.tp13-root .tp13-svc-empty{padding:14px;color:#7886a3}
+/* Trip menu: Bus, Driver 1, Driver 2, Helper, Direction on one line */
+.tp13-root .tp13-crew{flex-wrap:nowrap;gap:8px;min-width:0}
+.tp13-root .tp13-crew>.tp13-chip,.tp13-root .tp13-crew>.tp13-crew-pill{flex:1 1 0;min-width:0;overflow:hidden;font-size:13px;padding:6px 10px;gap:6px}
+.tp13-root .tp13-crew .tp13-crew-phone{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;padding:3px 7px;font-size:12px}
+.tp13-root .tp13-ellipsis,.tp13-root .tp13-chip>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tp13-root .tp13-crew .tp13-chip svg,.tp13-root .tp13-crew-pill>.tp13-person-icon,.tp13-root .tp13-direction svg{width:28px;height:28px;padding:6px}
+/* Fit pickup / drop / timings tables on screen  no horizontal scrollbar */
+.tp13-root .tp13-tabscroll,.tp13-root .tp13-timing-scroll{overflow-x:hidden}
+.tp13-root .tp13-pax-table,.tp13-root .tp13-timing-table{min-width:0;width:100%;table-layout:fixed}
+.tp13-root .tp13-pax-table th,.tp13-root .tp13-pax-table td,.tp13-root .tp13-timing-table th,.tp13-root .tp13-timing-table td{padding:10px 8px;overflow-wrap:anywhere;word-break:normal;overflow:hidden}
+.tp13-root .tp13-pax-table td{height:auto;font-size:14px}
+.tp13-root .tp13-pax-table th{font-size:12px;white-space:normal}
+.tp13-root .tp13-pax-table th:nth-child(1){width:14%}.tp13-root .tp13-pax-table th:nth-child(2){width:11%}.tp13-root .tp13-pax-table th:nth-child(3){width:15%}.tp13-root .tp13-pax-table th:nth-child(4){width:7%}.tp13-root .tp13-pax-table th:nth-child(5){width:17%}.tp13-root .tp13-pax-table th:nth-child(6){width:19%}.tp13-root .tp13-pax-table th:nth-child(7){width:17%}
+.tp13-root .tp13-seat,.tp13-root .tp13-source,.tp13-root .tp13-rtg,.tp13-root .tp13-stopname,.tp13-root .tp13-lag,.tp13-root .tp13-timing-table th{white-space:normal}
+.tp13-root .tp13-source{display:flex;flex-direction:column;gap:3px}
+.tp13-root .tp13-feedback{flex-wrap:wrap;gap:6px;white-space:normal}
+.tp13-root .tp13-feedback select{min-width:0;max-width:100%;flex:1 1 90px}
+.tp13-root .tp13-feedback button{padding:7px 10px;font-size:13px}
+.tp13-root .tp13-row-actions{flex-wrap:wrap;gap:6px}
+.tp13-root .tp13-call{padding:7px 9px;font-size:12px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tp13-root .tp13-chat{width:38px;height:38px}
+.tp13-root .tp13-timing-table th{font-size:14px}
+.tp13-root .tp13-timing-table td{font-size:14px}
+.tp13-root .tp13-check-person{cursor:help}
+.tp13-root .tp13-checkhint{color:#008a40}
+/* Documents panel */
+.tp13-root .tp13-docpanel{border-radius:23px;padding:16px 19px;border:1px solid #dae1ff;background:linear-gradient(100deg,#c9dfff 0%,#fff 26%,#fff 68%,#dccfff 100%);box-shadow:inset 0 1px 0 #fff,0 5px 16px #586bd30f}
+.tp13-root .tp13-doclist{display:grid;gap:10px;margin-top:14px}
+.tp13-root .tp13-docrow{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:16px;border:1px solid #e1e6fb;background:rgba(255,255,255,.85);backdrop-filter:blur(6px)}
+.tp13-root .tp13-docicon svg{width:36px;height:36px;padding:8px;border-radius:11px;color:#fff;background:linear-gradient(138deg,#2169f4,#8555ee)}
+.tp13-root .tp13-docmeta{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.tp13-root .tp13-docmeta b{font-size:15px}
+.tp13-root .tp13-validtill{font-size:12px;color:#5d6c85}.tp13-root .tp13-validtill.ok strong{color:#00994a}.tp13-root .tp13-validtill.soon{color:#c46a00}.tp13-root .tp13-validtill.expired{color:#d3173a}
+.tp13-root .tp13-docview,.tp13-doc-modal .tp13-docview{margin-left:auto;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--tp13-border,#d5dcff);background:#fff;color:#2860ef;border-radius:10px;padding:8px 14px;font-weight:650;cursor:pointer}
+.tp13-root .tp13-docview svg,.tp13-doc-modal .tp13-docview svg{width:15px;height:15px}
+.tp13-doc-modal .tp13-docline{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #edf0fc;padding:10px 0;font-size:14px}
+.tp13-doc-modal .tp13-docline span{color:#74839c}
+.tp13-doc-modal .tp13-docview{margin-top:14px}
+.tp13-doc-modal .hd h2 svg{width:20px;height:20px;vertical-align:-3px}
+
+/* v13.2 read-only fields: no text caret / typing */
+.tp13-root .tp13-dropbtn,.tp13-root .tp13-dropbtn *,.tp13-root .tp13-crew,.tp13-root .tp13-crew *,.tp13-root .tp13-tabs,.tp13-root .tp13-summary,.tp13-root .tp13-stophead{caret-color:transparent;user-select:none;-webkit-user-select:none;cursor:default}
+.tp13-root .tp13-dropbtn{cursor:pointer}.tp13-root .tp13-crew a{cursor:pointer}
+.tp13-root .tp13-dropbtn:focus{outline:none}.tp13-root .tp13-dropbtn:focus-visible{outline:3px solid #ffac1d;outline-offset:2px}
+.tp13-root .tp13-exchange{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tp13-root .tp13-interchange-icon{width:26px;height:26px;padding:5px;border-radius:50%;background:#f4eaff;color:#8312bb}
+
+/* v13.3 timings: no highlight on the first data row */
+.tp13-root .tp13-timing-table tr:first-child td,.tp13-root .tp13-timing-table tr:first-child td:first-child{border-left:0;background:linear-gradient(100deg,#f6faff,#fff 65%,#f9f7fd)}
+.tp13-root .tp13-timing-table tbody tr:nth-child(even) td{background:#fafbff}

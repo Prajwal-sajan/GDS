@@ -161,3 +161,85 @@
 .sx-delete-schedule{color:#a7b2bf;border:0;background:transparent;padding:5px;transition:color .12s ease}
 .sx-delete-schedule:hover{color:#ed3151;background:#fff0f3;border-radius:9px}
 .sx-delete-schedule:disabled{opacity:.38}
+
+/* ===== v8 Routes polish ===== */
+.rv-root{font-size:13px}
+.rv-root h1{font-size:20px}.rv-root h2{font-size:17px}.rv-root h3{font-size:14px}
+.rv-root .rv-field>span{font-size:12px}
+.rv-root input,.rv-root select,.rv-root textarea,.rv-modal input,.rv-modal select,.rv-modal textarea{font-size:13px}
+.rv-root .rv-btn,.rv-modal .rv-btn{font-size:13px}
+.rv-root .rv-tabbar button{font-size:13px}
+.rv-root .rv-listhead{font-size:12px}
+.rv-root .rv-listhead>span:nth-child(4){justify-self:start}
+.rv-root .rv-listhead>.rv-btn{height:38px;top:50%;transform:translateY(-50%);padding:0 14px;font-size:13px}
+.rv-root .rv-service-no{font-size:15px}
+.rv-modal h2{font-size:17px}
+/* metro badge + description */
+.rv-badge.metro{display:inline-flex;align-items:center;gap:5px}
+.rv-badge.metro svg{width:14px;height:14px}
+.rv-stopinfo p.rv-metro-desc{background:#faf5ff;border:1px dashed #d9c3ff;border-radius:10px;padding:7px 10px;color:#5b2bc4;font-size:12px;line-height:1.5;margin:6px 0 8px}
+/* coordinate link on one line */
+.rv-coord{display:inline-flex!important;flex-wrap:nowrap;white-space:nowrap;align-items:center;gap:6px;text-decoration:none}
+.rv-coord svg{flex:0 0 auto;width:18px;height:18px;padding:2px;box-sizing:border-box}
+.rv-coord span{white-space:nowrap}
+/* fare toolbar unit adornment */
+.rv-fare-toolbar>.rv-unitfield{width:130px}
+.rv-unitwrap{display:flex;align-items:center;border:1px solid #c9d5ff;border-radius:10px;background:#fff;padding:0 8px;min-height:39px}
+.rv-unitwrap b{color:#4e43fc;font-weight:800;min-width:0}
+.rv-unitwrap input{border:0!important;box-shadow:none!important;background:transparent!important;width:100%;min-width:0;padding:6px 4px!important;text-align:right}
+/* weekday chips: only chosen ones blue */
+.rv-fare-weekdays button,.rv-rule-controls .rv-weekdays button{background:#fff!important;color:#4535f7!important;border:1px solid #b6caff}
+.rv-fare-weekdays button.on,.rv-rule-controls .rv-weekdays button.on{background:#2968ef!important;color:#fff!important;border-color:#2968ef}
+/* fare matrix: fits panel, no side scroll; narrower seat layout aligned to the table */
+.rv-fare-grid{grid-template-columns:minmax(0,1fr) minmax(220px,300px);align-items:stretch}
+.rv-faretable-area .rv-scroll{overflow:visible}
+.rv-faretable{min-width:0!important;width:100%;table-layout:fixed}
+.rv-faretable th,.rv-faretable td{padding:6px 3px!important;font-size:12px;overflow:hidden}
+.rv-faretable th:nth-child(1){width:28px}.rv-faretable th:nth-child(2){width:9%}.rv-faretable th:nth-child(3){width:20%}.rv-faretable th:nth-child(4){width:62px}.rv-faretable th:last-child{width:52px}
+.rv-faretable input[type=number]{width:100%!important;min-width:0;padding:4px 1px!important}
+.rv-seat-ids{max-width:100%!important}
+.rv-fare-auto input:not([type=number]){width:100%!important}
+.rv-fare-auto td:last-child .rv-btn.primary{background:linear-gradient(110deg,#2764f0,#5245f7)!important;color:#fff!important;border:0!important;padding:6px 10px;border-radius:8px;visibility:visible;opacity:1}
+.rv-fare-diagram{overflow:hidden;padding:8px;display:flex;align-items:flex-start;justify-content:center}
+.rv-fare-diagram .rv-coach-decks{zoom:.72;overflow:visible}
+/* premium / discount / city rule buttons */
+.rv-rule-add{padding:5px 10px!important;font-size:12px!important;min-height:0!important;border-radius:9px!important;gap:4px}
+.rv-rule-add.premium{color:#0b9a52!important;border-color:#9fe3c0!important;background:#effcf5!important}
+.rv-rule-add.discount{color:#d3173a!important;border-color:#fbb6c4!important;background:#fff3f5!important}
+/* rule controls: Change / Value / Unit / Days on one line */
+.rv-rule-inline{display:flex;align-items:flex-end;gap:10px;flex-wrap:nowrap;margin-bottom:12px}
+.rv-rule-inline>.rv-field{margin:0!important;flex:0 0 auto;width:110px}
+.rv-rule-inline>.rv-rule-days{flex:1 1 auto;width:auto;min-width:0}
+.rv-rule-inline .rv-weekdays{margin:0;flex-wrap:nowrap;gap:4px}
+.rv-rule-inline .rv-weekdays button{padding:6px 8px;font-size:12px}
+@media(max-width:1300px){.rv-rule-inline{flex-wrap:wrap}}
+/* via routes editable cells */
+.rv-via select,.rv-via input{width:100%;min-width:0;min-height:32px;padding:4px 6px;border:1px solid #d6def0;border-radius:8px;background:#fff;font-size:12px}
+.rv-via{table-layout:fixed;width:100%}
+/* date buttons + calendar popup (brand coloured) */
+.rv-datebtn{display:flex;align-items:center;gap:8px;width:100%;min-height:42px;padding:8px 12px;border:1px solid #d6def0;border-radius:11px;background:#fff;color:#17233d;text-align:left;cursor:pointer;font:inherit}
+.rv-datebtn span{flex:1}.rv-datebtn svg{color:var(--brand)}
+.rv-datebtn:disabled{cursor:default;opacity:.8}
+.rv-calpop{position:fixed;z-index:100001;width:320px;padding:14px;border-radius:20px;font:13px Poppins,Arial,sans-serif;border:1px solid color-mix(in srgb,var(--brand) 30%,#fff);background:linear-gradient(145deg,color-mix(in srgb,var(--brand) 14%,#fff) 0%,rgba(255,255,255,.95) 45%,color-mix(in srgb,var(--brand) 10%,#fff) 100%);backdrop-filter:blur(14px);box-shadow:0 18px 40px color-mix(in srgb,var(--brand) 22%,transparent),inset 0 1px 0 #fff}
+.rv-calpop button{font:inherit;cursor:pointer}
+.rv-cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;color:#14213a}
+.rv-cal-head button{width:32px;height:32px;border-radius:10px;border:1px solid color-mix(in srgb,var(--brand) 25%,#fff);background:#fff;color:var(--brand);font-size:18px;line-height:1}
+.rv-cal-week,.rv-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.rv-cal-week span{font-size:11px;font-weight:700;color:#7a88a3;padding:4px 0}
+.rv-cal-grid button{height:34px;border-radius:10px;border:1px solid transparent;background:rgba(255,255,255,.7);color:#1b2740;font-weight:600}
+.rv-cal-grid button:hover{border-color:var(--brand);color:var(--brand)}
+.rv-cal-grid button.today{border-color:color-mix(in srgb,var(--brand) 55%,#fff);color:var(--brand)}
+.rv-cal-grid button.selected{background:linear-gradient(135deg,var(--brand),color-mix(in srgb,var(--brand) 60%,#8b5cf6));color:#fff}
+.rv-cal-quick{display:flex;gap:6px;margin-top:12px;padding-top:10px;border-top:1px solid color-mix(in srgb,var(--brand) 18%,#fff)}
+.rv-cal-quick button{flex:1;padding:8px 4px;border-radius:12px;border:1px solid color-mix(in srgb,var(--brand) 30%,#fff);background:color-mix(in srgb,var(--brand) 9%,#fff);color:var(--brand);font-weight:700}
+.rv-cal-quick button:hover{background:var(--brand);color:#fff}
+.rv-modal .rv-full{grid-column:1/-1}
+.rv-modal textarea{width:100%;border:1px solid #d6def0;border-radius:10px;padding:8px;font:inherit;resize:vertical}
+
+/* v8 schedules: ring + booked count, compact manage popup, tight tab bar */
+.sx-ring-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;flex:0 0 auto}
+.sx-booked-count{font-size:10.5px;color:#55657e;white-space:nowrap}
+.sx-collection{align-items:center}
+.sx-modal{width:min(1180px,90vw)!important;height:min(720px,86vh)!important}
+[data-sx-modal-tabs]{display:flex!important;justify-content:flex-start!important;gap:6px!important;flex-wrap:wrap}
+[data-sx-modal-tabs]>button{flex:0 0 auto!important;width:auto!important;padding:7px 12px!important;font-size:12.5px}

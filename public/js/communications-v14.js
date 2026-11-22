@@ -51,13 +51,13 @@
     const target=$('.iconic-action-cluster');if(!target||target.querySelector('[data-cc14-toolbar]'))return;
     const toolbar=document.createElement('div');toolbar.className='cc14-header-tools';toolbar.dataset.cc14Toolbar='';
     const entries=[
-      ['Configuration','Notifications, alerts, loyalty & bot settings','#/settings/notifications','settings'],
-      ['WhatsApp','Send messages from your own WhatsApp number','#/settings/calling','chat'],
-      ['Loyalty Program','Miles redemption, day rates, tiers & seat upgrades','#/settings/loyalty','check'],
-      ['Switch User','View the app as another user',null,'user'],
-      ['Change Password','Update your account password',null,'settings'],
-      ['My devices',"See and log out where you're signed in",null,'phone'],
-      ['About','App version & check for updates',null,'more']
+      ['Configuration','Notifications, alerts, loyalty & bot settings','#/settings/configuration/notifications','settings'],
+      ['WhatsApp','Send messages from your own WhatsApp number','#/settings/whatsapp','chat'],
+      ['Loyalty Program','Miles redemption, day rates, tiers & seat upgrades','#/settings/loyalty-program/miles','check'],
+      ['Switch User','View the app as another user','#/settings/switch-user','user'],
+      ['Change Password','Update your account password','#/settings/change-password','settings'],
+      ['My devices',"See and log out where you're signed in",'#/settings/my-devices','phone'],
+      ['About','App version & check for updates','#/settings/about','more']
     ];
     toolbar.innerHTML=`<div class="cc14-languages">${button(`${icon('globe')} English ${icon('chevron')}`,'outline','data-cc14-lang aria-label="Language"')}<div data-cc14-lang-menu hidden class="cc14-language-list"><button type="button">English ✓</button></div></div><div class="cc14-settings-wrap">
        ${button(`${icon('settings')} Settings ${icon('chevron')}`,'outline','data-cc14-settings aria-label="Settings menu"')}

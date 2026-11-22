@@ -10,6 +10,12 @@ const r = express.Router();
 const h = (fn) => (req, res) => { try { const out = fn(req, res); if (out !== undefined) res.json(out); } catch (e) { res.status(e.status || 500).json({ success: false, message: e.message }); } };
 
 const staff = (id) => db.col('staff').get(id);
+// Route stages with schedule-level (single trip) stop overrides applied.
+const STAGE_EDITABLE = ['name', 'time', 'day', 'address', 'landmark', 'contact_number', 'lat', 'lng'];
+function stagesFor(s, route) {
+  const ov = s.stage_overrides || {};
+  return (route.stages || []).map((st) => { const o = ov[st.id]; if (!o) return st; const x = { ...st, overridden: true }; for (const k of STAGE_EDITABLE) if (o[k] !== undefined && o[k] !== '') x[k] = ['day', 'lat', 'lng'].includes(k) ? Number(o[k]) : o[k]; return x; });
+}
 function scheduleCard(s) {
   const route = db.col('routes').get(s.route_id);
   const v = s.vehicle_id ? db.col('vehicles').get(s.vehicle_id) : null;
@@ -49,14 +55,15 @@ r.get('/trips', can('trips.view'), h((req) => {
 r.get('/trips/:sid', can('trips.view'), h((req) => {
   const s = db.col('schedules').get(req.params.sid); if (!s) throw D.httpErr(404, 'Trip not found');
   const route = db.col('routes').get(s.route_id);
+  const stages = stagesFor(s, route);
   const bs = db.col('bookings').filter((b) => b.schedule_id == s.id && b.status !== 'expired' && b.status !== 'released');
   const passengers = [];
   for (const b of bs) for (const p of b.passengers) {
-    const bst = route.stages.find((x) => x.id == b.boarding_stage_id), dst = route.stages.find((x) => x.id == b.dropping_stage_id);
+    const bst = stages.find((x) => x.id == b.boarding_stage_id), dst = stages.find((x) => x.id == b.dropping_stage_id);
     const conv = D.passengerConvId(b, p);
     passengers.push({ pnr: b.pnr, ticket: b.ticket_number, seat: p.seat, name: p.name, gender: p.gender, age: p.age, status: b.status === 'cancelled' || p.status === 'cancelled' ? 'cancelled' : b.status === 'hold' ? 'hold' : p.status, call_status: p.call_status, phone: b.contact.phone, source: b.source, payment: b.payment, fare: p.fare, from: D.cityName(b.from_city_id), to: D.cityName(b.to_city_id), boarding: bst ? { id: bst.id, name: bst.name, time: bst.time, day: bst.day, pickup_type: bst.pickup_type } : null, dropping: dst ? { id: dst.id, name: dst.name, time: dst.time, day: dst.day } : null, tier: db.col('customers').find((c) => c.phone === b.contact.phone)?.tier || 'Bronze', trips: db.col('bookings').count((x) => x.contact.phone === b.contact.phone && x.status === 'confirmed'), unread: db.col('messages').count((m) => m.conversation_id === conv && m.direction === 'in' && !m.read), conversation_id: conv, comments: b.comments });
   }
-  const stops = route.stages.map((st) => ({ ...st, pickups: passengers.filter((p) => p.boarding?.id === st.id && p.status !== 'cancelled').length, drops: passengers.filter((p) => p.dropping?.id === st.id && p.status !== 'cancelled').length, event: (s.stop_events || {})[st.id] || null }));
+  const stops = stages.map((st) => ({ ...st, pickups: passengers.filter((p) => p.boarding?.id === st.id && p.status !== 'cancelled').length, drops: passengers.filter((p) => p.dropping?.id === st.id && p.status !== 'cancelled').length, event: (s.stop_events || {})[st.id] || null }));
   const v = s.vehicle_id ? db.col('vehicles').get(s.vehicle_id) : null;
   const docs = v ? db.col('documents').filter((d) => d.owner_type === 'vehicle' && d.owner_id === v.id) : [];
   return { ...scheduleCard(s), stops, passengers, documents: docs, telemetry: s.telemetry || null, km: s.km, fuel_l: s.fuel_l, position: v?.position || null, pnl: req.user.permissions.includes('schedules.financial') ? Rp.tripPnl(s) : null };
@@ -129,7 +136,7 @@ r.get('/schedules', can('schedules.view'), h((req) => {
   if (req.query.status && req.query.status !== 'all') list = list.filter((s) => s.status === req.query.status);
   const fromCity = req.query.from_city_id, toCity = req.query.to_city_id;
   if (fromCity && toCity) list = list.filter((s) => { const rt = db.col('routes').get(s.route_id); const a = D.cityOrder(rt, fromCity), b = D.cityOrder(rt, toCity); return a >= 0 && b > a; });
-  return { from, to, schedules: list.map(scheduleCard).sort((a, b) => a.travel_date.localeCompare(b.travel_date) || a.departure_time.localeCompare(b.departure_time)) };
+  return { from, to, schedules: list.map((s) => { const c = scheduleCard(s); if (req.user.permissions.includes('schedules.financial')) { const p = Rp.tripPnl(s); c.expense_total = p.expense; c.net_profit = p.profit; } return c; }).sort((a, b) => a.travel_date.localeCompare(b.travel_date) || a.departure_time.localeCompare(b.departure_time)) };
 }));
 r.get('/schedules/deleted', can('schedules.view'), h(() => ({ deleted: db.col('routes').all().flatMap((rt) => (rt.deleted_trips || []).map((d) => ({ route_id: rt.id, service_number: rt.service_number, travel_date: d }))) })));
 r.post('/schedules/restore', can('schedules.modify'), h((req) => { const rt = db.col('routes').get(req.body.route_id); rt.deleted_trips = (rt.deleted_trips || []).filter((d) => d !== req.body.travel_date); db.persist(); D.ensureSchedules(req.body.travel_date, req.body.travel_date); return { success: true }; }));
@@ -137,7 +144,7 @@ r.post('/schedules/restore', can('schedules.modify'), h((req) => { const rt = db
 r.get('/schedules/:id', can('schedules.view'), h((req) => {
   const s = db.col('schedules').get(req.params.id); if (!s) throw D.httpErr(404, 'Schedule not found');
   const route = db.col('routes').get(s.route_id);
-  return { ...scheduleCard(s), route: { id: route.id, service_number: route.service_number, name: route.name, via_cities: D.routeCities(route).map((c) => ({ ...c, name: D.cityName(c.city_id) })), stages: route.stages }, fares: s.fare_override || route.fares, fare_synced: !s.fare_override, seat_blocks: s.seat_blocks, unblocked: s.unblocked, auto_price: s.auto_price || null, telemetry: s.telemetry || null };
+  return { ...scheduleCard(s), route: { id: route.id, service_number: route.service_number, name: route.name, via_cities: D.routeCities(route).map((c) => ({ ...c, name: D.cityName(c.city_id) })), stages: stagesFor(s, route) }, fares: s.fare_override || route.fares, fare_synced: !s.fare_override, seat_blocks: s.seat_blocks, unblocked: s.unblocked, auto_price: s.auto_price || null, telemetry: s.telemetry || null, stage_overrides: s.stage_overrides || {}, seat_fare_rules: s.seat_fare_rules || [], expense_overrides: s.expense_overrides || {}, ui_settings: s.ui_settings || {} };
 }));
 
 r.get('/schedules/:id/seat-layout', can('schedules.view'), h((req) => {
@@ -149,12 +156,29 @@ r.get('/schedules/:id/seat-layout', can('schedules.view'), h((req) => {
 r.put('/schedules/:id', can('schedules.modify'), h((req) => {
   const s = db.col('schedules').get(req.params.id); if (!s) throw D.httpErr(404, 'Schedule not found');
   const before = { vehicle_id: s.vehicle_id, crew: s.crew, departure_time: s.departure_time, sync_with_route: s.sync_with_route };
-  const { vehicle_id, crew, departure_time, sync_with_route } = req.body;
+  const { vehicle_id, crew, departure_time, sync_with_route, stage_overrides, seat_fare_rules, expense_overrides, ui_settings } = req.body;
   if (vehicle_id !== undefined) s.vehicle_id = vehicle_id || null;
   if (crew) s.crew = crew;
-  if (departure_time) s.departure_time = departure_time;
+  if (departure_time) { if (!/^\d{1,2}:\d{2}$/.test(departure_time)) throw D.httpErr(400, 'Departure time must be HH:MM'); s.departure_time = departure_time; }
   if (sync_with_route !== undefined) s.sync_with_route = !!sync_with_route;
-  db.persist(); D.audit('schedule', s.id, 'fields', { before, after: req.body }, req.user);
+  const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
+  if (stage_overrides !== undefined) {
+    if (!isObj(stage_overrides)) throw D.httpErr(400, 'stage_overrides must be an object');
+    const route = db.col('routes').get(s.route_id); const ids = new Set(route.stages.map((x) => String(x.id)));
+    for (const [k, v] of Object.entries(stage_overrides)) { if (!ids.has(String(k))) throw D.httpErr(400, `Unknown stop ${k}`); if (v?.time && !/^\d{1,2}:\d{2}$/.test(v.time)) throw D.httpErr(400, 'Stop time must be HH:MM'); }
+    s.stage_overrides = stage_overrides;
+  }
+  if (seat_fare_rules !== undefined) {
+    if (!Array.isArray(seat_fare_rules)) throw D.httpErr(400, 'seat_fare_rules must be a list');
+    s.seat_fare_rules = seat_fare_rules.map((x) => ({ name: String(x.name || 'Rule'), seats: (x.seats || []).map(String), days: (x.days || []).map(Number).filter((d) => d >= 0 && d <= 6), kind: x.kind === 'percent' ? 'percent' : 'flat', value: Number(x.value) || 0 })).filter((x) => x.seats.length && x.value);
+  }
+  if (expense_overrides !== undefined) {
+    if (!isObj(expense_overrides)) throw D.httpErr(400, 'expense_overrides must be an object');
+    if (!req.user.permissions.includes('schedules.financial')) throw D.httpErr(403, 'Financial permission required');
+    s.expense_overrides = Object.fromEntries(Object.entries(expense_overrides).map(([k, v]) => [k, Math.max(0, Number(v) || 0)]));
+  }
+  if (ui_settings !== undefined) { if (!isObj(ui_settings)) throw D.httpErr(400, 'ui_settings must be an object'); s.ui_settings = ui_settings; }
+  db.persist(); if (Object.keys(req.body).some((k) => k !== 'ui_settings')) D.audit('schedule', s.id, 'fields', { before, after: req.body }, req.user);
   return scheduleCard(s);
 }));
 

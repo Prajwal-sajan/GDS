@@ -139,6 +139,12 @@ r.delete('/speed-dials/:id', can('settings.modify'), h((req) => ({ success: db.c
 r.get('/daily-ops', can('dailyops.view'), h((req) => Rp.dailyOps(req.query.date || U.addDays(U.today(), -1))));
 r.get('/ratings', can('dailyops.view'), h((req) => { let rows = db.col('ota_ratings').all().slice(); if (req.query.max) rows = rows.filter((x) => x.rating <= Number(req.query.max)); if (req.query.ota) rows = rows.filter((x) => x.ota === req.query.ota); rows.sort((a, b) => b.rated_at.localeCompare(a.rated_at)); const all = db.col('ota_ratings').all(); return { rows, avg: U.round2(U.sum(all, (x) => x.rating) / (all.length || 1)), distribution: [1, 2, 3, 4, 5].map((n) => all.filter((x) => x.rating === n).length) }; }));
 r.post('/ratings/:id/reply', can('dailyops.ratings_reply'), h((req) => db.col('ota_ratings').update(req.params.id, { operator_reply: req.body.reply, replied_by: req.user.name, replied_at: U.nowIso() })));
+r.put('/ratings/:id/follow-up', can('dailyops.view'), h((req) => {
+  const x = db.col('ota_ratings').get(req.params.id); if (!x) throw D.httpErr(404, 'Rating not found');
+  const st = req.body.status; if (st !== undefined && typeof st !== 'string') throw D.httpErr(400, 'Invalid status');
+  const fu = { ...(x.follow_up || {}), ...(st !== undefined ? { status: String(st).slice(0, 40) } : {}), ...(req.body.note !== undefined ? { note: String(req.body.note).slice(0, 1000) } : {}), by: req.user.name, at: U.nowIso() };
+  return db.col('ota_ratings').update(x.id, { follow_up: fu });
+}));
 
 // ---------- Sarathi (rule-based analyst) ----------
 function period(q) {

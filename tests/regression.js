@@ -116,6 +116,39 @@ async function login(who, phone) { await call('POST', '/api/auth/request-otp', {
     await t('manual call log keeps reported status', async () => { const c = (await call('POST', '/api/calls', { phone: '9876501234', status: 'missed', notes: 'no answer' })).body; eq(c.status, 'missed'); ok(!/Connecting/.test(c.message), 'no fake telephony'); eq((await call('POST', '/api/calls', { phone: '9876501234' })).body.status, 'logged'); eq((await call('PUT', `/api/calls/${c.id}`, { status: 'bogus' })).status, 400); const u = (await call('PUT', `/api/calls/${c.id}`, { duration_s: 30 })).body; eq(u.status, 'missed', 'partial update keeps status'); eq(u.notes, 'no answer'); });
   }
 
+  console.log('UI wiring (server-backed edits)');
+  {
+    const sch = (await call('GET', '/api/trips?tab=future')).body.trips[0];
+    await t('schedule stop override applies to trip manifest', async () => {
+      const d = (await call('GET', `/api/schedules/${sch.id}`)).body; const st = d.route.stages.find((x) => x.type === 'pickup');
+      eq((await call('PUT', `/api/schedules/${sch.id}`, { stage_overrides: { [st.id]: { time: '25:99x' } } })).status, 400, 'bad time');
+      eq((await call('PUT', `/api/schedules/${sch.id}`, { stage_overrides: { [st.id]: { name: 'Moved Point', time: '21:10' } } })).status, 200);
+      const tr = (await call('GET', `/api/trips/${sch.id}`)).body; const s2 = tr.stops.find((x) => x.id === st.id); eq(s2.name, 'Moved Point'); eq(s2.time, '21:10');
+      const r = (await call('GET', '/api/routes/' + d.route_id)).body; ok(r.stages.find((x) => x.id === st.id).name !== 'Moved Point', 'route unchanged');
+    });
+    await t('schedule seat fare rule changes price', async () => {
+      const map = (await call('GET', `/api/schedules/${sch.id}/seat-layout`)).body; const seat = map.decks.flatMap((x) => x.seats).find((x) => x.status === 'available');
+      eq((await call('PUT', `/api/schedules/${sch.id}`, { seat_fare_rules: [{ name: 'Premium', seats: [seat.code], kind: 'flat', value: 150 }] })).status, 200);
+      const after = (await call('GET', `/api/schedules/${sch.id}/seat-layout`)).body.decks.flatMap((x) => x.seats).find((x) => x.code === seat.code); eq(Math.round(after.fare - seat.fare), 150);
+      await call('PUT', `/api/schedules/${sch.id}`, { seat_fare_rules: [] });
+    });
+    await t('schedule expense override changes P&L', async () => {
+      const p = (await call('GET', `/api/schedules/${sch.id}/pnl`)).body; const items = p.expense_breakdown.items; const i = items.filter((x) => x.type === 'fixed'); if (!i.length) return;
+      const key = `fixed:${i[0].key || i[0].label || 0}`; eq((await call('PUT', `/api/schedules/${sch.id}`, { expense_overrides: { [key]: 0 } })).status, 200);
+      const p2 = (await call('GET', `/api/schedules/${sch.id}/pnl`)).body; ok(p2.expense_breakdown.fixed < p.expense_breakdown.fixed, 'fixed cost reduced');
+      eq((await call('PUT', `/api/schedules/${sch.id}`, { expense_overrides: { [key]: 1 } }, 'agent')).status, 403);
+    });
+    await t('route editor saves extended fields', async () => { const r = (await call('PUT', '/api/routes/2', { alt_name: 'Night Rider', hub: 'Central', fare_groups: [{ name: 'Front', seats: ['1A'] }] })).body; eq(r.alt_name, 'Night Rider'); eq((await call('GET', '/api/routes/2')).body.hub, 'Central'); });
+    await t('agent terms persist and drive commission', async () => {
+      eq((await call('PUT', '/api/accounts/channels/agents', { name: 'X', phone: '12', commission_pct: 5 })).status, 400);
+      eq((await call('PUT', '/api/accounts/channels/agents', { name: 'Owner', phone: '9999999999', commission_pct: 5 })).status, 409, 'non-agent phone');
+      const a = (await call('PUT', '/api/accounts/channels/agents', { name: 'New Agent', phone: '9500000001', commission_pct: 7.5, credit_limit: 20000, settlement_mode: 'weekly' })).body; eq(a.commission_pct, 7.5);
+      const list = (await call('GET', '/api/accounts/channels')).body.agents; const g = list.find((x) => x.phone === '9500000001'); eq(g.settlement_mode, 'weekly'); eq(g.credit_limit, 20000);
+      eq((await call('PUT', '/api/accounts/channels/agents', { name: 'New Agent', phone: '9500000001', commission_pct: 7.5 }, 'agent')).status, 403);
+    });
+    await t('rating follow-up persists', async () => { const rt = (await call('GET', '/api/ratings')).body; const row = (rt.rows || rt.ratings || rt)[0]; const r = (await call('PUT', `/api/ratings/${row.id}/follow-up`, { status: 'Resolved', note: 'Called customer' })).body; eq(r.follow_up.status, 'Resolved'); eq(r.follow_up.note, 'Called customer'); });
+  }
+
   console.log(`\n${pass} passed, ${fail} failed`);
   server.close(); fs.rmSync(process.env.GDS_DATA_DIR, { recursive: true, force: true });
   process.exit(fail ? 1 : 0);

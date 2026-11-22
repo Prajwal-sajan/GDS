@@ -39,7 +39,7 @@ check('Stop timing action modal',()=>{assert.match(mods.at(-1).body,/Mark arrive
 await latestModal.$('[data-trip-arrived]').onclick();
 check('Arrival action writes through API',()=>assert.equal(posts.at(-1).body.kind,'arrived'));
 await hooks['click|[data-trip-tab]']({dataset:{tripTab:'docs'}});
-check('Docs and operations actions',()=>{for(const s of ['Vehicle & documents','Assigned crew','Report delay','Print tripsheet','Cancel bus'])assert.ok(main.innerHTML.includes(s),s)});
+check('Docs panel lists the 8 vehicle documents with View',()=>{for(const s of ['DOCUMENTS','Registration Certificate (RC)','Insurance','Pollution Under Control (PUC)','Fitness Certificate','AITP Form 2','AITP Form 3','VLTD','FDSS','Valid till'])assert.ok(main.innerHTML.includes(s),s);assert.equal((main.innerHTML.match(/data-trip-doc-view=/g)||[]).length,8);assert.equal((main.innerHTML.match(/Valid till/g)||[]).length,6);assert.ok(!main.innerHTML.includes('Trip actions'))});
 await hooks['click|[data-trip-tab]']({dataset:{tripTab:'pickup'}});
 await hooks['click|[data-trip-history]']({dataset:{tripHistory:'12345|15U'}});
 check('Communication modal four tabs',()=>{const x=mods.at(-1).body;for(const s of ['>All</span>','>Calls</span>','>WhatsApp</span>','>SMS</span>'])assert.ok(x.includes(s),s)});

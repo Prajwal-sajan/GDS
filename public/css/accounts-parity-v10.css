@@ -22,3 +22,12 @@
 .ac10-agent-preview .ac10-grid-4 {gap:18px 12px}
 .ac10-agent-preview .ac10-modalbuttons {margin-top:22px}
 .ac10-status.warn {color:#9a621a;background:#fff4d6;padding:3px 9px;margin-left:9px}
+
+/* v10.1 standard calendar/dropdown + sticky submenu */
+.ac10-root .ac10-date{cursor:pointer;position:relative}
+.ac10-root .ac10-date .ui-date-btn{flex:1;display:flex;align-items:center;justify-content:space-between;gap:8px;border:0;background:transparent;font:inherit;font-size:13px;font-weight:650;color:#18243b;cursor:pointer;padding:2px;white-space:nowrap;caret-color:transparent}
+.ac10-root .ac10-date .ui-date-btn svg{color:#8394ad}
+.ac10-root .ac10-select{position:relative}
+.ac10-root .ac10-select:has(.ui-dd-btn)>svg{display:none}
+.ac10-root .ac10-select .ui-dd-btn{min-width:110px}
+.ac10-root .ac10-nav{position:sticky;top:calc(var(--hdr-h,64px) + var(--sub-h,0px));z-index:40;box-shadow:0 4px 10px #15275912}

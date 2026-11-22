@@ -510,7 +510,7 @@ async function showWhatsApp(el){
  const templateModal=(index)=>{
   const t=index==null?{name:'',category:'utility',message:''}:data.templates[index];
   modal({title:index==null?'New WhatsApp template':'Edit WhatsApp template',wide:true,body:`<div class="stp-form-grid">${input('name','Template name',t.name,{required:true})}${input('category','Category',t.category||'utility',{type:'select',values:[['utility','Utility'],['marketing','Marketing'],['authentication','Authentication']]})}<div class="stp-grid-span">${input('message','Message text',t.message,{type:'textarea'})}</div></div>`,
-  onSave:async v=>{if(!v.message.trim())throw new Error('Message text required');const list=[...(data.templates||[])];if(index==null)list.push(v);else list[index]=v;await G.put('/settings/whatsapp',{...data,templates:list});G.toast('Template saved locally','ok');await showWhatsApp(el);}});
+  onSave:async v=>{if(!v.message.trim())throw new Error('Message text required');const list=[...(data.templates||[])];if(index==null)list.push(v);else list[index]=v;await G.put('/settings/whatsapp',{...data,templates:list});G.toast('Template saved','ok');await showWhatsApp(el);}});
  };
  el.querySelector('[data-wa-add]').onclick=()=>templateModal(null);
  el.querySelectorAll('[data-wa-edit]').forEach(btn=>btn.onclick=()=>templateModal(Number(btn.dataset.waEdit)));
@@ -611,6 +611,8 @@ function syncHeader(){
  document.querySelectorAll('[data-settings-link]').forEach(a=>a.classList.toggle('active',hash.startsWith(`#/settings/${a.dataset.settingsLink}`)));
 }
 async function screen(el,p){
+ const LEGACY={users:'team-access/office-staff',roles:'team-access/access',branches:'team-access/branches',notifications:'configuration/notifications',calling:'configuration/calling',loyalty:'loyalty-program/miles',upgrades:'loyalty-program/upgrades'};
+ if(LEGACY[p[0]]){location.replace('#/settings/'+LEGACY[p[0]]);return;}
  const section=p[0]||'team-access';const sub=p[1]||'office-staff';
  el.className='stp-root';el.innerHTML='<div class="stp-shell"><div class="stp-empty-panel"><h3>Loading settings…</h3></div></div>';
  try{

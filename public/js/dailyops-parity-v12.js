@@ -13,7 +13,10 @@
   const iconPaths = {
     clipboard:'<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4.5h6M9 8h6M9 12h6M9 16h4"/>',
     star:'<path d="m12 2 3.05 6.18 6.82.99-4.94 4.81 1.17 6.8L12 17.57l-6.1 3.21 1.16-6.8-4.93-4.8 6.82-.99z"/>',
-    refresh:'<path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.4 9A7 7 0 0 1 18 6l2 1M4 17l2 1a7 7 0 0 0 12.6-3"/>',
+    refresh:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
+    thumbDown:'<path d="M17 14V2"/><path d="M9 18.1 10 14H4.2a2 2 0 0 1-1.9-2.5l2.3-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.8a2 2 0 0 0-1.8 1.1L12 22a3.1 3.1 0 0 1-3-3.9z"/>',
+    msgWarn:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M12 7v4M12 14h.01"/>',
+    chevDown:'<path d="m6 9 6 6 6-6"/>',
     calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/>',
     user:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
     users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 3a4 4 0 0 1 0 8M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/>',
@@ -31,7 +34,7 @@
     eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
     rupee:'<path d="M6 3h12M6 8h12M6 3c8 0 8 10 0 10l8 8"/>',
     thumbs:'<path d="M17 14V2M9 18H6a3 3 0 0 1-3-3v-5a3 3 0 0 1 3-3h3l4-5v14l-4-4M17 8h4v7h-4"/>',
-    settings:'<path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.6 1.6 0 0 0 .32 1.77l.06.06-2 2-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-1 1.48V21h-4v-.08A1.6 1.6 0 0 0 9.9 19.4a1.6 1.6 0 0 0-1.77.32l-.06.06-2-2 .06-.06a1.6 1.6 0 0 0 .32-1.77A1.6 1.6 0 0 0 5 15H4v-4h1a1.6 1.6 0 0 0 1.48-1 1.6 1.6 0 0 0-.32-1.77L6.1 8.2l2-2 .06.06A1.6 1.6 0 0 0 9.9 6.6 1.6 1.6 0 0 0 11 5.1V4h4v1.1A1.6 1.6 0 0 0 16 6.6a1.6 1.6 0 0 0 1.77-.32l.06-.06 2 2-.06.06A1.6 1.6 0 0 0 19.4 10 1.6 1.6 0 0 0 21 11h1v4h-1a1.6 1.6 0 0 0-1.6 0Z"/>',
+    settings:'<path d="M12.2 2h-.4a2 2 0 0 0-2 2v.2a2 2 0 0 1-1 1.7l-.4.3a2 2 0 0 1-2 0l-.2-.1a2 2 0 0 0-2.7.7l-.2.4a2 2 0 0 0 .7 2.7l.2.1a2 2 0 0 1 1 1.7v.5a2 2 0 0 1-1 1.8l-.2.1a2 2 0 0 0-.7 2.7l.2.4a2 2 0 0 0 2.7.7l.2-.1a2 2 0 0 1 2 0l.4.3a2 2 0 0 1 1 1.7v.2a2 2 0 0 0 2 2h.4a2 2 0 0 0 2-2v-.2a2 2 0 0 1 1-1.7l.4-.3a2 2 0 0 1 2 0l.2.1a2 2 0 0 0 2.7-.7l.2-.4a2 2 0 0 0-.7-2.7l-.2-.1a2 2 0 0 1-1-1.8v-.5a2 2 0 0 1 1-1.7l.2-.1a2 2 0 0 0 .7-2.7l-.2-.4a2 2 0 0 0-2.7-.7l-.2.1a2 2 0 0 1-2 0l-.4-.3a2 2 0 0 1-1-1.7V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
     search:'<circle cx="10.5" cy="10.5" r="7"/><path d="m16 16 5 5"/>',
     chevron:'<path d="m8 10 4 4 4-4"/>',
     activity:'<path d="M3 12h4l3-7 4 14 3-7h4"/>',
@@ -47,8 +50,9 @@
   const chip = (label,color='') => `<span class="ds-chip ${color}">${label}</span>`;
   const empty = (msg) => `<div class="ds-empty">${svg('info',25)} <span>${E(msg)}</span></div>`;
   const filterBy = (date, from, to) => Boolean(date && String(date).slice(0,10) >= from && String(date).slice(0,10) <= to);
-  const readStore = (id) => { try { return JSON.parse(localStorage.getItem(`dailyops-v12:${id}`) || '{}'); } catch { return {}; } };
-  const writeStore = (id, v) => localStorage.setItem(`dailyops-v12:${id}`, JSON.stringify(v));
+  let RATINGS = [];
+  const readStore = (id) => { const r = RATINGS.find(x => String(x.id) === String(id)); if (r?.follow_up) return r.follow_up; try { return JSON.parse(localStorage.getItem(`dailyops-v12:${id}`) || '{}'); } catch { return {}; } };
+  const writeStore = (id, v) => { localStorage.setItem(`dailyops-v12:${id}`, JSON.stringify(v)); const r = RATINGS.find(x => String(x.id) === String(id)); if (r) r.follow_up = { ...(r.follow_up || {}), ...v }; return G.put(`/ratings/${encodeURIComponent(id)}/follow-up`, v); };
   const access = perm => !window.can || can(perm);
 
   G.screens.dailyops = async (el) => {
@@ -56,7 +60,7 @@
     const safeFetch = (url) => G.get(url).catch(() => null);
     const loadDaily = async () => {
       const [d,calls,chats,ratings,trips] = await Promise.all([safeFetch('/daily-ops?date='+encodeURIComponent(state.date)),safeFetch('/calls'),safeFetch('/chats'),safeFetch('/ratings'),safeFetch('/trips?date='+encodeURIComponent(state.date))]);
-      state.d = d; state.calls = calls; state.chats = chats; state.ratings = Array.isArray(ratings?.rows) ? ratings.rows : [];
+      state.d = d; state.calls = calls; state.chats = chats; state.ratings = Array.isArray(ratings?.rows) ? ratings.rows : []; RATINGS = state.ratings;
       // Enrich only with genuine existing Trip API data, when authorized.
       if (d && Array.isArray(d.fleet?.trips)) {
         const tripMap = new Map((trips?.trips||[]).map(t=>[String(t.id),t]));
@@ -78,9 +82,10 @@
       }
     };
     const table = (heads,body,cls='') => `<div class="ds-scroll-table"><table class="ds-table ${cls}"><thead><tr>${heads.map(([title,ico])=>`<th>${ico?`<span class="ds-th-icon">${svg(ico,17)}</span>`:''}${E(title)}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`;
+    const dateBtn=(k,v)=>{const d=v?new Date(v+'T00:00:00'):null;const t=d&&!isNaN(d)?d.toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}):'Select date';return `<span class="ds-date-field ds-calbtn-wrap"><button type="button" class="ds-calbtn" data-ds-cal="${k}" aria-label="Choose date" aria-haspopup="dialog"><span class="ds-calbtn-ic">${svg('calendar',15)}</span><span>${E(t)}</span>${svg('chevDown',13)}</button><input type="hidden" data-ds-change="${k}" value="${E(v||'')}"></span>`};
     const nav = () => `<div class="ds-subnav">${[['report','Daily report','clipboard'],['ratings','Ratings','star']].map(([k,name,ico])=>`<button class="ds-subnav-btn ${state.page===k?'on':''}" data-ds-action="page:${k}"><span class="ds-subnav-icon">${svg(ico,22)}</span>${name}</button>`).join('')}</div>`;
     const report = () => {
-      if (!state.d) return `<div class="ds-report"><div class="ds-report-head"><div class="ds-title"><span class="ds-title-icon">${svg('clipboard',26)}</span><div><h2>Daily Operations Report</h2><small>Per-service operational metrics</small></div></div><div class="ds-report-controls"><input type="date" aria-label="Report date" data-ds-change="date" value="${E(state.date)}">${btn('refresh',`${svg('refresh')} Refresh`,'primary')}</div></div>${empty('Daily operations data unavailable. Check your permissions or API connection.')}</div>`;
+      if (!state.d) return `<div class="ds-report"><div class="ds-report-head"><div class="ds-title"><span class="ds-title-icon">${svg('clipboard',26)}</span><div><h2>Daily Operations Report</h2><small>Per-service operational metrics</small></div></div><div class="ds-report-controls">${dateBtn('date',state.date)}${btn('refresh',`${svg('refresh')} Refresh`,'primary')}</div></div>${empty('Daily operations data unavailable. Check your permissions or API connection.')}</div>`;
       const d=state.d; const fleet=d.fleet?.trips||[];const summary=d.fleet?.summary||{};
       const calls=(state.calls?.calls||[]).filter(x => String(x.ts||'').slice(0,10)===state.date);
       const ch=(state.chats?.conversations||[]).filter(x => String(x.last_ts||'').slice(0,10)===state.date);
@@ -107,7 +112,7 @@
         const label=E(r.service||r.name||'Service');
         return `<tr><td><button class="ds-service" data-ds-action="service:${E(r.schedule_id)}">${svg('bus',16)} ${label}</button><small class="ds-cell-note">${E(r.route||r.name||'')}</small></td><td class="ds-departure">${E(fromTime(r.departure_time))}</td><td class="ds-vehicle">${E(r.vehicle||'—')}</td><td class="ds-muted">${r.performance==null?'—':E(r.performance)}</td><td>${r.status==='active'?chip(`${svg('check',15)} Yes`,'ok'):chip(E(r.status||'Unknown'),r.status==='cancelled'?'bad':'warn')}</td><td class="ds-staff-cell">${crew}</td><td class="ds-num"><button class="ds-number-link" data-ds-action="service:${E(r.schedule_id)}">${fmt(r.seats)}</button><small class="ds-cell-note">${r.pnr_count==null?'PNR not linked':`${fmt(r.pnr_count)} PNR`}</small></td><td class="ds-num">${r.tracking_count==null?'<span class="ds-muted">—</span>':fmt(r.tracking_count)}<small class="ds-cell-note">${r.tracking_viewers==null?'':'viewers '+fmt(r.tracking_viewers)}</small></td><td class="ds-num muted-count">${r.live_alerts==null?'—':fmt(r.live_alerts)}</td><td class="ds-num">${r.checkins==null?'—':fmt(r.checkins)}</td><td class="ds-num">${r.chat_count==null?'—':fmt(r.chat_count)}</td><td class="ds-num">${r.call_count==null?'—':fmt(r.call_count)}</td><td class="ds-muted">${E(r.pickup_performance||'—')}</td><td class="ds-muted">${E(r.drop_performance||'—')}</td></tr>`;
       }).join('');
-      return `<div class="ds-report"><div class="ds-report-head"><div class="ds-title"><span class="ds-title-icon">${svg('clipboard',26)}</span><div><h2>Daily Operations Report</h2><small>Per-service operational metrics</small></div></div><div class="ds-report-controls"><label class="ds-date-field">${svg('calendar',20)}<input type="date" aria-label="Report date" data-ds-change="date" value="${E(state.date)}"></label>${btn('refresh',`${svg('refresh',20)} Refresh`,'primary')}</div></div><div class="ds-kpi-grid">${kpis.join('')}</div><div class="ds-table-container">${table(heads, rows||`<tr><td colspan="14">${empty('No scheduled services for this date.')}</td></tr>`,'ds-report-table')}</div><p class="ds-data-note">${svg('info',16)} Report figures are loaded from the connected GDS. Tracking viewers, live alerts and pickup/drop performance appear as — until their sources are connected; check-ins and PNRs use the Trip API when authorized.</p></div>`;
+      return `<div class="ds-report"><div class="ds-report-head"><div class="ds-title"><span class="ds-title-icon">${svg('clipboard',26)}</span><div><h2>Daily Operations Report</h2><small>Per-service operational metrics</small></div></div><div class="ds-report-controls">${dateBtn('date',state.date)}${btn('refresh',`${svg('refresh',20)} Refresh`,'primary')}</div></div><div class="ds-kpi-grid">${kpis.join('')}</div><div class="ds-table-container">${table(heads, rows||`<tr><td colspan="14">${empty('No scheduled services for this date.')}</td></tr>`,'ds-report-table')}</div><p class="ds-data-note">${svg('info',16)} Report figures are loaded from the connected GDS. Tracking viewers, live alerts and pickup/drop performance appear as — until their sources are connected; check-ins and PNRs use the Trip API when authorized.</p></div>`;
     };
     const filteredRatings = (useDate=true) => state.ratings.filter(x =>
       (!useDate || filterBy(x.travel_at||x.rated_at,state.from,state.to)) &&
@@ -119,9 +124,9 @@
     const counts = a => [1,2,3,4,5].map(i=>a.filter(x=>N(x.rating)===i).length);
     const ratingsHeader = () => {
       const all=state.ratings;const filtered=filteredRatings();const low14=all.filter(x => N(x.rating)<=2 && String(x.rated_at||'').slice(0,10)>=dayPlus(todayStr(),-13));
-      const stats=[card('star',average(all),'OTA RATINGS AVAILABLE','green','From connected GDS records'),card('users','—','RATED THIS WEEK','blue','Requires total OTA passengers'),card('thumbs',fmt(low14.length),'1–2★ IN 14 DAYS','red','Review and follow up'),card('chat',average(filtered),'AVERAGE IN THESE DATES','purple',`${fmt(filtered.length)} ratings`)].join('');
+      const stats=[card('star',average(all),'OTA RATINGS AVAILABLE','green','From connected GDS records'),card('users','—','RATED THIS WEEK','blue','Requires total OTA passengers'),card('thumbDown',fmt(low14.length),'1–2★ IN 14 DAYS','red','Review and follow up'),card('msgWarn',average(filtered),'AVERAGE IN THESE DATES','purple',`${fmt(filtered.length)} ratings`)].join('');
       const services=[...new Map(all.filter(x=>x.schedule_id||x.service).map(x=>[String(x.schedule_id||x.service),String(x.service||x.service_number||x.schedule_id)])).entries()];
-      return `<div class="ds-ratings-head"><div class="ds-title"><span class="ds-title-icon">${svg('star',27)}</span><div><h2>OTA Ratings</h2><small>Ratings from connected GDS records · RedBus search ranking not connected</small></div></div><div class="ds-head-actions">${btn('settings',`${svg('settings',19)} Settings`,'primary')}${btn('refresh',`${svg('refresh',19)} Refresh`,'primary')}</div></div><div class="ds-filter-panel"><label><small>Service</small><select data-ds-change="service"><option value="all">All services</option>${services.map(([id,label])=>`<option value="${E(id)}" ${state.service===id?'selected':''}>${E(label)}</option>`).join('')}</select></label><label><small>${state.view==='rank'?'Rank from':'From'}</small><input type="date" data-ds-change="from" value="${E(state.from)}"></label><label><small>${state.view==='rank'?'Rank to':'To'}</small><input type="date" data-ds-change="to" value="${E(state.to)}"></label><div class="ds-range-buttons">${[7,30,90,180].map(days=>btn('range:'+days,`${days} days`,state.range===days?'on':'' )).join('')}</div></div><div class="ds-rating-tabs">${[['overview','Overview'],['rank','Search rank'],['action',`Needs action <i class="ds-red-dot">${fmt(low14.length)}</i>`],['all','All ratings'],['unrated','Not rated']].map(([k,n])=>btn('tab:'+k,n,state.view===k?'on':'')).join('')}</div><div class="ds-rating-kpis">${stats}</div>`;
+      return `<div class="ds-ratings-head"><div class="ds-title"><span class="ds-title-icon">${svg('star',27)}</span><div><h2>OTA Ratings</h2><small>Ratings from connected GDS records · RedBus search ranking not connected</small></div></div><div class="ds-head-actions">${btn('settings',`${svg('settings',19)} Settings`,'primary')}${btn('refresh',`${svg('refresh',19)} Refresh`,'primary')}</div></div><div class="ds-filter-panel"><label><small>Service</small><select data-ds-change="service"><option value="all">All services</option>${services.map(([id,label])=>`<option value="${E(id)}" ${state.service===id?'selected':''}>${E(label)}</option>`).join('')}</select></label><label><small>${state.view==='rank'?'Rank from':'From'}</small>${dateBtn('from',state.from)}</label><label><small>${state.view==='rank'?'Rank to':'To'}</small>${dateBtn('to',state.to)}</label><div class="ds-range-buttons">${[7,30,90,180].map(days=>btn('range:'+days,`${days} days`,state.range===days?'on':'' )).join('')}</div></div><div class="ds-rating-tabs">${[['overview','Overview'],['rank','Search rank'],['action',`Needs action <i class="ds-red-dot">${fmt(low14.length)}</i>`],['all','All ratings'],['unrated','Not rated']].map(([k,n])=>btn('tab:'+k,n,state.view===k?'on':'')).join('')}</div><div class="ds-rating-kpis">${stats}</div>`;
     };
     const groupForRatings = (mode,items) => {
       const map=new Map();for(const x of items){const key= mode==='bus' ? String(x.vehicle_registration||x.vehicle||'Vehicle unlinked') : mode==='driver' ? String(x.driver_name||'Driver unlinked') : String(x.service||x.service_number||x.schedule_id||'Service unlinked');if(!map.has(key))map.set(key,[]);map.get(key).push(x)}return [...map.entries()];
@@ -171,6 +176,7 @@
       m.$('[data-ds-trip]').onclick=()=>{m.close();location.hash=`#/trips?date=${encodeURIComponent(state.date)}&sid=${encodeURIComponent(sid)}`;};
     };
     const settings=()=>G.modal({title:'OTA Ratings · Settings',body:`<div class="ds-settings"><h3>Ratings and ranking sources</h3><p><b>GDS rating records:</b> Connected via <code>/api/ratings</code></p><p><b>RedBus ranking:</b> Not connected</p><p><b>Ratings by vehicle/driver:</b> Requires trip-to-crew history</p><p><b>OTA responses/challenges:</b> Not synchronized</p><p>Only supported fields are displayed as real data. Fields without a source are marked —.</p></div>`});
+    G.on(el,'click','[data-ds-cal]',b=>{const k=b.dataset.dsCal;G.calendarPop(b,state[k],v=>{const i=b.parentNode.querySelector(`input[data-ds-change="${k}"]`);if(!i)return;i.value=v;i.dispatchEvent(new Event('change',{bubbles:true}));i.dispatchEvent(new Event('input',{bubbles:true}))})});
     G.on(el,'click','[data-ds-action]',async b=>{
       const [a,...rest]=b.dataset.dsAction.split(':');const val=rest.join(':');
       if(a==='page'){state.page=val;state.search='';state.stars=0;render();return}
@@ -184,12 +190,12 @@
       if(a==='stars'){state.stars=Number(val);render();return}
       if(a==='follow'){state.follow=val;render();return}
       if(a==='comment'){
-        const row=b.closest('[data-ds-review]');const id=val;const old=readStore(id);writeStore(id,{...old,status:row.querySelector('[data-ds-follow]')?.value||old.status||'Open',note:row.querySelector('[data-ds-comment]')?.value||''});G.toast('Follow-up note saved in this browser (not synced)','ok');return;
+        const row=b.closest('[data-ds-review]');const id=val;const old=readStore(id);try{await writeStore(id,{status:row.querySelector('[data-ds-follow]')?.value||old.status||'Open',note:row.querySelector('[data-ds-comment]')?.value||''});G.toast('Follow-up note saved','ok')}catch(er){G.err(er)}return;
       }
       if(a==='reply'){await reply(val);return}
     });
     G.on(el,'change','[data-ds-change]',async b=>{const prop=b.dataset.dsChange;state[prop]=b.value;if(['from','to'].includes(prop))state.range=0;if(prop==='date'){await refresh();return}render();});
-    G.on(el,'change','[data-ds-follow]',b=>{const id=b.dataset.dsFollow;writeStore(id,{...readStore(id),status:b.value});});
+    G.on(el,'change','[data-ds-follow]',b=>{const id=b.dataset.dsFollow;writeStore(id,{status:b.value}).then(()=>G.toast('Follow-up status saved','ok')).catch(G.err);});
     G.on(el,'input','[data-ds-input]',b=>{state.search=b.value;const focused=document.activeElement;const cursor=b.selectionStart;render();const newInput=el.querySelector('[data-ds-input]');if(newInput){newInput.focus();try{newInput.setSelectionRange(cursor,cursor)}catch{}}});
     await loadDaily();render();
   };
