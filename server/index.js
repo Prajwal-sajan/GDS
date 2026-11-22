@@ -17,6 +17,7 @@ app.use((req, res, next) => { res.setHeader('X-Content-Type-Options', 'nosniff')
 const misc = require('./api/misc');
 app.use('/api', misc.pub);
 app.use('/api', auth.middleware);
+app.use('/api', require('./api/pnl-v18'));
 app.use('/api', require('./api/ops'));
 app.use('/api', require('./api/master'));
 app.use('/api', require('./api/accounts'));
