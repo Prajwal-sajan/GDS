@@ -42,7 +42,7 @@ r.get('/accounts/reports/:key', can('accounts.reports'), h((req, res) => {
   const f = Rp.REPORTS[req.params.key]; if (!f) throw D.httpErr(404, 'Unknown report');
   const out = f({ ...req.query, ...range(req.query) });
   const op = db.meta('operator');
-  if (req.query.format === 'csv') { Policy.explicitAccess(req,'Export / download'); return sendCsv(res, `${req.params.key}_${range(req.query).from}_${range(req.query).to}`, out.rows || out.boarding || out.services || out.categories || out.ranking || []);
+  if (req.query.format === 'csv') { Policy.explicitAccess(req,'Export / download'); return sendCsv(res, `${req.params.key}_${range(req.query).from}_${range(req.query).to}`, out.rows || out.boarding || out.services || out.categories || out.ranking || []); }
   return { report: req.params.key, ...range(req.query), operator_name: op.operator_name, ...out };
 }));
 
