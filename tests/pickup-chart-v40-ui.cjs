@@ -1,4 +1,5 @@
 'use strict';
+(async()=>{
 /* v40 jsdom screenshot parity + working print/import control flow. */
 const assert=require('node:assert/strict'),fs=require('node:fs');
 const {JSDOM}=require('jsdom');
@@ -168,3 +169,5 @@ assert.ok(css.includes('.pc40-source-list'));
 assert.ok(css.includes('@media(max-width:850px)'));
 console.log('PASS v40 UI: screenshot header/SVG, Import GDS selector/dropzone/preview/confirm, Pickup & RTO options, city/field/radio filters, grouped charts and summaries, native share, download and imported reference flow');
 dom.window.close();
+
+})().catch(e=>{console.error(e);process.exitCode=1});
