@@ -94,4 +94,35 @@ const css=src('public/css/ota-reconciliation-v43.css');
 new Function(client);
 for(const key of ['invoice breakdown','Upload Invoice','Investigate','Dispute','Accept RedBus','Export CSV','Browse all','As Per GDS','As Per RedBus','PNR','TDS','TCS','Difference','cards','table','recheck','original'])assert(client.toLowerCase().includes(key.toLowerCase()),'missing UI '+key);
 for(const key of ['ota43-ticket-check','ota43-ledger','ota43-revenue','ota43-payout','ota43-compare','ota43-ticket','ota43-browser-controls'])assert(css.includes(key),'missing style '+key);
+
+const wrapped=engine.parseLineItems([
+'29AAICN5264C1ZD-Payment\nST2606202306180 49208657 22,19,20,1\nTV7J92620628 20/06 25/06 4,145.00 458.02 207.25 3,811.79 0.00 621.75 0.00\n50450 8,21'
+],2026);
+assert.equal(wrapped.rows.length,1);
+assert.equal(wrapped.rows[0].pnr,'ST260620230618050450');
+assert.equal(wrapped.rows[0].fare,4145);
+// PDF binary integration fixture uses only generic, non-operator content.
+function tinyPdf(){
+ const stream='BT /F1 17 Tf 52 690 Td (Payment Advice) Tj ET';
+ const objects=[
+  '<< /Type /Catalog /Pages 2 0 R >>',
+  '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+  '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
+  '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+  '<< /Length '+Buffer.byteLength(stream)+' >>\nstream\n'+stream+'\nendstream'
+ ];
+ let body='%PDF-1.4\n',offsets=[0];
+ for(let i=0;i<objects.length;i++){offsets.push(Buffer.byteLength(body));body+=(i+1)+' 0 obj\n'+objects[i]+'\nendobj\n'}
+ const start=Buffer.byteLength(body);
+ body+='xref\n0 '+(objects.length+1)+'\n0000000000 65535 f \n';
+ for(let i=1;i<offsets.length;i++)body+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';
+ body+='trailer\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\nstartxref\n'+start+'\n%%EOF';
+ return Buffer.from(body);
+}
+engine.extractPdf(tinyPdf()).then(pages=>{
+ assert.equal(pages.length,1);
+ assert(pages[0].includes('Payment Advice'),'pdfjs did not extract selectable text');
+ console.log('PASS OTA v43 binary PDF.js extraction fixture');
+}).catch(err=>{console.error(err);process.exitCode=1});
+
 console.log('PASS OTA v43: split PNR, all 4 PDF sections, invoice formula, verified and unverified comparisons, 18-column CSV, complete UI/CSS wiring');
