@@ -62,7 +62,7 @@ async function get(url,user=owner){
   assert.equal(byBooking.body.basis,'booking_date');
   assert.ok(byBooking.body.sector_breakdown.every(x=>x.value===mapping.sector));
   assert.ok(Math.abs(total(byBooking.body.sector_breakdown,'net_sales')-byBooking.body.totals.net_sales)<.03);
-  const limited=db.col('users').find(x=>!(x.permissions||[]).includes('accounts.view'));
+  const limited=db.col('users').find(x=>['driver','conductor','helper','viewer'].includes(x.role));
   if(limited){
    assert.equal((await get('/accounts/sales-facets',limited)).status,403);
    assert.equal((await get(query({}),limited)).status,403);
