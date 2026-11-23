@@ -123,7 +123,7 @@ function parseLineItems(pages,year){
     if(pnr.length<20){
      for(const continuation of nearby){
       // The continuation is typically a 5-digit token in the same PNR column.
-      const first=(continuation.match(/^\s*(\d{4,6})\s*$/)||[])[1];
+      const first=(continuation.match(/^\s*(\d{4,6})(?:\s+.*)?$/)||[])[1];
       if(first&&first.length+pnr.length===20){suffix=first;break}
      }
     }
@@ -131,14 +131,30 @@ function parseLineItems(pages,year){
     // Scan the current and two following lines: dates and route may be on the next line.
     const nearbyText=[lines[i],...nearby].join(' ');
     const rowMatch=nearbyText.match(/(\d{2}\/\d{2})\s+(\d{2}\/\d{2})\s+(\d{7,10})\s+([\s\S]*?)(?=ST\d{12,18}|$)/i);
-    if(!rowMatch)continue;
-    const moneyStart=rowMatch[4].search(M);
-    if(moneyStart<0)continue;
-    const seatInfo=rowMatch[4].slice(0,moneyStart).trim();
-    const prices=values(rowMatch[4].slice(moneyStart));
-    if(!prices.length)continue;
+    let doe=null,doj=null,route=null,seatInfo='',prices=[];
+    if(rowMatch){
+      doe=rowMatch[1];doj=rowMatch[2];route=rowMatch[3];
+      const moneyStart=rowMatch[4].search(M);
+      if(moneyStart>=0){seatInfo=rowMatch[4].slice(0,moneyStart).trim();prices=values(rowMatch[4].slice(moneyStart))}
+    }
+    if(!prices.length){
+      // Large multi-seat PNRs wrap the route/seat column ABOVE their dates.
+      // Example: "ST... 49208542 22,19..." then "20/06 25/06 4,145.00..."
+      const dates=nearbyText.match(/(\d{2}\/\d{2})\s+(\d{2}\/\d{2})/);
+      const firstLine=lines[i].slice(candidate.index+candidate[0].length);
+      const code=firstLine.match(/\b(\d{7,10})\b/);
+      if(!dates||!code)continue;
+      doe=dates[1];doj=dates[2];route=code[1];
+      const seatStart=firstLine.slice(code.index+code[0].length).trim();
+      const afterDate=nearbyText.slice(nearbyText.indexOf(dates[0])+dates[0].length);
+      const start=afterDate.search(M);
+      if(start<0)continue;
+      seatInfo=(seatStart+' '+afterDate.slice(0,start)).trim();
+      prices=values(afterDate.slice(start).split(/ST\d{12,18}/i)[0]);
+    }
+    if(!prices.length||!route)continue;
     const base={id:'event-'+(++idx),pnr,section,page:pageIndex+1,
-     doe:parseDate(rowMatch[1],year),doj:parseDate(rowMatch[2],year),route_code:rowMatch[3],
+     doe:parseDate(doe,year),doj:parseDate(doj,year),route_code:route,
      seats:seatInfo.replace(/\s+/g,' ').slice(0,110),fare:prices[0],raw_amounts:prices};
     if(section==='sold'){
      [base.fare,base.commission,base.tax,base.net_payable,base.gds_commission,base.operator_offer,base.differential_gst]=prices;
