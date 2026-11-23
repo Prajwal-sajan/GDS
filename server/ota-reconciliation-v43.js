@@ -280,7 +280,13 @@ function compareInvoice(parsed,bookings,config={}){
   fare_diff:comparable.length?money(comparable.reduce((v,x)=>v+(x.fare||0)+(x.tax||0)-(x.expected.fare||0)-(x.expected.tax||0),0)):null,
   payout_diff:comparable.length?sum(comparable,'delta'):null};
  }
- return {rows,totals,section_stats:sectionStats};
+ const issue_counts={};
+ for(const line of rows)for(const flag of line.differences||[]){
+  issue_counts[flag]??={count:0,amount:0};
+  issue_counts[flag].count++;
+  if(line.delta!=null)issue_counts[flag].amount=money(issue_counts[flag].amount+line.delta);
+ }
+ return {rows,totals,section_stats:sectionStats,issue_counts};
 }
 const statusForCsv=s=>({matched:'Matched',mismatched:'Mismatched',needs_review:'Needs Review',unmatched_ota:'Missing in GDS',unmatched_gds:'Missing in OTA'}[s]||s||'');
 const EXPORT_HEADERS=['PNR','DOJ (SaveTrip)','DOJ (OTA)','Fare (SaveTrip)','Fare (OTA)','Operator Offer (OTA)','Tax (SaveTrip)','Tax (OTA)','Commission (OTA)','Tax on Commission (OTA)','TDS (OTA)','TCS (OTA)','Payable (SaveTrip)','Take-home (OTA)','Take-home Diff','Status','Resolved By','Notes'];
