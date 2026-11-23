@@ -1,4 +1,5 @@
 'use strict';
+(async()=>{
 const assert=require('node:assert/strict'),fs=require('node:fs');
 const {JSDOM}=require('jsdom');
 const dom=new JSDOM('<!doctype html><html><body><div id="app"></div><div id="toasts"></div><div id="modal-root"></div></body></html>',{
@@ -113,3 +114,5 @@ assert.ok(css.includes('@keyframes lv39-upgrade-pulse'));
 assert.ok(css.includes('@media(prefers-reduced-motion:reduce)'));
 console.log('PASS v39 UI: global timed queue/cursor/dismiss/progress/PNR, screenshot content, upgrade offered/applied badges + SVG and animation, consent workflow, responsive css/wiring');
 w.close();
+
+})().catch(e=>{console.error(e);process.exitCode=1});
