@@ -68,9 +68,15 @@ async function extractPdf(buffer){
 const sectionHeader=/[0-9A-Z]{8,20}\s*-\s*(Payment|Cancellation|Bus Cancelled|Exceptional Refund)/i;
 const sectionKind=s=>({payment:'sold',cancellation:'pax_cancelled','bus cancelled':'bus_cancelled','exceptional refund':'exceptional_refund'})[String(s).toLowerCase()]||null;
 function summaryValue(lines,startIndex){
- const scope=lines.slice(startIndex,startIndex+5).join(' ');
- const n=values(scope);
- return n.length?n[n.length-1]:null;
+ const direct=values(lines[startIndex]||'');
+ if(direct.length)return direct[direct.length-1];
+ for(let i=startIndex+1;i<=startIndex+3;i++){
+  const next=String(lines[i]||'');
+  if(/^(?:Booking|Cancellation \(|Bus Cancellation|Operator Offers|TDS|TCS|Dynamic Pricing|Invoice Amount|PaymentMode|Ad.s Deduction|SS partner)/i.test(next.trim()))break;
+  const found=values(next);
+  if(found.length)return found[found.length-1];
+ }
+ return null;
 }
 function parseSummary(text){
  const lines=String(text||'').split(/\r?\n/);
@@ -92,10 +98,11 @@ function parseSummary(text){
   const at=lines.findIndex(x=>x.toLowerCase().includes(find.toLowerCase()));
   if(at>=0)header.summary[name]=summaryValue(lines,at);
  }
- // The long invoice amount wraps into multiple rows, so prefer the last money in that label's vicinity.
- if(header.summary.invoice_amount===null){
-  const end=lines.slice(-25).join(' ');
-  header.summary.invoice_amount=values(end).at(-1)??null;
+ // The Z row wraps; use the last numeric value from the formula row before the footer.
+ const zAt=lines.findIndex(x=>/Invoice Amount\(Z\)/i.test(x));
+ if(zAt>=0){
+  const zVals=values(lines.slice(zAt,zAt+5).join(' '));
+  if(zVals.length)header.summary.invoice_amount=zVals[zVals.length-1];
  }
  return header;
 }
