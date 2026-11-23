@@ -111,6 +111,7 @@ r.get('/crm/booking/:pnr', can('crm.view'), h((req) => {
       reservationCounts.set(code,(reservationCounts.get(code)||0)+1);
     }
   }
+  // Never expose other passengers' names/PNRs in the seat map.
   // Expose only requested PNR identity and aggregate counts; never other passengers,
   // their names, their PNRs, journey legs, or their contact information in the map.
   const map = rawMap ? { ...rawMap, decks:rawMap.decks.map(d=>({
