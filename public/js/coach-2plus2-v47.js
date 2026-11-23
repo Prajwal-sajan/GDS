@@ -161,7 +161,7 @@
   return '<div class="cv47-decks"><section class="cv47-deck" aria-label="LOWER deck"><header><b>LOWER</b>'+
    '<span class="cv47-wheel" aria-label="Steering wheel">'+wheel+'</span></header>'+
    '<div class="cv47-grid" style="--cv47-cols:'+Number(deck.cols)+';--cv47-rows:'+Number(deck.rows)+'">'+
-   seats+fixtures+'</div><span class="cv47-door" aria-hidden="true"></span></section></div>';
+   seats+fixtures+'</div>'+(list(deck.fixtures).some(f=>String(f.type).toUpperCase()==='BACK_EXIT')?'<span class="cv47-door" aria-hidden="true"></span>':'')+'</section></div>';
  }
  return{isTarget,build,activeCount,layoutCounts,coord,rowPosition,tableRows,structuralSignature,
   validateLayout,addSeat,removeSeat,renderDiagram};
