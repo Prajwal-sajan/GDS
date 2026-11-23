@@ -92,8 +92,9 @@ try{
  });
  test('Booking privacy and delegated writes check specific API permissions',()=>{
    const code=fs.readFileSync(path.join(__dirname,'../server/api/ops.js'),'utf8');
-   for(const key of ['bookings.view_phone','bookings.book_for_agents','bookings.comment'])assert.ok(code.includes(key));
-   assert.ok(code.includes('safeBooking(b,req)'));
+   for(const key of ['bookings.see_phone','bookings.on_behalf','bookings.comments'])assert.ok(code.includes(key));
+   assert.ok(code.includes('Policy.maskedBooking('));
+   assert.ok(code.includes('Policy.requireBooking('));
  });
  console.log('PASS '+count+' Settings v17 regression tests');
 }finally{fs.rmSync(process.env.GDS_DATA_DIR,{recursive:true,force:true})}
