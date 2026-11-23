@@ -106,6 +106,7 @@
       { label:'Transactions & receivables', kind:'scope', value:'Off', scopes:['Off','Own','Branch','Company'] },
       { label:'Add / delete ledger entries', kind:'toggle', value:false },
       { label:'Reports', kind:'toggle', value:false },
+      { label:'Export / download', kind:'toggle', value:false },
       { label:'Invoices & statements (view / pay)', kind:'toggle', value:false },
       { label:'Settlements (view)', kind:'toggle', value:false },
       { label:'Upload & match settlements', kind:'toggle', value:false },
