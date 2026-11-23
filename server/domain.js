@@ -187,16 +187,29 @@ function baseFare(route, s, fromCity, toCity, cls) {
   if (f === main && s && s.auto_price && s.auto_price[cls]) v = s.auto_price[cls];
   return v;
 }
-function fareFor(s, seat, fromCity, toCity) {
-  const r = db.col('routes').get(s.route_id);
-  fromCity = fromCity || r.origin_city_id; toCity = toCity || r.destination_city_id;
-  let fare = baseFare(r, s, fromCity, toCity, seatClass(seat));
-  for (const rule of [...(r.seat_fare_rules || []), ...(s.seat_fare_rules || [])]) {
-    if (!(rule.seats || []).includes(seat.code)) continue;
-    if (rule.days && rule.days.length && !rule.days.includes(U.dow(s.travel_date))) continue;
-    fare += rule.kind === 'percent' ? (fare * rule.value) / 100 : rule.value;
+function fareFor(s,seat,fromCity,toCity){
+  const r=db.col('routes').get(s.route_id);
+  if(!r)return 0;
+  fromCity=fromCity||r.origin_city_id;toCity=toCity||r.destination_city_id;
+  const cls=seatClass(seat),dayNo=U.dow(s.travel_date),dayIndex=(dayNo+6)%7;
+  const dayName=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dayNo];
+  let fare=baseFare(r,s,fromCity,toCity,cls);
+  const group=(r.fare_groups||[]).find(g=>(g.seats||[]).includes(seat.code));
+  const groupFare=Number(group?.days?.[dayIndex]);
+  const mainPair=String(fromCity)===String(r.origin_city_id)&&String(toCity)===String(r.destination_city_id);
+  if(group&&Number.isFinite(groupFare)&&groupFare>=0&&!s.fare_override&&!(mainPair&&s.auto_price?.[cls])){
+    const main=baseFare(r,null,r.origin_city_id,r.destination_city_id,cls);
+    const current=baseFare(r,null,fromCity,toCity,cls);
+    fare=groupFare*(main>0?current/main:1);
   }
-  return U.round2(fare);
+  let percentTotal=0,fixedTotal=0;
+  for(const rule of [...(r.seat_fare_rules||[]),...(s.seat_fare_rules||[])]){
+    if(!(rule.seats||[]).includes(seat.code))continue;
+    if((rule.days||[]).length&&!rule.days.some(d=>String(d).toLowerCase()===dayName.toLowerCase()||(typeof d==='number'&&d===dayNo)))continue;
+    if(rule.kind==='percent')percentTotal+=Number(rule.value)||0;
+    else fixedTotal+=Number(rule.value)||0;
+  }
+  return U.round2(Math.max(0,fare+fare*percentTotal/100+fixedTotal));
 }
 
 function commissionPct(source, agentPhone) {
