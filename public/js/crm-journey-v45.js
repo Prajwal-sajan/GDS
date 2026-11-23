@@ -52,5 +52,32 @@ function mapHtml(map,b){
  const decks=[...map.decks].sort((a,z)=>a.deck==='LOWER'?-1:z.deck==='LOWER'?1:0);
  return decks.map(d=>deckHtml(d,b)).join('');
 }
-root.CRMJourneyV45={mapHtml,deckHtml,projection,seatStatus,statuses,activeSeats};
+function ticketCard(b,icon,datetime){
+ const count=(b.passengers||[]).filter(p=>p.status!=='cancelled').length;
+ const ref=b.pnr||'',short=b.ticket_number||ref;
+ const countLabel=count+' seat'+(count===1?'':'s');
+ return '<section class="cv8-detailcard booking" data-cv8-bookingcard>'+
+   '<span class="cv8-booking-icon">'+icon('ticket',26)+'</span>'+
+   '<div class="cv8-booking-main"><h3>Booking Details <small>('+countLabel+')</small></h3>'+
+   '<p>PNR: <b class="cv8-blue">'+E(short)+'</b> &nbsp; Ref: '+E(ref)+
+   ' <span class="cv8-source">'+E(b.source||'GDS')+'</span></p>'+
+   '<p class="cv8-muted">Booked: '+E(datetime(b.booked_at))+'</p></div>'+
+   '<button type="button" class="cv8-booking-collapse" data-cv8-action="booking-collapse" aria-expanded="true" aria-label="Collapse booking details">'+
+   icon('x',24)+'</button></section>';
+}
+function passengerCards(b,icon,money){
+ const people=(b.passengers||[]);
+ return people.map(p=>{
+  const gender=String(p.gender||'').toUpperCase();
+  const g=gender==='F'||gender==='FEMALE'?'female':gender==='M'||gender==='MALE'?'male':'other';
+  const label=g==='female'?'♀ Female':g==='male'?'♂ Male':'Other';
+  const age=p.age==null?'—':String(p.age)+'y';
+  return '<div class="cv8-passenger"><span class="cv8-seatlabel">'+E(p.seat)+'</span>'+
+   '<div><b>'+E(p.name||'Passenger')+'</b><div><span class="cv8-gender '+g+'">'+label+
+   '</span> <span class="cv8-person-age">'+E(age)+'</span>'+
+   (p.status==='cancelled'?' <span class="cv8-passenger-cancelled">Cancelled</span>':'')+
+   '</div></div><span class="cv8-passfare">'+E(money(p.fare))+'</span></div>';
+ }).join('');
+}
+root.CRMJourneyV45={mapHtml,deckHtml,projection,seatStatus,statuses,activeSeats,ticketCard,passengerCards};
 })(typeof window!=='undefined'?window:globalThis);
