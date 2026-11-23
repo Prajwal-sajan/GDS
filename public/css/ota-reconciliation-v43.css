@@ -182,3 +182,10 @@
 .ota43-loading{text-align:center;color:#7c8fa1;padding:55px}
 @media(max-width:1100px){.ota43-root .ota43-hero,.ota43-root .ota43-headline{flex-wrap:wrap}.ota43-root .ota43-revenue,.ota43-root .ota43-adjust{grid-template-columns:1fr}.ota43-root .ota43-ticket-totals{grid-template-columns:1fr 1fr}.ota43-root .ota43-payout strong{font-size:35px}.ota43-root .ota43-hero>div>strong{font-size:33px}}
 @media(max-width:680px){.ota43-root .ota43-ticket-totals,.ota43-root .ota43-quick,.ota43-root .ota43-ticket-values{grid-template-columns:1fr}.ota43-root .ota43-hero>div>strong{margin-top:20px}.ota43-root .ota43-headline,.ota43-root .ota43-ledger header,.ota43-root .ota43-ticket>header{padding:15px}.ota43-root .ota43-ticket footer{flex-wrap:wrap}.ota43-root .ota43-ticket footer .ota43-btn:last-child{margin-left:0}}
+
+/* Modals live in #modal-root (outside .ota43-root), so controls need non-root-scoped styles. */
+.ota43-upload-dialog .ota43-btn,.ota43-investigate .ota43-btn{border:1px solid #dfe5f3;display:inline-flex;align-items:center;gap:7px;padding:11px 17px;border-radius:13px;background:#fff;color:#24406e;font:600 13px Poppins,Arial,sans-serif;cursor:pointer}
+.ota43-upload-dialog .ota43-btn.primary,.ota43-investigate .ota43-btn.primary{color:white;border-color:#3a69ec;background:linear-gradient(100deg,#397afb,#4737da)}
+.ota43-investigate .ota43-btn.success{background:#05a578;color:white;border-color:#05a578}
+.ota43-upload-dialog .ota43-drop.dragover{background:#e4f3ff;border-color:#3a8df1;box-shadow:inset 0 0 0 2px #a3d7ff}
+.ota43-upload-dialog .ota43-drop input{cursor:pointer}
