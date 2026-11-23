@@ -11,6 +11,8 @@ const SOURCES = ['redbus', 'abhibus', 'paytm', 'website', 'branch', 'agent'];
 // ---------- Coach layouts ----------
 // Builds a deck grid. type: 'sleeper' | 'seater'. pattern like '2+1'.
 function buildLayout({ kind = 'seater_sleeper', pattern = '2+1' }) {
+  // Only the 2+1 mixed coach uses the reference-aligned 46-seat arrangement.
+  if (kind === 'seater_sleeper' && pattern === '2+1') return require('../public/js/coach-2plus1-v46').build();
   const decks = [];
   if (kind === 'sleeper') {
     decks.push(sleeperDeck('LOWER', 'L', 6, pattern));

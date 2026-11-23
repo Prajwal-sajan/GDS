@@ -7,6 +7,7 @@ const { can, checkStepUp } = require('../auth');
 
 const r = express.Router();
 const Policy=require('../access-runtime-v27');
+const Coach21=require('../../public/js/coach-2plus1-v46');
 const h = (fn) => (req, res) => { try { const out = fn(req, res); if (out !== undefined) res.json(out); } catch (e) { res.status(e.status || 500).json({ success: false, message: e.message }); } };
 const need = (x, msg = 'Not found') => { if (!x) throw D.httpErr(404, msg); return x; };
 
@@ -157,8 +158,38 @@ r.post('/routes/:id/duplicate', can('routes.create'), h((req) => { const rt = ne
 // ---------------- Coaches ----------------
 r.get('/coaches', can('fleet.view'), h((req) => { Policy.explicitAccess(req,'View coaches / seat layouts'); return { coaches: db.col('coaches').all().map((c) => ({ ...c, capacity: c.layout.capacity, vehicles: db.col('vehicles').count((v) => v.coach_template_id === c.id), routes: db.col('routes').count((x) => x.coach_template_id === c.id && x.status !== 'deleted') })) }; }));
 r.get('/coaches/:id', can('fleet.view'), h((req) => need(db.col('coaches').get(req.params.id))));
-r.post('/coaches', can('fleet.modify'), h((req) => { Policy.explicitAccess(req,"Create & edit coaches"); const b = req.body; const layout = b.layout || D.buildLayout({ kind: b.kind || 'seater_sleeper', pattern: b.pattern || '2+1' }); return db.col('coaches').insert({ name: b.name || 'New coach', bus_type: b.bus_type || '', pattern: b.pattern || '2+1', layout, amenities: b.amenities || [], emergency_exits: b.emergency_exits || [] }); }));
-r.put('/coaches/:id', can('fleet.modify'), h((req) => { Policy.explicitAccess(req,"Create & edit coaches"); const c = need(db.col('coaches').get(req.params.id)); const b = req.body; if (b.kind) b.layout = D.buildLayout({ kind: b.kind, pattern: b.pattern || c.pattern }); if (b.layout) b.layout.capacity = b.layout.decks.reduce((a, d) => a + d.seats.length, 0); return db.col('coaches').update(c.id, b); }));
+r.post('/coaches', can('fleet.modify'), h((req) => {
+  Policy.explicitAccess(req,"Create & edit coaches");
+  const b=req.body||{};
+  const identity={name:b.name||'New coach',bus_type:b.bus_type||'',pattern:b.pattern||'2+1'};
+  const layout=b.layout||D.buildLayout({kind:b.kind||'seater_sleeper',pattern:identity.pattern});
+  if(Coach21.isTarget(identity)){
+    layout.capacity=Coach21.activeCount(layout);
+    try{Coach21.validateLayout(layout)}catch(e){throw D.httpErr(400,e.message)}
+  }
+  return db.col('coaches').insert({name:identity.name,bus_type:identity.bus_type,pattern:identity.pattern,layout,
+    amenities:b.amenities||[],emergency_exits:b.emergency_exits||[]});
+}));
+r.put('/coaches/:id', can('fleet.modify'), h((req) => {
+  Policy.explicitAccess(req,"Create & edit coaches");
+  const c=need(db.col('coaches').get(req.params.id)),b={...req.body};
+  if(b.kind)b.layout=D.buildLayout({kind:b.kind,pattern:b.pattern||c.pattern});
+  if(b.layout){
+    if(!Array.isArray(b.layout.decks)||b.layout.decks.some(d=>!Array.isArray(d.seats)))
+      throw D.httpErr(400,'Invalid coach layout');
+    b.layout.capacity=b.layout.decks.reduce((a,d)=>a+d.seats.length,0);
+  }
+  if(Coach21.isTarget(c)||Coach21.isTarget({...c,...b})){
+    if(b.layout){try{Coach21.validateLayout(b.layout)}catch(e){throw D.httpErr(400,e.message)}}
+    const inUse=db.col('vehicles').count(v=>String(v.coach_template_id)===String(c.id))+
+      db.col('routes').count(rt=>String(rt.coach_template_id)===String(c.id)&&rt.status!=='deleted');
+    if(inUse&&(b.layout&&Coach21.structuralSignature(c.layout)!==Coach21.structuralSignature(b.layout)||
+       b.pattern&&b.pattern!==c.pattern||
+       b.bus_type&&b.bus_type!==c.bus_type))
+      throw D.httpErr(409,'Coach is assigned to vehicles/routes; physical seats and seat IDs cannot be changed without inventory migration');
+  }
+  return db.col('coaches').update(c.id,b);
+}));
 r.delete('/coaches/:id', can('fleet.delete'), h((req) => { Policy.explicitAccess(req,"Delete coaches"); if (db.col('vehicles').count((v) => v.coach_template_id == req.params.id) || db.col('routes').count((x) => x.coach_template_id == req.params.id && x.status !== 'deleted')) throw D.httpErr(409, 'Coach is in use'); db.col('coaches').remove(req.params.id); return { success: true }; }));
 
 // ---------------- Vehicles ----------------

@@ -1,0 +1,32 @@
+name: Coach 2+1 Seater Sleeper Screenshot v46
+on:
+  push:
+    branches:
+      - feature/coach-2plus1-screenshot-v46
+  pull_request:
+    paths:
+      - "public/js/coach-2plus1-v46.js"
+      - "public/js/vehicles-parity-v9.js"
+      - "public/css/coach-2plus1-v46.css"
+      - "public/index.html"
+      - "server/domain.js"
+      - "server/api/master.js"
+      - "tests/coach-2plus1-v46.test.cjs"
+      - ".github/workflows/coach-2plus1-v46.yml"
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Verify screenshot seat geometry, editable aliases, APIs and legacy protection
+        run: node --test tests/coach-2plus1-v46.test.cjs
+      - name: Verify existing vehicle screenshot controls
+        run: node tests/check-vehicles-v9.mjs
+      - name: Verify all GDS API regression suites
+        run: npm test

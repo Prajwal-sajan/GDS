@@ -341,29 +341,137 @@
   }
   function coachModal(coach,editing=false,done=()=>{}){
     let draft=JSON.parse(JSON.stringify(coach)),tab='type',search='',selected=new Set();draft.amenities=arr(draft.amenities);draft.layout=draft.layout||{decks:[],capacity:0};draft.upperDeck=arr(draft.layout.decks).length>1;
+    const coach21=window.Coach21V46, target21=()=>!!coach21?.isTarget(draft), assigned=()=>!!(Number(coach?.vehicles||0)||Number(coach?.routes||0));
+    if(target21())tab='seats';
     const cats=['Coach Type','Amenities','Seat Layout'];
-    const m=panelModal(editing?(draft.id?'Edit Coach':'Add Coach'):'View Coach',coach.name||'New Coach',`<div class="vp-coach-modal"><nav class="vp-modal-tabs">${cats.map((label,i)=>`<button type="button" data-tab="${['type','amenities','seats'][i]}" class="${i===0?'active':''}">${icon(['bus','zap','grid'][i])} ${label}</button>`).join('')}</nav><div class="vp-coach-content" data-coach-content></div></div>`,{size:'coach',footer:`<div class="vp-footer">${b('Cancel','outline','data-modal-cancel')}${editing?b(`${icon('check')} Save Changes`,'primary','data-modal-save'):''}</div>`});
+    const m=panelModal(editing?(draft.id?'Edit Coach':'Add Coach'):'View Coach',coach.name||'New Coach',`<div class="vp-coach-modal"><nav class="vp-modal-tabs">${cats.map((label,i)=>`<button type="button" data-tab="${['type','amenities','seats'][i]}" class="${['type','amenities','seats'][i]===tab?'active':''}">${icon(['bus','zap','grid'][i])} ${label}</button>`).join('')}</nav><div class="vp-coach-content" data-coach-content></div></div>`,{size:'coach',footer:`<div class="vp-footer">${b('Cancel','outline','data-modal-cancel')}${editing?b(target21()?`${icon('check')} Update Coach`:`${icon('check')} Save Changes`,'primary','data-modal-save'):''}</div>`});
+    if(target21())m.el.classList.add('cv46-target');
     const root=q('[data-coach-content]',m.el);
     function typeHTML(){const counts=coachCounts(draft),cname=draft.name||'',bt=draft.bus_type||'A/C Seater',pickup=/pickup/i.test(bt),cat=/seater.*sleeper/i.test(bt)?'Seater/Sleeper':/sleeper/i.test(bt)?'Sleeper':'Seater';
-      return `<div class="vp-edit-fields">${input('Coach Name *','name',cname,editing?'required':'disabled')}${input('Alternative name','alt_name',draft.alt_name||'',editing?'':'disabled')}${select('Coach Type *',[['Regular','Regular'],['Pickup Van','Pickup Van']],pickup?'Pickup Van':'Regular')}${select('A/C Type *',['A/C','Non A/C'],/non a\/c/i.test(bt)?'Non A/C':'A/C')}${select('Bus Category *',['Seater','Sleeper','Seater/Sleeper'],cat)}${select('Layout Type *',['2+2','2+1','1+1'],draft.pattern||'2+2')}${select('Bus Manufacturer *',['Standard','Bharat Benz','Volvo','Scania','Other'],draft.manufacturer||'Standard')}${input('Bus Type','bus_type',draft.bus_type||'',editing?'':'disabled')}${input('Total Seater Seats','seater_total',counts.seater,'readonly')}${input('Total Semi Sleeper Seats','semi_total',draft.semi_total||0,'readonly')}${input('Total Sleeper Berths','sleeper_total',counts.sleeper,'readonly')}</div><label class="vp-checkbox"><input type="checkbox" name="upper_deck" ${arr(draft.layout.decks).length>1?'checked':''} ${editing?'':'disabled'}/> Has Upper Deck</label>`}
+      return `<div class="vp-edit-fields">${input('Coach Name *','name',cname,editing?'required':'disabled')}${input('Alternative name','alt_name',draft.alt_name||'',editing?'':'disabled')}${select('Coach Type *',[['Regular','Regular'],['Pickup Van','Pickup Van']],pickup?'Pickup Van':'Regular')}${select('A/C Type *',['A/C','Non A/C'],/non a\/c/i.test(bt)?'Non A/C':'A/C')}${select('Bus Category *',['Seater','Sleeper','Seater/Sleeper'],cat)}${select('Layout Type *',['2+2','2+1','1+1'],draft.pattern||'2+2')}${select('Bus Manufacturer *',target21()?['Standard','Ashok Leyland','Bharat Benz','Volvo','Scania','Other']:['Standard','Bharat Benz','Volvo','Scania','Other'],draft.manufacturer||'Standard')}${input('Bus Type','bus_type',draft.bus_type||'',editing?'':'disabled')}${input('Total Seater Seats','seater_total',counts.seater,'readonly')}${input('Total Semi Sleeper Seats','semi_total',draft.semi_total||0,'readonly')}${input('Total Sleeper Berths','sleeper_total',counts.sleeper,'readonly')}</div><label class="vp-checkbox"><input type="checkbox" name="upper_deck" ${arr(draft.layout.decks).length>1?'checked':''} ${editing?'':'disabled'}/> Has Upper Deck</label>`}
     function amenitiesHTML(){return `<div class="vp-amenities-grid">${amenities.map(([key,label])=>`<label class="vp-amenity"><input type="checkbox" data-amenity="${key}" ${amenHas(draft.amenities,key,label)?'checked':''} ${editing?'':'disabled'}/><span>${E(label)}</span></label>`).join('')}</div>`}
-    function seatsHTML(){let counts=coachCounts(draft),seats=layoutTableSeats(draft.layout),fixtureList=[...arr(draft.layout.decks).flatMap((d,i)=>arr(d.fixtures).map(f=>({code:f.name||f.code||f.type||'Fixture',type:f.type||'FIXTURE',deck:i?'Upper':'Lower',orientation:f.orientation||'—',position:f.position||'Not specified',fixture:true}))),...[...new Set([...arr(draft.emergency_exits),...(amenHas(draft.amenities,'washroom','Washroom')?['Toilet']:[])])].map(name=>({code:name,type:/wash|toilet/i.test(name)?'WASH_ROOM':/roof/i.test(name)?'ROOF_EXIT':/back/i.test(name)?'BACK_EXIT':'EE_EXIT',deck:'Lower',orientation:/wash|toilet/i.test(name)?'Horizontal':'—',position:'Not specified',fixture:true}))],allSeats=[...seats,...fixtureList];
-      return `<div class="vp-config-panel"><div><h3>Current Configuration</h3><p><b>Bus Type:</b> ${E(draft.bus_type||draft.name||'Unspecified')}</p><p><b>Layout:</b> ${E(draft.pattern||'—')} · ${arr(draft.layout.decks).length} deck(s)</p><p><b>Seaters:</b> ${counts.seater} | <b>Semi-Sleepers:</b> ${E(draft.semi_total||0)} | <b>Sleepers:</b> ${counts.sleeper}</p><p class="vp-config-total"><b>Total seats:</b> ${counts.capacity}</p></div>${b(`${icon('refresh')} Generate Layout`,'primary',`data-generate ${editing?'':'disabled'}`)}</div><div class="vp-seat-legend">${[['Available','available'],['Male (Booked)','male'],['Female (Booked)','female'],['Blocked','blocked'],['No-show','no-show'],['Selected','selected']].map(([t,cl])=>`<span><i class="${cl}"></i> ${t}</span>`).join('')}</div><div class="vp-diagram-wrap">${coachDiagram(draft.layout)}</div><div class="vp-config-header"><h3>Seat Configuration <small>(${seats.length} Total seats)</small></h3><label class="vp-search">${icon('search')}<input type="search" data-search-seat value="${E(search)}" placeholder="Search by seat ID or type…"/></label></div><div class="vp-seat-table-scroll"><table class="vp-table vp-seat-config"><thead><tr><th>#</th><th>Display Name (Editable)</th><th>Type</th><th>Deck</th><th>Orientation</th><th>Position (Grid)</th></tr></thead><tbody>${allSeats.map((s,i)=>`<tr data-seat-row="${i}" ${search&&!`${s.code} ${s.type} ${s.deck}`.toLowerCase().includes(search.toLowerCase())?'hidden':''}><td>${i+1}</td><td><input type="text" name="seat_${s.deckIndex}_${s.localIndex}" data-seat-label="${s.fixture?'fixture':s.deckIndex+':'+s.localIndex}" value="${E(s.code)}" ${editing&&!s.fixture?'':'disabled'}/></td><td><span class="vp-seat-kind ${E(String(s.type||'seater').toLowerCase())}">${E(s.type||'SEATER')}</span></td><td>${E(s.deck)}</td><td>${E(s.orientation||'—')}</td><td>${E(s.position||s.grid)}</td></tr>`).join('')}</tbody></table></div>`;
+    function seatsHTML(){
+      if(target21()){
+        const counts=coach21.layoutCounts(draft.layout),
+          rows=coach21.tableRows(draft.layout,draft.emergency_exits),
+          disabled=(!editing||assigned()),
+          total=counts.capacity,
+          safe=E;
+        const typeClass=x=>String(x||'').toLowerCase().replace(/[^a-z0-9_]/g,'');
+        const rowHTML=(seat,i)=>{
+          const isSeat=seat.kind==='seat',editable=editing,
+            removeDisabled=!editing||assigned(),
+            rowID=isSeat?seat.ref:seat.kind==='virtual-fixture'?'back-exit':'fixture-'+seat.ref;
+          const canRemove=editing&&!assigned();
+          return '<tr data-seat-row="'+i+'">'+
+            '<td class="cv46-index">'+(i+1)+'</td>'+
+            '<td><input class="cv46-name" type="text" maxlength="50" data-seat-label="'+(isSeat?safe(seat.ref):seat.kind==='virtual-fixture'?'back-exit':'fixture-'+safe(seat.ref))+'" '+
+              'title="'+safe(isSeat?'Booking seat ID: '+seat.code+' · display name can be changed independently':seat.label)+'" '+
+              'value="'+safe(seat.label)+'" '+(editable?'':'disabled')+' /></td>'+
+            '<td><span class="cv46-kind '+typeClass(seat.type)+'">'+safe(seat.type)+'</span></td>'+
+            '<td class="cv46-deck-label">'+safe(seat.deck==='LOWER'?'Lower':'Upper')+'</td>'+
+            '<td>'+ (seat.orientation==='Vertical'?'<span class="cv46-orientation">↕ Vertical</span>':'<span class="cv46-dash">—</span>') +'</td>'+
+            '<td class="cv46-grid-pos">'+safe(seat.position)+'</td>'+
+            '<td><button type="button" class="cv46-remove" data-cv46-remove="'+safe(rowID)+'" '+
+              (canRemove?'':'disabled title="Assigned coaches cannot change physical positions"')+
+              ' aria-label="Delete '+safe(seat.label)+'">'+icon('trash',20)+'</button></td>'+
+          '</tr>';
+        };
+        const legend=[['Available','available'],['Male (Booked)','male'],['Female (Booked)','female'],
+          ['Blocked','blocked'],['No-show','no-show'],['Selected','selected']];
+        return '<div class="cv46-editor">'+
+          '<section class="vp-config-panel cv46-summary"><div><h3>Current Configuration</h3>'+
+            '<p><b>Bus Type:</b> '+safe((draft.manufacturer&&draft.manufacturer!=='Standard'?draft.manufacturer+' ':'')+(draft.bus_type||draft.name||'A/C Seater/Sleeper (2+1)'))+'</p>'+
+            '<p><b>Layout:</b> 2+1 (4 columns with gangway, max 16 rows)</p>'+
+            '<p><b>Seaters:</b> '+counts.seaters+' | <b>Semi-Sleepers:</b> '+Number(draft.semi_total||0)+' | <b>Sleepers:</b> '+counts.sleepers+'</p>'+
+            '<p class="vp-config-total"><b>Total Seats:</b> '+total+'</p></div>'+
+            b('Generate Layout','primary','data-generate '+(disabled?'disabled title="Physical layout editing is unavailable for assigned coaches"':''))+
+          '</section>'+
+          '<div class="vp-seat-legend cv46-legend">'+legend.map(([name,kind])=>'<span><i class="'+kind+'"></i>'+name+'</span>').join('')+'</div>'+
+          '<div class="vp-diagram-wrap cv46-diagram">'+coach21.renderDiagram(draft.layout,{selected:[...selected],disabled:!editing,emergencyExits:draft.emergency_exits})+'</div>'+
+          '<div class="vp-config-header cv46-config-head"><h3>Seat Configuration <small>('+total+' Total seats)</small></h3>'+
+           '<div class="cv46-config-actions"><label class="cv46-search">'+icon('search',18)+
+             '<input type="search" data-search-seat value="'+safe(search)+'" placeholder="Search by seat ID or type" aria-label="Search seat configuration" /></label>'+
+             '<button type="button" class="cv46-add" data-cv46-add '+(disabled?'disabled':'')+'>'+icon('plus',17)+' Add Seat</button>'+
+             '<button type="button" class="cv46-reset" data-cv46-reset '+(!editing?'disabled':'')+'>Reset Names</button>'+
+           '</div></div>'+
+          '<p class="cv46-tip">Tip: Click on any Display Name field below to edit it. Changes are applied in real-time to the seat grid above.</p>'+
+          '<div class="vp-seat-table-scroll cv46-seat-table-scroll"><table class="vp-table vp-seat-config cv46-seat-table">'+
+            '<thead><tr><th>#</th><th>Display Name (Editable)</th><th>Type</th><th>Deck</th><th>Orientation</th><th>Position (Grid)</th><th>Actions</th></tr></thead>'+
+            '<tbody>'+rows.map(rowHTML).join('')+'</tbody></table></div>'+
+          (assigned()?'<p class="cv46-assigned-note">This coach is assigned to a vehicle or route. Display names may be changed without changing inventory seat IDs; adding, deleting or regenerating physical seats requires a controlled inventory migration.</p>':'')+
+        '</div>';
+      }
+      let counts=coachCounts(draft),seats=layoutTableSeats(draft.layout),
+        fixtureList=[...arr(draft.layout.decks).flatMap((d,i)=>arr(d.fixtures).map(f=>({code:f.name||f.code||f.type||'Fixture',type:f.type||'FIXTURE',deck:i?'Upper':'Lower',orientation:f.orientation||'—',position:f.position||'Not specified',fixture:true}))),
+          ...[...new Set([...arr(draft.emergency_exits),...(amenHas(draft.amenities,'washroom','Washroom')?['Toilet']:[])])].map(name=>({code:name,type:/wash|toilet/i.test(name)?'WASH_ROOM':/roof/i.test(name)?'ROOF_EXIT':/back/i.test(name)?'BACK_EXIT':'EE_EXIT',deck:'Lower',orientation:/wash|toilet/i.test(name)?'Horizontal':'—',position:'Not specified',fixture:true}))],
+        allSeats=[...seats,...fixtureList];
+      return '<div class="vp-config-panel"><div><h3>Current Configuration</h3><p><b>Bus Type:</b> '+E(draft.bus_type||draft.name||'Unspecified')+'</p><p><b>Layout:</b> '+E(draft.pattern||'—')+' · '+arr(draft.layout.decks).length+' deck(s)</p><p><b>Seaters:</b> '+counts.seater+' | <b>Semi-Sleepers:</b> '+E(draft.semi_total||0)+' | <b>Sleepers:</b> '+counts.sleeper+'</p><p class="vp-config-total"><b>Total seats:</b> '+counts.capacity+'</p></div>'+b(icon('refresh')+' Generate Layout','primary','data-generate '+(editing?'':'disabled'))+'</div>'+
+        '<div class="vp-seat-legend">'+[['Available','available'],['Male (Booked)','male'],['Female (Booked)','female'],['Blocked','blocked'],['No-show','no-show'],['Selected','selected']].map(([t,cl])=>'<span><i class="'+cl+'"></i> '+t+'</span>').join('')+'</div>'+
+        '<div class="vp-diagram-wrap">'+coachDiagram(draft.layout)+'</div><div class="vp-config-header"><h3>Seat Configuration <small>('+seats.length+' Total seats)</small></h3><label class="vp-search">'+icon('search')+'<input type="search" data-search-seat value="'+E(search)+'" placeholder="Search by seat ID or type…" /></label></div>'+
+        '<div class="vp-seat-table-scroll"><table class="vp-table vp-seat-config"><thead><tr><th>#</th><th>Display Name (Editable)</th><th>Type</th><th>Deck</th><th>Orientation</th><th>Position (Grid)</th></tr></thead><tbody>'+
+        allSeats.map((item,i)=>'<tr data-seat-row="'+i+'"><td>'+(i+1)+'</td><td><input type="text" data-seat-label="'+(item.fixture?'fixture':item.deckIndex+':'+item.localIndex)+'" value="'+E(item.code)+'" '+(editing&&!item.fixture?'':'disabled')+' /></td><td><span class="vp-seat-kind '+E(String(item.type||'seater').toLowerCase())+'">'+E(item.type||'SEATER')+'</span></td><td>'+E(item.deck)+'</td><td>'+E(item.orientation||'—')+'</td><td>'+E(item.position||item.grid)+'</td></tr>').join('')+
+        '</tbody></table></div>';
     }
     const draw=()=>{qa('[data-tab]',m.el).forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));root.innerHTML=tab==='type'?typeHTML():tab==='amenities'?amenitiesHTML():seatsHTML();if(!editing)qa('select',root).forEach(el=>el.disabled=true)};
     m.el.addEventListener('click',async e=>{
       const t=e.target.closest('[data-tab]');if(t){tab=t.dataset.tab;draw();return}
       if(e.target.closest('[data-modal-cancel]')){m.close();return}
-      if(e.target.closest('[data-generate]')){if(!editing)return;const bt=draft.bus_type||draft.name||'',kind=/seater.*sleeper/i.test(bt)?'seater_sleeper':/sleeper/i.test(bt)?'sleeper':'seater';if(draft.id&&!(await G.confirm('Regenerate this coach layout? Existing seat positions and labels will be replaced in this unsaved draft.')))return;if(draft.id&&(coach.vehicles>0||coach.routes>0)){G.toast('Coach is in use. Existing seat layouts cannot be regenerated safely.','bad');return}draft.layout=createLayout(kind,draft.pattern||'2+2');if(!draft.upperDeck&&draft.layout.decks.length>1)draft.layout.decks=draft.layout.decks.slice(0,1);if(draft.upperDeck&&draft.layout.decks.length===1){let lower=draft.layout.decks[0];draft.layout.decks.push({deck:'UPPER',rows:lower.rows,cols:lower.cols,seats:arr(lower.seats).map(t=>({...t,code:String(t.code)+'U'}))})}draft.layout.capacity=draft.layout.decks.reduce((n,d)=>n+arr(d.seats).length,0);selected.clear();draw();G.toast('Layout generated in editor; save to persist','ok');return}
-      const seat=e.target.closest('[data-layout-seat]');if(seat){seat.classList.toggle('vp-seat-focus');selected.has(seat.dataset.layoutSeat)?selected.delete(seat.dataset.layoutSeat):selected.add(seat.dataset.layoutSeat);return}
+      if(e.target.closest('[data-generate]')){if(!editing)return;if(target21()){if(assigned()){G.toast('Physical layout cannot change while assigned to vehicles or routes','warn');return;}if(draft.id&&!await G.confirm('Regenerate the 46-seat 2+1 layout? This replaces seat positions in the unsaved draft.'))return;draft.layout=coach21.build();draft.upperDeck=true;selected.clear();draw();G.toast('46-seat layout generated in editor; click Update Coach to save','ok');return;}const bt=draft.bus_type||draft.name||'',kind=/seater.*sleeper/i.test(bt)?'seater_sleeper':/sleeper/i.test(bt)?'sleeper':'seater';if(draft.id&&!(await G.confirm('Regenerate this coach layout? Existing seat positions and labels will be replaced in this unsaved draft.')))return;if(draft.id&&(coach.vehicles>0||coach.routes>0)){G.toast('Coach is in use. Existing seat layouts cannot be regenerated safely.','bad');return}draft.layout=createLayout(kind,draft.pattern||'2+2');if(!draft.upperDeck&&draft.layout.decks.length>1)draft.layout.decks=draft.layout.decks.slice(0,1);if(draft.upperDeck&&draft.layout.decks.length===1){let lower=draft.layout.decks[0];draft.layout.decks.push({deck:'UPPER',rows:lower.rows,cols:lower.cols,seats:arr(lower.seats).map(t=>({...t,code:String(t.code)+'U'}))})}draft.layout.capacity=draft.layout.decks.reduce((n,d)=>n+arr(d.seats).length,0);selected.clear();draw();G.toast('Layout generated in editor; save to persist','ok');return}
+      if(target21()&&editing){
+        if(e.target.closest('[data-cv46-add]')){
+          if(assigned())return G.toast('Cannot add physical seats to a coach used by a vehicle or route','warn');
+          const vals=await G.prompt('Add Seat',[
+            {name:'code',label:'Seat ID',required:true},
+            {name:'deck',label:'Deck',type:'select',options:[['LOWER','Lower'],['UPPER','Upper']]},
+            {name:'type',label:'Seat Type',type:'select',options:[['seater','Seater'],['sleeper','Sleeper']]}
+          ],{ok:'Add Seat'});
+          if(!vals)return;
+          try{coach21.addSeat(draft.layout,vals);const scroll=root.scrollTop;draw();root.scrollTop=scroll;G.toast('Seat added to unsaved layout','ok');}
+          catch(err){G.toast(err.message,'bad');}
+          return;
+        }
+        if(e.target.closest('[data-cv46-reset]')){
+          if(!await G.confirm('Restore all seat display names to booking seat IDs?'))return;
+          for(const deck of arr(draft.layout?.decks)){
+            for(const seat of arr(deck.seats))delete seat.display_name;
+            for(const fixture of arr(deck.fixtures))delete fixture.display_name;
+          if(draft.layout?.fixture_aliases)delete draft.layout.fixture_aliases.back_exit;
+          }
+          const scroll=root.scrollTop;draw();root.scrollTop=scroll;
+          G.toast('Seat display names reset; Update Coach to persist','ok');return;
+        }
+        const del=e.target.closest('[data-cv46-remove]');
+        if(del){
+          if(assigned())return G.toast('Cannot delete assigned physical seats or exits','warn');
+          const ref=del.dataset.cv46Remove;
+          if(!await G.confirm('Remove '+E(ref)+' from this coach layout?'))return;
+          try{
+            if(ref==='back-exit')draft.emergency_exits=arr(draft.emergency_exits).filter(x=>!/back\s*exit/i.test(String(x)));
+            else if(ref.startsWith('fixture-')){
+              const [deck,index]=ref.slice(8).split(':').map(Number);
+              const f=draft.layout?.decks?.[deck]?.fixtures?.[index];
+              if(!f)throw Error('Exit not found');
+              draft.layout.decks[deck].fixtures.splice(index,1);
+              if(/back\s*exit/i.test(String(f.name||f.code)))
+                draft.emergency_exits=arr(draft.emergency_exits).filter(x=>!/back\s*exit/i.test(String(x)));
+            }else coach21.removeSeat(draft.layout,ref);
+            const scroll=root.scrollTop;selected.clear();draw();root.scrollTop=scroll;
+            G.toast('Removed in editor; Update Coach to save','ok');
+          }catch(err){G.toast(err.message,'bad')}
+          return;
+        }
+      }
+      const seat=e.target.closest('[data-layout-seat]');if(seat){if(!editing)return;const ref=seat.dataset.layoutSeat;selected.has(ref)?selected.delete(ref):selected.add(ref);seat.classList.toggle(target21()?'selected':'vp-seat-focus',selected.has(ref));return}
       if(e.target.closest('[data-modal-save]')){
         if(!editing)return;const name=String(draft.name||'').trim();if(!name)return G.toast('Coach name is required','bad');
-        if(draft.id&&(coach.vehicles>0||coach.routes>0)&&JSON.stringify(coach.layout||{})!==JSON.stringify(draft.layout||{}))return G.toast('Coach is assigned to routes or buses. Seat positions/labels cannot be changed without inventory migration.','bad');
-        const body={name,bus_type:draft.bus_type||name,pattern:draft.pattern||'2+2',amenities:draft.amenities,layout:draft.layout,alt_name:draft.alt_name||'',manufacturer:draft.manufacturer||'Standard'};
+        if(target21()){draft.layout.capacity=coach21.activeCount(draft.layout);try{coach21.validateLayout(draft.layout)}catch(error){G.toast(error.message,'bad');return;}}
+        if(draft.id&&assigned()&&(target21()?coach21.structuralSignature(coach.layout)!==coach21.structuralSignature(draft.layout):JSON.stringify(coach.layout||{})!==JSON.stringify(draft.layout||{})))return G.toast('Assigned coaches cannot change physical seat positions or inventory IDs','bad');
+        const body={name,bus_type:draft.bus_type||name,pattern:draft.pattern||'2+2',amenities:draft.amenities,layout:draft.layout,alt_name:draft.alt_name||'',manufacturer:draft.manufacturer||'Standard'};if(target21())body.emergency_exits=arr(draft.emergency_exits);
         try{if(draft.id){await G.put(`/coaches/${draft.id}`,body)}else{await G.post('/coaches',body)}m.close();G.toast('Coach saved','ok');done()}catch(err){G.err(err)}return;
       }
     });
-    m.el.addEventListener('input',e=>{const t=e.target;if(t.matches('[data-search-seat]')){search=t.value;qa('[data-seat-row]',root).forEach(tr=>tr.hidden=!tr.innerText.toLowerCase().includes(search.toLowerCase()));return}if(t.matches('[data-seat-label]')){const [deck,index]=t.dataset.seatLabel.split(':').map(Number);if(draft.layout?.decks?.[deck]?.seats?.[index])draft.layout.decks[deck].seats[index].code=t.value;return}if(t.name){const map={name:'name',alt_name:'alt_name',bus_type:'bus_type'};if(map[t.name])draft[map[t.name]]=t.value}});
+    m.el.addEventListener('input',e=>{const t=e.target;if(t.matches('[data-search-seat]')){search=t.value;qa('[data-seat-row]',root).forEach(tr=>tr.hidden=!tr.innerText.toLowerCase().includes(search.toLowerCase()));return}if(t.matches('[data-seat-label]')){const id=t.dataset.seatLabel;if(target21()&&id==='back-exit'){draft.layout.fixture_aliases={...(draft.layout.fixture_aliases||{}),back_exit:t.value};const exit=q('[data-cv46-exit-label]',root);if(exit)exit.title=t.value;return;}if(target21()&&id.startsWith('fixture-')){const [deck,index]=id.slice(8).split(':').map(Number);const fixture=draft.layout?.decks?.[deck]?.fixtures?.[index];if(fixture)fixture.display_name=t.value;return;}const [deck,index]=id.split(':').map(Number),record=draft.layout?.decks?.[deck]?.seats?.[index];if(record){if(target21()){record.display_name=t.value;const gridLabel=q('[data-cv46-label="'+deck+':'+index+'"]',root);if(gridLabel)gridLabel.textContent=t.value;}else record.code=t.value;}return}if(t.name){const map={name:'name',alt_name:'alt_name',bus_type:'bus_type'};if(map[t.name])draft[map[t.name]]=t.value}});
     m.el.addEventListener('change',e=>{
       const t=e.target;if(t.dataset.amenity){if(!editing)return;draft.amenities=amenities.filter(([key,label])=>key===t.dataset.amenity?(t.checked):amenHas(draft.amenities,key,label)).map(x=>x[0]);return}
       if(t.name==='coach_type'){draft.bus_type=t.value==='Pickup Van'?'Pickup Van':(draft.bus_type||'Regular');return}
