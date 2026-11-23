@@ -1,0 +1,33 @@
+name: Coach 2+2 A/C Seater Screenshot v47
+on:
+  push:
+    branches:
+      - feature/coach-2plus2-screenshot-v47
+  pull_request:
+    paths:
+      - "public/js/coach-2plus2-v47.js"
+      - "public/js/vehicles-parity-v9.js"
+      - "public/css/coach-2plus2-v47.css"
+      - "server/api/master.js"
+      - "public/index.html"
+      - "tests/coach-2plus2-v47.test.cjs"
+      - ".github/workflows/coach-2plus2-v47.yml"
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Verify 2+2 screenshot geometry, exits, toilet, editing and secure API
+        run: node --test tests/coach-2plus2-v47.test.cjs
+      - name: Verify prior 2+1 coach implementation remains intact
+        run: node --test tests/coach-2plus1-v46.test.cjs
+      - name: Verify vehicles screenshot module
+        run: node tests/check-vehicles-v9.mjs
+      - name: Full GDS regression test
+        run: npm test
