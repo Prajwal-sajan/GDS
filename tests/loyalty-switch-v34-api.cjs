@@ -135,7 +135,7 @@ const put=(sec,value,p=owner)=>call('PUT','/settings/loyalty-v34/'+sec,{value},p
   assert.equal(audit.acting_as.id,agent.id);
   console.log('PASS v34 API: screenshot settings & values, strict validation, old endpoint protection, capped/tiered miles, blocked date, idempotent settlement/reversal, hierarchy-safe impersonation, attribution and audit');
  }finally{
-  await new Promise(done=>{http.closeAllConnections?.();http.close(done);});db.persistNow();
+  http.closeAllConnections?.();http.close();db.persistNow();
   fs.rmSync(process.env.GDS_DATA_DIR,{force:true,recursive:true});
  }
 })().catch(e=>{console.error(e);process.exitCode=1;});
