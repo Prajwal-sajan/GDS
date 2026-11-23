@@ -225,26 +225,38 @@ function compareInvoice(parsed,bookings,config={}){
   if(b.source&&String(b.source).toLowerCase()!==source)flags.push('channel');
   if(entry.section==='pax_cancelled'&&b.cancellation_charge!=null&&entry.cancellation_charge!=null&&Math.abs(Number(b.cancellation_charge)-entry.cancellation_charge)>tolerance)flags.push('cancellation_charge');
   if(b.travel_date&&entry.doj&&b.travel_date.slice(0,10)!==entry.doj)flags.push('doj');
-  const fare=(b.fare||{}),expectedFare=Number(fare.net??fare.total);
-  if(Number.isFinite(expectedFare)&&Math.abs(expectedFare-entry.fare)>tolerance)flags.push('fare');
-  // A GDS booking must carry actual commission/tax/offer evidence for exact settlement proof;
-  // the OTA config is a comparison estimate only, not a verified source of truth.
-  const commissionBase=Number(fare.net??fare.base??0);
-  const commission=Number(fare.ota_commission??(commissionBase*(Number(config.commission_percent)||0)/100));
-  const commissionTax=Number(fare.ota_commission_gst??commission*(Number(config.gst_on_commission_percent??18)/100));
-  const operatorOffer=Number(fare.operator_offer??0);
-  const tax=Number(fare.gst??Math.max(0,Number(fare.total??0)-Number(fare.net??0)));
-  const actualNumber=value=>value!==undefined&&value!==null&&value!==''&&Number.isFinite(Number(value));
-  const hasActual=actualNumber(fare.ota_commission)&&actualNumber(fare.ota_commission_gst)&&actualNumber(fare.operator_offer)&&actualNumber(fare.ota_take_home);
-  const ourPay=Number(fare.ota_take_home??(Number(fare.total??0)-commission-commissionTax-operatorOffer));
-  const diff=entry.take_home==null?null:money(entry.take_home-ourPay);
-  if(entry.commission!=null&&Math.abs(entry.commission-commission)>tolerance)flags.push('commission');
-  if(entry.commission_tax!=null&&Math.abs(entry.commission_tax-commissionTax)>tolerance)flags.push('commission_tax');
-  if(entry.operator_offer!=null&&Math.abs(entry.operator_offer-operatorOffer)>tolerance)flags.push('offer');
-  if(entry.take_home!=null&&Math.abs(diff)>tolerance)flags.push('payout');
-  const verified=hasActual&&flags.length===0&&(entry.section==='sold')&&status==='confirmed'&&(!b.source||String(b.source).toLowerCase()===source);
-  return {...entry,booking_status:b.status,source:b.source,expected:{doj:b.travel_date||'',fare:money(expectedFare),tax:money(tax),commission:money(commission),commission_tax:money(commissionTax),operator_offer:money(operatorOffer),take_home:money(ourPay)},
-   delta:diff,differences:[...new Set(flags)],status:flags.length?'mismatched':verified?'matched':'needs_review',verified,why:flags.join(', ')||(!hasActual?'GDS commission/tax/offer evidence incomplete':'Verified')};
+  const fare=b.fare||{};
+  const actual=value=>value!==undefined&&value!==null&&value!==''&&Number.isFinite(Number(value));
+  const expectedFare=actual(fare.net)?Number(fare.net):actual(fare.total)?Number(fare.total):null;
+  const actualTax=actual(fare.gst)?Number(fare.gst):actual(fare.total)&&actual(fare.net)?money(Number(fare.total)-Number(fare.net)):null;
+  const actualComm=actual(fare.ota_commission)?Number(fare.ota_commission):actual(fare.commission)?Number(fare.commission):null;
+  const actualCommTax=actual(fare.ota_commission_gst)?Number(fare.ota_commission_gst):actual(fare.gst_on_commission)?Number(fare.gst_on_commission):null;
+  const actualOffer=actual(fare.operator_offer)?Number(fare.operator_offer):null;
+  const actualTakeHome=actual(fare.ota_take_home)?Number(fare.ota_take_home):
+    actual(fare.total)&&actualComm!==null&&actualCommTax!==null&&actualOffer!==null?
+      money(Number(fare.total)-actualComm-actualCommTax-actualOffer):null;
+  if(expectedFare!==null&&entry.fare!=null&&Math.abs(expectedFare-entry.fare)>tolerance)flags.push('fare');
+  if(expectedFare===null)flags.push('gds_fare_unverified');
+  // Differences only cite captured GDS financial evidence. OTA configuration estimates are
+  // not quietly promoted to source-backed commission, offer or payout mismatches.
+  if(actualComm!==null&&entry.commission!=null&&Math.abs(entry.commission-actualComm)>tolerance)flags.push('commission');
+  if(actualCommTax!==null&&entry.commission_tax!=null&&Math.abs(entry.commission_tax-actualCommTax)>tolerance)flags.push('commission_tax');
+  if(actualOffer!==null&&entry.operator_offer!=null&&Math.abs(entry.operator_offer-actualOffer)>tolerance)flags.push('offer');
+  const diff=entry.take_home==null||actualTakeHome===null?null:money(entry.take_home-actualTakeHome);
+  if(diff!==null&&Math.abs(diff)>tolerance)flags.push('payout');
+  const hasActual=expectedFare!==null&&actualTax!==null&&actualComm!==null&&actualCommTax!==null&&actualOffer!==null&&actualTakeHome!==null;
+  const definitive=['status','channel','cancellation_charge','doj','fare','commission','commission_tax','offer','payout'];
+  const mismatch=flags.some(x=>definitive.includes(x));
+  const verified=hasActual&&!mismatch&&(entry.section==='sold')&&status==='confirmed'&&(!b.source||String(b.source).toLowerCase()===source);
+  const statusResult=mismatch?'mismatched':verified?'matched':'needs_review';
+  return {...entry,booking_status:b.status,source:b.source,
+   expected:{doj:b.travel_date||'',fare:expectedFare===null?null:money(expectedFare),tax:actualTax===null?null:money(actualTax),
+    commission:actualComm===null?null:money(actualComm),commission_tax:actualCommTax===null?null:money(actualCommTax),
+    operator_offer:actualOffer===null?null:money(actualOffer),take_home:actualTakeHome===null?null:money(actualTakeHome)},
+   delta:diff,differences:[...new Set(flags)],status:statusResult,verified,
+   why:mismatch?flags.filter(x=>definitive.includes(x)).join(', '):
+    !hasActual?'GDS settlement evidence incomplete — financial fields left unverified':verified?'Verified against recorded GDS evidence':'Needs review'};
+
  });
  // Missing-in-OTA is assessed only among redBus-origin bookings in this invoice's travel period.
  const invoicePNRs=new Set(parsed.rows.map(x=>key(x.pnr)));
@@ -256,13 +268,13 @@ function compareInvoice(parsed,bookings,config={}){
  }
  const sum=(arr,k)=>money(arr.reduce((n,x)=>n+(Number(x[k])||0),0));
  const invoiceLines=rows.filter(x=>x.section!=='missing_in_ota');
- const expectedRows=invoiceLines.filter(x=>x.expected&&x.section==='sold');
+ const expectedRows=invoiceLines.filter(x=>x.expected?.take_home!==null&&x.section==='sold');
  const stmtAmount=parsed.summary.invoice_amount;
  const totals={
   invoice_amount:stmtAmount,invoice_lines:parsed.statement_lines,parsed_events:parsed.rows.length,
   invoice_adjustment_events:parsed.rows.filter(x=>x.section==='exceptional_refund').length,
   ticket_rows:rows.filter(x=>!['exceptional_refund','missing_in_ota'].includes(x.section)).length,
-  gds_comparable:invoiceLines.filter(x=>!!x.expected).length,verified:rows.filter(x=>x.verified).length,
+  gds_comparable:invoiceLines.filter(x=>x.expected?.fare!==null&&x.expected?.take_home!==null).length,verified:rows.filter(x=>x.verified).length,
   matched:rows.filter(x=>x.status==='matched').length,mismatched:rows.filter(x=>x.status==='mismatched').length,
   needs_review:rows.filter(x=>x.status==='needs_review').length,
   missing_in_gds:rows.filter(x=>x.status==='unmatched_ota').length,missing_in_ota:rows.filter(x=>x.status==='unmatched_gds').length,
@@ -276,7 +288,7 @@ function compareInvoice(parsed,bookings,config={}){
  };
  const sectionStats={};
  for(const section of ['sold','pax_cancelled','bus_cancelled','exceptional_refund']){
-  const set=rows.filter(x=>x.section===section);const comparable=set.filter(x=>!!x.expected);
+  const set=rows.filter(x=>x.section===section);const comparable=set.filter(x=>x.expected?.fare!==null&&x.expected?.take_home!==null);
   sectionStats[section]={count:set.length,invoice_fare:sum(set,'fare'),invoice_tax:sum(set,'tax'),invoice_gross:money(sum(set,'fare')+sum(set,'tax')),take_home:sum(set,'take_home'),
   gds_count:comparable.length,gds_expected_fare:comparable.length?money(comparable.reduce((v,x)=>v+(x.expected.fare||0)+(x.expected.tax||0),0)):null,
   gds_expected_payout:comparable.length?money(comparable.reduce((v,x)=>v+(x.expected.take_home||0),0)):null,
