@@ -106,7 +106,7 @@ function cityOptions(report){
    found.get(id).count++;
   }
  }
- return [{id:'all',label:'All passengers',count:report.rows.length},...found.values()
+ return [{id:'all',label:'All passengers',count:report.rows.length},...[...found.values()]
    .sort((a,b)=>a.kind.localeCompare(b.kind)||natural(a.city,b.city))
    .map(x=>({...x,label:(x.kind==='boarding'?'Boarding at ':'Dropping at ')+x.city}))];
 }
