@@ -77,6 +77,9 @@
   if(Number(deck.cols)!==5||!Number.isInteger(Number(deck.rows))||Number(deck.rows)<12||Number(deck.rows)>16)
    throw Error('2+2 coach needs five columns including central aisle and 12–16 rows');
   const occupancy=new Set(),ids=new Set(),aliases=new Set(),fixtures=new Set();
+  // The inner aisle-facing cell beside a side exit must remain clear for access.
+  const safetyClearances=new Set(list(deck.fixtures).filter(f=>String(f.type).toUpperCase()==='EE_EXIT')
+    .map(f=>Number(f.row)+':'+(Number(f.col)-1)));
   function region(item,role){
    const {row,col}=item,w=Number(item.w??1),h=Number(item.h??1);
    if(![row,col,w,h].every(x=>Number.isInteger(Number(x)))||Number(row)<0||Number(col)<0||
@@ -93,6 +96,7 @@
    if(!alias||alias.length>50||aliases.has(alias.toUpperCase()))throw Error('Display names must be unique, 1–50 characters');
    if(seat.type!=='seater'||Number(seat.w??1)!==1||Number(seat.h??1)!==1||
      ![0,1,3,4].includes(Number(seat.col)))throw Error('2+2 seat '+id+' requires one valid left/right cell');
+   if(safetyClearances.has(Number(seat.row)+':'+Number(seat.col)))throw Error('Seat '+id+' blocks emergency exit access');
    ids.add(id.toUpperCase());aliases.add(alias.toUpperCase());region(seat,'seat '+id);
   }
   for(const fixture of list(deck.fixtures)){
@@ -111,6 +115,8 @@
   if(!id||id.length>24||list(d.seats).some(s=>String(s.code).toUpperCase()===id.toUpperCase()))
    throw Error('Choose a unique seat ID of up to 24 characters');
   const used=new Set();
+  for(const f of list(d.fixtures).filter(f=>String(f.type).toUpperCase()==='EE_EXIT'))
+    used.add(Number(f.row)+':'+(Number(f.col)-1));
   for(const element of [...list(d.seats),...list(d.fixtures)])
    for(let r=Number(element.row);r<Number(element.row)+Number(element.h||1);r++)
     for(let c=Number(element.col);c<Number(element.col)+Number(element.w||1);c++)used.add(r+':'+c);
