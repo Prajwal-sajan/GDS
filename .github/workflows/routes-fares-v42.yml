@@ -1,0 +1,40 @@
+name: v42 Routes Fares Screenshot Fidelity and Engine
+on:
+  push:
+    branches: [feature/routes-fares-screenshot-v42, savetrip-screenshotcomplete]
+    paths:
+      - 'public/js/routes-screenshot-v5.js'
+      - 'public/css/routes-fares-v42.css'
+      - 'public/index.html'
+      - 'server/domain.js'
+      - 'server/api/master.js'
+      - 'tests/check-route-fares-v42.cjs'
+      - 'tests/regression.js'
+      - '.github/workflows/routes-fares-v42.yml'
+  pull_request:
+    branches: [savetrip-screenshotcomplete]
+  workflow_dispatch:
+jobs:
+  routes-fares-v42:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Verify modified source syntax
+        run: |
+          node --check public/js/routes-screenshot-v5.js
+          node --check server/domain.js
+          node --check server/api/master.js
+          node --check tests/check-route-fares-v42.cjs
+      - name: Routes Fares v42 reference seat and pricing regression
+        run: node tests/check-route-fares-v42.cjs
+      - name: Existing routes and schedules regressions
+        run: |
+          node tests/check-routes-v5.mjs
+          node tests/check-routes-schedules-v7.mjs
+          npm test
