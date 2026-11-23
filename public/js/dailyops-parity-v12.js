@@ -3,6 +3,7 @@
   'use strict';
   if (!window.G || !G.screens) return;
   const E = s => esc(s ?? '');
+  const ota = window.OTARatingsV44;
   const N = v => Number.isFinite(Number(v)) ? Number(v) : 0;
   const F = s => s ? fdate(String(s).slice(0,10)) : '—';
   const fmt = s => s == null ? '—' : N(s).toLocaleString('en-IN');
@@ -61,6 +62,7 @@
     const loadDaily = async () => {
       const [d,calls,chats,ratings,trips] = await Promise.all([safeFetch('/daily-ops?date='+encodeURIComponent(state.date)),safeFetch('/calls'),safeFetch('/chats'),safeFetch('/ratings'),safeFetch('/trips?date='+encodeURIComponent(state.date))]);
       state.d = d; state.calls = calls; state.chats = chats; state.ratings = Array.isArray(ratings?.rows) ? ratings.rows : []; RATINGS = state.ratings;
+      await ota.load();
       // Enrich only with genuine existing Trip API data, when authorized.
       if (d && Array.isArray(d.fleet?.trips)) {
         const tripMap = new Map((trips?.trips||[]).map(t=>[String(t.id),t]));
@@ -114,7 +116,7 @@
       }).join('');
       return `<div class="ds-report"><div class="ds-report-head"><div class="ds-title"><span class="ds-title-icon">${svg('clipboard',26)}</span><div><h2>Daily Operations Report</h2><small>Per-service operational metrics</small></div></div><div class="ds-report-controls">${dateBtn('date',state.date)}${btn('refresh',`${svg('refresh',20)} Refresh`,'primary')}</div></div><div class="ds-kpi-grid">${kpis.join('')}</div><div class="ds-table-container">${table(heads, rows||`<tr><td colspan="14">${empty('No scheduled services for this date.')}</td></tr>`,'ds-report-table')}</div><p class="ds-data-note">${svg('info',16)} Report figures are loaded from the connected GDS. Tracking viewers, live alerts and pickup/drop performance appear as — until their sources are connected; check-ins and PNRs use the Trip API when authorized.</p></div>`;
     };
-    const filteredRatings = (useDate=true) => state.ratings.filter(x =>
+    const filteredRatings = (useDate=true) => state.ratings.filter(x => ota.matches(x) &&
       (!useDate || filterBy(x.travel_at||x.rated_at,state.from,state.to)) &&
       (state.service==='all'||String(x.schedule_id||x.service||'')===state.service) &&
       (!state.search||`${x.passenger_name} ${x.pnr} ${x.phone} ${x.review} ${x.ota}`.toLowerCase().includes(state.search.toLowerCase())) &&
@@ -123,10 +125,10 @@
     const average = a => a.length ? (a.reduce((n,x)=>n+N(x.rating),0)/a.length).toFixed(2) : '—';
     const counts = a => [1,2,3,4,5].map(i=>a.filter(x=>N(x.rating)===i).length);
     const ratingsHeader = () => {
-      const all=state.ratings;const filtered=filteredRatings();const low14=all.filter(x => N(x.rating)<=2 && String(x.rated_at||'').slice(0,10)>=dayPlus(todayStr(),-13));
-      const stats=[card('star',average(all),'OTA RATINGS AVAILABLE','green','From connected GDS records'),card('users','—','RATED THIS WEEK','blue','Requires total OTA passengers'),card('thumbDown',fmt(low14.length),'1–2★ IN 14 DAYS','red','Review and follow up'),card('msgWarn',average(filtered),'AVERAGE IN THESE DATES','purple',`${fmt(filtered.length)} ratings`)].join('');
+      const all=state.ratings.filter(x=>ota.matches(x));const filtered=filteredRatings();const low14=all.filter(x => N(x.rating)<=2 && String(x.rated_at||'').slice(0,10)>=dayPlus(todayStr(),-13));
+      const stats=[card('star',average(all),ota.provider.toUpperCase()+' RATING','green','From connected GDS records'),card('users','—','RATED','blue','Requires total OTA passengers'),card('thumbDown',fmt(low14.length),'1–2★ IN 14 DAYS','red','Review and follow up'),card('msgWarn',average(filtered),'AVERAGE IN THESE DATES','purple',`${fmt(filtered.length)} ratings`)].join('');
       const services=[...new Map(all.filter(x=>x.schedule_id||x.service).map(x=>[String(x.schedule_id||x.service),String(x.service||x.service_number||x.schedule_id)])).entries()];
-      return `<div class="ds-ratings-head"><div class="ds-title"><span class="ds-title-icon">${svg('star',27)}</span><div><h2>OTA Ratings</h2><small>Ratings from connected GDS records · RedBus search ranking not connected</small></div></div><div class="ds-head-actions">${btn('settings',`${svg('settings',19)} Settings`,'primary')}${btn('refresh',`${svg('refresh',19)} Refresh`,'primary')}</div></div><div class="ds-filter-panel"><label><small>Service</small><select data-ds-change="service"><option value="all">All services</option>${services.map(([id,label])=>`<option value="${E(id)}" ${state.service===id?'selected':''}>${E(label)}</option>`).join('')}</select></label><label><small>${state.view==='rank'?'Rank from':'From'}</small>${dateBtn('from',state.from)}</label><label><small>${state.view==='rank'?'Rank to':'To'}</small>${dateBtn('to',state.to)}</label><div class="ds-range-buttons">${[7,30,90,180].map(days=>btn('range:'+days,`${days} days`,state.range===days?'on':'' )).join('')}</div></div><div class="ds-rating-tabs">${[['overview','Overview'],['rank','Search rank'],['action',`Needs action <i class="ds-red-dot">${fmt(low14.length)}</i>`],['all','All ratings'],['unrated','Not rated']].map(([k,n])=>btn('tab:'+k,n,state.view===k?'on':'')).join('')}</div><div class="ds-rating-kpis">${stats}</div>`;
+      return `<div class="ds-ratings-head"><div class="ds-title"><span class="ds-title-icon">${svg('star',27)}</span><div><h2>OTA Ratings</h2><small>${ota.sourceLabel()}</small></div></div><div class="ds-head-actions">${ota.providerToggle()}${btn('settings',`${svg('settings',19)} Settings`,'primary')}${btn('refresh',`${svg('refresh',19)} Refresh`,'primary')}</div></div>${ota.panelHtml(access('settings.modify'))}<div class="ds-filter-panel"><label><small>Service</small><select data-ds-change="service"><option value="all">All services</option>${services.map(([id,label])=>`<option value="${E(id)}" ${state.service===id?'selected':''}>${E(label)}</option>`).join('')}</select></label><label><small>${state.view==='rank'?'Rank from':'From'}</small>${dateBtn('from',state.from)}</label><label><small>${state.view==='rank'?'Rank to':'To'}</small>${dateBtn('to',state.to)}</label><div class="ds-range-buttons">${[7,30,90,180].map(days=>btn('range:'+days,`${days} days`,state.range===days?'on':'' )).join('')}</div></div><div class="ds-rating-tabs">${[['overview','Overview'],['action',`Needs action <i class="ds-red-dot">${fmt(low14.length)}</i>`],['all','All ratings'],['unrated','Not rated']].map(([k,n])=>btn('tab:'+k,n,state.view===k?'on':'')).join('')}</div><div class="ds-rating-kpis">${stats}</div>`;
     };
     const groupForRatings = (mode,items) => {
       const map=new Map();for(const x of items){const key= mode==='bus' ? String(x.vehicle_registration||x.vehicle||'Vehicle unlinked') : mode==='driver' ? String(x.driver_name||'Driver unlinked') : String(x.service||x.service_number||x.schedule_id||'Service unlinked');if(!map.has(key))map.set(key,[]);map.get(key).push(x)}return [...map.entries()];
@@ -152,7 +154,7 @@
       return `<article class="ds-review" data-ds-review="${E(x.id)}"><div class="ds-review-top"><div><span class="ds-review-star ${pill}">★ ${stars}</span> <b>${E(x.service||x.service_number||'Trip')} · ${E(x.ota||'OTA')}</b>${x.challenge_status?` ${chip(E(x.challenge_status),'lightblue')}`:''}<small>${F(x.rated_at)} · ${E(x.travel_at||'')} · ${E(x.pnr||'No PNR')}</small></div><div class="ds-review-person"><b>${E(x.passenger_name||'Passenger')}</b><small>${E(x.phone||'')}</small></div></div>${x.review?`<p class="ds-review-text">“${E(x.review)}”</p>`:''}${x.operator_reply?`<p class="ds-operator-reply">Your reply: ${E(x.operator_reply)}</p>`:''}<div class="ds-review-meta">${E(x.vehicle_registration||'')} ${E(x.driver_name||'')}</div>${state.view==='action'?`<div class="ds-review-controls"><select aria-label="Follow-up status" data-ds-follow="${E(x.id)}">${['Open','Called','Working','Resolved'].map(s=>`<option ${follow===s?'selected':''}>${s}</option>`).join('')}</select><textarea rows="1" data-ds-comment="${E(x.id)}" placeholder="What did the passenger say?">${E(saved.note||'')}</textarea>${btn('comment:'+x.id,`${svg('chat',16)} Add comment`,'comment')}</div>`:''}${!x.operator_reply&&access('dailyops.ratings_reply')?`<div class="ds-reply-action">${btn('reply:'+x.id,'Save operator reply in GDS','link')}</div>`:''}</article>`;
     };
     const ratingsList = () => {
-      const low=state.view==='action';const data=(low?state.ratings.filter(x=>N(x.rating)<=2&&String(x.rated_at||'').slice(0,10)>=dayPlus(todayStr(),-13)):filteredRatings()).filter(x=>
+      const low=state.view==='action';const data=(low?state.ratings.filter(x=>ota.matches(x)&&N(x.rating)<=2&&String(x.rated_at||'').slice(0,10)>=dayPlus(todayStr(),-13)):filteredRatings()).filter(x=>
         (state.service==='all'||String(x.schedule_id||x.service||'')===state.service)&&
         (!state.search||`${x.passenger_name} ${x.pnr} ${x.phone} ${x.review} ${x.ota}`.toLowerCase().includes(state.search.toLowerCase()))&&
         (!state.stars||N(x.rating)===state.stars)&&(!low||state.follow==='All'||(readStore(x.id).status||'Open')===state.follow));
@@ -175,18 +177,22 @@
       const m=G.modal({title:`${E(r.service)} · ${E(state.date)}`,size:'lg',body:`<div class="ds-detail"><p><b>Route:</b> ${E(r.route||r.name||'—')}</p><p><b>Departure:</b> ${E(r.departure_time)} · <b>Vehicle:</b> ${E(r.vehicle||'—')}</p><p><b>Staff:</b><div>${crew}</div></p><p><b>Passengers:</b> ${fmt(r.seats)} · <b>Capacity:</b> ${fmt(r.capacity)} · <b>Occupancy:</b> ${r.occupancy_pct==null?'—':`${N(r.occupancy_pct).toFixed(1)}%`}</p><p><b>Net sales:</b> ${inr(r.net_sales)}</p><p class="ds-muted">This detail is from the existing Daily Ops API.</p><button class="ds-btn primary" data-ds-trip>Open trip workspace</button></div>`});
       m.$('[data-ds-trip]').onclick=()=>{m.close();location.hash=`#/trips?date=${encodeURIComponent(state.date)}&sid=${encodeURIComponent(sid)}`;};
     };
-    const settings=()=>G.modal({title:'OTA Ratings · Settings',body:`<div class="ds-settings"><h3>Ratings and ranking sources</h3><p><b>GDS rating records:</b> Connected via <code>/api/ratings</code></p><p><b>RedBus ranking:</b> Not connected</p><p><b>Ratings by vehicle/driver:</b> Requires trip-to-crew history</p><p><b>OTA responses/challenges:</b> Not synchronized</p><p>Only supported fields are displayed as real data. Fields without a source are marked —.</p></div>`});
+    const settings=()=>{ota.toggle();render();};
     G.on(el,'click','[data-ds-cal]',b=>{const k=b.dataset.dsCal;G.calendarPop(b,state[k],v=>{const i=b.parentNode.querySelector(`input[data-ds-change="${k}"]`);if(!i)return;i.value=v;i.dispatchEvent(new Event('change',{bubbles:true}));i.dispatchEvent(new Event('input',{bubbles:true}))})});
     G.on(el,'click','[data-ds-action]',async b=>{
       const [a,...rest]=b.dataset.dsAction.split(':');const val=rest.join(':');
       if(a==='page'){state.page=val;state.search='';state.stars=0;render();return}
       if(a==='tab'){state.view=val;state.search='';state.stars=0;render();return}
-      if(a==='refresh'){await refresh();return}
+      if(a==='refresh'){await refresh();if(state.page==='ratings')await ota.refresh();return}
       if(a==='range'){state.range=Number(val);state.to=todayStr();state.from=dayPlus(state.to,1-state.range);render();return}
       if(a==='mode'){state.ratingMode=val;render();return}
       if(a==='expand'){state.opened.has(val)?state.opened.delete(val):state.opened.add(val);render();return}
       if(a==='service'){await detail(val);return}
       if(a==='settings'){settings();return}
+      if(a==='ota-provider'){ota.chooseProvider(val);state.service='all';state.search='';render();return}
+      if(a==='ota-settings-provider'){ota.chooseSettingsProvider(val);render();return}
+      if(a==='ota-save'){await ota.save(el);render();return}
+      if(a==='ota-cancel'){ota.cancel();render();return}
       if(a==='stars'){state.stars=Number(val);render();return}
       if(a==='follow'){state.follow=val;render();return}
       if(a==='comment'){
@@ -197,7 +203,8 @@
     G.on(el,'change','[data-ds-change]',async b=>{const prop=b.dataset.dsChange;state[prop]=b.value;if(['from','to'].includes(prop))state.range=0;if(prop==='date'){await refresh();return}render();});
     G.on(el,'change','[data-ds-follow]',b=>{const id=b.dataset.dsFollow;writeStore(id,{status:b.value}).then(()=>G.toast('Follow-up status saved','ok')).catch(G.err);});
     G.on(el,'input','[data-ds-input]',b=>{state.search=b.value;const focused=document.activeElement;const cursor=b.selectionStart;render();const newInput=el.querySelector('[data-ds-input]');if(newInput){newInput.focus();try{newInput.setSelectionRange(cursor,cursor)}catch{}}});
+    G.on(el,'submit','[data-ds-ota-form]',async (form,event)=>{event.preventDefault();await ota.save(el);render();});
     await loadDaily();render();
   };
-  window.__DAILYOPS_V12_BUILD__='dailyops-v12-20261121';
+  window.__DAILYOPS_V12_BUILD__='dailyops-v44-20261123';
 })();
