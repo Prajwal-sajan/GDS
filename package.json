@@ -13,7 +13,8 @@
     "node": ">=18"
   },
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "pdfjs-dist": "3.11.174"
   },
   "devDependencies": {
     "jsdom": "^22.1.0"
