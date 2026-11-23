@@ -6,7 +6,7 @@ const css=fs.readFileSync('public/css/vehicles-parity-v9.css','utf8');
 const html=fs.readFileSync('public/index.html','utf8');
 const elements={
   'Vehicle counters':['MOVING','IDLING','STOPPED','GPS OFFLINE','CRITICAL','DEF INHIBIT'],
-  'Vehicle filters':['Search plate or coach','All states','All health','All GPS','Sort: Plate'],
+  'Vehicle filters':['Search plate or coach','All states','All health','All GPS','Sort: Name (A–Z)'],
   'Vehicle actions':['fleet-map','add-vehicle','view','edit','duplicate','delete','health','alerts','location'],
   'Health modal':['Fault Codes','Predictive Algorithms','Last engine data','Active (','Inactive (','Battery voltage','DPF soot load'],
   'Telemetry':['Engine speed','Engine load','Engine torque','Coolant temperature','Oil pressure','Fuel level','AdBlue tank level','DOC outlet temperature','Barometric pressure'],
