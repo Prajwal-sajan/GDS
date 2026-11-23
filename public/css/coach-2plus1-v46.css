@@ -1,0 +1,110 @@
+/* v46: Vehicles → Edit Coach → 2+1 Seater/Sleeper ONLY.
+   Layout & modal details matched against six reference images. Other coach types
+   retain the existing v9 styling and renderer. */
+.vp-overlay-coach:has(.cv46-editor){--cv46-blue:#2865f4;--cv46-ink:#12213a}
+.vp-overlay-coach:has(.cv46-editor) .md.lg{width:min(94vw,1600px);height:min(91vh,865px);max-height:calc(100dvh - 40px);border-radius:21px;background:#fff}
+.vp-overlay-coach:has(.cv46-editor) .md .hd{min-height:135px;padding:28px 37px;background:linear-gradient(110deg,#2c67ed 0%,#4c39f6 54%,#8529fb 100%);border:0}
+.vp-overlay-coach:has(.cv46-editor) .vp-modal-title{gap:18px}
+.vp-overlay-coach:has(.cv46-editor) .vp-modal-icon{width:63px;height:63px;border-radius:20px;border:1px solid #ffffff52;background:#ffffff24}
+.vp-overlay-coach:has(.cv46-editor) .vp-modal-title strong{font-size:25px;font-weight:760;line-height:1.35;color:#fff}
+.vp-overlay-coach:has(.cv46-editor) .vp-modal-title small{font-size:17px;color:#d6e0ff;line-height:1.5}
+.vp-overlay-coach:has(.cv46-editor) .md .hd [data-x]{height:51px;width:51px;border:1.5px solid #ffffff6e;background:#ffffff25;border-radius:50%;color:#fff}
+.vp-overlay-coach:has(.cv46-editor) .md .bd{padding:24px 31px 0;background:#fff;overflow:hidden;display:flex;flex-direction:column}
+.vp-overlay-coach:has(.cv46-editor) .vp-coach-modal{min-height:0;flex:1;overflow:hidden}
+.vp-overlay-coach:has(.cv46-editor) .vp-modal-tabs{min-height:68px;margin:0 0 30px;border:1px solid #e0e6ed;border-radius:23px;box-shadow:0 2px 4px #1c31591a;background:#f0f5fa;padding:8px 10px;gap:10px;z-index:2}
+.vp-overlay-coach:has(.cv46-editor) .vp-modal-tabs button{min-height:49px;font-size:17px;font-weight:670;border-radius:17px;gap:11px}
+.vp-overlay-coach:has(.cv46-editor) .vp-modal-tabs button.active{background:linear-gradient(115deg,#2e66f5,#4b3bf5);box-shadow:0 4px 7px #4140e640}
+.vp-overlay-coach:has(.cv46-editor) .vp-coach-content{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;border:0;border-radius:0;background:#fff;padding:0 2px 23px;scrollbar-color:#949a9f #f6f8fb;scrollbar-width:thin}
+.vp-overlay-coach:has(.cv46-editor) .md .ft{min-height:94px;padding:16px 31px;border-top:1px solid #eceef4;background:#fff;box-shadow:none}
+.vp-overlay-coach:has(.cv46-editor) .vp-footer .vp-btn{min-height:50px;font-size:16px;border-radius:11px;padding:12px 21px}
+.vp-overlay-coach:has(.cv46-editor) .vp-footer .primary{background:#2864f1;border-color:#2864f1;color:#fff;font-weight:680;min-width:154px}
+.vp-overlay-coach:has(.cv46-editor) .vp-footer .outline{background:#fff;border:1px solid #e3e6ea;color:#222;min-width:105px}
+.vp-overlay-coach .cv46-editor{color:#26374f;font-size:15px}
+.vp-overlay-coach .cv46-summary{min-height:184px;border:1px solid #b3ddff;background:#dcf5ff;border-radius:15px;padding:22px 23px;gap:24px;margin-bottom:23px}
+.vp-overlay-coach .cv46-summary h3{font-size:17px;color:#0f45bc;font-weight:750;margin:0 0 11px}
+.vp-overlay-coach .cv46-summary p{font-size:14px;line-height:1.48;margin:3px 0;color:#44536a}
+.vp-overlay-coach .cv46-summary p b{font-weight:750;color:#394861}
+.vp-overlay-coach .cv46-summary .vp-config-total{max-width:415px;font-size:14px;margin-top:7px!important;padding-top:7px}
+.vp-overlay-coach .cv46-summary .vp-btn{min-height:49px;white-space:nowrap;border-radius:12px;padding:12px 24px;background:#2c63ed;border:0;box-shadow:none;font-size:17px;font-weight:700}
+.vp-overlay-coach .cv46-summary .vp-btn:disabled{opacity:.55;cursor:not-allowed}
+.vp-overlay-coach .cv46-legend{min-height:79px;display:flex;align-items:center;gap:25px;padding:15px 22px;margin-bottom:32px;border:1px solid #f4f6f9;background:#fff;box-shadow:0 3px 7px #11213918;border-radius:14px}
+.vp-overlay-coach .cv46-legend span{font-size:16px;color:#262a32;gap:10px;white-space:nowrap}
+.vp-overlay-coach .cv46-legend i{width:33px;height:33px;flex:none;border-radius:5px}
+.vp-overlay-coach .cv46-diagram{min-height:490px;background:#fbfcff;border:2px solid #cdd4dd;border-radius:14px;padding:22px 18px 20px;margin-bottom:23px;overflow:auto}
+.vp-overlay-coach .cv46-decks{display:flex;justify-content:center;gap:34px;min-width:max-content;align-items:flex-start;padding:0 9px 5px}
+.vp-overlay-coach .cv46-deck{border:2.5px solid #94a5be;border-radius:33px;background:linear-gradient(135deg,#f9faff,#f0f3fa);position:relative;box-sizing:border-box;width:263px;padding:16px 14px 30px;box-shadow:0 3px 8px #142a531e}
+.vp-overlay-coach .cv46-deck>header{height:76px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px dashed #d0d9e4;margin:0 0 18px;padding:0 6px 15px;font-size:13px;font-weight:750;color:#485a74}
+.vp-overlay-coach .cv46-wheel{width:46px;height:46px;background:radial-gradient(circle,#4385ff,#083c92 70%,#062454);border:3px solid #183968;box-shadow:0 0 0 2px #b7c9e3,0 3px 8px #183a677c;border-radius:50%;display:grid;place-items:center}
+.vp-overlay-coach .cv46-grid{display:grid;grid-template-columns:repeat(var(--cv46-cols),49px);grid-template-rows:repeat(var(--cv46-rows),40px);gap:5px;justify-content:center}
+.vp-overlay-coach .cv46-seat{border:2px dashed #5798ff;background:#fff;border-radius:5px;padding:3px;display:block;min-width:0;min-height:0;position:relative;color:#111c33;cursor:pointer;box-shadow:none}
+.vp-overlay-coach .cv46-seat:focus-visible{outline:3px solid #1459d3;outline-offset:3px}
+.vp-overlay-coach .cv46-seat:disabled{cursor:default;opacity:1}
+.vp-overlay-coach .cv46-seat .cv46-cushion{height:100%;width:100%;display:flex;align-items:center;justify-content:center;position:relative;background:linear-gradient(#fff,#f9fafc);border:1px solid #c8d1de;border-radius:5px;box-shadow:0 1px 1px #23334b16,inset 0 2px 2px #ffffff6b}
+.vp-overlay-coach .cv46-seat .cv46-cushion b{font-size:14px;font-weight:850;line-height:1.1;max-width:100%;overflow:hidden;text-overflow:ellipsis;color:#111d35;white-space:nowrap;text-align:center;z-index:1}
+.vp-overlay-coach .cv46-seat .cv46-cushion i{display:block;position:absolute;bottom:3px;left:9%;width:82%;height:8px;background:linear-gradient(180deg,#d9dce2,#9fa9b6);border-radius:4px;box-shadow:inset 0 1px #ecedf0}
+.vp-overlay-coach .cv46-seat.cv46-seater .cv46-cushion{border:0;border-radius:6px;background:transparent}
+.vp-overlay-coach .cv46-seat.cv46-seater .cv46-cushion b{background:#e5e7eb;border-radius:5px;padding:2px 7px;line-height:1;min-width:24px}
+.vp-overlay-coach .cv46-seat.cv46-seater .cv46-cushion i{height:5px;left:23%;width:54%;bottom:0}
+.vp-overlay-coach .cv46-seat.selected,.vp-overlay-coach .cv46-seat.booked-male,.vp-overlay-coach .cv46-seat.booked-female,.vp-overlay-coach .cv46-seat.no-show,.vp-overlay-coach .cv46-seat.blocked{border-style:solid}
+.vp-overlay-coach .cv46-seat.selected .cv46-cushion{background:linear-gradient(#4adc8d,#08964e);border-color:#0ca764}
+.vp-overlay-coach .cv46-seat.booked-male .cv46-cushion{background:linear-gradient(#78b1ff,#3478ef);border-color:#4581f6}
+.vp-overlay-coach .cv46-seat.booked-female .cv46-cushion{background:linear-gradient(#ff93cc,#e84998);border-color:#ff52a8}
+.vp-overlay-coach .cv46-seat.no-show .cv46-cushion{background:linear-gradient(#ffab70,#f27820);border-color:#ff8725}
+.vp-overlay-coach .cv46-seat.blocked .cv46-cushion{background:linear-gradient(#697386,#384152);border-color:#313a49}
+.vp-overlay-coach .cv46-seat.selected .cv46-cushion b,.vp-overlay-coach .cv46-seat.booked-male .cv46-cushion b,.vp-overlay-coach .cv46-seat.booked-female .cv46-cushion b,.vp-overlay-coach .cv46-seat.no-show .cv46-cushion b,.vp-overlay-coach .cv46-seat.blocked .cv46-cushion b{color:#fff;background:transparent}
+.vp-overlay-coach .cv46-emergency{position:absolute;bottom:16px;left:76px;color:#f22431}
+.vp-overlay-coach .cv46-door{position:absolute;bottom:0;left:76px;width:43px;height:8px;border-radius:4px 4px 0 0;background:#ef252a}
+.vp-overlay-coach .cv46-config-head{margin:24px 0 0;display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}
+.vp-overlay-coach .cv46-config-head h3{font-size:21px;color:#172134;font-weight:730;margin:0}
+.vp-overlay-coach .cv46-config-head small{font-size:14px;color:#627389;font-weight:480}
+.vp-overlay-coach .cv46-config-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.vp-overlay-coach .cv46-config-actions button{font-size:15px;min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:11px;padding:8px 16px;font-weight:650;background:#fff;border:1px solid #dce4f1;color:#243951}
+.vp-overlay-coach .cv46-config-actions .cv46-add{background:#fff;color:#17213a}
+.vp-overlay-coach .cv46-config-actions button:disabled{opacity:.42;cursor:not-allowed}
+.vp-overlay-coach .cv46-search{display:flex;align-items:center;gap:8px;color:#7890af;padding:8px 14px;border:1px solid #d7e1f0;border-radius:14px;min-width:260px;max-width:350px;height:44px}
+.vp-overlay-coach .cv46-search input{min-width:0;flex:1;border:0!important;background:#fff!important;outline:0!important;box-shadow:none!important;font-size:14px;color:#273953}
+.vp-overlay-coach .cv46-tip{border:1px solid #bce3fa;border-radius:6px 6px 0 0;background:#e1f7ff;color:#1861a7;padding:11px 16px;margin:17px 0 0;font-size:13px}
+.vp-overlay-coach .cv46-seat-table-scroll{border:1px solid #dfe2e6;border-radius:0 0 5px 5px;overflow-x:auto;max-width:100%}
+.vp-overlay-coach .cv46-seat-table{min-width:1210px;width:100%;border-collapse:collapse;table-layout:fixed}
+.vp-overlay-coach .cv46-seat-table th{background:#f0f2f5;color:#20232b;font-size:16px;padding:14px 17px;text-align:left;white-space:nowrap;font-weight:720}
+.vp-overlay-coach .cv46-seat-table td{border-top:1px solid #e5e6e8;padding:11px 17px;min-height:65px;height:66px;color:#273a52;font-size:15px;vertical-align:middle}
+.vp-overlay-coach .cv46-seat-table th:nth-child(1){width:5%}
+.vp-overlay-coach .cv46-seat-table th:nth-child(2){width:29%}
+.vp-overlay-coach .cv46-seat-table th:nth-child(3){width:13%}
+.vp-overlay-coach .cv46-seat-table th:nth-child(4){width:10%}
+.vp-overlay-coach .cv46-seat-table th:nth-child(5){width:14%}
+.vp-overlay-coach .cv46-seat-table th:nth-child(6){width:21%}
+.vp-overlay-coach .cv46-seat-table th:nth-child(7){width:8%}
+.vp-overlay-coach .cv46-seat-table input.cv46-name{width:100%;height:46px;min-height:46px;border-radius:26px;border:1px solid #cddaff;background:#fff;box-shadow:0 2px 4px #1c3b7823;font-size:17px;font-weight:590;padding:10px 16px;color:#2c3b58}
+.vp-overlay-coach .cv46-seat-table input.cv46-name:focus{outline:2px solid #82afff;outline-offset:1px}
+.vp-overlay-coach .cv46-seat-table input.cv46-name:disabled{opacity:1;color:#273650;background:#fff}
+.vp-overlay-coach .cv46-index{color:#62728a}
+.vp-overlay-coach .cv46-kind{display:inline-flex;align-items:center;border-radius:6px;padding:7px 12px;min-height:30px;font-size:14px;font-weight:700;color:#027942;background:#d8fae7}
+.vp-overlay-coach .cv46-kind.sleeper{color:#7c14ba;background:#f3e4ff}
+.vp-overlay-coach .cv46-kind.back_exit,.vp-overlay-coach .cv46-kind.ee_exit,.vp-overlay-coach .cv46-kind.roof_exit{color:#bc1b25;background:#ffe1e1}
+.vp-overlay-coach .cv46-orientation{background:#e4eaff;color:#3745b0;border-radius:7px;display:inline-flex;align-items:center;gap:5px;padding:7px 10px;white-space:nowrap;font-size:14px}
+.vp-overlay-coach .cv46-grid-pos{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:14px;color:#54617a;white-space:nowrap}
+.vp-overlay-coach .cv46-dash{color:#96a3b7}
+.vp-overlay-coach .cv46-remove{border:0;background:transparent;color:#f21729;padding:8px;display:inline-grid;place-items:center}
+.vp-overlay-coach .cv46-remove:disabled{color:#ef5260;opacity:.45;cursor:not-allowed}
+.vp-overlay-coach .cv46-assigned-note{font-size:12px;color:#7c8ba3;padding:7px 4px 2px;line-height:1.45}
+@media(max-width:1280px){
+ .vp-overlay-coach:has(.cv46-editor) .md .bd{padding:15px 18px 0}
+ .vp-overlay-coach .cv46-legend{gap:13px;flex-wrap:wrap}
+ .vp-overlay-coach .cv46-legend span{font-size:13px}
+ .vp-overlay-coach .cv46-decks{justify-content:flex-start}
+ .vp-overlay-coach .cv46-config-actions{justify-content:flex-start}
+}
+@media(max-width:760px){
+ .vp-overlay-coach:has(.cv46-editor) .md.lg{width:98vw;height:96dvh;max-height:96dvh}
+ .vp-overlay-coach:has(.cv46-editor) .md .hd{min-height:106px;padding:18px}
+ .vp-overlay-coach:has(.cv46-editor) .vp-modal-tabs{gap:3px;min-height:52px;padding:5px;margin-bottom:18px}
+ .vp-overlay-coach:has(.cv46-editor) .vp-modal-tabs button{min-height:40px;font-size:12px}
+ .vp-overlay-coach .cv46-summary{padding:15px;flex-wrap:wrap}
+ .vp-overlay-coach .cv46-summary .vp-btn{width:100%}
+ .vp-overlay-coach .cv46-diagram{padding:13px}
+ .vp-overlay-coach .cv46-config-head{align-items:flex-start}
+ .vp-overlay-coach .cv46-config-actions{width:100%}
+ .vp-overlay-coach .cv46-search{max-width:none;min-width:100%;width:100%}
+ .vp-overlay-coach:has(.cv46-editor) .md .ft{min-height:73px}
+}
