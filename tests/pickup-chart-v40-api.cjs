@@ -133,6 +133,40 @@ const get=url=>call('GET',url);
     'pdftotext',['-layout','-','-'],{input:pdf.data,encoding:'utf8'}).stdout||'');
    assert.ok(printText.rows.length>=1,'Generated Pickup Chart must be readable by PDF import');
   }
+  // Reference pagination contract: 46 rows across 14 boarding points,
+  // and a single seat-ordered RTO list. Synthetic names only, no customer PII.
+  const sizes=[5,2,1,2,1,2,1,4,4,4,4,2,13,1];
+  assert.equal(sizes.reduce((a,b)=>a+b,0),46);
+  const pickups=sizes.map((n,i)=>({id:'b'+i,type:'pickup',name:i===0?'LB Nagar Metro Station (Free metro Pickup)':'Pickup Stop '+(i+1),
+   time:'17:'+String((45+i)%60).padStart(2,'0'),day:1,city_id:1}));
+  const drops=Array.from({length:13},(_,i)=>({id:'d'+i,type:'drop',name:'Drop Stop '+(i+1),
+   time:'06:'+String((30+i)%60).padStart(2,'0'),day:2,city_id:2}));
+  const synthetic={...Data.current(s.id,{user:owner}),service:'NTHB1',operator:'Example Travels',
+   date:'2026-11-22',origin:'Hyderabad',destination:'Bengaluru',vehicle_number:'AR 01 Q 7827',
+   driver:'Example Driver',driver_phone:'0000000000',capacity:46,stages:[...pickups,...drops],rows:[]};
+  let number=0;
+  for(let i=0;i<sizes.length;i++){
+   for(let j=0;j<sizes[i];j++){
+    const index=number++,seat=String(index+1),d=drops[index%drops.length];
+    synthetic.rows.push({seat,name:'Sample Passenger '+(index+1),mobile:'0000000000',
+     pnr:'QA'+String(index+1).padStart(6,'0'),gender:index%3===0?'F':'M',
+     trips:1,from_city:'Hyderabad',to_city:'Bengaluru',
+     pickup:pickups[i].name,drop:d.name,
+     boarding_id:pickups[i].id,dropping_id:d.id,boarding_order:i,dropping_order:index%drops.length,
+     pickup_time:pickups[i].time,pickup_day:1,
+     drop_time:d.time,drop_day:2,boarded_city_id:'1',dropped_city_id:'2',
+     fare:1099,source:'Synthetic',booked_on:'22/11/26 09:10 pm'});
+   }
+  }
+  const pages=buffer=>[...buffer.toString('latin1').matchAll(/\/Type \/Page \/Parent/g)].length;
+  const refPickup=PDF.generate(synthetic,Data.options({chart:'pickup'}));
+  const refRto=PDF.generate(synthetic,Data.options({chart:'rto'}));
+  assert.equal(pages(refPickup),4,'46-passenger pickup chart should paginate to four A4 landscape pages');
+  assert.equal(pages(refRto),2,'46-passenger RTO chart should paginate to two A4 landscape pages');
+  assert.ok(refPickup.toString('latin1').includes('Boarding Details'));
+  assert.ok(refPickup.toString('latin1').includes('Dropping Details'));
+  assert.ok(!refRto.toString('latin1').includes('Boarding Details'));
+  console.log('PASS v40 46-passenger reference pagination: four Pickup Chart pages, two RTO pages');
   console.log('PASS v40 API: PDF pickup and RTO, A4 vector output, dynamic columns/city, download header, CSV source import, staging/commit, route/date checks, inventory isolation, access control');
  }finally{server.closeAllConnections?.();server.close();db.persistNow();fs.rmSync(process.env.GDS_DATA_DIR,{recursive:true,force:true})}
 })().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1)});
