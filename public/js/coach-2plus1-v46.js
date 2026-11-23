@@ -174,8 +174,10 @@
   const [removed]=layout.decks[deck].seats.splice(index,1);
   layout.capacity=activeCount(layout);validateLayout(layout);return removed;
  }
- function renderDiagram(layout,{selected=[],disabled=false}={}){
+ function renderDiagram(layout,{selected=[],disabled=false,emergencyExits=[]}={}){
   const selectedSet=new Set(selected.map(String)),geo=physicalGeometry(layout);
+  const hasBackExit=geo.some(d=>(d.fixtures||[]).some(f=>/back\s*exit/i.test(String(f.name||f.code||''))))||
+    emergencyExits.some(x=>/back\s*exit/i.test(String(x)));
   if(!geo.length)return '<div class="cv46-empty">Generate Layout to create your seats.</div>';
   const wheel='<svg viewBox="0 0 42 42" width="40" height="40" aria-hidden="true"><circle cx="21" cy="21" r="18" fill="#002a72" stroke="#eff6ff" stroke-width="2"/><circle cx="21" cy="21" r="14" fill="none" stroke="#81b5ff" stroke-width="2"/><circle cx="21" cy="21" r="5" fill="#f9fdff"/><path d="M21 16 15 7M16 24 7 31M26 24 35 31" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>';
   const exit='<svg viewBox="0 0 38 36" width="34" height="34" fill="none" stroke="#f1242a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="14" cy="6" r="3" fill="#f1242a" stroke="none"/><path d="m15 11-4 8 7 5 3 8M11 19l-7 5M18 23l8-9M28 8h8v26h-8z"/></svg>';
@@ -191,7 +193,7 @@
    return '<section class="cv46-deck cv46-'+d.deck.toLowerCase()+'" aria-label="'+esc(d.deck)+' deck">'+
     '<header><b>'+esc(d.deck)+'</b>'+(z===0?'<span class="cv46-wheel" aria-label="Steering wheel">'+wheel+'</span>':'')+'</header>'+
     '<div class="cv46-grid" style="--cv46-cols:'+Number(d.cols)+';--cv46-rows:'+Number(d.rows)+'">'+cells+'</div>'+
-    (z===0?'<span class="cv46-emergency" aria-label="Emergency exit">'+exit+'</span><span class="cv46-door" aria-label="Back door"></span>':'')+
+    (z===0&&hasBackExit?'<span class="cv46-emergency" aria-label="Emergency exit">'+exit+'</span><span class="cv46-door" aria-label="Back door"></span>':'')+
     '</section>';
   }).join('')+'</div>';
  }
