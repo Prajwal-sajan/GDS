@@ -39,7 +39,7 @@ function blocked(){
 }
 function upgrades(){
  const curr=db.meta('loyalty_upgrade_v34')||{};
- return {enabled:curr.enabled??false,minutes_before_boarding:20,
+ return {enabled:curr.enabled??true,minutes_before_boarding:20,
  description:'Unsold seats in the last 20 minutes before boarding are offered to eligible loyal passengers as a free upgrade.',
  preference_order:['shared → single','upper → lower berth','back → front row'],
  execution_status:'configuration_only',
