@@ -69,7 +69,7 @@ test('Daily Ops / Ratings settings: API, encryption and screenshot controls', as
   assert.equal(keep.status,200);
   assert.equal(row.password_encrypted,cipher);
   assert.equal(row.username,'qa-operator-updated');
-  assert.equal(row.password,false);
+  assert.equal(Object.hasOwn(row,'password'),false);
 
   const exposed = await call('GET','/settings');
   assert.equal(exposed.status,200);
