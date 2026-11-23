@@ -87,6 +87,7 @@ test('reference 2+2 coach deck visual: 5 columns, actual 44 seats, SVG fixtures 
 test('Add Seat, Remove Seat, fixture deletion, alias editing and geometry validation',()=>{
  const copy=structuredClone(layout);
  assert.throws(()=>C.addSeat(copy,{code:'1'}),/unique/);
+ assert.throws(()=>C.addSeat(copy,{code:'49'}),/No unoccupied seat slot/,'Side Exit must retain its clearance');
  assert.throws(()=>C.addSeat(copy,{code:'80',type:'sleeper'}),/Only LOWER deck seater/);
  const oldSignature=C.structuralSignature(copy);
  copy.decks[0].seats[0].display_name='Seat 1 Premium';
@@ -99,6 +100,10 @@ test('Add Seat, Remove Seat, fixture deletion, alias editing and geometry valida
  const taken=structuredClone(copy);
  taken.decks[0].fixtures[0].row=0;taken.decks[0].fixtures[0].col=0;
  assert.throws(()=>C.validateLayout(taken),/Overlapping/);
+ const blocked=structuredClone(layout);
+ blocked.decks[0].seats.push({code:'49',type:'seater',row:4,col:3,w:1,h:1});
+ blocked.capacity=45;
+ assert.throws(()=>C.validateLayout(blocked),/emergency exit access/);
  const deleted=C.removeSeat(copy,'0:0');
  assert.equal(deleted.code,'1');assert.equal(copy.capacity,43);
  const added=C.addSeat(copy,{code:'49',type:'seater',deck:'LOWER'});
