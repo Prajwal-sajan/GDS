@@ -7,7 +7,7 @@ const {can}=require('../auth'),Policy=require('../access-runtime-v27');
 const r=express.Router();
 const error=fn=>(req,res)=>{
  try{const value=fn(req,res);if(value!==undefined&&!res.headersSent)res.json(value);}
- catch(e){if(!res.headersSent)res.status(e.status||500).json({success:false,message:e.status?e.message:'Pickup chart operation failed'});}
+ catch(e){if(!e.status)console.error('[pickup-chart-v40]',e.stack||e.message||e);if(!res.headersSent)res.status(e.status||500).json({success:false,message:e.status?e.message:'Pickup chart operation failed'});}
 };
 const noCache=res=>{res.setHeader('Cache-Control','private, no-store, max-age=0');
  res.setHeader('Vary','Authorization, X-View-As');res.setHeader('X-Content-Type-Options','nosniff')};
