@@ -1,0 +1,184 @@
+/* Accounts → OTA Invoice Verifier v43. Photo-reference spacing, badges, gradients, SVGs and no clipped comparison fields. */
+.ota43-root{font-family:Poppins,Arial,sans-serif;color:#132139;font-size:14px;line-height:1.45;max-width:1740px;margin:auto}
+.ota43-root *{box-sizing:border-box}
+.ota43-root button,.ota43-root input{font-family:inherit}
+.ota43-root svg{flex:none;vertical-align:middle}
+.ota43-root h2,.ota43-root h3,.ota43-root p{margin:0}
+.ota43-root small{display:block;color:#8a9ab5;font-size:12px}
+.ota43-root .ota43-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid #dfe4ee;background:#fff;color:#273954;font-size:13px;font-weight:600;border-radius:13px;padding:12px 14px;cursor:pointer;box-shadow:0 1px 3px #19324a18;min-height:38px;white-space:nowrap}
+.ota43-root .ota43-btn.primary{background:linear-gradient(120deg,#3285ff,#403ada);color:#fff;border-color:#c6d5ff;box-shadow:0 5px 12px #284fff30}
+.ota43-root .ota43-btn.success{background:#00a97b;color:#fff;border-color:#00a97b}
+.ota43-root .ota43-btn.outlined{color:#8325e8;border-color:#ebd4fc}
+.ota43-root .ota43-btn.pastel{background:#ecf8ff;color:#2869df;border-color:#cfebff}
+.ota43-root .ota43-btn.icon{border:0;color:#a6b2c4;box-shadow:none;padding:5px 8px}
+.ota43-root .ota43-btn.small{padding:9px 12px;font-size:12px;min-height:32px}
+.ota43-root .ota43-btn.download{background:#008e75;color:#fff}
+.ota43-root .ota43-btn.on{background:#f4f6fa}
+.ota43-root .ota43-btn:disabled{opacity:.38;cursor:not-allowed}
+.ota43-root .ota43-badge{display:inline-flex;align-items:center;gap:6px;border-radius:23px;border:1px solid #dce4ef;padding:9px 12px;background:#fff;font-size:12px;font-weight:600;white-space:nowrap;color:#53647b}
+.ota43-root .ota43-badge.dark{background:#273a55;color:#fff;border-color:#273a55}
+.ota43-root .ota43-badge.green{border-color:#9debc3;color:#009e64}
+.ota43-root .ota43-badge.orange{border-color:#ffe19c;color:#da8100}
+.ota43-root .ota43-badge.red{border-color:#ffcbcb;color:#d12541}
+.ota43-root .ota43-badge.blue{border-color:#cbdfff;color:#286aef}
+.ota43-root .ota43-badge.active{box-shadow:0 2px 8px #1b29332a;transform:translateY(-1px);background:#2f415f;color:white}
+.ota43-root .ota43-tag{display:inline-flex;align-items:center;border:1px solid #d8e3f2;background:#eef4ff;color:#426585;padding:6px 12px;border-radius:28px;font-weight:600;font-size:12px;white-space:nowrap}
+.ota43-root .ota43-tag.matched{background:#e8fbf1;color:#079a66;border-color:#a7edc9}
+.ota43-root .ota43-tag.mismatched,.ota43-root .ota43-tag.needs_review,.ota43-root .ota43-tag.review_required{background:#fff7e6;color:#d78b05;border-color:#ffdf8c}
+.ota43-root .ota43-tag.unmatched_ota{background:#fff1f1;color:#ca4040;border-color:#ffc5c5}
+.ota43-root .ota43-tag.unmatched_gds{background:#fff7ea;color:#dd7b05;border-color:#ffe3b7}
+.ota43-root .ota43-ota-logo{display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#ff2458,#ef0038);color:white;font-weight:800;border-radius:19px;box-shadow:0 3px 10px #fb003e45;width:59px;height:59px;font-size:25px}
+.ota43-root .ota43-ota-logo.small{width:49px;height:49px;border-radius:15px;font-size:17px;margin-right:12px}
+.ota43-root .ota43-line{display:flex;align-items:center;gap:17px}
+.ota43-root .ota43-line h2{font-size:19px;line-height:1.3;font-weight:600}
+.ota43-root .ota43-line small{font-size:11px;font-weight:700;letter-spacing:1.6px;color:#94a4bd}
+.ota43-root .ota43-line label{display:inline-block;border-radius:18px;border:1px solid #e4e8ef;padding:4px 10px;margin-top:5px;color:#566d91;font-size:12px}
+.ota43-root .ota43-headline{background:#fff;border:1px solid #e4e9f2;border-radius:20px;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:22px 29px;margin:10px auto 16px;box-shadow:0 4px 12px #24416910}
+.ota43-root .ota43-hero{background:linear-gradient(120deg,#e7f0ff 5%,#dbf7ff 64%,#f5fbff);border:1px solid #bfe4fc;border-radius:20px;padding:23px;min-height:202px;display:flex;justify-content:space-between;align-items:flex-start;gap:14px;box-shadow:0 2px 5px #34568013;margin-bottom:15px}
+.ota43-root .ota43-hero p{font-size:15px;color:#395476}
+.ota43-root .ota43-hero>div>strong{display:block;font-size:42px;color:#091a31;margin-top:55px;line-height:1}
+.ota43-root .ota43-hero small{font-size:13px;color:#5a738d;margin-top:12px}
+.ota43-root .ota43-score{display:flex;align-items:center;gap:13px;background:#fff;border:1px solid #d9e5ed;border-radius:20px;padding:12px 19px;box-shadow:0 2px 4px #0724392b}
+.ota43-root .ota43-score b{display:block;font-size:12px}
+.ota43-root .ota43-score small{margin-top:3px}
+.ota43-root .ota43-ring{width:49px;height:49px;display:grid;place-items:center;border-radius:50%;border:5px solid #f34556;border-left-color:#eef0f5;border-bottom-color:#eef0f5;transform:rotate(0);font-weight:700;font-size:11px}
+.ota43-root .ota43-summary,.ota43-root .ota43-ticket-check,.ota43-root .ota43-ledger{border-radius:22px;border:1px solid #e1e7ed;background:#fff;box-shadow:0 2px 5px #283c5615;overflow:hidden;margin-bottom:16px}
+.ota43-root .ota43-summary>header,.ota43-root .ota43-ticket-check>header{display:flex;justify-content:space-between;align-items:center;padding:22px 25px;gap:12px;border-bottom:1px solid #edf1f5}
+.ota43-root .ota43-summary h3,.ota43-root .ota43-ticket-check h3{font-size:17px;font-weight:600}
+.ota43-root .ota43-summary header small{font-size:12px}
+.ota43-root .ota43-scroll{overflow:auto;max-width:100%}
+.ota43-root .ota43-summary table,.ota43-root .ota43-ledger table{border-collapse:collapse;width:100%;min-width:1100px}
+.ota43-root .ota43-summary th,.ota43-root .ota43-ledger th{font-size:12px;letter-spacing:1.3px;text-align:left;color:#7887a1;padding:14px 17px;background:#fafbfd;border-bottom:1px solid #e4eaf1;font-weight:700}
+.ota43-root .ota43-summary td,.ota43-root .ota43-ledger td{padding:16px 18px;border-bottom:1px solid #e8ecf0;vertical-align:middle;white-space:nowrap}
+.ota43-root .ota43-summary td small,.ota43-root .ota43-ledger td small{font-size:11px;white-space:normal;margin-top:3px}
+.ota43-root .ota43-summary .total{background:#f9fbfe;font-weight:700}
+.ota43-root .ota43-summary .total td{border-top:2px solid #dbe1e9;font-size:16px}
+.ota43-root .ota43-summary footer{display:flex;align-items:center;gap:14px;background:#eaf9ff;color:#285def;padding:18px 24px}
+.ota43-root .ota43-summary footer span{color:#6683a6;margin-left:auto;font-size:12px}
+.ota43-root .ota43-ticket-check>header>div{display:flex;align-items:center;gap:12px}
+.ota43-root .ota43-ticket-check header svg{color:#473aff}
+.ota43-root .ota43-ticket-totals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-bottom:1px solid #e8edf2}
+.ota43-root .ota43-ticket-totals>div{padding:20px 23px;border-right:1px solid #edf0f5}
+.ota43-root .ota43-ticket-totals>div:last-child{border:0}
+.ota43-root .ota43-ticket-totals small{color:#8999b7;font-size:11px;letter-spacing:1.1px;font-weight:700}
+.ota43-root .ota43-ticket-totals strong{font-size:19px;display:block;margin-top:6px;color:#092039}
+.ota43-root .ota43-ticket-totals span{display:block;margin-top:6px;color:#0d9d73;font-size:11px}
+.ota43-root .ota43-issues{display:flex;flex-wrap:wrap;gap:8px;padding:18px 22px 7px}
+.ota43-root .ota43-issues button{background:#fff;border:1px solid #d9e1ed;color:#304763;border-radius:21px;font-size:12px;padding:8px 12px;cursor:pointer}
+.ota43-root .ota43-issues button.active{background:linear-gradient(90deg,#4532ed,#4b32f0);color:#fff;border-color:#4a32f0;font-weight:700}
+.ota43-root .ota43-actions{display:flex;justify-content:flex-end;padding:0 22px 12px}
+.ota43-root .ota43-banner{display:flex;align-items:center;gap:15px;padding:18px 20px;margin-bottom:16px;background:#fff9e7;border:1px solid #ffde77;border-radius:16px;color:#c46700}
+.ota43-root .ota43-banner b{font-size:15px}
+.ota43-root .ota43-banner small{margin-top:3px;color:#db7107}
+.ota43-root .ota43-banner>svg:last-child{margin-left:auto}
+.ota43-root .ota43-quick{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin:0 0 16px}
+.ota43-root .ota43-quick button{display:flex;align-items:center;gap:20px;text-align:left;width:100%;min-height:105px;border:1px solid #e0e6ed;border-radius:20px;background:#fff;padding:21px;box-shadow:0 2px 5px #203c4e1c;cursor:pointer}
+.ota43-root .ota43-quick button>svg:first-child{background:#e5fff5;color:#059970;box-sizing:content-box;padding:19px;border-radius:20px}
+.ota43-root .ota43-quick button:nth-child(2)>svg:first-child{background:#e0f4ff;color:#2352e6}
+.ota43-root .ota43-quick button span{flex:1}
+.ota43-root .ota43-quick strong{display:block;font-size:15px;color:#10223f;margin-bottom:4px}
+.ota43-root .ota43-breakdown{overflow:hidden;background:white;border:1px solid #e4e7ee;border-radius:20px;border-top:4px solid #3fe1b0;margin-bottom:22px;box-shadow:0 3px 9px #1b2f5d19}
+.ota43-root .ota43-breakdown-head{padding:30px 38px 35px;position:relative}
+.ota43-root .ota43-breakdown-head p{font-size:12px;font-weight:700;color:#9cabc0;letter-spacing:1.5px;margin-bottom:12px}
+.ota43-root .ota43-breakdown-head h2{font-weight:500;margin-bottom:9px}
+.ota43-root .ota43-breakdown-head h2 strong{color:#1466ed}
+.ota43-root .ota43-breakdown-head>span{color:#6980a3}
+.ota43-root .ota43-breakdown-head .ota43-tag{position:absolute;right:27px;top:27px}
+.ota43-root .ota43-revenue,.ota43-root .ota43-adjust{display:grid;grid-template-columns:25% 1fr;align-items:center;gap:20px;border-top:1px solid #edf0f5;padding:36px 37px}
+.ota43-root .ota43-revenue{grid-template-columns:25% 1fr auto;background:linear-gradient(100deg,#f6fff9,#fff)}
+.ota43-root .ota43-adjust{background:linear-gradient(100deg,#fffcf5,#fff)}
+.ota43-root .ota43-revenue>div>p,.ota43-root .ota43-adjust>div>p{font-size:13px;color:#7289a6;line-height:1.7;max-width:235px;margin-top:15px}
+.ota43-root .ota43-label{border-radius:30px;border:1px solid #adebcf;color:#00986d;display:inline-block;padding:7px 12px;font-size:11px;font-weight:700;letter-spacing:1px}
+.ota43-root .ota43-label.orange{border-color:#fedd85;color:#d57800}
+.ota43-root .ota43-label.blue{color:#3063eb;border-color:#cddaff}
+.ota43-root .ota43-large{display:flex;align-items:center;gap:19px;font-size:17px}
+.ota43-root .ota43-large svg{box-sizing:content-box;border-radius:21px;background:#ddf9ee;color:#008e70;padding:16px}
+.ota43-root .ota43-revenue>strong{font-size:22px;color:#008f68}
+.ota43-root .ota43-finrow{display:flex;justify-content:space-between;align-items:center;padding:11px 0;gap:20px;border-bottom:1px solid #e5ebf3}
+.ota43-root .ota43-finrow>span{font-size:15px}
+.ota43-root .ota43-finrow>b{font-size:16px}
+.ota43-root .red{color:#d32a29!important}
+.ota43-root .green{color:#009a73!important}
+.ota43-root .ota43-payout{display:flex;align-items:center;gap:24px;padding:44px 37px;color:white;background:linear-gradient(110deg,#101d53,#002cc1 60%,#3d5bf1)}
+.ota43-root .ota43-payout>div:first-child{flex:0 0 25%}
+.ota43-root .ota43-payout span{font-size:12px;font-weight:800;letter-spacing:1px;color:#a1c7fb}
+.ota43-root .ota43-payout p{color:#b6cced;margin-top:17px}
+.ota43-root .ota43-payout strong{font-size:54px}
+.ota43-root .ota43-payout svg{color:#3af7a4}
+.ota43-root .ota43-payout>div:last-child{margin-left:auto}
+.ota43-root .ota43-ledger header{display:flex;align-items:center;justify-content:space-between;padding:30px 34px;border-bottom:1px solid #edf0f5;background:linear-gradient(100deg,#f9fbff,#fff,#f3faff)}
+.ota43-root .ota43-title{display:flex;align-items:center;gap:17px}
+.ota43-root .ota43-title>span{padding:17px;background:linear-gradient(130deg,#3289ff,#332ce5);color:#fff;border-radius:17px;box-shadow:0 5px 12px #426dff54}
+.ota43-root .ota43-title small{font-weight:700;letter-spacing:1.2px;margin-bottom:3px}
+.ota43-root .ota43-title h2{font-weight:600}
+.ota43-root .ota43-ledger td code,.ota43-root .ota43-pnr{font-family:Consolas,monospace;font-size:13px}
+.ota43-root .ota43-ledger td .ota43-btn{margin:0 5px 0 0}
+.ota43-root .ota43-empty{padding:38px 24px;text-align:center;color:#7b8da6}
+.ota43-root .ota43-empty b{display:block;color:#243c5e;font-size:15px;margin:14px 0 5px}
+.ota43-root .ota43-empty p{color:#7e91b0}
+.ota43-root .ota43-warning{display:flex;gap:10px;align-items:center;padding:14px 18px;margin:10px 0 16px;border-radius:14px;background:#fff9ec;border:1px solid #fcd87a;color:#d46f00}
+.ota43-root .ota43-warning small{color:#bf802d;line-height:1.7}
+.ota43-root .ota43-browser-controls{border:1px solid #e3eaf1;border-radius:22px;padding:18px 21px;margin:6px 0 16px;background:#fff;box-shadow:0 1px 3px #183b5910}
+.ota43-root .ota43-control-top,.ota43-root .ota43-control-bottom{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ota43-root .ota43-pillset{display:flex;gap:8px;flex-wrap:wrap}
+.ota43-root .ota43-control-bottom{margin-top:15px;justify-content:flex-end}
+.ota43-root .ota43-control-bottom input{min-width:210px;width:240px;max-width:100%;border:1px solid #e0e9f0;border-radius:22px;padding:12px 14px;background:white}
+.ota43-root .ota43-view-switch{display:flex;border:1px solid #edf0f3;background:#f5f7f9;border-radius:30px;padding:4px}
+.ota43-root .ota43-view-switch .ota43-btn{border:0;box-shadow:none;padding:7px 10px;background:transparent;min-height:30px}
+.ota43-root .ota43-view-switch .ota43-btn.on{background:#fff;box-shadow:0 1px 4px #1d345322}
+.ota43-root .ota43-wide{overflow:auto;max-width:100%;border-radius:18px;border:1px solid #e3e9f3;background:#fff}
+.ota43-root .ota43-compare{border-collapse:collapse;min-width:2140px;width:100%;font-size:12px;white-space:nowrap}
+.ota43-root .ota43-compare th{border-right:1px solid #e5eaf0;border-bottom:1px solid #e5ebf0;color:#64728a;padding:13px 12px;text-align:center;background:#f8fafe;white-space:normal}
+.ota43-root .ota43-compare thead .ourband{background:#e4f6fd;color:#205abf;font-size:14px}
+.ota43-root .ota43-compare thead .otaband{background:#fff8ef;color:#b7351e;font-size:14px}
+.ota43-root .ota43-compare thead .difference{background:#f7f8fb;color:#1e3159;font-size:14px}
+.ota43-root .ota43-compare td{border-right:1px solid #e9edf1;border-bottom:1px solid #edf0f3;padding:11px 9px;text-align:right;vertical-align:middle}
+.ota43-root .ota43-compare td:nth-child(-n+2){text-align:left}
+.ota43-root .ota43-compare td:nth-child(4),.ota43-root .ota43-compare td:nth-child(7),.ota43-root .ota43-compare td:nth-child(14),.ota43-root .ota43-compare td:nth-child(17){background:#fff4f4}
+.ota43-root .ota43-compare td:nth-child(9),.ota43-root .ota43-compare td:nth-child(18){font-weight:700}
+.ota43-root .ota43-pnr{background:transparent;border:0;text-decoration:none;color:#0a244b;cursor:pointer;font-weight:600}
+.ota43-root .ota43-logo{background:#4158ff;border-radius:11px;padding:7px 10px;color:#fff;display:inline-block;margin-right:8px}
+.ota43-root .ota43-logo.red{background:#f7194d;color:#fff!important}
+.ota43-root .ota43-flag{display:inline-block;font-size:11px;border:1px solid #ffd78a;background:#fffbf0;color:#d26900;padding:5px 7px;border-radius:10px;margin:2px}
+.ota43-root .ota43-matchcheck{display:inline-flex;align-items:center;gap:5px;color:#079968;font-size:12px}
+.ota43-root .ota43-green-icon{color:#00a580}
+.ota43-root .ota43-cards{display:flex;flex-direction:column;gap:12px}
+.ota43-root .ota43-ticket{background:#fff;border:1px solid #e2e8ee;border-left:5px solid #ffbd00;border-radius:20px;box-shadow:0 3px 8px #24355b18;overflow:hidden}
+.ota43-root .ota43-ticket>header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:22px 24px}
+.ota43-root .ota43-ticket-info{display:flex;gap:18px;align-items:center}
+.ota43-root .ota43-warnicon{display:grid;place-items:center;background:#fff9e2;color:#f28713;width:62px;height:62px;border:1px solid #ffe093;border-radius:19px}
+.ota43-root .ota43-ticket-info code{font-size:12px;color:#3c5e8c;margin-left:7px}
+.ota43-root .ota43-ticket-info small{margin-top:8px}
+.ota43-root .ota43-extra{text-align:right;color:#119b77;font-size:11px;font-weight:700;letter-spacing:1px}
+.ota43-root .ota43-extra strong{display:block;font-size:27px;letter-spacing:0;margin-top:8px}
+.ota43-root .ota43-ticket-values{display:grid;grid-template-columns:1fr 1fr;gap:13px;padding:0 24px 12px}
+.ota43-root .ota43-ticket-values>div{border:1px solid #d9e7fa;border-radius:19px;padding:19px 22px;background:linear-gradient(120deg,#f0faff,#fff)}
+.ota43-root .ota43-ticket-values>div:nth-child(2){background:linear-gradient(120deg,#f8f6ff,#fff);border-color:#e9e1ff}
+.ota43-root .ota43-ticket-values label{font-size:11px;color:#236dfa;display:block;font-weight:700;letter-spacing:1px}
+.ota43-root .ota43-ticket-values b{font-size:20px;margin-top:8px;display:block}
+.ota43-root .ota43-why{display:flex;align-items:center;gap:15px;margin:0 24px 15px;padding:15px 21px;border:1px solid #dae9f9;border-radius:18px;background:#f5fbff}
+.ota43-root .ota43-why>svg{color:#397aff}
+.ota43-root .ota43-why b{color:#2c65ec;font-size:11px;letter-spacing:1px}
+.ota43-root .ota43-why p{margin-top:4px}
+.ota43-root .ota43-ticket footer{display:flex;align-items:center;gap:9px;padding:16px 20px;background:#fbfcfe;border-top:1px solid #edf0f4}
+.ota43-root .ota43-ticket footer .ota43-btn:last-child{margin-left:auto}
+.ota43-root .ota43-resolution{font-size:11px;color:#8394aa;margin-left:12px}
+.ota43-root .ota43-pagination{display:flex;justify-content:flex-end;gap:10px;align-items:center;padding:20px 0}
+.ota43-root .ota43-pagination>span{margin-right:auto;color:#8797ac}
+.ota43-investigate{min-width:650px;max-width:90vw}
+.ota43-investigate-head p{padding:10px;color:#5f799b}
+.ota43-investigate dl{display:grid;grid-template-columns:1fr 1fr;margin:18px 0;border:1px solid #e0e8f2;border-radius:13px;overflow:hidden}
+.ota43-investigate dt,.ota43-investigate dd{margin:0;padding:10px 13px;border-bottom:1px solid #e5eaf1}
+.ota43-investigate dt{background:#f6f9fc;color:#52647d;font-weight:600}
+.ota43-investigate dd{word-break:break-word}
+.ota43-upload-dialog{padding:8px}
+.ota43-upload-dialog .ota43-drop{display:flex;flex-direction:column;align-items:center;gap:10px;padding:28px;border-radius:16px;border:2px dashed #aec9ed;background:#f5faff;color:#2e5db7}
+.ota43-upload-dialog .ota43-drop b{font-size:16px}
+.ota43-upload-dialog .ota43-drop input{max-width:100%;padding:12px}
+.ota43-upload-dialog .ota43-upload-label{display:flex;align-items:center;justify-content:space-between;gap:20px;margin:20px 0;color:#26395b}
+.ota43-upload-dialog select{padding:10px 18px;min-width:180px;border:1px solid #dce5f4;border-radius:12px;background:white}
+.ota43-upload-dialog>p{font-size:12px;color:#7c8fa7}
+.ota43-modal-actions{display:flex;justify-content:flex-end;gap:11px;margin-top:20px}
+.ota43-loading{text-align:center;color:#7c8fa1;padding:55px}
+@media(max-width:1100px){.ota43-root .ota43-hero,.ota43-root .ota43-headline{flex-wrap:wrap}.ota43-root .ota43-revenue,.ota43-root .ota43-adjust{grid-template-columns:1fr}.ota43-root .ota43-ticket-totals{grid-template-columns:1fr 1fr}.ota43-root .ota43-payout strong{font-size:35px}.ota43-root .ota43-hero>div>strong{font-size:33px}}
+@media(max-width:680px){.ota43-root .ota43-ticket-totals,.ota43-root .ota43-quick,.ota43-root .ota43-ticket-values{grid-template-columns:1fr}.ota43-root .ota43-hero>div>strong{margin-top:20px}.ota43-root .ota43-headline,.ota43-root .ota43-ledger header,.ota43-root .ota43-ticket>header{padding:15px}.ota43-root .ota43-ticket footer{flex-wrap:wrap}.ota43-root .ota43-ticket footer .ota43-btn:last-child{margin-left:0}}
