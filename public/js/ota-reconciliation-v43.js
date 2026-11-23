@@ -62,7 +62,7 @@ function filters(d,s){
  const t=d.totals||{},data=[
  ['all','Total PNRs',t.invoice_lines,'dark'],['matched','Matched',t.matched,'green'],
  ['mismatched','Mismatched',t.mismatched,'orange'],['needs_review','Needs review',t.needs_review,'orange'],
- ['unmatched_ota','Missing in GDS',t.missing_in_gds,'red'],['unmatched_gds','Missing in OTA',t.missing_in_ota,'orange']];
+ ['unmatched_ota','Missing in GDS',t.missing_in_gds,'red'],['unmatched_gds','Missing in OTA',t.missing_in_ota,'orange'],['disputed','Disputed',t.disputed||0,'orange']];
  return '<div class="ota43-browser-controls"><div class="ota43-control-top">'+btn('back',''+icon('back')+' Back','back')+
  '<div class="ota43-pillset">'+data.map(x=>'<button data-ota43="filter" data-filter="'+x[0]+'" class="ota43-badge '+x[3]+' '+(s.filter===x[0]?'active':'')+'">'+x[1]+' <strong>'+int(x[2])+'</strong></button>').join('')+
  '</div></div><div class="ota43-control-bottom"><input type="search" data-ota43-search placeholder="Search PNR..." value="'+escH(s.search||'')+'" aria-label="Search PNR"/>'+
