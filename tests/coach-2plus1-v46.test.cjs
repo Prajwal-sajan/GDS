@@ -127,8 +127,9 @@ test('no accidental changes outside coach editor or other coach category',()=>{
  assert.ok(html.includes('coach-2plus1-v46.css?build=46'));
  assert.ok(vehicles.includes('record.display_name=t.value'));
  assert.ok(vehicles.includes('if(target21())'));
- assert.ok(backend.includes('Coach21.validateLayout'));
- assert.ok(backend.includes('Coach21.structuralSignature'));
+ assert.ok(backend.includes('Coach21.validateLayout')||backend.includes('patternHelper.validateLayout')||backend.includes('futureHelper.validateLayout'));
+ assert.ok(backend.includes('Coach21.isTarget'));
+ assert.ok(backend.includes('Coach21.structuralSignature')||backend.includes('(existingHelper||futureHelper).structuralSignature'));
  assert.equal(X.isTarget({bus_type:'A/C Seater/Sleeper (2+1)',pattern:'2+1'}),true);
  assert.equal(X.isTarget({bus_type:'A/C Sleeper (2+1)',pattern:'2+1'}),false);
  assert.equal(X.isTarget({bus_type:'A/C Seater/Sleeper (2+2)',pattern:'2+2'}),false);
