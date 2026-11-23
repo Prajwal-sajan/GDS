@@ -1,0 +1,48 @@
+name: v38 Schedule Bookings PNR Workspace
+on:
+  push:
+    branches: [savetrip-screenshotcomplete]
+    paths:
+      - 'server/api/booking-workspace-v38.js'
+      - 'server/api/ops.js'
+      - 'server/domain.js'
+      - 'server/index.js'
+      - 'public/js/schedule-bookings-v38.js'
+      - 'public/js/booking-ticket-v38.js'
+      - 'public/js/schedules-screenshot-v6.js'
+      - 'public/css/schedule-bookings-v38.css'
+      - 'public/index.html'
+      - 'tests/schedule-bookings-v38-*.cjs'
+      - '.github/workflows/schedule-bookings-v38.yml'
+  workflow_dispatch:
+jobs:
+  bookings-v38:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Syntax verify
+        run: |
+          node --check server/api/booking-workspace-v38.js
+          node --check server/api/ops.js
+          node --check server/domain.js
+          node --check server/index.js
+          node --check public/js/schedule-bookings-v38.js
+          node --check public/js/booking-ticket-v38.js
+          node --check public/js/schedules-screenshot-v6.js
+          node --check tests/schedule-bookings-v38-api.cjs
+          node --check tests/schedule-bookings-v38-ui.cjs
+      - name: Booking API integration
+        run: timeout 180s node tests/schedule-bookings-v38-api.cjs
+      - name: Booking UI DOM acceptance
+        run: timeout 90s node tests/schedule-bookings-v38-ui.cjs
+      - name: Existing Schedule and full regression
+        run: |
+          node tests/check-schedules-v6.mjs
+          node tests/check-routes-schedules-v7.mjs
+          npm test

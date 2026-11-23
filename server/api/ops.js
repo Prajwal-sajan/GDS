@@ -112,11 +112,15 @@ r.post('/trips/:sid/delay', can('trips.update_passengers'), h((req) => {
 
 r.post('/trips/:sid/notify', can('trips.chat'), h((req) => {
   const s = db.col('schedules').get(req.params.sid); if (!s) throw D.httpErr(404, 'Trip not found');
-  const { template, pnrs, text } = req.body; const v = s.vehicle_id ? db.col('vehicles').get(s.vehicle_id) : null;
+  const { template, pnrs, text } = req.body;
+  if(!Array.isArray(pnrs)||!pnrs.length||pnrs.length>200)throw D.httpErr(400,'Select at least one passenger PNR (maximum 200)');
+  if(!['ticket_confirmation','bus_details','bus_cancellation','custom'].includes(template))throw D.httpErr(400,'Unsupported notification template');
+  if(['custom','bus_cancellation'].includes(template)&&(!String(text||'').trim()||String(text).length>1000))throw D.httpErr(400,'Message text is required (maximum 1000 characters)');
+  const v = s.vehicle_id ? db.col('vehicles').get(s.vehicle_id) : null;
   const msg = { ticket_confirmation: (b) => `Ticket ${b.pnr} confirmed. Seats ${b.passengers.map((p) => p.seat).join(', ')}.`, bus_details: (b) => `Bus ${v?.registration_number || 'TBA'} · Driver contact ${v?.phone_number || ''}. Track: /track/${b.pnr}`, bus_cancellation: () => text || 'We regret to inform that your bus has been cancelled. A full refund will be processed.', custom: () => text };
   const f = msg[template] || msg.custom; let n = 0;
   for (const b of db.col('bookings').filter((x) => x.schedule_id == s.id && x.status === 'confirmed' && (!pnrs || pnrs.includes(x.pnr)))) { db.col('messages').insert({ conversation_id: D.passengerConvId(b, b.passengers[0]), direction: 'out', channel: 'whatsapp', template, text: f(b), phone: b.contact.phone, ts: U.nowIso(), read: true, by: req.user.name }); n++; }
-  return { success: true, sent: n };
+  return { success:true, recorded:n, delivery_verified:false };
 }));
 
 r.post('/trips/:sid/cancel', can('bookings.cancel'), h((req) => {
@@ -296,15 +300,74 @@ r.post('/bookings/:pnr/shift', can('bookings.modify'), h((req) => {
 r.post('/bookings/:pnr/confirm-payment', can('bookings.modify'), h((req) => { const b = db.col('bookings').find((x) => x.pnr === req.params.pnr); if (b.status !== 'hold') throw D.httpErr(400, 'Not on hold'); b.status = 'confirmed'; const oldPayment=b.payment;b.payment = 'paid';try{D.awardMiles(b);}catch(e){b.payment=oldPayment;throw e;} b.payment_method = req.body.method || 'upi'; b.hold_expires_at = null; db.persist(); D.notify('payment.received', b); return b; }));
 r.post('/bookings/:pnr/release', can('bookings.release_hold'), h((req) => { const b = db.col('bookings').find((x) => x.pnr === req.params.pnr); if (b.status !== 'hold') throw D.httpErr(400, 'Not on hold'); b.status = 'released'; b.release_reason = req.body.reason || 'Force release'; b.cancelled_at = U.nowIso(); db.persist(); D.audit('schedule', b.schedule_id, 'bookings', { op: 'release', pnr: b.pnr, reason: b.release_reason }, req.user); return b; }));
 r.post('/bookings/:pnr/mark-paid', can('accounts.ledger'), h((req) => { const b = db.col('bookings').find((x) => x.pnr === req.params.pnr); const oldPayment=b.payment;b.payment='paid';try{D.awardMiles(b);}catch(e){b.payment=oldPayment;throw e;} db.persist(); return b; }));
-r.post('/bookings/:pnr/comments', can('bookings.view_all'), h((req) => { Policy.checkComment(req);
-  const b=Policy.requireBooking(req,db.col('bookings').find(x=>x.pnr===req.params.pnr)); b.comments = b.comments || []; b.comments.push({ text: req.body.text, by: req.user.name, at: U.nowIso() }); db.persist(); return b.comments; }));
-r.put('/bookings/:pnr', can('bookings.modify'), h((req) => {
+r.post('/bookings/:pnr/comments',can('bookings.view_all'),h(req=>{
+  Policy.checkComment(req);
+  const b=Policy.requireBooking(req,db.col('bookings').find(x=>x.pnr===req.params.pnr),'Add comments to a PNR');
+  const text=String(req.body?.text||'').trim();
+  if(!text||text.length>2000)throw D.httpErr(400,'Enter a staff-only comment (maximum 2000 characters)');
+  b.comments=b.comments||[];
+  const record={text,by:req.user.name,at:U.nowIso()};
+  b.comments.push(record);
+  D.audit('schedule',b.schedule_id,'bookings',{op:'comment',pnr:b.pnr},req.user);
+  db.persist();
+  return b.comments;
+}));
+r.put('/bookings/:pnr',can('bookings.modify'),h(req=>{
   const b=Policy.requireBooking(req,db.col('bookings').find(x=>x.pnr===req.params.pnr),'Edit passengers & points');
-  const { contact, passengers, boarding_stage_id, dropping_stage_id } = req.body;
-  if (contact) Object.assign(b.contact, contact);
-  if (passengers) for (const p of passengers) { const t = b.passengers.find((x) => x.seat === p.seat); if (t) Object.assign(t, { name: p.name ?? t.name, age: p.age ?? t.age, gender: p.gender ?? t.gender }); }
-  if (boarding_stage_id) b.boarding_stage_id = boarding_stage_id; if (dropping_stage_id) b.dropping_stage_id = dropping_stage_id;
-  db.persist(); D.notify('booking.modified', b); return b;
+  if(b.status!=='confirmed')throw D.httpErr(409,'Only confirmed tickets may be edited');
+  const {contact,passengers,boarding_stage_id,dropping_stage_id}=req.body||{};
+  const update={},fields=[];
+  if(contact!==undefined){
+    if(!contact||typeof contact!=='object'||Array.isArray(contact))throw D.httpErr(400,'Invalid contact');
+    const name=String(contact.name||'').trim(),phone=String(contact.phone||'').trim(),email=String(contact.email||'').trim();
+    if(!name||name.length>120)throw D.httpErr(400,'Contact name is required (maximum 120 characters)');
+    if(!/^\d{10}$/.test(phone))throw D.httpErr(400,'Mobile must contain 10 digits');
+    if(email.length>254||(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)))throw D.httpErr(400,'Enter a valid email address');
+    update.contact={name,phone,email};fields.push('Contact & Journey Details');
+  }
+  if(passengers!==undefined){
+    if(!Array.isArray(passengers)||passengers.length!==(b.passengers||[]).filter(p=>p.status!=='cancelled').length)
+      throw D.httpErr(400,'Provide every active passenger in this ticket');
+    const seen=new Set(),pax=[];
+    for(const input of passengers){
+      const seat=String(input.seat||'');
+      if(seen.has(seat))throw D.httpErr(400,'Duplicate passenger seat');
+      seen.add(seat);
+      const old=b.passengers.find(p=>String(p.seat)===seat&&p.status!=='cancelled');
+      if(!old)throw D.httpErr(400,'Seat does not belong to this active PNR');
+      const name=String(input.name||'').trim(),age=Number(input.age);
+      const gender=String(input.gender||'').trim().toUpperCase();
+      if(!name||name.length>120||!Number.isInteger(age)||age<1||age>120||!['M','F','O'].includes(gender))
+        throw D.httpErr(400,'Each passenger needs a name, age 1–120 and gender M/F/O');
+      pax.push({old,name,age,gender});
+    }
+    update.passengers=pax;fields.push('Passenger Information');
+  }
+  const route=db.col('routes').get(b.route_id),schedule=db.col('schedules').get(b.schedule_id);
+  if(!route||!schedule)throw D.httpErr(404,'Booked trip not found');
+  const stages=(route.stages||[]).map(st=>({...st,...(schedule.stage_overrides?.[st.id]||{})}));
+  const verify=(id,type,city)=>{
+    const st=stages.find(x=>String(x.id)===String(id));
+    if(!st||st.type!==type||String(st.city_id)!==String(city))throw D.httpErr(400,'Pickup/drop must belong to the booked city and stop type');
+    return st.id;
+  };
+  if(boarding_stage_id!=null&&boarding_stage_id!==''){
+    update.boarding_stage_id=verify(boarding_stage_id,'pickup',b.from_city_id);
+    fields.push('Pickup Point');
+  }
+  if(dropping_stage_id!=null&&dropping_stage_id!==''){
+    update.dropping_stage_id=verify(dropping_stage_id,'drop',b.to_city_id);
+    fields.push('Drop Point');
+  }
+  if(!fields.length)throw D.httpErr(400,'No editable booking fields submitted');
+  if(update.contact)Object.assign(b.contact,update.contact);
+  if(update.passengers)update.passengers.forEach(x=>Object.assign(x.old,{name:x.name,age:x.age,gender:x.gender}));
+  if(update.boarding_stage_id!=null)b.boarding_stage_id=update.boarding_stage_id;
+  if(update.dropping_stage_id!=null)b.dropping_stage_id=update.dropping_stage_id;
+  D.audit('schedule',b.schedule_id,'bookings',{op:'edit',pnr:b.pnr,fields},req.user);
+  db.persist();
+  D.notify('booking.modified',b);
+  return Policy.maskedBooking(b,Policy.viewPhone(req));
 }));
 
 module.exports = r;

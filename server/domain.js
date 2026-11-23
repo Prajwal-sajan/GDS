@@ -338,7 +338,11 @@ function cancelBooking(pnr, { seats, by = 'operator', reason = '', refund_pct = 
   if (b.status === 'cancelled') throw httpErr(400, 'Already cancelled');
   const rtRules = db.col('routes').get(b.route_id)?.business_rules || {};
   if (by === 'passenger' && rtRules.allow_cancellation === false) throw httpErr(400, 'Cancellation is disabled for this route');
-  const target = seats && seats.length ? b.passengers.filter((p) => seats.includes(p.seat)) : b.passengers.filter((p) => p.status !== 'cancelled');
+  const target=seats&&seats.length
+     ? b.passengers.filter(p=>p.status!=='cancelled'&&seats.includes(p.seat))
+     : b.passengers.filter(p=>p.status!=='cancelled');
+   if(!target.length||seats&&seats.length&&new Set(seats.map(String)).size!==target.length)
+     throw httpErr(400,'Select one or more active passenger seats on this PNR');
   const ratio = U.sum(target, (p) => p.fare) / (U.sum(b.passengers.filter((p) => p.status !== 'cancelled'), (p) => p.fare) || 1);
   const loyaltyRatio=U.sum(target,p=>p.fare)/(U.sum(b.passengers,p=>p.fare)||1);
   const calc = refundFor(b, by, refund_pct);
@@ -356,26 +360,58 @@ function cancelBooking(pnr, { seats, by = 'operator', reason = '', refund_pct = 
   return { booking: b, ...part };
 }
 
-function shiftBooking(pnr, { schedule_id, seat_map = {}, boarding_stage_id, dropping_stage_id }, actor) {
-  const b = db.col('bookings').find((x) => x.pnr === pnr);
-  if (!b) throw httpErr(404, 'Booking not found');
-  const target = db.col('schedules').get(schedule_id || b.schedule_id);
-  const map = seatMap(target, b.from_city_id, b.to_city_id);
-  const seats = Object.fromEntries(map.decks.flatMap((d) => d.seats).map((x) => [x.code, x]));
-  for (const [from, to] of Object.entries(seat_map)) {
-    const st = seats[to];
-    if (!st) throw httpErr(400, `Seat ${to} missing`);
-    const mine = st.booking && st.booking.pnr === pnr;
-    if (!mine && !['available', 'other_leg'].includes(st.status)) throw httpErr(409, `Seat ${to} unavailable`);
+function shiftBooking(pnr,{schedule_id,seat_map={},boarding_stage_id,dropping_stage_id},actor){
+  const b=db.col('bookings').find(x=>x.pnr===pnr);
+  if(!b)throw httpErr(404,'Booking not found');
+  if(b.status!=='confirmed')throw httpErr(409,'Only confirmed tickets can be shifted');
+  const target=db.col('schedules').get(schedule_id||b.schedule_id);
+  if(!target||target.status!=='active')throw httpErr(409,'Target trip is unavailable or inactive');
+  if(target.travel_date< U.today())throw httpErr(409,'Cannot shift a passenger into a departed date');
+  const route=db.col('routes').get(target.route_id);
+  if(!route||cityOrder(route,b.from_city_id)<0||cityOrder(route,b.to_city_id)<=cityOrder(route,b.from_city_id))
+    throw httpErr(409,'Target service does not serve the booked journey direction');
+  if(!seat_map||typeof seat_map!=='object'||Array.isArray(seat_map))throw httpErr(400,'Seat assignment must be an object');
+  const active=b.passengers.filter(p=>p.status!=='cancelled');
+  const currentSeats=new Set(active.map(p=>String(p.seat)));
+  if(Object.keys(seat_map).some(key=>!currentSeats.has(String(key))))
+    throw httpErr(400,'Seat assignment contains a passenger outside this PNR');
+  if(String(target.id)!==String(b.schedule_id)&&active.some(p=>!seat_map[p.seat]))
+    throw httpErr(400,'Assign a target seat to every active passenger');
+  const map=seatMap(target,b.from_city_id,b.to_city_id);
+  const availability=new Map(map.decks.flatMap(d=>d.seats).map(x=>[String(x.code),x]));
+  const assigned=active.map(p=>String(seat_map[p.seat]||p.seat));
+  if(new Set(assigned).size!==assigned.length)throw httpErr(400,'Two passengers cannot use the same target seat');
+  for(const code of assigned){
+    const seat=availability.get(code);
+    if(!seat)throw httpErr(400,'Seat '+code+' does not exist in target coach');
+    const mine=String(target.id)===String(b.schedule_id)&&seat.booking?.pnr===pnr;
+    if(!mine&&!['available','other_leg'].includes(seat.status))
+      throw httpErr(409,'Seat '+code+' is no longer available');
   }
-  for (const p of b.passengers) if (seat_map[p.seat]) p.seat = seat_map[p.seat];
-  const prev = b.schedule_id;
-  b.schedule_id = target.id; b.travel_date = target.travel_date; b.route_id = target.route_id;
-  if (boarding_stage_id) b.boarding_stage_id = boarding_stage_id;
-  if (dropping_stage_id) b.dropping_stage_id = dropping_stage_id;
+  const stage=(id,type,city)=>{
+    const s=(route.stages||[]).find(st=>String(st.id)===String(id));
+    if(!s||s.type!==type||String(s.city_id)!==String(city))
+      throw httpErr(400,'Pickup/drop selection does not belong to the booked journey');
+    return s.id;
+  };
+  const sourceRoute=db.col('routes').get(b.route_id);
+  const origBoard=(sourceRoute?.stages||[]).find(x=>String(x.id)===String(b.boarding_stage_id));
+  const origDrop=(sourceRoute?.stages||[]).find(x=>String(x.id)===String(b.dropping_stage_id));
+  const pickup=boarding_stage_id!=null?stage(boarding_stage_id,'pickup',b.from_city_id):
+    (route.id===sourceRoute?.id?b.boarding_stage_id:
+     (route.stages||[]).find(x=>x.type==='pickup'&&String(x.city_id)===String(b.from_city_id)&&x.name===origBoard?.name)?.id);
+  const drop=dropping_stage_id!=null?stage(dropping_stage_id,'drop',b.to_city_id):
+    (route.id===sourceRoute?.id?b.dropping_stage_id:
+     (route.stages||[]).find(x=>x.type==='drop'&&String(x.city_id)===String(b.to_city_id)&&x.name===origDrop?.name)?.id);
+  if(pickup==null||drop==null)throw httpErr(400,'Choose a valid pickup and drop for the target service');
+  const before=b.schedule_id,fromDate=b.travel_date;
+  active.forEach(p=>{p.seat=String(seat_map[p.seat]||p.seat)});
+  b.schedule_id=target.id;b.travel_date=target.travel_date;b.route_id=target.route_id;
+  b.boarding_stage_id=pickup;b.dropping_stage_id=drop;
   db.persist();
-  notify('booking.modified', b);
-  audit('schedule', prev, 'bookings', { op: 'shift', pnr, to_schedule: target.id, seat_map }, actor);
+  notify('booking.modified',b);
+  audit('schedule',before,'bookings',{op:'shift',pnr,to_schedule:target.id,
+    from_date:fromDate,to_date:target.travel_date,seat_map},actor);
   return b;
 }
 
