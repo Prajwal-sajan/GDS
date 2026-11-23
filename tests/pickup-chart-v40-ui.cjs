@@ -88,6 +88,10 @@ assert.ok(root.querySelector('.pc40-print-dialog[role=dialog]'));
 for(const x of ['Pickup Chart — NTHB1','November Travels','Options','Print','Download','Share'])
  assert.ok(root.textContent.includes(x),'print dialog missing '+x);
 assert.equal(root.querySelectorAll('.pc40-pickup-block').length,2,'Pickup should group by stop');
+assert.equal(root.querySelectorAll('.pc40-pickup-block')[0].querySelector('tbody tr td').textContent,'1');
+assert.equal(root.querySelectorAll('.pc40-pickup-block')[1].querySelector('tbody tr td').textContent,'2',
+ 'Numbering must continue across boarding groups, not restart at one');
+assert.equal(d.body.style.overflow,'hidden','Backdrop must prevent underlying page scrolling');
 for(const x of ['Boarding Details','Dropping Details','JNTU Metro station',
  'Prabhu','AR 01 Q 7827','Booked:','Available:'])
  assert.ok(root.textContent.includes(x),'missing '+x);
@@ -132,6 +136,17 @@ assert.ok(root.querySelector('.pc40-upload-zone'));
 assert.ok(root.querySelector('[data-pc40="browse"]').disabled);
 root.querySelector('[data-pc40="toggle-gds"]').click();
 assert.equal(root.querySelectorAll('[data-pc40="select-gds"]').length,4);
+const firstGds=root.querySelector('[data-pc40="select-gds"]');
+assert.equal(d.activeElement,firstGds,'Dropdown keyboard focus starts at first item');
+firstGds.dispatchEvent(new w.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true}));
+assert.equal(d.activeElement.dataset.gds,'EzeeInfo','ArrowDown moves through vendor choices');
+d.activeElement.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Home',bubbles:true}));
+assert.equal(d.activeElement.dataset.gds,'Bitla TicketSimply');
+d.activeElement.dispatchEvent(new w.KeyboardEvent('keydown',{key:'End',bubbles:true}));
+assert.equal(d.activeElement.dataset.gds,'Detect automatically');
+d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+assert.ok(!root.querySelector('.pc40-source-list'),'Escape collapses list without closing import dialog');
+root.querySelector('[data-pc40="toggle-gds"]').click();
 for(const x of ['Bitla TicketSimply','EzeeInfo','Infinity ITS','Detect automatically'])
  assert.ok(root.textContent.includes(x),'Missing GDS option '+x);
 root.querySelector('[data-gds="Infinity ITS"]').click();
@@ -153,8 +168,10 @@ root.querySelector('[data-pc40="print-imported"]').click();
 await delay(30);
 assert.ok(d.querySelector('.pc40-print-dialog'));
 assert.ok(api.some(x=>x[0]==='GET'&&x[1].endsWith('source=imported')));
+assert.equal(d.body.style.overflow,'hidden','Modal replacement retains background scroll lock');
 assert.equal(d.querySelectorAll('.pc40-overlay').length,1,'No stacked modal leftovers');
 d.querySelector('[data-pc40-close]').click();
+assert.equal(d.body.style.overflow,'','Closing the final modal restores body scroll');
 const page=fs.readFileSync('public/index.html','utf8');
 const v38=fs.readFileSync('public/js/schedule-bookings-v38.js','utf8');
 const css=fs.readFileSync('public/css/pickup-chart-v40.css','utf8');

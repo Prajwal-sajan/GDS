@@ -174,7 +174,9 @@ function generate(report,opts,clock=new Date()){
   for(const group of groups){
    const first=group[0];
    groupTitle(pdf,titleGroup(first,group));
-   const rows=group.slice().sort((a,b)=>C.natural(a.seat,b.seat)).map(p=>({...p,_number:++count}));
+   // Preserve boarding-chart manifest order from the source PDF. Only the RTO
+   // layout is intentionally sorted by seat; the grouped chart is not.
+   const rows=group.map(p=>({...p,_number:++count}));
    cells(pdf,colSpecs(opts),rows);
    pdf.y+=4;
   }

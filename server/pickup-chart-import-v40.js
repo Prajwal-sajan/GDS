@@ -105,8 +105,7 @@ function rowsFromPdf(text){
  }
  return {rows,skipped};
 }
-const detect=(text,selection)=>{
- if(selection!=='Detect automatically')return selection;
+const detect=text=>{
  if(/ticketsimply|bitla/i.test(text))return 'Bitla TicketSimply';
  if(/ezeeinfo|ezee info/i.test(text))return 'EzeeInfo';
  if(/infinity\s*(its|solutions|gds)/i.test(text))return 'Infinity ITS';
@@ -175,13 +174,28 @@ function parse(buffer,mime,filename,selection,report){
  if(service&&norm(service)!==norm(report.service))blocked.push('Service '+service+' does not match '+report.service);
  if(date&&date!==report.date)blocked.push('Travel date '+date+' does not match '+report.date);
  const warnings=assignStages(rows,report);
+ const detectedGds=detect(text),chosenGds=selection==='Detect automatically'?detectedGds:selection;
+ if(selection==='Detect automatically'&&detectedGds.startsWith('Unknown'))
+  warnings.push('Source GDS cannot be identified from the file text; review the imported reference before confirming.');
+ const inputLayout=mime==='application/pdf'
+  ?(/(?:^|\n)\s*Boarding Details\s*$/im.test(text)&&
+     /(?:^|\n)\s*Dropping Details\s*$/im.test(text)?'grouped_pickup'
+    :/(?:^|\n)\s*#\s+Seat\s+Mobile\s+PNR\s+Name\s+G\s+Pickup\s+Drop\b/im.test(text)
+     ?'rto_seat_order':'other_text_pdf')
+  :'csv';
+ if(inputLayout==='rto_seat_order')warnings.push(
+  'RTO chart: Pickup/Drop may be trip start/end instead of the passenger’s own stops; verify before confirming.');
+ if(inputLayout==='other_text_pdf')warnings.push(
+  'Unrecognized PDF table layout; review each extracted passenger row and stop.');
+ if(!service||!date)warnings.push(
+  'The file does not identify both Service and Date; verify that it belongs to the selected schedule.');
  if(parsed.skipped)warnings.push(parsed.skipped+' potential passenger row(s) were not recognized');
  if(!rows.every(x=>x.mobile))warnings.push('One or more passenger phone numbers were absent or invalid');
  const repeated=[...new Set(rows.map(x=>x.seat).filter((s,i,a)=>a.indexOf(s)!==i))];
  if(repeated.length)warnings.push('Repeated seat codes across this manifest: '+repeated.slice(0,15).join(', '));
  const hash=crypto.createHash('sha256').update(buffer).digest('hex');
  return {file_name:C.safe(filename).slice(0,180),sha256:hash,bytes:buffer.length,
-  source_selection:selection,source_gds:detect(text,selection),mime,service,date,
+  source_selection:selection,source_gds:chosenGds,detected_gds:detectedGds,input_layout:inputLayout,mime,service,date,
   rows,warnings:[...new Set(warnings)].slice(0,75),blocking_issues:blocked};
 }
 function storePreview(userId,sid,result){

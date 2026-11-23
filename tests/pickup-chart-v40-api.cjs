@@ -92,7 +92,10 @@ const get=url=>call('GET',url);
    'X-Pickup-Chart-GDS':'Infinity ITS'});
   assert.equal(uploaded.status,200,JSON.stringify(uploaded.data));
   assert.equal(uploaded.data.passenger_count,2);
-  assert.equal(uploaded.data.detected_gds,'Infinity ITS');
+  assert.equal(uploaded.data.source_gds,'Infinity ITS');
+  assert.equal(uploaded.data.detected_gds,'Unknown text PDF / CSV',
+   'Manual GDS selection must not be claimed as independent auto-detection');
+  assert.equal(uploaded.data.input_layout,'csv');
   assert.equal(uploaded.data.inventory_will_change,false);
   assert.equal(uploaded.data.rows[0].pnr,'095027');
   assert.equal(uploaded.data.rows[0].pickup,stage1.name);
@@ -161,6 +164,28 @@ const get=url=>call('GET',url);
   const pages=buffer=>[...buffer.toString('latin1').matchAll(/\/Type \/Page \/Parent/g)].length;
   const refPickup=PDF.generate(synthetic,Data.options({chart:'pickup'}));
   const refRto=PDF.generate(synthetic,Data.options({chart:'rto'}));
+  const unsorted={...synthetic,rows:synthetic.rows.slice(0,5).map((p,i)=>({
+   ...p,seat:['2U','1U','2','3U','17'][i]
+  }))};
+  const pickOrder=PDF.generate(unsorted,Data.options({chart:'pickup'}));
+  const rtoOrder=PDF.generate(unsorted,Data.options({chart:'rto'}));
+  if(!child.error){
+   const pdftotext=b=>require('node:child_process').spawnSync(
+    'pdftotext',['-layout','-','-'],{input:b,encoding:'utf8'}).stdout||'';
+   const groupedText=pdftotext(pickOrder),rtoText=pdftotext(rtoOrder);
+   assert.ok(groupedText.indexOf('2U')<groupedText.indexOf('1U'),
+    'Pickup PDF must preserve source boarding-row order');
+   assert.ok(rtoText.indexOf('1U')<rtoText.indexOf('2U'),
+    'RTO PDF must sort seats naturally');
+   const parsedRto=Import.parse(rtoOrder,'application/pdf','reference-rto.pdf',
+    'Detect automatically',unsorted);
+   assert.equal(parsedRto.input_layout,'rto_seat_order');
+   assert.ok(parsedRto.warnings.some(w=>w.includes('trip start/end')));
+   const parsedPickup=Import.parse(pickOrder,'application/pdf','reference-pickup.pdf',
+    'Infinity ITS',unsorted);
+   assert.equal(parsedPickup.input_layout,'grouped_pickup');
+   assert.ok(parsedPickup.rows.length>=1);
+  }
   assert.equal(pages(refPickup),4,'46-passenger pickup chart should paginate to four A4 landscape pages');
   assert.equal(pages(refRto),2,'46-passenger RTO chart should paginate to two A4 landscape pages');
   assert.ok(refPickup.toString('latin1').includes('Boarding Details'));

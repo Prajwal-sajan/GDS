@@ -60,3 +60,15 @@ The nine supplied SaveTrip screenshots cover import picker, expanded source choi
 2. Supply one permitted, redacted or synthetic tripsheet from each supported external GDS format for conclusive parser matching; current renderer has generic text-table parser with strict rejection.
 3. Verify Windows Print interaction for Chrome/Edge PDF plugins and native Share API support; browser controls differ.
 4. For multi-instance production storage, migrate import manifest and token flow off the existing JSON document store to transactional DB with retention/audit policy.
+
+## v41 fidelity and workflow corrections — 23 November 2026
+
+- **Pickup numbering:** The in-browser grouped chart now numbers passengers continuously across boarding groups instead of restarting at 1 per group. Tests confirm the first passenger of the second boarding section starts at 2 for a two-row test fixture.
+- **Original ordering:** Generated grouped Pickup Chart PDF now retains passenger order inside each boarding point, as in the supplied four-page document (2U followed by 1U in the reference's first section). RTO continues sorting seats naturally, independent of original boarding order.
+- **Board/drop summaries:** The on-screen station/city name appears once per consecutive group of stops, matching the original compact summary table.
+- **City filtering:** The capacity, booked and available totals represent the full service even after a city is filtered. A separate `Showing` count identifies the filtered subset.
+- **Import source dropdown:** Expanded source list supports Arrow Up/Down, Home, End, Enter/Space, and Escape-to-collapse; modal backdrop locks page scrolling and restores it on close.
+- **PDF import metadata:** Distinguishes grouped pickup documents from RTO seat-ordered PDFs and warns that the RTO's trip-start/end columns can differ from actual passenger pickup/drop stops. Missing service/date provenance produces a warning.
+- **Vendor detection:** Manually choosing Bitla, EzeeInfo or Infinity no longer falsely counts as independently detecting that vendor from the PDF. Both selected source and file-inferred identity are displayed separately; a file without detectable vendor markers remains unverified.
+- **File handling:** Both supplied PDFs were inspected without copying real passenger phone numbers, names or ticket references into source or tests. Local Poppler text extraction identified 46 passenger rows in each; production import still requires the user to select and upload the appropriate permitted document.
+- **Testing:** Added grouped/seat-order PDF comparison with synthetic source rows and expanded dropdown and scroll-lock browser-DOM regression checks. Automated CI remains the merge gate; a real Chrome visual pass and vendor-specific samples are still required for certification.

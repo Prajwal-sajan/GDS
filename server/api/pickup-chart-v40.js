@@ -82,7 +82,7 @@ r.post('/schedules/:id/pickup-chart/v40/preview',
  const preview_id=Import.storePreview(req.user.id,id,imported);
  const allowPhone=Policy.viewPhone(req);
  return {preview_id,file_name:imported.file_name,bytes:imported.bytes,sha256:imported.sha256,
-  detected_gds:imported.source_gds,source_gds:selection,passenger_count:imported.rows.length,
+  detected_gds:imported.detected_gds,source_gds:selection,input_layout:imported.input_layout,passenger_count:imported.rows.length,
   service_in_file:imported.service,travel_date_in_file:imported.date,
   warnings:imported.warnings,blocking_issues:imported.blocking_issues,
   rows:imported.rows.slice(0,25).map(x=>({seat:x.seat,pnr:x.pnr,name:x.name,

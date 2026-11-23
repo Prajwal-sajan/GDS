@@ -52,8 +52,17 @@ const mk=(html,kind)=>{
  root.className='pc40-overlay pc40-'+kind;
  root.setAttribute('role','presentation');
  root.innerHTML=html;document.body.appendChild(root);
- const escapeClose=e=>{if(e.key==='Escape')ctrl.close()};
- const ctrl={root,close:()=>{root.remove();document.removeEventListener('keydown',escapeClose,true);
+ const escapeClose=e=>{
+  if(e.key!=='Escape')return;
+  if(root.querySelector('.pc40-source-list')){
+    e.preventDefault();e.stopPropagation();
+    root.querySelector('[data-pc40="toggle-gds"]')?.click();
+    root.querySelector('[data-pc40="toggle-gds"]')?.focus();
+  }else ctrl.close();
+ };
+ const previousOverflow=document.body.style.overflow;
+ document.body.style.overflow='hidden';
+ const ctrl={root,close:()=>{root.remove();document.body.style.overflow=previousOverflow;document.removeEventListener('keydown',escapeClose,true);
   if(current===ctrl)current=null;try{before?.focus?.()}catch(_){}}};
  current=ctrl;
  document.addEventListener('keydown',escapeClose,true);
@@ -111,7 +120,8 @@ function previewMarkup(p){
  return '<section class="pc40-import-preview"><header><h3>Review extracted chart</h3>'+
   '<span>'+number(p.passenger_count)+' passenger row(s)</span></header>'+
   '<div class="pc40-detect">'+I('database',18)+' Selected: <strong>'+E(p.source_gds)+'</strong>'+
-  ' · Detected: <strong>'+E(p.detected_gds)+'</strong> · '+E(p.file_name)+'</div>'+
+  ' · Detected: <strong>'+E(p.detected_gds||'Unknown')+'</strong> · '+E(p.file_name)+
+  ' · Format: <strong>'+E(({grouped_pickup:'Pickup chart (grouped)',rto_seat_order:'RTO chart (seat-sorted)',other_text_pdf:'Other PDF',csv:'CSV'})[p.input_layout]||'Unverified')+'</strong></div>'+
   (p.blocking_issues||[]).map(x=>'<p class="pc40-error-line">'+I('alert',16)+E(x)+'</p>').join('')+
   (p.warnings||[]).slice(0,6).map(x=>'<p class="pc40-warning-line">'+I('info',16)+E(x)+'</p>').join('')+
   '<div class="pc40-import-tablewrap"><table><thead><tr>'+
@@ -156,9 +166,9 @@ function openImport(S,V,ctx){
   const target=e.target.closest('[data-pc40-close],[data-pc40]');if(!target)return;
   if(target.hasAttribute('data-pc40-close'))return ctrl.close();
   const a=target.dataset.pc40;
-  if(a==='toggle-gds'){imp.open=!imp.open;draw();return}
+  if(a==='toggle-gds'){imp.open=!imp.open;draw();if(imp.open)ctrl.root.querySelector('[data-pc40="select-gds"]')?.focus();return}
   if(a==='select-gds'){imp.source=target.dataset.gds;imp.open=false;
-   imp.preview=null;imp.saved=null;draw();return}
+   imp.preview=null;imp.saved=null;draw();ctrl.root.querySelector('[data-pc40="toggle-gds"]')?.focus();return}
   if(a==='browse'){ctrl.root.querySelector('[data-pc40-file]')?.click();return}
   if(a==='confirm-import'){
    if(!imp.preview||imp.preview.blocking_issues?.length)return;
@@ -172,6 +182,17 @@ function openImport(S,V,ctx){
    return;
   }
   if(a==='print-imported'){ctrl.close();openPrint(S,V,ctx,'imported');}
+ });
+ ctrl.root.addEventListener('keydown',e=>{
+  if(!imp.open)return;
+  const items=[...ctrl.root.querySelectorAll('[data-pc40="select-gds"]')];
+  if(!items.length||!['ArrowDown','ArrowUp','Home','End','Enter',' '].includes(e.key))return;
+  const idx=items.indexOf(document.activeElement);
+  if(e.key==='Enter'||e.key===' '){if(idx>=0){e.preventDefault();items[idx].click();}return}
+  e.preventDefault();
+  const next=e.key==='Home'?0:e.key==='End'?items.length-1:
+   (idx+(e.key==='ArrowUp'?-1:1)+items.length)%items.length;
+  items[next].focus();
  });
  ctrl.root.addEventListener('change',e=>{
   if(e.target.matches('[data-pc40-file]'))filePreview(S,imp,e.target.files?.[0],ctrl);
@@ -215,19 +236,23 @@ function visibleRows(state){
  }
  return rows;
 }
-function previewTable(rows,fields){
+function previewTable(rows,fields,start=0){
  return '<div class="pc40-table-scroll"><table class="pc40-chart-table"><thead><tr>'+
   '<th>#</th>'+fields.map(k=>'<th>'+E(k==='gender'?'G':LABEL[k])+'</th>').join('')+'</tr></thead><tbody>'+
-  rows.map((p,i)=>'<tr><td>'+String(i+1)+'</td>'+
+  rows.map((p,i)=>'<tr><td>'+String(start+i+1)+'</td>'+
    fields.map(k=>'<td class="'+(k==='seat'?'bold':'')+'">'+formatCell(p,k)+'</td>').join('')+'</tr>').join('')+
   '</tbody></table></div>';
 }
 function stopRows(rows,kind){
+ let previousCity='';
  return rowsGrouped(rows,kind).map(g=>{const p=g[0],name=kind==='pickup'?p.pickup:p.drop,
    time=kind==='pickup'?p.pickup_time:p.drop_time,day=kind==='pickup'?p.pickup_day:p.drop_day;
   const extra=kind==='pickup'&&p.exchange_point?' (Bus Pickup: '+p.exchange_point+
     (p.exchange_time?' '+clock(p.exchange_time):'')+')':'';
-  return '<tr><td>'+E(kind==='pickup'?p.from_city:p.to_city)+'</td><td>'+
+  const city=String((kind==='pickup'?p.from_city:p.to_city)||'');
+  const shownCity=city===previousCity?'':city;
+  previousCity=city;
+  return '<tr><td>'+E(shownCity)+'</td><td>'+
    E(name+' - '+clock(time)+extra)+'</td><td>'+g.length+'</td><td>'+
    g.map(x=>x.seat).sort((a,b)=>String(a).localeCompare(String(b),'en',{numeric:true})).map(E).join(', ')+
    '</td></tr>';
@@ -244,16 +269,20 @@ function chartBody(state){
   (state.chart==='rto'?'<p><b>Pickup:</b> '+E(d.stages?.find(x=>x.type==='pickup')?.name||d.origin)+'</p>':'')+
   '<p><b>Vehicle:</b> '+E(d.vehicle||'Not assigned')+'</p>'+
   (state.chart==='rto'?'<p><b>Printed:</b> '+E(new Date().toLocaleString('en-IN'))+'</p>':'')+'</div></div>';
- const available=d.capacity?Math.max(0,d.capacity-rows.length):0;
- const stats='<div class="pc40-print-stats"><b>Total:</b> '+number(d.capacity||rows.length)+
-  ' &nbsp; <b>Booked:</b> '+rows.length+' &nbsp; <b>Available:</b> '+available+'</div>';
+ const booked=(d.rows||[]).length;
+ const available=d.capacity?Math.max(0,d.capacity-booked):0;
+ const stats='<div class="pc40-print-stats"><b>Total:</b> '+number(d.capacity||booked)+
+  ' &nbsp; <b>Booked:</b> '+booked+' &nbsp; <b>Available:</b> '+available+
+  (state.city!=='all'?' &nbsp; <b>Showing:</b> '+rows.length+' passengers':'')+'</div>';
  let tables='';
  if(state.chart==='pickup'){
+  let rowOffset=0;
   for(const g of grouped){
    const p=g[0],title=p.pickup+' Day '+(p.pickup_day||1)+' - '+clock(p.pickup_time)+
     ' ('+g.length+' seat'+(g.length===1?'':'s')+')'+
     (p.exchange_point?' | Bus Pickup: '+p.exchange_point+(p.exchange_time?' '+clock(p.exchange_time):''):'');
-   tables+='<section class="pc40-pickup-block"><h3>'+E(title)+'</h3>'+previewTable(g,state.fields.pickup)+'</section>';
+   tables+='<section class="pc40-pickup-block"><h3>'+E(title)+'</h3>'+previewTable(g,state.fields.pickup,rowOffset)+'</section>';
+   rowOffset+=g.length;
   }
   tables+='<section class="pc40-summary"><h3>Boarding Details</h3>'+
    '<table><thead><tr><th>Station</th><th>Station Point</th><th>Seats</th><th>Seat Name</th></tr></thead><tbody>'+
