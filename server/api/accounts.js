@@ -13,7 +13,18 @@ const range = (q) => ({ from: q.from || q.from_date || U.addDays(U.today(), -6),
 const toCsv = (rows) => { if (!rows.length) return ''; const cols = Object.keys(rows[0]).filter((k) => typeof rows[0][k] !== 'object'); return [cols.join(','), ...rows.map((r2) => cols.map((c) => `"${String(r2[c] ?? '').replace(/"/g, '""')}"`).join(','))].join('\n'); };
 const sendCsv = (res, name, rows) => { res.setHeader('Content-Type', 'text/csv'); res.setHeader('Content-Disposition', `attachment; filename="${name}.csv"`); res.send(toCsv(rows)); };
 
-r.get('/accounts/analytics', can('accounts.view'), h((req) => Rp.analytics({ ...range(req.query), basis: req.query.basis, source: req.query.source })));
+r.get('/accounts/sales-facets', can('accounts.view'), h(() => {
+  const routes=db.col('routes').filter(r=>r.status!=='deleted');
+  const sectors=new Map();
+  const services=routes.map(r=>{
+    const sector=String(r.origin_city_id)+':'+String(r.destination_city_id);
+    if(!sectors.has(sector))sectors.set(sector,{value:sector,label:D.cityName(r.origin_city_id)+' → '+D.cityName(r.destination_city_id)});
+    return {value:String(r.id),sector,label:r.service_number+(r.name&&r.name!==r.service_number?' · '+r.name:'')};
+  }).sort((a,b)=>a.label.localeCompare(b.label));
+  return {sectors:[...sectors.values()].sort((a,b)=>a.label.localeCompare(b.label)),
+    services, channels:[...new Set(db.col('bookings').all().map(b=>b.source).filter(Boolean))].sort()};
+}));
+r.get('/accounts/analytics', can('accounts.view'), h((req) => Rp.analytics({ ...range(req.query), basis: req.query.basis, source: req.query.source || 'all', sector:req.query.sector || 'all', service:req.query.service || 'all' })));
 r.get('/accounts/transactions', can('accounts.view'), h((req, res) => { const rows = Rp.transactions({ ...range(req.query), source: req.query.source, search: req.query.q || '', user: req.user }); if (req.query.format === 'csv') { Policy.explicitAccess(req,'Export / download'); return sendCsv(res, `transactions_${req.query.from}_${req.query.to}`, rows); } return { rows, totals: { bookings: rows.filter((x) => x.type === 'booking').length, amount: U.round2(U.sum(rows, (x) => x.total)), refunds: U.round2(U.sum(rows, (x) => x.refund || 0)) } }; }));
 r.get('/accounts/receivables', can('accounts.view'), h((req, res) => { const out = Rp.receivables(range(req.query)); if (req.query.format === 'csv') { Policy.explicitAccess(req,'Export / download'); return sendCsv(res, 'receivables', out.rows); } return out; }));
 r.get('/accounts/ledger', can('accounts.ledger'), h((req) => Rp.ledger(req.query.channel_key)));

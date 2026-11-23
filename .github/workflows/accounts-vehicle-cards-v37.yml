@@ -1,0 +1,46 @@
+name: v37 Accounts Sales Sector and Vehicle Cards
+on:
+  push:
+    branches: [savetrip-screenshotcomplete]
+    paths:
+      - 'server/reports.js'
+      - 'server/api/accounts.js'
+      - 'public/js/accounts-parity-v10.js'
+      - 'public/js/accounts-sales-v37.js'
+      - 'public/js/vehicles-parity-v9.js'
+      - 'public/js/vehicle-cards-v37.js'
+      - 'public/css/accounts-vehicle-cards-v37.css'
+      - 'public/index.html'
+      - 'tests/accounts-vehicle-cards-v37-*.cjs'
+      - '.github/workflows/accounts-vehicle-cards-v37.yml'
+  workflow_dispatch:
+jobs:
+  screenshot-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Source syntax checks
+        run: |
+          node --check server/reports.js
+          node --check server/api/accounts.js
+          node --check public/js/accounts-parity-v10.js
+          node --check public/js/accounts-sales-v37.js
+          node --check public/js/vehicles-parity-v9.js
+          node --check public/js/vehicle-cards-v37.js
+          node --check tests/accounts-vehicle-cards-v37-api.cjs
+          node --check tests/accounts-vehicle-cards-v37-ui.cjs
+      - name: v37 API and DOM acceptance
+        run: |
+          timeout 120s node tests/accounts-vehicle-cards-v37-api.cjs
+          timeout 80s node tests/accounts-vehicle-cards-v37-ui.cjs
+      - name: Existing Accounts, Vehicles and complete regression
+        run: |
+          node tests/check-accounts-v10.mjs
+          node tests/check-vehicles-v9.mjs
+          npm test

@@ -7,6 +7,8 @@
   if (!window.G?.screens?.fleet || window.G.__vehiclesV9) return;
   G.__vehiclesV9 = true;
   const nativeFleet = G.screens.fleet;
+  const readLayout=(tab)=>{try{return localStorage.getItem('gds_'+tab+'_layout_v37')==='list'?'list':'grid'}catch(_){return 'grid'}};
+  const saveLayout=(tab,view)=>{try{localStorage.setItem('gds_'+tab+'_layout_v37',view)}catch(_){}};
   const E = v => esc(String(v ?? ''));
   const arr = v => Array.isArray(v) ? v : [];
   const value = v => v === null || v === undefined || v === '' ? '—' : E(v);
@@ -106,7 +108,7 @@
 
   async function vehiclesPage(el){
     let data=await lookups(), V=arr(data[0].vehicles), C=arr(data[1].coaches);
-    let s={query:'',state:'All states',health:'All health',gps:'All GPS',sort:'plate',layout:'list'};
+    let s={query:'',state:'All states',health:'All health',gps:'All GPS',sort:'plate',layout:readLayout('vehicles')};
     const metrics=()=>`${metr('bus',V.length,'TOTAL','total')}${metr('play',V.filter(v=>state(v)==='MOVING').length,'MOVING','moving')}${metr('pause',V.filter(v=>state(v)==='IDLING').length,'IDLING','idling')}${metr('stop',V.filter(v=>state(v)==='STOPPED').length,'STOPPED','stopped')}${metr('wifiOff',V.filter(v=>gpsStatus(v)==='Offline').length,'GPS OFFLINE','offline')}${metr('alert',V.filter(v=>healthStatus(v)==='CRITICAL').length,'CRITICAL','critical')}${metr('ban',V.filter(v=>v.health?.def_inhibit).length,'DEF INHIBIT','def')}`;
     el.innerHTML=`<div class="vp-scope">${tabs('vehicles')}<section class="vp-toolbar-card"><div class="vp-metrics" data-vp-metrics>${metrics()}</div><div class="vp-controls"><label class="vp-search">${icon('search')}<input data-filter="query" placeholder="Search plate or coach…" aria-label="Search plate or coach"/></label><label class="vp-select">${icon('activity')}<select data-filter="state"><option>All states</option>${['Moving','Idling','Stopped','Unknown'].map(x=>`<option>${x}</option>`).join('')}</select>${icon('down',13)}</label><label class="vp-select">${icon('heart')}<select data-filter="health"><option>All health</option><option>Good</option><option>Issues</option><option>Unknown</option></select>${icon('down',13)}</label><label class="vp-select">${icon('signal')}<select data-filter="gps"><option>All GPS</option><option>Connected</option><option>Offline</option></select>${icon('down',13)}</label><label class="vp-select sort">${icon('sort')}<select data-filter="sort"><option value="plate">Sort: Name (A–Z)</option><option value="plateDesc">Sort: Name (Z–A)</option><option value="state">Sort: State</option><option value="health">Sort: Health</option></select>${icon('down',13)}</label><span class="vp-showing" data-showing></span><div class="vp-view-switch">${button('list','plain','data-layout="list" aria-pressed="true"','List view')}${button('grid','plain','data-layout="grid" aria-pressed="false"','Grid view')}</div></div><div class="vp-toolbar-actions">${b(`${icon('map')} Fleet Map`,'outline','data-action="fleet-map"')}${can('fleet.modify')?b(`${icon('plus')} Add Vehicle`,'primary','data-action="add-vehicle"'):''}</div></section><div data-result></div><p class="vp-datasource">Vehicle position, health and fuel values depend on your connected data feed. The development GDS currently uses simulated positions; this view does not verify physical GPS devices or ECU measurements.</p></div>`;
     const root=q('.vp-scope',el);
@@ -129,7 +131,7 @@
         const acts=`<div class="vp-actions">${button('eye','blue',`data-action="view" data-id="${E(v.id)}"`,'View vehicle')}${can('fleet.modify')?button('pencil','purple',`data-action="edit" data-id="${E(v.id)}"`,'Edit vehicle'):''}${can('fleet.modify')?button('copy','mint',`data-action="duplicate" data-id="${E(v.id)}"`,'Duplicate vehicle'):''}${can('fleet.delete')?button('trash','red',`data-action="delete" data-id="${E(v.id)}"`,'Delete vehicle'):''}</div>`;
         return [reg,stateHtml,odometer,fHtml,`<button class="vp-clearbtn" data-action="location" data-id="${E(v.id)}">${signal(v)}</button>`,`<button class="vp-clearbtn" data-action="health" data-id="${E(v.id)}"><span class="vp-health ${healthCl}">${icon('check',15)} ${E(healthStatus(v)==='UNKNOWN'?'N/A':healthStatus(v))}</span>${alertCount?`<small class="vp-issues">ISSUES ${alertCount.toString().padStart(2,'0')}</small>`:''}</button>`,loc,`<button class="vp-clearbtn vp-bell ${alertCount?'has':''}" data-action="alerts" data-id="${E(v.id)}">${icon('bell',19)}${alertCount?`<span class="vp-alert-num">${alertCount}</span>`:''}</button>`,`<label class="vp-onoff"><input aria-label="${E(veh)} active status" type="checkbox" data-active="${E(v.id)}" ${v.status==='active'?'checked':''} ${!can('fleet.modify')?'disabled':''}/><span class="vp-thumb"></span><b>${v.status==='active'?'Active':'Inactive'}</b></label>`,acts];
       };
-      q('[data-result]',root).innerHTML=rows.length?(s.layout==='grid'?`<div class="vp-card-grid">${rows.map(v=>`<div class="vp-grid-card"><div class="vp-grid-header">${row(v)[0]}${row(v)[9]}</div><div class="vp-grid-meta"><span>STATE</span>${row(v)[1]}<span>ODOMETER</span>${row(v)[2]}<span>GPS</span>${row(v)[4]}<span>HEALTH</span>${row(v)[5]}<span>LOCATION</span>${row(v)[6]}<span>ALERTS</span>${row(v)[7]}<span>STATUS</span>${row(v)[8]}</div></div>`).join('')}</div>`:`<div class="vp-table-scroll"><table class="vp-table vp-vehicle-table"><thead><tr>${header.map((c,i)=>`<th>${icon(['bus','activity','gauge','fuel','signal','heart','pin','bell','power','sort'][i],18)} ${c}</th>`).join('')}</tr></thead><tbody>${rows.map(v=>`<tr>${row(v).map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`):`<div class="vp-empty">No vehicles match the current filters. Clear a filter to see more.</div>`;
+      q('[data-result]',root).innerHTML=rows.length?(s.layout==='grid'?window.VehicleCardsV37.renderVehicles(rows,row,icon,E):`<div class="vp-table-scroll"><table class="vp-table vp-vehicle-table"><thead><tr>${header.map((c,i)=>`<th>${icon(['bus','activity','gauge','fuel','signal','heart','pin','bell','power','sort'][i],18)} ${c}</th>`).join('')}</tr></thead><tbody>${rows.map(v=>`<tr>${row(v).map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`):`<div class="vp-empty">No vehicles match the current filters. Clear a filter to see more.</div>`;
       qa('[data-layout]',root).forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.layout===s.layout)));
     };
     root.addEventListener('input',e=>{if(e.target.dataset.filter==='query'){s.query=e.target.value.toLowerCase().trim();update()}});
@@ -138,7 +140,7 @@
       if(e.target.dataset.active){let v=V.find(x=>String(x.id)===e.target.dataset.active);if(!v)return;const target=e.target.checked?'active':'inactive';try{await G.put(`/vehicles/${v.id}`,{status:target});v.status=target;G.toast('Vehicle status saved','ok');update()}catch(err){e.target.checked=!e.target.checked;G.err(err)}}
     });
     root.addEventListener('click',async e=>{
-      const layout=e.target.closest('[data-layout]');if(layout){s.layout=layout.dataset.layout;update();return}
+      const layout=e.target.closest('[data-layout]');if(layout){s.layout=layout.dataset.layout;saveLayout('vehicles',s.layout);update();return}
       const action=e.target.closest('[data-action]');if(!action)return;
       const id=action.dataset.id,v=V.find(x=>String(x.id)===id);
       if(action.dataset.action==='fleet-map'){await fleetMap(V);return}
@@ -249,7 +251,7 @@
   const amenHas=(list,key,label)=>arr(list).some(a=>[key,label].some(x=>amenKey(a)===amenKey(x)));
   async function coachesPage(el){
     const data=await G.get('/coaches'),C=arr(data.coaches);
-    let s={query:'',ac:'all',berths:'all',sort:'asc',layout:'list'};
+    let s={query:'',ac:'all',berths:'all',sort:'asc',layout:readLayout('coaches')};
     const berthLabels={all:'All berths',seater:'Seater',sleeper:'Sleeper'};
     const berthIcons={all:icon('bed',19),seater:icon('armchair',19),sleeper:icon('bed',19)};
     const berthOptions=()=>['all','seater','sleeper'].map(key=>
@@ -284,7 +286,7 @@
         const seatLabel=[counts.seater?`${counts.seater} Seater`:'',counts.sleeper?`${counts.sleeper} Sleeper`:'' ].filter(Boolean).join('<br>')||'No seat layout';
         return [`<b>${E(name)}</b>${sub?` <span class="vp-coach-alias">${E(sub)}</span>`:''}`,`<span class="vp-coach-type ${/pickup/i.test(c.bus_type||'')?'pickup':''}">${E(/pickup/i.test(c.bus_type||'')?'Pickup Van':'Regular')}</span>`,`<span class="vp-layout-pill">${E(c.pattern||'—')}</span>`,seatLabel,ac(c)?`<span class="vp-ac-chip">${icon('snowflake',14)} AC</span>`:'<span class="vp-muted">—</span>',`<label class="vp-onoff"><input type="checkbox" data-coach-status="${E(c.id)}" ${c.status!=='inactive'?'checked':''} ${!can('fleet.modify')?'disabled':''}/><span class="vp-thumb"></span><b>${c.status!=='inactive'?'Active':'Inactive'}</b></label>`,acts];
       };
-      q('[data-result]',root).innerHTML=rows.length?(s.layout==='grid'?`<div class="vp-card-grid">${rows.map(c=>`<article class="vp-grid-card vp-coach-card"><header>${cells(c)[0]}</header><dl>${columns.slice(1,6).map((x,i)=>`<dt>${x}</dt><dd>${cells(c)[i+1]}</dd>`).join('')}</dl><div>${cells(c)[6]}</div></article>`).join('')}</div>`:`<div class="vp-table-scroll"><table class="vp-table vp-coach-table"><thead><tr>${columns.map((c,i)=>`<th>${icon(['bus','layers','grid','armchair','zap','power','sort'][i],18)} ${c}</th>`).join('')}</tr></thead><tbody>${rows.map(c=>`<tr>${cells(c).map(v=>`<td>${v}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`):'<div class="vp-empty">No coaches match your filters.</div>';
+      q('[data-result]',root).innerHTML=rows.length?(s.layout==='grid'?window.VehicleCardsV37.renderCoaches(rows,cells,coachCounts,icon,E):`<div class="vp-table-scroll"><table class="vp-table vp-coach-table"><thead><tr>${columns.map((c,i)=>`<th>${icon(['bus','layers','grid','armchair','zap','power','sort'][i],18)} ${c}</th>`).join('')}</tr></thead><tbody>${rows.map(c=>`<tr>${cells(c).map(v=>`<td>${v}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`):'<div class="vp-empty">No coaches match your filters.</div>';
       qa('[data-layout]',root).forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.layout===s.layout)));
     };
     root.addEventListener('input',e=>{if(e.target.dataset.coach==='query'){s.query=e.target.value.toLowerCase().trim();update()}});
@@ -318,7 +320,7 @@
       const opt=e.target.closest('[data-coach-berth]');
       if(opt){s.berths=opt.dataset.coachBerth;showBerths(false);update();toggleBerths.focus();return}
       if(!menuBerths.hidden)showBerths(false);
-      const layout=e.target.closest('[data-layout]');if(layout){s.layout=layout.dataset.layout;update();return}const a=e.target.closest('[data-action]');if(!a)return;const c=C.find(c=>String(c.id)===a.dataset.id),act=a.dataset.action;if(act==='add-coach'){coachModal({id:null,name:'',bus_type:'A/C Seater',pattern:'2+2',amenities:[],layout:{decks:[],capacity:0}},true,()=>coachesPage(el));return}if(!c)return;
+      const layout=e.target.closest('[data-layout]');if(layout){s.layout=layout.dataset.layout;saveLayout('coaches',s.layout);update();return}const a=e.target.closest('[data-action]');if(!a)return;const c=C.find(c=>String(c.id)===a.dataset.id),act=a.dataset.action;if(act==='add-coach'){coachModal({id:null,name:'',bus_type:'A/C Seater',pattern:'2+2',amenities:[],layout:{decks:[],capacity:0}},true,()=>coachesPage(el));return}if(!c)return;
       if(act==='view'){coachModal(c,false,()=>coachesPage(el));return}if(act==='edit'){coachModal(c,true,()=>coachesPage(el));return}
       if(act==='duplicate'){let v=await G.prompt('Duplicate Coach',[{name:'name',label:'New coach name',value:`${c.name} Copy`,required:true}]);if(!v)return;try{await G.post('/coaches',{name:v.name,bus_type:c.bus_type,pattern:c.pattern,layout:c.layout,amenities:c.amenities,emergency_exits:c.emergency_exits});G.toast('Coach duplicated','ok');coachesPage(el)}catch(err){G.err(err)}return}
       if(act==='delete'){if(!await G.confirm('Delete this coach? A coach assigned to a route or vehicle cannot be removed.',{danger:1}))return;try{await G.del(`/coaches/${c.id}`);G.toast('Coach removed','ok');coachesPage(el)}catch(err){G.err(err)}}});

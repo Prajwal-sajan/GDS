@@ -1,0 +1,132 @@
+/* v37 — directional Accounts/Sales selector and Vehicles/Coaches 3-column cards.
+   Scoped additions so existing list, details and accounting report layouts remain intact. */
+.ac10-root .ac37-sector{position:relative;min-width:200px;width:202px;flex:0 0 202px;z-index:31}
+.ac10-root .ac37-sector-trigger{display:flex;align-items:center;gap:11px;height:46px;width:100%;
+ padding:0 13px;background:#fff;border:1.5px solid #4d71ff;border-radius:14px;
+ color:#233d62;box-shadow:0 2px 6px #334ef318;cursor:pointer;font-size:15px;
+ font-weight:650;text-align:left}
+.ac10-root .ac37-sector-trigger svg{flex:none}
+.ac10-root .ac37-sector-leading{display:grid;place-items:center;color:#624eff}
+.ac10-root .ac37-sector-caption{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.ac10-root .ac37-sector-caret{color:#95a2b7;transform:rotate(0);transition:transform .16s}
+.ac10-root .ac37-sector.open .ac37-sector-caret{transform:rotate(180deg)}
+.ac10-root .ac37-sector-trigger:focus-visible{outline:3px solid #8da7ff;outline-offset:2px}
+.ac10-root .ac37-sector-menu{position:absolute;z-index:120;top:calc(100% + 5px);left:0;
+ width:249px;max-width:min(90vw,290px);padding:8px 7px;border:1px solid #d5deff;
+ border-radius:19px;background:linear-gradient(145deg,#fff,#f8f6ff);
+ box-shadow:0 14px 25px #283c8c30;display:flex;flex-direction:column;gap:2px;
+ max-height:290px;overflow-y:auto}
+.ac10-root .ac37-sector-menu[hidden]{display:none}
+.ac10-root .ac37-sector-menu [role=option]{display:flex;align-items:center;gap:9px;
+ justify-content:space-between;text-align:left;width:100%;height:48px;min-height:48px;
+ padding:0 11px 0 17px;border:0;border-radius:13px;background:transparent;color:#384960;
+ font-weight:600;font-size:15px;cursor:pointer;box-shadow:none}
+.ac10-root .ac37-sector-menu [role=option]>span:first-child{flex:1;min-width:0;
+ overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ac10-root .ac37-sector-menu [role=option]:hover{background:#f0f3ff}
+.ac10-root .ac37-sector-menu [role=option][aria-selected=true]{
+ background:linear-gradient(110deg,#2566f2,#5d35f6);color:#fff;
+ box-shadow:0 3px 8px #4358d32d}
+.ac10-root .ac37-sector-menu [role=option][aria-selected=true]:hover{filter:brightness(1.03)}
+.ac10-root .ac37-sector-check{display:none;place-items:center;flex:none;
+ width:25px;height:25px;background:#8a6af9;color:#fff;border-radius:50%}
+.ac10-root .ac37-sector-menu [aria-selected=true] .ac37-sector-check{display:grid}
+.ac10-root .ac37-sector-menu [role=option]:focus-visible{outline:3px solid #a5b7fd;outline-offset:-3px}
+.ac10-root .ac10-saleshead [data-ac11-sector-anchor]{order:1}
+.ac10-root .ac10-saleshead .ac10-select:has(select[name=service]){order:2;min-width:190px}
+.ac10-root .ac10-salesstats .ac10-stat{min-height:82px}
+.ac10-root .ac10-saleslower .ac10-btn.primary{min-width:100px;min-height:45px;border-radius:13px}
+.ac10-root .ac10-salesstats .ac10-stat strong{font-variant-numeric:tabular-nums}
+@media(max-width:1150px){.ac10-root .ac37-sector{width:190px;min-width:190px;flex-basis:190px}}
+@media(max-width:700px){.ac10-root .ac37-sector{flex:1 1 160px;width:100%;min-width:160px}
+ .ac10-root .ac37-sector-menu{max-width:min(80vw,290px)}}
+
+/* Shared screenshot card grid */
+.vp-scope .vp37-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:16px;align-items:stretch}
+.vp-scope .vp37-card{min-width:0;display:flex;flex-direction:column;
+ background:#fff;border:1px solid #dfe8f4;border-radius:20px;
+ padding:0;box-shadow:0 2px 5px #19345415;overflow:hidden;min-height:281px;
+ font-size:15px;color:#1e314a;transition:box-shadow .14s,border-color .14s}
+.vp-scope .vp37-card:hover{border-color:#cbd9f7;box-shadow:0 7px 18px #273f7b20}
+.vp-scope .vp37-card-heading{display:flex;align-items:center;gap:11px;
+ padding:20px 19px 0;min-width:0;min-height:53px}
+.vp-scope .vp37-card-bus{flex:none;display:grid;place-items:center;
+ width:37px;height:39px;border-radius:12px;background:#f0f2ff;color:#573bff}
+.vp-scope .vp37-card-title{display:flex;flex:1;align-items:center;gap:9px;
+ min-width:0;white-space:nowrap;overflow:hidden}
+.vp-scope .vp37-card-title>strong{min-width:0;display:block;overflow:hidden;
+ text-overflow:ellipsis;white-space:nowrap;font-size:16px;font-weight:690;color:#12223c;
+ line-height:1.4}
+.vp-scope .vp37-card-title .vp-coach-alias{display:inline-flex;align-items:center;
+ max-width:48%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+ border:1px solid #adc2ff;background:#f1f4ff;border-radius:10px;
+ color:#4e3ee4;font-size:12px;font-weight:600;padding:4px 8px}
+.vp-scope .vp37-card-switch{flex:none;margin-left:auto;align-self:center}
+.vp-scope .vp37-card-switch .vp-onoff{gap:7px}
+.vp-scope .vp37-card-switch .vp-onoff .vp-thumb{width:49px;height:26px}
+.vp-scope .vp37-card-switch .vp-onoff .vp-thumb:before{width:20px;height:20px}
+.vp-scope .vp37-card-switch .vp-onoff input:checked+.vp-thumb:before{transform:translateX(22px)}
+.vp-scope .vp37-card-switch .vp-onoff b{font-size:13px;font-weight:640}
+.vp-scope .vp37-card-subtitle{padding:0;margin:5px 19px 16px;
+ color:#71849d;line-height:1.3;font-size:14px}
+.vp-scope .vp37-pickup{color:#d35e04;font-weight:600}
+.vp-scope .vp37-coach-summary{margin:0 19px 18px;background:#f6f8fb;
+ border-radius:13px;display:grid;grid-template-columns:1fr 1fr;
+ gap:9px;padding:14px 13px;min-height:78px}
+.vp-scope .vp37-coach-summary>div{min-width:0}
+.vp-scope .vp37-coach-summary small,
+.vp-scope .vp37-vehicle-section>small{display:block;margin-bottom:5px;
+ color:#91a4c2;font-size:11px;line-height:1.4;font-weight:500}
+.vp-scope .vp37-seats{font-size:15px;line-height:1.55;color:#2b405d;font-weight:460}
+.vp-scope .vp37-features{display:flex;align-items:flex-start;gap:5px;flex-wrap:wrap}
+.vp-scope .vp37-features .vp-ac-chip{font-size:12px;padding:4px 7px}
+.vp-scope .vp37-video{font-size:11px;padding:4px 7px;border-radius:8px;
+ background:#f0f5fc;color:#5d7ba4;display:inline-flex;align-items:center;gap:3px}
+.vp-scope .vp37-card-footer{min-height:67px;margin-top:auto;
+ padding:10px 12px;display:flex;justify-content:flex-end;align-items:center;
+ border-top:1px solid #ecf0f6}
+.vp-scope .vp37-card-footer .vp-actions{gap:6px}
+.vp-scope .vp37-card-footer .vp-actions .vp-icon{width:43px;height:43px;
+ border-radius:12px}
+.vp-scope .vp37-card-footer .vp-actions .vp-icon svg{width:21px;height:21px}
+.vp-scope .vp37-vehicle-card{min-height:350px}
+.vp-scope .vp37-vehicle-title{display:flex;flex-direction:column;
+ align-items:flex-start;gap:1px;white-space:normal}
+.vp-scope .vp37-vehicle-title>strong{font-size:16px;line-height:1.3}
+.vp-scope .vp37-vehicle-title>small{display:block;margin:1px 0;font-size:11px;
+ color:#7890af;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.vp-scope .vp37-vehicle-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:10px;background:#f6f8fb;border-radius:14px;margin:17px 18px 18px;
+ padding:13px;align-items:start}
+.vp-scope .vp37-vehicle-section{min-width:0;overflow:hidden}
+.vp-scope .vp37-vehicle-section>small{margin-bottom:6px}
+.vp-scope .vp37-vehicle-section .vp-clearbtn{max-width:100%}
+.vp-scope .vp37-vehicle-section .vp-clearbtn>span{max-width:100%}
+.vp-scope .vp37-vehicle-section .vp-tank{margin:3px 0}
+.vp-scope .vp37-vehicle-section .vp-tank-bar{width:48px}
+.vp-scope .vp37-vehicle-section .vp-tank b{font-size:11px}
+.vp-scope .vp37-vehicle-location{grid-column:1/-1}
+.vp-scope .vp37-vehicle-location .vp-loc{display:inline-flex}
+.vp-scope .vp37-vehicle-section .vp-health{font-size:11px}
+.vp-scope .vp37-vehicle-card .vp-onoff b{font-size:12px}
+.vp-scope .vp37-card .vp-actions button:focus-visible{outline:3px solid #8daaff;outline-offset:2px}
+@media(max-width:1380px){
+ .vp-scope .vp37-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(min-width:1381px) and (max-width:1610px){
+ .vp-scope .vp37-card-title{gap:5px}
+ .vp-scope .vp37-card-heading{padding-left:12px;padding-right:12px;gap:8px}
+ .vp-scope .vp37-card-title>strong{font-size:14px}
+ .vp-scope .vp37-card-title .vp-coach-alias{font-size:10px}
+}
+@media(max-width:790px){.vp-scope .vp37-cards{grid-template-columns:1fr}
+ .vp-scope .vp37-card{min-height:270px}
+ .vp-scope .vp37-card-heading{flex-wrap:wrap}
+ .vp-scope .vp37-card-switch{margin-left:0}
+}
+@media(min-width:900px){
+ .vp-scope .vp-coaches-tools{min-height:170px}
+ .vp-scope .vp-coaches-tools .vp-metrics{min-height:100px}
+ .vp-scope .vp-coach-controls{padding-top:14px;padding-bottom:14px}
+}

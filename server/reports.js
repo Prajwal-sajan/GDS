@@ -67,10 +67,19 @@ function tripPnl(s) {
   };
 }
 
-function analytics({ from, to, basis = 'travel_date', source = 'all' }) {
+function analytics({ from, to, basis = 'travel_date', source = 'all', sector = 'all', service = 'all' }) {
+  // Sector is a directional route pair (origin city ID : destination city ID).
+  // Apply the same scope to bookings, scheduled capacity and every breakdown.
+  const selectedRoute = (routeId) => {
+    const rt = db.col('routes').get(routeId);
+    if (!rt) return false;
+    return (service === 'all' || String(rt.id) === String(service)) &&
+      (sector === 'all' || String(rt.origin_city_id) + ':' + String(rt.destination_city_id) === String(sector));
+  };
+  const bookingRoute = b => b.route_id || db.col('schedules').get(b.schedule_id)?.route_id;
   const fleet = db.col('vehicles').filter((v) => v.vehicle_role === 'main' && v.status === 'active').length || 1;
   const inRange = (b) => { const d = basis === 'booking_date' ? b.booked_at.slice(0, 10) : b.travel_date; return d >= from && d <= to; };
-  const bs = db.col('bookings').filter((b) => inRange(b) && (source === 'all' || b.source === source));
+  const bs = db.col('bookings').filter((b) => inRange(b) && (source === 'all' || b.source === source) && selectedRoute(bookingRoute(b)));
   const days = {};
   for (const d of U.dateRange(from, to)) days[d] = { date: d, bookings: 0, seats: 0, sales: 0, offers: 0, net_sales: 0, gst_own: 0, gst_95: 0, cancel_charges: 0, cancelled_pnrs: 0, cancelled_seats: 0, refunds: 0, expense: 0, capacity: 0, trips: 0 };
   for (const b of bs) {
@@ -82,7 +91,7 @@ function analytics({ from, to, basis = 'travel_date', source = 'all' }) {
     }
     if (b.cancellations?.length) { row.cancel_charges += cancelCharges(b); row.cancelled_pnrs++; row.cancelled_seats += U.sum(b.cancellations, (c) => c.seats.length); row.refunds += U.sum(b.cancellations, (c) => c.refund); }
   }
-  for (const s of schedulesIn(from, to)) {
+  for (const s of schedulesIn(from, to, x => selectedRoute(x.route_id))) {
     const row = days[s.travel_date]; if (!row) continue;
     if (s.status !== 'active') continue;
     const p = tripPnl(s); row.expense += p.expense; row.capacity += p.capacity; row.trips++;
@@ -93,7 +102,29 @@ function analytics({ from, to, basis = 'travel_date', source = 'all' }) {
   const totals = { bookings: t('bookings'), seats, sales: t('sales'), offers: t('offers'), net_sales: t('net_sales'), asp: seats ? U.round2(t('net_sales') / seats) : 0, occupancy_pct: cap ? U.round2(seats / cap * 100) : 0, fleet_util_pct: U.round2(trips / (fleet * rows.length || 1) * 100), cancel_charges: t('cancel_charges'), cancelled_pnrs: t('cancelled_pnrs'), cancelled_seats: t('cancelled_seats'), refunds: t('refunds'), gst: U.round2(t('gst_own') + t('gst_95')), gst_own: t('gst_own'), gst_95: t('gst_95'), expense: t('expense'), profit: t('profit') };
   const bySource = U.groupBy(bs.filter(live), (b) => b.source);
   const channels = Object.entries(bySource).map(([k, arr]) => ({ source: k, bookings: arr.length, seats: U.sum(arr, (b) => paxLive(b).length), net_sales: U.round2(U.sum(arr, paxNet)) }));
-  return { from, to, basis, source, totals, rows, channels };
+  const active = bs.filter(live);
+  const summarize = kind => {
+    const groups = U.groupBy(active, b => {
+      const rt = db.col('routes').get(bookingRoute(b));
+      if (!rt) return 'unknown';
+      return kind === 'sector'
+        ? String(rt.origin_city_id) + ':' + String(rt.destination_city_id)
+        : String(rt.id);
+    });
+    return Object.entries(groups).filter(([key]) => key !== 'unknown').map(([key,items]) => {
+      const rt = db.col('routes').all().find(r => kind === 'sector'
+        ? String(r.origin_city_id) + ':' + String(r.destination_city_id) === key
+        : String(r.id) === key);
+      const net = U.round2(U.sum(items,paxNet));
+      return { value:key, name:kind==='sector'
+        ? D.cityName(rt.origin_city_id)+' → '+D.cityName(rt.destination_city_id)
+        : rt.service_number+(rt.name && rt.name!==rt.service_number?' · '+rt.name:''),
+        bookings:items.length,seats:U.sum(items,b=>paxLive(b).length),
+        net_sales:net,avg_fare:items.length?U.round2(net/items.length):0 };
+    }).sort((a,b)=>a.name.localeCompare(b.name));
+  };
+  return { from, to, basis, source, sector, service, totals, rows, channels,
+    sector_breakdown:summarize('sector'), service_breakdown:summarize('service') };
 }
 
 function transactions({ from, to, source = 'all', search = '' , user }) {
