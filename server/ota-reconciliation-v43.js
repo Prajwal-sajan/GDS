@@ -160,6 +160,12 @@ function parseLineItems(pages,year){
  }
  return {rows,sections:[...sectionsFound]};
 }
+
+function invoiceFormula(s){
+ const v=x=>Number(s[x])||0;
+ return money(v('bookings')-v('pax_cancel')+v('cancellation_credit')-v('operator_cancel')-v('exception_refund')-v('dynamic_pricing')-v('ads')-v('operator_offers')-v('partner_commission')-v('yourbus')-v('gds_commission')-v('tcs')-v('tds')+v('reschedule')+v('reschedule_excess')+v('differential_gst')-v('open_ticket_offers')+v('generic_addon')-v('rise')-v('srp')-v('sponsored')-v('nova')-v('bo_rewards'));
+}
+
 function parsePaymentAdviceText(pages){
  if(!Array.isArray(pages)||!pages.length)throw new Error('PDF has no selectable text');
  const header=parseSummary(pages[0]);
@@ -172,9 +178,11 @@ function parsePaymentAdviceText(pages){
  const uniquePNRs=new Set(rows.map(x=>x.pnr)).size;
  const warnings=[];
  if(!rows.every(x=>/^ST\d{18}$/i.test(x.pnr)))warnings.push('Some invoice PNRs are split or malformed; review source rows');
- if(!header.summary.invoice_amount)warnings.push('Invoice payout total could not be parsed');
+ if(header.summary.invoice_amount==null)warnings.push('Invoice payout total could not be parsed');
+ const calc=invoiceFormula(header.summary);
+ if(header.summary.invoice_amount!=null&&Math.abs(calc-header.summary.invoice_amount)>0.05)warnings.push('Invoice summary formula does not equal stated net payout: check document parse');
  if(rows.some(x=>!x.doj||!x.fare))warnings.push('Some rows have incomplete date or amount fields');
- return {...header,rows,sections,by_section:bySection,unique_pnrs:uniquePNRs,statement_lines:rows.filter(x=>x.section!=='exceptional_refund').length,parse_warnings:warnings};
+ return {...header,rows,sections,by_section:bySection,unique_pnrs:uniquePNRs,statement_lines:rows.filter(x=>x.section!=='exceptional_refund').length,computed_invoice_amount:calc,summary_delta:header.summary.invoice_amount==null?null:money(header.summary.invoice_amount-calc),parse_warnings:warnings};
 }
 const DAY=1000*60*60*24;
 function compareInvoice(parsed,bookings,config={}){
@@ -190,6 +198,8 @@ function compareInvoice(parsed,bookings,config={}){
   const oursCancelled=['cancelled','refunded'].includes(status);
   const invCancelled=entry.section==='pax_cancelled'||entry.section==='bus_cancelled';
   if(invCancelled!==oursCancelled)flags.push('status');
+  if(b.source&&String(b.source).toLowerCase()!==source)flags.push('channel');
+  if(entry.section==='pax_cancelled'&&b.cancellation_charge!=null&&entry.cancellation_charge!=null&&Math.abs(Number(b.cancellation_charge)-entry.cancellation_charge)>tolerance)flags.push('cancellation_charge');
   if(b.travel_date&&entry.doj&&b.travel_date.slice(0,10)!==entry.doj)flags.push('doj');
   const fare=(b.fare||{}),expectedFare=Number(fare.net??fare.total);
   if(Number.isFinite(expectedFare)&&Math.abs(expectedFare-entry.fare)>tolerance)flags.push('fare');
@@ -207,8 +217,8 @@ function compareInvoice(parsed,bookings,config={}){
   if(entry.commission_tax!=null&&Math.abs(entry.commission_tax-commissionTax)>tolerance)flags.push('commission_tax');
   if(entry.operator_offer!=null&&Math.abs(entry.operator_offer-operatorOffer)>tolerance)flags.push('offer');
   if(entry.take_home!=null&&Math.abs(diff)>tolerance)flags.push('payout');
-  const verified=hasActual&&flags.length===0&&(entry.section==='sold')&&status==='confirmed';
-  return {...entry,booking_status:b.status,source:b.source,expected:{fare:money(expectedFare),tax:money(tax),commission:money(commission),commission_tax:money(commissionTax),operator_offer:money(operatorOffer),take_home:money(ourPay)},
+  const verified=hasActual&&flags.length===0&&(entry.section==='sold')&&status==='confirmed'&&(!b.source||String(b.source).toLowerCase()===source);
+  return {...entry,booking_status:b.status,source:b.source,expected:{doj:b.travel_date||'',fare:money(expectedFare),tax:money(tax),commission:money(commission),commission_tax:money(commissionTax),operator_offer:money(operatorOffer),take_home:money(ourPay)},
    delta:diff,differences:[...new Set(flags)],status:flags.length?'mismatched':verified?'matched':'needs_review',verified,why:flags.join(', ')||(!hasActual?'GDS commission/tax/offer evidence incomplete':'Verified')};
  });
  // Missing-in-OTA is assessed only among redBus-origin bookings in this invoice's travel period.
@@ -241,11 +251,12 @@ function compareInvoice(parsed,bookings,config={}){
  }
  return {rows,totals,section_stats:sectionStats};
 }
+const statusForCsv=s=>({matched:'Matched',mismatched:'Mismatched',needs_review:'Needs Review',unmatched_ota:'Missing in GDS',unmatched_gds:'Missing in OTA'}[s]||s||'');
 const EXPORT_HEADERS=['PNR','DOJ (SaveTrip)','DOJ (OTA)','Fare (SaveTrip)','Fare (OTA)','Operator Offer (OTA)','Tax (SaveTrip)','Tax (OTA)','Commission (OTA)','Tax on Commission (OTA)','TDS (OTA)','TCS (OTA)','Payable (SaveTrip)','Take-home (OTA)','Take-home Diff','Status','Resolved By','Notes'];
-const csvEscape=v=>'"'+String(v??'').replace(/^[=+\-@\t\r]/,"'$&").replace(/"/g,'""')+'"';
+const csvEscape=v=>{let value=String(v??'');if(typeof v!=='number'&&/^[=+@\t\r]|^-(?!\d+(?:\.\d+)?$)/.test(value))value="'"+value;return '"'+value.replace(/"/g,'""')+'"'};
 function exportCsv(doc,filter='all'){
  const rows=doc.lines.filter(x=>filter==='all'||x.status===filter);
- const mapped=rows.map(r=>[r.pnr,r.doj_gds||r.expected?.doj||'',r.doj||'',r.expected?.fare,r.fare,r.operator_offer,r.expected?.tax,r.tax,r.commission,r.commission_tax,'','',r.expected?.take_home,r.take_home,r.delta,r.resolution?.action||r.status,r.resolution?.by||'',r.resolution?.note||r.why||'']);
+ const mapped=rows.map(r=>[r.pnr,r.doj_gds||r.expected?.doj||'',r.doj||'',r.expected?.fare,r.fare,r.operator_offer,r.expected?.tax,r.tax,r.commission,r.commission_tax,'','',r.expected?.take_home,r.take_home,r.delta,r.resolution?.action?'Resolved: '+r.resolution.action:statusForCsv(r.status),r.resolution?.by||'',r.resolution?.note||r.why||'']);
  return '\ufeff'+[EXPORT_HEADERS,...mapped].map(x=>x.map(csvEscape).join(',')).join('\r\n')+'\r\n';
 }
-module.exports={extractPdf,parsePaymentAdviceText,parseLineItems,parseSummary,compareInvoice,exportCsv,EXPORT_HEADERS,positionedLines};
+module.exports={invoiceFormula,extractPdf,parsePaymentAdviceText,parseLineItems,parseSummary,compareInvoice,exportCsv,EXPORT_HEADERS,positionedLines};
