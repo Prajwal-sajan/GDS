@@ -27,7 +27,7 @@ const addDay=(date,n)=>{const d=dateToObj(date);if(!d)return '';d.setDate(d.getD
 const today=()=>{const d=new Date(),parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',
   year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);
  const p=k=>parts.find(x=>x.type===k)?.value;return p('year')+'-'+p('month')+'-'+p('day');};
-const niceDate=str=>{const d=dateToObj(str);return d?d.toLocaleDateString('en-IN',
+const niceDate=str=>{const d=dateToObj(str);return d?d.toLocaleDateString('en-US',
  {weekday:'short',month:'short',day:'numeric',year:'numeric'}):str};
 const monthNice=str=>{const d=new Date(Number(str.slice(0,4)),Number(str.slice(5,7))-1,1,12);
  return d.toLocaleDateString('en-IN',{month:'long',year:'numeric'});};
