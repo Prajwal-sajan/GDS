@@ -8,7 +8,7 @@ const app=require('../server/index');
 const db=require('../server/db'),D=require('../server/domain'),U=require('../server/util');
 const Auth=require('../server/auth');
 const owner=db.col('users').find(u=>u.role==='owner');
-const viewer=db.col('users').find(u=>['driver','viewer','helper'].includes(u.role));
+const viewer=db.col('users').find(u=>['driver','viewer','helper'].includes(u.role))||db.col('users').insert({phone:'9988776655',name:'Isolated QA Viewer',role:'viewer',status:'ACTIVE',extra_permissions:[]});
 assert.ok(owner,'Missing seeded owner');
 const server=app.listen(0);
 const base='http://127.0.0.1:'+server.address().port+'/api';
