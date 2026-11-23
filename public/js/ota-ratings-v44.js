@@ -67,7 +67,7 @@
         (ability ? '' : 'disabled ') + 'autocomplete="new-password" /></label>' +
         '</div>' +
         '<p class="ds-ota-settings-privacy">' + note + '</p>' +
-        '<div class="ds-ota-settings-actions"><button type="submit" class="ds-ota-save" data-ds-action="ota-save" ' +
+        '<div class="ds-ota-settings-actions"><button type="button" class="ds-ota-save" data-ds-action="ota-save" ' +
         (ability ? '' : 'disabled ') + '>Save</button>' +
         '<button type="button" data-ds-action="ota-cancel">Cancel</button></div>' +
         '<p class="ds-ota-settings-hint" role="status">' +
