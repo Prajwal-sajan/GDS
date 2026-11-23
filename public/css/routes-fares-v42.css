@@ -1,0 +1,109 @@
+/* Routes → Fares v42. Screenshot layout is intentionally not compacted or reflowed. */
+.rv-editor-body:has(.rf42-workspace) { overflow-x:auto; }
+.rv-root .rv-fare-grid.rf42-workspace {
+ display:grid!important;grid-template-columns:minmax(718px,1.28fr) minmax(540px,1fr)!important;
+ gap:20px;align-items:start;min-width:1300px;width:100%;margin-top:12px;
+}
+.rv-root .rf42-tablepanel,.rv-root .rf42-previewpanel {min-width:0;}
+.rv-root .rf42-table-scroll {overflow-x:auto!important;overflow-y:visible!important;width:100%;}
+.rv-root .rv-faretable.rf42-faretable {min-width:714px!important;width:100%!important;border-collapse:collapse;table-layout:fixed;}
+.rv-root .rf42-faretable tr {height:auto;}
+.rv-root .rf42-faretable th {background:#f2f5fe;color:#3029df;font-size:13px;font-weight:700;white-space:nowrap;border-bottom:2px solid #b7c8ff;}
+.rv-root .rf42-faretable th,.rv-root .rf42-faretable td {padding:6px 4px!important;font-size:12px;text-align:center;vertical-align:middle;overflow:visible!important;border-bottom:1px solid #e4eaf2;}
+.rv-root .rf42-faretable th:first-child,.rv-root .rf42-faretable td:first-child{width:34px;}
+.rv-root .rf42-faretable th:nth-child(2),.rv-root .rf42-faretable td:nth-child(2){width:50px;}
+.rv-root .rf42-faretable th:nth-child(3),.rv-root .rf42-faretable td:nth-child(3){width:200px;text-align:left;}
+.rv-root .rf42-faretable th:nth-child(4),.rv-root .rf42-faretable td:nth-child(4){width:72px;}
+.rv-root .rf42-faretable th:last-child,.rv-root .rf42-faretable td:last-child{width:62px;}
+.rv-root .rf42-faretable input[type=checkbox]{width:18px;height:18px;accent-color:#1681f8;vertical-align:middle;cursor:pointer;}
+.rv-root .rf42-faretable .rv-seat-ids {display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
+.rv-root .rf42-faretable .rv-seat-ids .rv-chip,.rv-root .rf42-faretable .rv-seat-ids span {color:#1453d7;font-weight:700;background:#d5e9ff;padding:4px 7px;border-radius:5px;white-space:nowrap;box-shadow:none;}
+.rv-root .rf42-faretable .rv-dayfare {background:#fff;border:0;border-radius:4px;width:100%!important;min-width:0;padding:4px 0!important;text-align:center;color:#101827;box-shadow:none;font-family:inherit;font-size:13px;}
+.rv-root .rf42-faretable .rv-dayfare:focus {outline:2px solid #407ff4;background:#f1f8ff;}
+.rv-root .rf42-adjust{display:flex;align-items:center;justify-content:center;gap:4px;}
+.rv-root .rf42-adjust button{display:inline-flex;align-items:center;justify-content:center;width:31px;height:32px;border:0;border-radius:10px;font-size:20px;font-weight:700;cursor:pointer;}
+.rv-root .rf42-adjust .rv-smallminus{background:#ffe2e5;color:#ce2133;}
+.rv-root .rf42-adjust .rv-smallplus{background:#d7fbea;color:#05894e;}
+.rv-root .rv-position-hint{text-align:right;margin:0 8px 7px;}
+.rv-root .rv-position-hint button{padding:0;border:0;background:transparent;color:#3436da;text-decoration:underline;font:inherit;cursor:pointer;}
+.rv-root .rf42-faretable .rv-fare-auto{background:#dbf5ff;}
+.rv-root .rf42-faretable .rv-fare-auto input[data-rv-auto-seat]{width:100%!important;min-width:0;border:1px solid #c9dcff;border-radius:28px;padding:10px!important;color:#23437a;}
+.rv-root .rf42-faretable .rv-fare-auto input[type=number]{width:38px;max-width:100%;border-radius:50%;height:33px;padding:0 2px!important;text-align:center;border:1px solid #d6e4fd;background:white;}
+.rv-root .rf42-auto-radio{height:21px;width:21px;border:1.5px solid #82898f;background:white;border-radius:100%;cursor:pointer;}
+.rv-root .rv-faretable .rv-btn.icon.danger{color:#ec2829;border:0;background:transparent;}
+.rv-root .rf42-previewpanel {display:flex!important;align-items:flex-start!important;justify-content:center!important;padding:14px!important;background:#fff;border:1px solid #e0e7f2;border-radius:16px;overflow:visible!important;}
+.rv-root .rf42-previewpanel .rf42-bus,.rv-root .rf42-rule-diagram .rf42-bus{zoom:1!important;transform:none!important;}
+.rv-root .rf42-bus {display:flex;align-items:flex-start;justify-content:center;gap:15px;min-width:516px;width:max-content;font-family:Arial,sans-serif;}
+.rv-root .rf42-deck {position:relative;width:251px;flex:none;min-height:606px;padding:14px 12px 19px;border:3px solid #97a6bf;border-radius:32px;background:linear-gradient(170deg,#fafdff,#eef3fd 75%);box-shadow:inset 0 0 0 1px #f0f3fb;}
+.rv-root .rf42-deckhead{height:68px;position:relative;display:flex;align-items:center;justify-content:flex-start;padding:0 4px;font-weight:800;font-size:13px;color:#394b68;border-bottom:1px dashed #c4cddd;margin-bottom:16px;}
+.rv-root .rf42-wheel{position:absolute;right:12px;top:5px;display:block;width:46px;height:46px;border-radius:50%;filter:drop-shadow(1px 3px 4px #70839d);}
+.rv-root .rf42-wheel svg{height:100%;width:100%;}
+.rv-root .rf42-rows{display:flex;flex-direction:column;gap:8px;}
+.rv-root .rf42-seatrow{display:grid;grid-template-columns:56px 18px 1fr;gap:9px;min-height:72px;align-items:stretch;}
+.rv-root .rf42-aisle{width:100%;height:100%;border-right:1px dashed #c9d9f3;}
+.rv-root .rf42-seatergrid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:3px;min-height:72px;}
+.rv-root .rf42-doubleberth{display:grid;grid-template-columns:1fr 1fr;gap:4px;min-height:72px;}
+.rv-root .rf42-seat{position:relative;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid #151515;border-radius:5px;background:#fff;color:#253650;font-size:13px;font-weight:800;line-height:1.05;box-shadow:inset 0 0 0 2px #f7f7f7;cursor:pointer;padding:2px;transition:background .15s,border-color .15s,box-shadow .15s;}
+.rv-root .rf42-seat span{position:relative;z-index:1;white-space:nowrap;}
+.rv-root .rf42-seat i{position:absolute;bottom:5px;left:25%;width:50%;height:7px;border-radius:3px;background:#e3e5e8;}
+.rv-root .rf42-sleeper{min-height:72px;}
+.rv-root .rf42-seater{min-height:33px;font-size:12px;}
+.rv-root .rf42-vacant{display:block;}
+.rv-root .rf42-class{position:absolute;z-index:2;bottom:4px;left:3px;right:3px;text-align:center;background:#b8f8cc;color:#007943;font-size:10px;font-weight:800;border-radius:2px;padding:2px 0;}
+.rv-root .rf42-class-dub{background:#e9c3ff;color:#7515b2;}
+.rv-root .rf42-class-dis1{background:#c5deff;color:#115ccf;}
+.rv-root .rf42-doubleberth .rf42-class-slb{background:#ffe8ad;color:#a97304;}
+.rv-root .rf42-seat.selected{background:#19be5c;color:#fff;border-color:#068949;box-shadow:0 1px 6px #0a95445c,inset 0 0 0 2px #67dc99;}
+.rv-root .rf42-seat.selected i{background:#23b75b;}
+.rv-root .rf42-seat.selected .rf42-class{background:#bbf9ce;color:#07683a;}
+.rv-root .rf42-seat:focus-visible{outline:3px solid #3479f7;outline-offset:2px;}
+.rv-root .rf42-preview{position:absolute;bottom:4px;left:4px;right:4px;padding:2px 1px;border-radius:3px;font-size:10px;background:#d8ffe7;color:#087b32;}
+.rv-root .rf42-exit{position:absolute;bottom:0;left:31%;display:flex;align-items:center;justify-content:center;}
+.rv-root .rf42-exit>span{position:absolute;width:38px;height:7px;background:#e62e35;bottom:-1px;left:50px;border-radius:2px 2px 0 0;}
+.rv-root .rf42-rule-detail{display:grid!important;grid-template-columns:minmax(516px,0.94fr) minmax(510px,1.06fr)!important;gap:22px!important;align-items:start!important;margin-top:20px;}
+.rv-root .rf42-rule-diagram{display:flex;align-items:flex-start;justify-content:center;min-width:0;padding:12px;background:white;border:2px solid #d7dfed;border-radius:14px;overflow:visible!important;}
+.rv-root .rf42-rule-diagram .rf42-deck{background:linear-gradient(170deg,#fbfdff,#f0f4fb);border-style:solid;}
+.rv-root .rf42-rule-diagram .rf42-seat:not(.selected){outline:2px dashed #8cb8ff;outline-offset:2px;}
+.rv-root .rf42-rule-controls{min-width:0;padding:0 2px;}
+.rv-root .rf42-rule-controls .rv-field>span,.rv-root .rf42-control-title{display:block;margin-bottom:8px;color:#3b495f;font-size:14px;font-weight:600;}
+.rv-root .rf42-name{width:100%;display:block;margin-bottom:19px;}
+.rv-root .rf42-name input{width:100%;padding:15px 17px;min-height:52px;border:1px solid #d4e2fb;box-shadow:0 2px 4px #14305b19;border-radius:15px;}
+.rv-root .rf42-change-line{margin:10px 0 20px;}
+.rv-root .rf42-change-input{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.rv-root .rf42-direction,.rv-root .rf42-units{display:flex;border-radius:13px;overflow:hidden;border:1px solid #d9e1ef;background:white;}
+.rv-root .rf42-direction button{border:0;background:#fff;color:#283a5a;padding:12px 14px;cursor:pointer;font-size:14px;}
+.rv-root .rf42-direction button.selected:first-child{background:#00a66d;color:#fff;}
+.rv-root .rf42-direction button.selected:last-child{background:#ed5455;color:#fff;}
+.rv-root .rf42-change-input>input[type=number]{height:49px;width:119px;border:1px solid #d5e0f4;border-radius:13px;padding:0 15px;font-size:16px;color:#1d2945;}
+.rv-root .rf42-units button{border:0;min-width:40px;height:48px;background:white;color:#254069;cursor:pointer;}
+.rv-root .rf42-units button.selected{background:#20364e;color:white;}
+.rv-root .rf42-daychips{display:flex;gap:7px;flex-wrap:wrap;}
+.rv-root .rf42-daychips button{background:#fff;border:1px solid #d0dfff;border-radius:11px;padding:10px 11px;color:#2860e9;font-weight:700;cursor:pointer;}
+.rv-root .rf42-daychips button.selected{background:#2967ed;border-color:#2967ed;color:#fff;}
+.rv-root .rf42-days p,.rv-root .rf42-preview-note{color:#72849e;font-size:13px;line-height:1.5;margin:8px 0 16px;}
+.rv-root .rf42-seatprices-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;}
+.rv-root .rf42-preview-tabs{display:flex;overflow:hidden;border:1px solid #d4e3fb;border-radius:14px;}
+.rv-root .rf42-preview-tabs button{border:0;border-right:1px solid #d4e3fb;padding:6px 9px;background:white;color:#3d5d8a;cursor:pointer;}
+.rv-root .rf42-preview-tabs button:last-child{border-right:0;}
+.rv-root .rf42-preview-tabs button.on{background:#2767f7;color:white;}
+.rv-root .rf42-ruleprices{display:flex;flex-direction:column;gap:9px;max-height:none;overflow:visible;}
+.rv-root .rf42-ruleprices .rf42-pricerow{display:flex;align-items:center;gap:10px;padding:7px 11px!important;min-height:45px;background:white;border:1px solid #dbe4f1;border-radius:25px;box-shadow:0 1px 3px #2748731a;}
+.rv-root .rf42-pricerow>b{border-radius:13px;padding:9px 10px;min-width:53px;text-align:center;background:#30425a;color:#fff;}
+.rv-root .rf42-pricerow>span{margin-left:auto;display:flex;gap:5px;align-items:center;}
+.rv-root .rf42-pricerow del{color:#9ca8bb;font-size:13px;}
+.rv-root .rf42-pricerow strong{color:#008f55;font-size:14px;}
+.rv-root .rf42-pricerow .rv-btn{border:0!important;padding:3px 5px!important;background:none!important;color:#93a0b3;}
+.rv-root .rf42-rule-actions{display:flex;flex-direction:column;align-items:stretch;gap:14px;margin-top:10px;}
+.rv-root .rf42-rule-actions .rv-btn.danger{align-self:flex-start;border:0;background:transparent;color:#eb2626;}
+.rv-root .rf42-rule-actions .rv-btn.primary{align-self:flex-end;min-width:170px;background:#8caef4;border:0;color:white;}
+.rv-root .rv-editor-footer{position:relative;display:flex;align-items:center;justify-content:flex-end;gap:16px;padding:18px 25px;background:#fff;border-top:1px solid #e0e8f4;}
+.rv-root .rv-editor-footer .rv-btn.primary{background:#2968ef;color:white;border-color:#2968ef;}
+@media(max-width:1360px) {
+ .rv-root .rv-fare-grid.rf42-workspace {min-width:1300px!important;}
+ .rv-root .rf42-rule-detail{min-width:1180px;overflow:visible;}
+ .rv-editor-body:has(.rf42-workspace) {overflow-x:auto!important;}
+}
+@media print {
+ .rv-root .rf42-bus{break-inside:avoid;}
+ .rv-root .rf42-deck{print-color-adjust:exact;-webkit-print-color-adjust:exact;}
+}
