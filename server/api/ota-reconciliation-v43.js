@@ -33,6 +33,7 @@ function rebuild(doc){
   doc.totals.needs_review=doc.lines.filter(x=>x.status==='needs_review').length;
  }
  doc.totals.resolved=doc.lines.filter(x=>x.resolution?.action).length;
+ doc.totals.disputed=doc.lines.filter(x=>x.resolution?.action==='dispute').length;
  doc.totals.outstanding_issue_count=doc.lines.filter(x=>x.status!=='matched'&&!x.resolution?.action).length;
  return doc;
 }
@@ -115,6 +116,7 @@ r.post('/reconciliation/v43/invoices/:id/resolve',can('accounts.reconciliation')
  if(action==='dispute'&&!note)throw fail(400,'Dispute reason is required');
  row.resolution=action==='clear'?null:{action,by:req.user.name||String(req.user.id),at:new Date().toISOString(),note};
  d.totals.resolved=d.lines.filter(x=>x.resolution).length;
+ d.totals.disputed=d.lines.filter(x=>x.resolution?.action==='dispute').length;
  d.totals.outstanding_issue_count=d.lines.filter(x=>x.status!=='matched'&&!x.resolution).length;
  db.persist();res.json({row,totals:d.totals});
 }));
