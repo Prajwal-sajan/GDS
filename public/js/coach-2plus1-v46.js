@@ -84,13 +84,13 @@
   for(const d of geometry)for(let i=0;i<(d.fixtures||[]).length;i++){
    const f=d.fixtures[i],name=String(f.name||f.code||f.type||'Fixture');
    already.add(name.toLowerCase());
-   rows.push({code:name,label:name,type:String(f.type||'FIXTURE').toUpperCase(),deck:d.deck,
+   rows.push({code:name,label:String(f.display_name||name),type:String(f.type||'FIXTURE').toUpperCase(),deck:d.deck,
     orientation:f.orientation||'—',position:rowPosition(f,d.index),
     ref:d.index+':'+i,kind:'fixture',deckIndex:d.index,seatIndex:i});
   }
   // Legacy templates hold exit descriptors at coach level instead of in layout.decks.
   if((emergencyExits||[]).some(x=>/back\s*exit/i.test(String(x)))&&!already.has('back exit'))
-   rows.push({code:'Back Exit',label:'Back Exit',type:'BACK_EXIT',deck:'LOWER',orientation:'—',
+   rows.push({code:'Back Exit',label:String(layout.fixture_aliases?.back_exit||'Back Exit'),type:'BACK_EXIT',deck:'LOWER',orientation:'—',
     position:'R12C2Z0',ref:'back-exit',kind:'virtual-fixture',deckIndex:0,seatIndex:-1});
   return rows;
  }
@@ -193,7 +193,7 @@
    return '<section class="cv46-deck cv46-'+d.deck.toLowerCase()+'" aria-label="'+esc(d.deck)+' deck">'+
     '<header><b>'+esc(d.deck)+'</b>'+(z===0?'<span class="cv46-wheel" aria-label="Steering wheel">'+wheel+'</span>':'')+'</header>'+
     '<div class="cv46-grid" style="--cv46-cols:'+Number(d.cols)+';--cv46-rows:'+Number(d.rows)+'">'+cells+'</div>'+
-    (z===0&&hasBackExit?'<span class="cv46-emergency" aria-label="Emergency exit">'+exit+'</span><span class="cv46-door" aria-label="Back door"></span>':'')+
+    (z===0&&hasBackExit?'<span class="cv46-emergency" data-cv46-exit-label title="'+esc(String(layout.fixture_aliases?.back_exit||'Back Exit'))+'" aria-label="Emergency exit">'+exit+'</span><span class="cv46-door" aria-label="Back door"></span>':'')+
     '</section>';
   }).join('')+'</div>';
  }
