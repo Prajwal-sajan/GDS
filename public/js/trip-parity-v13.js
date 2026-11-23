@@ -143,5 +143,27 @@
     G.on(el,'click','[data-trip-svc-pick]',b=>{state.sid=b.dataset.tripSvcPick;svc.value=state.sid;updateOptions();closePops();if(document.activeElement&&el.contains(document.activeElement))document.activeElement.blur();tryIt(loadDetail);});
     G.on(el,'click','[data-trip-cancel]',()=>tryIt(async()=>{const v=await G.prompt('Cancel this bus',[{name:'reason',label:'Reason',required:true,value:'Operational reasons'},{name:'notify',label:'Notify passengers',type:'checkbox',value:true}],{ok:'Continue'});if(!v)return;if(!await G.confirm('Cancel all confirmed bookings on this trip and initiate applicable refunds?',{danger:true,ok:'Cancel bus'}))return;const r=await G.post(`/trips/${encodeURIComponent(state.sid)}/cancel`,v);G.toast(`${r.cancelled} bookings cancelled · ${inr(r.refunds)} refunds`,'ok');await loadList();}));
     await loadList();
+    // Only re-render when the recorded loyalty offer/upgrade state changes,
+    // preserving operators' form selections during ordinary poll cycles.
+    const upgradeSignature=t=>(t?.passengers||[]).map(p=>[
+      p.pnr,p.seat,p.seat_upgrade?.status||'',
+      p.seat_upgrade?.to_seat||'',
+      p.seat_upgrade?.status==='offered'&&Date.parse(p.seat_upgrade.expires_at||0)<=Date.now()?'expired':''
+    ].join(':')).join('|');
+    let busyUpgradeRefresh=false;
+    const liveUpgradeInterval=setInterval(async()=>{
+      if(!el.isConnected){clearInterval(liveUpgradeInterval);return;}
+      if(document.hidden||state.loading||busyUpgradeRefresh||!state.sid||!state.trip)return;
+      busyUpgradeRefresh=true;
+      try{
+        const selectedSid=String(state.sid);
+        const latest=await G.get('/trips/'+encodeURIComponent(selectedSid));
+        if(String(state.sid)!==selectedSid)return;
+        if(upgradeSignature(latest)!==upgradeSignature(state.trip)){
+          state.trip=latest;draw();
+        }
+      }catch(_){/* keep last authenticated trip state during temporary offline periods */}
+      finally{busyUpgradeRefresh=false}
+    },5000);
   };
 })();

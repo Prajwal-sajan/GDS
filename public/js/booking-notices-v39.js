@@ -103,6 +103,7 @@ async function poll(){
   if(Array.isArray(result.events))result.events.forEach(queueEvent);
   if(Number.isFinite(Number(result.cursor)))cursor=String(result.cursor);
  }catch(error){
+  if(error?.status===400)cursor=null; // Database cursor reset: baseline again.
   // Session expiry is handled by the common client; transient offline failure
   // does not advance the cursor or create duplicate notifications.
  }finally{pollRunning=false}

@@ -5,6 +5,7 @@ on:
     paths:
       - 'server/api/booking-live-v39.js'
       - 'server/api/loyalty-upgrades-v39.js'
+      - 'server/api/booking-workspace-v38.js'
       - 'server/api/ops.js'
       - 'server/index.js'
       - 'server/loyalty-v34.js'
@@ -34,6 +35,7 @@ jobs:
           node --check server/api/booking-live-v39.js
           node --check server/api/loyalty-upgrades-v39.js
           node --check server/api/ops.js
+          node --check server/api/booking-workspace-v38.js
           node --check server/loyalty-v34.js
           node --check server/index.js
           node --check public/js/booking-notices-v39.js

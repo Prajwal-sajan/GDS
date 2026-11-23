@@ -36,7 +36,7 @@ function actualEvent(a,req){
 r.get('/bookings/live-events-v39',can('bookings.view_all'),h(req=>{
  const raw=req.query.since_id;
  if(raw!==undefined&&!/^\d+$/.test(String(raw)))throw D.httpErr(400,'Invalid event cursor');
- const lastId=Math.max(0,...db.col('alerts').all().map(a=>Number(a.id)||0));
+ const lastId=db.col('alerts').all().reduce((max,a)=>Math.max(max,Number(a.id)||0),0);
  // First request = baseline. Don't replay weeks of historical bookings as
  // new customer notifications when an operator signs in.
  if(raw===undefined)return {cursor:lastId,events:[],interval_ms:3000};

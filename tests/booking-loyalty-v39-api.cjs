@@ -111,6 +111,24 @@ const timeIST=(d)=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour
   assert.ok(db.col('edit_history').filter(x=>x.changes?.op==='loyalty_upgrade_apply').length>=1);
   const altered=await get('/trips/'+s.id);
   assert.ok(altered.data.passengers.some(p=>p.pnr===booking.pnr&&p.seat===better.code&&p.seat_upgrade?.status==='applied'));
+  const hist=await get('/bookings/'+encodeURIComponent(booking.pnr)+'/history');
+  assert.equal(hist.code,200);
+  assert.ok(hist.data.events.some(x=>x.title==='Loyalty Seat Upgraded'&&
+    x.details.some(d=>d.label==='Seat change')));
+  // The scheduler must create a pending offer but NEVER move a seat itself.
+  const second=db.col('bookings').insert({...JSON.parse(JSON.stringify(booking)),
+    id:undefined,pnr:'STV39-TEST-2',ticket_number:'993940',
+    passengers:[{seat:initial.code,name:'v39 Second Loyal Passenger',gender:'F',
+      age:26,fare:950,status:'booked'}]});
+  const auto=upgrade.scanAutoOffers(Date.now());
+  assert.ok(auto>=1,'Auto worker should create a pending improved-seat offer');
+  assert.equal(second.passengers[0].seat,initial.code);
+  assert.equal(second.passengers[0].seat_upgrade?.status,'offered');
+  const autoUrl='/trips/'+s.id+'/loyalty-upgrades/'+encodeURIComponent(second.pnr)+'/'+encodeURIComponent(initial.code);
+  const declined=await post(autoUrl+'/decline',{reason:'Passenger did not want a different berth'});
+  assert.equal(declined.code,200);
+  assert.equal(declined.data.offer.status,'declined');
+  assert.equal(second.passengers[0].seat,initial.code);
   console.log('PASS v39 API: feed baseline/cursor/permission, real event display, eligible offers within window, offer not moving seat, explicit consent gate, inventory application, audit and read-after-write');
  }finally{
   server.closeAllConnections?.();server.close();

@@ -35,7 +35,7 @@
 5. Offers expire after 5 minutes or boarding time (whichever comes first); no repeat automatic offer for a passenger with prior offer history.
 6. A permitted operator may manually create an offer, record decline, or record acceptance with explicit passenger consent, channel and reference.
 7. Acceptance rechecks route, tier, status, time window, duplicate offers and seat occupancy before changing the passenger seat. Audit records original and new seat, actor and consent reference; original seat becomes available again.
-8. The Trips API exports the original/target seat and state so the pill only appears when there is a genuine recorded offer/upgrade.
+8. The Trips API exports the original/target seat and state so the pill only appears when there is a genuine recorded offer/upgrade. While Trips is visible, a five-second polling loop refreshes the table only if upgrade state changes, including the expiration of pending offers.
 9. Existing PNR access restrictions and read-only account restrictions remain in effect.
 
 ## New/changed files
@@ -47,6 +47,7 @@
 ## Honest boundaries / release criteria
 
 - Polling is near-real-time (~3 seconds), not server push. Notifications on other operator platforms require an authorized adapter that persists their bookings into this GDS.
+- The PNR audit timeline includes named loyalty-offer, applied and declined events with before/after seat details.
 - The consent reference is **operator-recorded evidence**, not verified authorization from WhatsApp/OTA providers. External delivery and customer confirmation are not claimed.
 - In-memory serialized mutations are safe against competing HTTP handlers in a **single Node process**. Multiple writers/replicas require a transactional DB with unique seat constraints and distributed offer scheduling before production.
 - A screenshot shows **OFFERED**, not completed. This implementation deliberately retains the old seat until consent and application.

@@ -73,12 +73,17 @@ r.get('/bookings/:pnr/history',can('bookings.view_all'),handler(req=>{
   if(changes.op==='book')continue;
   const titles={shift:'Passenger Shifted',edit:'Booking Updated',
     cancel:'Ticket Cancelled',comment:'Comment Added',confirm:'Booking Confirmed',
+    loyalty_upgrade_offer:'Loyalty Upgrade Offered',
+    loyalty_upgrade_apply:'Loyalty Seat Upgraded',
+    loyalty_upgrade_decline:'Loyalty Upgrade Declined',
     payment:'Payment Updated'};
   const details=[];
   if(changes.to_schedule!=null)details.push({label:'Target trip',value:String(changes.to_schedule)});
   if(changes.seat_map&&Object.keys(changes.seat_map).length)details.push({label:'Seat changes',value:Object.entries(changes.seat_map).map(([from,to])=>from+' → '+to).join(', ')});
   if(Array.isArray(changes.seats))details.push({label:'Seats',value:changes.seats.join(', ')});
   if(Array.isArray(changes.fields))details.push({label:'Fields updated',value:changes.fields.join(', ')});
+  if(changes.from_seat&&changes.to_seat)details.push({label:'Seat change',value:String(changes.from_seat)+' → '+String(changes.to_seat)});
+  if(changes.consent_method)details.push({label:'Consent method',value:String(changes.consent_method)});
   if(changes.refund!=null)details.push({label:'Refund',value:String(changes.refund)});
   events.push({id:'audit-'+a.id,kind:changes.op||'update',
    title:titles[changes.op]||'Booking Change',at:a.at,
