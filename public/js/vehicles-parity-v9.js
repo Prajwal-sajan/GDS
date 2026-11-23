@@ -359,13 +359,13 @@
           safe=E;
         const typeClass=x=>String(x||'').toLowerCase().replace(/[^a-z0-9_]/g,'');
         const rowHTML=(seat,i)=>{
-          const isSeat=seat.kind==='seat',editable=editing&&isSeat,
+          const isSeat=seat.kind==='seat',editable=editing,
             removeDisabled=!editing||assigned(),
             rowID=isSeat?seat.ref:seat.kind==='virtual-fixture'?'back-exit':'fixture-'+seat.ref;
           const canRemove=editing&&!assigned();
           return '<tr data-seat-row="'+i+'">'+
             '<td class="cv46-index">'+(i+1)+'</td>'+
-            '<td><input class="cv46-name" type="text" maxlength="50" data-seat-label="'+(isSeat?safe(seat.ref):'fixture')+'" '+
+            '<td><input class="cv46-name" type="text" maxlength="50" data-seat-label="'+(isSeat?safe(seat.ref):seat.kind==='virtual-fixture'?'back-exit':'fixture-'+safe(seat.ref))+'" '+
               'title="'+safe(isSeat?'Booking seat ID: '+seat.code+' · display name can be changed independently':seat.label)+'" '+
               'value="'+safe(seat.label)+'" '+(editable?'':'disabled')+' /></td>'+
             '<td><span class="cv46-kind '+typeClass(seat.type)+'">'+safe(seat.type)+'</span></td>'+
@@ -436,6 +436,7 @@
           for(const deck of arr(draft.layout?.decks)){
             for(const seat of arr(deck.seats))delete seat.display_name;
             for(const fixture of arr(deck.fixtures))delete fixture.display_name;
+          if(draft.layout?.fixture_aliases)delete draft.layout.fixture_aliases.back_exit;
           }
           const scroll=root.scrollTop;draw();root.scrollTop=scroll;
           G.toast('Seat display names reset; Update Coach to persist','ok');return;
@@ -470,7 +471,7 @@
         try{if(draft.id){await G.put(`/coaches/${draft.id}`,body)}else{await G.post('/coaches',body)}m.close();G.toast('Coach saved','ok');done()}catch(err){G.err(err)}return;
       }
     });
-    m.el.addEventListener('input',e=>{const t=e.target;if(t.matches('[data-search-seat]')){search=t.value;qa('[data-seat-row]',root).forEach(tr=>tr.hidden=!tr.innerText.toLowerCase().includes(search.toLowerCase()));return}if(t.matches('[data-seat-label]')){const [deck,index]=t.dataset.seatLabel.split(':').map(Number),record=draft.layout?.decks?.[deck]?.seats?.[index];if(record){if(target21()){record.display_name=t.value;const gridLabel=q('[data-cv46-label="'+deck+':'+index+'"]',root);if(gridLabel)gridLabel.textContent=t.value;}else record.code=t.value;}return}if(t.name){const map={name:'name',alt_name:'alt_name',bus_type:'bus_type'};if(map[t.name])draft[map[t.name]]=t.value}});
+    m.el.addEventListener('input',e=>{const t=e.target;if(t.matches('[data-search-seat]')){search=t.value;qa('[data-seat-row]',root).forEach(tr=>tr.hidden=!tr.innerText.toLowerCase().includes(search.toLowerCase()));return}if(t.matches('[data-seat-label]')){const id=t.dataset.seatLabel;if(target21()&&id==='back-exit'){draft.layout.fixture_aliases={...(draft.layout.fixture_aliases||{}),back_exit:t.value};const exit=q('[data-cv46-exit-label]',root);if(exit)exit.title=t.value;return;}if(target21()&&id.startsWith('fixture-')){const [deck,index]=id.slice(8).split(':').map(Number);const fixture=draft.layout?.decks?.[deck]?.fixtures?.[index];if(fixture)fixture.display_name=t.value;return;}const [deck,index]=id.split(':').map(Number),record=draft.layout?.decks?.[deck]?.seats?.[index];if(record){if(target21()){record.display_name=t.value;const gridLabel=q('[data-cv46-label="'+deck+':'+index+'"]',root);if(gridLabel)gridLabel.textContent=t.value;}else record.code=t.value;}return}if(t.name){const map={name:'name',alt_name:'alt_name',bus_type:'bus_type'};if(map[t.name])draft[map[t.name]]=t.value}});
     m.el.addEventListener('change',e=>{
       const t=e.target;if(t.dataset.amenity){if(!editing)return;draft.amenities=amenities.filter(([key,label])=>key===t.dataset.amenity?(t.checked):amenHas(draft.amenities,key,label)).map(x=>x[0]);return}
       if(t.name==='coach_type'){draft.bus_type=t.value==='Pickup Van'?'Pickup Van':(draft.bus_type||'Regular');return}
