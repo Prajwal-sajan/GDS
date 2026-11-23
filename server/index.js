@@ -41,6 +41,7 @@ app.use('/api', require('./api/booking-live-v39'));
 const loyaltyUpgradesV39=require('./api/loyalty-upgrades-v39');
 app.use('/api',loyaltyUpgradesV39.router);
 app.use('/api', require('./api/ops'));
+app.use('/api', require('./api/ota-ratings-settings-v44'));
 app.use('/api', require('./api/vehicle-details-v19'));
 app.use('/api', require('./api/master'));
 app.use('/api', require('./api/fleet-operations-v20'));
