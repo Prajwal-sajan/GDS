@@ -252,7 +252,7 @@
     const g=grpFor(code),selected=chosen.has(code),label=kind==='seater'?'':g?.name||'';
     const tag=label?`<small class="rf42-class rf42-class-${E(label.toLowerCase())}">${E(label)}</small>`:'';
     const n=safeRate(code),diff=N(opts.delta||0),after=Math.max(0,opts.percent?n*(1+diff/100):n+diff);
-    const preview=selected&&opts.showPreview?`<small class="rf42-preview">₹${E(Math.round(after))}</small>`:'';
+    const preview=selected&&opts.showPreview?`<small class="rf42-preview">${diff>=0?'+':'−'} ₹${E(Math.abs(diff))}${opts.percent?'%':''}</small>`:'';
     return `<button type="button" class="rf42-seat rf42-${kind}${selected?' selected':''}" data-rv-seat="${E(code)}" title="${E(code)} · ${E(g?.name||kind)}${selected?' · selected':''}" aria-pressed="${selected}" ${opts.readonly?'disabled':''}><span>${E(code)}</span>${preview||tag}<i aria-hidden="true"></i></button>`;
   };
   const lowerSingles=['1L','2L','3L','4L','5L','6L'].filter(x=>has.has(x));
