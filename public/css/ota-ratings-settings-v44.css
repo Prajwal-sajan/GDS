@@ -1,0 +1,50 @@
+/* Daily Ops OTA Ratings settings — screenshot-matched, scoped to the ratings page. */
+.ds-root .ds-ratings-head{margin:0 0 21px}
+.ds-root .ds-ratings-head .ds-head-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ds-root .ds-ratings-head .ds-head-actions .ds-btn{min-height:51px;border-radius:16px}
+.ds-root .ds-ota-switch{display:inline-flex;align-items:center;border:1px solid #dee3ee;border-radius:12px;background:#fff;gap:3px;padding:3px}
+.ds-root .ds-ota-switch button{border:0;border-radius:8px;background:transparent;color:#33445f;padding:9px 14px;min-height:34px;font-weight:550}
+.ds-root .ds-ota-switch button.on{background:#2e67f2;color:#fff;box-shadow:0 2px 7px #346aee24}
+.ds-root .ds-ota-switch button:focus-visible,
+.ds-root .ds-ota-provider-tabs button:focus-visible{outline:3px solid #9ab9ff;outline-offset:2px}
+.ds-root .ds-ota-settings-panel{border:1px solid #e1e5ed;border-radius:14px;background:#fff;margin:0 0 21px;padding:16px 16px 17px;box-shadow:0 1px 1px #151c3004}
+.ds-root .ds-ota-provider-tabs{display:flex;align-items:center;gap:10px;margin-bottom:19px}
+.ds-root .ds-ota-provider-tabs button{border:1px solid #d8deeb;color:#263958;border-radius:5px;background:#fff;padding:7px 16px;min-height:35px;font-weight:500}
+.ds-root .ds-ota-provider-tabs button.on{color:#fff;background:#2968ee;border-color:#2968ee;font-weight:700}
+.ds-root .ds-ota-settings-title{font-size:17px;color:#0d2036;font-weight:700;margin:0 0 3px}
+.ds-root .ds-ota-settings-description{color:#72819b;font-size:13px;margin:0 0 15px;line-height:1.5}
+.ds-root .ds-ota-settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:0}
+.ds-root .ds-ota-settings-field{display:flex;flex-direction:column;gap:6px;color:#334762;font-size:14px;font-weight:550}
+.ds-root .ds-ota-settings-field input{display:block;width:100%;height:47px;border:1px solid #d0d9e8;border-radius:6px;background:#fff;padding:10px 12px;color:#1c2b44;font-size:15px;outline:0}
+.ds-root .ds-ota-settings-field input:focus{border-color:#376df4;box-shadow:0 0 0 3px #376df417}
+.ds-root .ds-ota-settings-field input::placeholder{color:#8593ae;opacity:1}
+.ds-root .ds-ota-settings-privacy{font-size:13px;line-height:1.6;color:#697a96;margin:16px 0 11px}
+.ds-root .ds-ota-settings-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ds-root .ds-ota-settings-actions button{border:1px solid #d2dae8;padding:10px 15px;border-radius:5px;min-height:44px;background:#fff;color:#243b61;font-weight:550}
+.ds-root .ds-ota-settings-actions button.ds-ota-save{background:#2968ee;border-color:#2968ee;color:#fff}
+.ds-root .ds-ota-settings-actions button:disabled{opacity:.5;cursor:not-allowed}
+.ds-root .ds-ota-settings-hint{color:#657895;font-size:12px;line-height:1.5;margin:12px 0 0}
+.ds-root .ds-ratings .ds-filter-panel{margin:0 0 20px;border-color:#e1e5ee;border-radius:13px;padding:16px;min-height:94px;gap:15px}
+.ds-root .ds-ratings .ds-filter-panel>label:first-child{flex:1 1 305px;max-width:395px;width:auto}
+.ds-root .ds-ratings .ds-filter-panel>label{flex:0 1 155px}
+.ds-root .ds-ratings .ds-filter-panel input,.ds-root .ds-ratings .ds-filter-panel select{border-radius:12px;border-color:#e0e5ee}
+.ds-root .ds-ratings .ds-range-buttons{padding-bottom:0}
+.ds-root .ds-ratings .ds-range-buttons .ds-btn{background:#fff;border:1px solid #e1e7f2;color:#53657d;min-height:43px}
+.ds-root .ds-ratings .ds-range-buttons .ds-btn.on{background:#376af0;color:#fff}
+.ds-root .ds-ratings .ds-rating-tabs{gap:10px;margin:13px 0 22px}
+.ds-root .ds-ratings .ds-rating-tabs .ds-btn{border-radius:15px;min-height:51px;padding:10px 17px}
+.ds-root .ds-ota-live-note{color:#718099;font-size:12px;margin:6px 0 0;line-height:1.4}
+.ds-root .ds-ota-settings-field input:disabled{background:#f5f7fa}
+@media(max-width:900px){
+ .ds-root .ds-ratings-head{align-items:flex-start}
+ .ds-root .ds-ratings-head .ds-head-actions{width:100%}
+ .ds-root .ds-ota-settings-grid{grid-template-columns:1fr}
+ .ds-root .ds-ratings .ds-filter-panel>label:first-child{max-width:none}
+}
+@media(max-width:520px){
+ .ds-root .ds-ratings-head .ds-head-actions .ds-btn{flex:1}
+ .ds-root .ds-ota-settings-panel{padding:12px}
+ .ds-root .ds-ota-settings-privacy{font-size:12px}
+ .ds-root .ds-ota-switch{width:100%;justify-content:center}
+ .ds-root .ds-ota-switch button{flex:1}
+}
