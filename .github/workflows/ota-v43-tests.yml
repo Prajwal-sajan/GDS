@@ -1,0 +1,41 @@
+name: v43 OTA Invoice Verifier PDF and PNR Reconciliation
+on:
+  push:
+    branches: [feature/ota-invoice-verifier-v43, savetrip-screenshotcomplete]
+    paths:
+      - 'server/ota-reconciliation-v43.js'
+      - 'server/api/ota-reconciliation-v43.js'
+      - 'server/index.js'
+      - 'public/js/ota-reconciliation-v43.js'
+      - 'public/css/ota-reconciliation-v43.css'
+      - 'public/index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tests/ota-reconciliation-v43.test.cjs'
+      - '.github/workflows/ota-v43-tests.yml'
+  pull_request:
+    branches: [savetrip-screenshotcomplete]
+  workflow_dispatch:
+jobs:
+  invoice-verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Syntax and route wiring checks
+        run: |
+          node --check server/ota-reconciliation-v43.js
+          node --check server/api/ota-reconciliation-v43.js
+          node --check public/js/ota-reconciliation-v43.js
+          node --check tests/ota-reconciliation-v43.test.cjs
+      - name: Parse fixtures, reconcile, export, UI reference coverage
+        run: node tests/ota-reconciliation-v43.test.cjs
+      - name: Existing Accounts UI and integration regressions
+        run: |
+          node tests/check-accounts-v10.mjs
+          npm test
