@@ -125,3 +125,5 @@ body.cv8-locked #modal-root .ov{z-index:2300}
 body.cv8-locked #toasts{z-index:2400}
 .cv8-v45-overlay .cv8-commentcard button:disabled{opacity:.45;cursor:not-allowed}
 .cv8-v45-overlay .cv8-passenger-cancelled{font-size:11px;color:#d12c44;font-weight:650}
+
+.cv8-v45-overlay .cv8-deck-upper{padding-bottom:28px}
