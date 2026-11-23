@@ -138,4 +138,4 @@ const put=(sec,value,p=owner)=>call('PUT','/settings/loyalty-v34/'+sec,{value},p
   http.closeAllConnections?.();http.close();db.persistNow();
   fs.rmSync(process.env.GDS_DATA_DIR,{force:true,recursive:true});
  }
-})().catch(e=>{console.error(e);process.exitCode=1;});
+})().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1);});
