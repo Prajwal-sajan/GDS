@@ -47,6 +47,33 @@ r.post('/routes', can('routes.create'), h((req) => { Policy.explicitAccess(req,"
   return rt;
 }));
 const ROUTE_SECTIONS = ['service_number', 'name', 'departure_time', 'arrival_time', 'duration_minutes', 'distance_km', 'coach_template_id', 'vehicle_id', 'assignments', 'status', 'run_pattern', 'start_date', 'end_date', 'via_cities', 'stages', 'fares', 'seat_fare_rules', 'seat_blocks', 'refund_slabs', 'expenses', 'call_settings', 'auto_pricing', 'tags', 'sub_routes', 'business_rules', 'alt_name', 'origin_city_id', 'destination_city_id', 'departure_day', 'arrival_day', 'alternate_assignment', 'fare_groups', 'hub', 'cabs', 'escalation_contacts'];
+function verifyFarePayload(body,route){
+  if(body.fare_groups===undefined&&body.seat_fare_rules===undefined)return;
+  const coach=db.col('coaches').get(body.coach_template_id||route.coach_template_id);
+  const seats=new Set((coach?.layout?.decks||[]).flatMap(d=>(d.seats||[]).map(x=>String(x.code))));
+  if(body.fare_groups!==undefined){
+    if(!Array.isArray(body.fare_groups)||body.fare_groups.length>100)throw D.httpErr(400,'Invalid fare groups');
+    const assigned=new Set();
+    for(const group of body.fare_groups){
+      if(!group||typeof group.name!=='string'||group.name.length>64||!Array.isArray(group.seats)||!group.seats.length||!Array.isArray(group.days)||group.days.length!==7)throw D.httpErr(400,'Each fare group needs a name, seats and seven weekday fares');
+      for(const code of group.seats){
+        if(!seats.has(String(code)))throw D.httpErr(400,`Unknown coach seat in fare group: ${code}`);
+        if(assigned.has(String(code)))throw D.httpErr(400,`Seat ${code} belongs to more than one fare group`);
+        assigned.add(String(code));
+      }
+      if(group.days.some(f=>f===null||f===''||!Number.isFinite(Number(f))||Number(f)<0||Number(f)>1000000))throw D.httpErr(400,'Invalid weekday fare');
+    }
+  }
+  if(body.seat_fare_rules!==undefined){
+    if(!Array.isArray(body.seat_fare_rules)||body.seat_fare_rules.length>200)throw D.httpErr(400,'Invalid seat fare rules');
+    const names=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    for(const rule of body.seat_fare_rules){
+      if(!rule||!['amount','percent'].includes(rule.kind)||!Number.isFinite(Number(rule.value))||Math.abs(Number(rule.value))>1000000||!Array.isArray(rule.seats)||!Array.isArray(rule.days||[]))throw D.httpErr(400,'Invalid seat fare rule');
+      if(rule.seats.some(code=>!seats.has(String(code))))throw D.httpErr(400,'Fare rule references an unknown coach seat');
+      if((rule.days||[]).some(d=>!names.includes(d)&&!(Number.isInteger(d)&&d>=0&&d<=6)))throw D.httpErr(400,'Fare rule has an unknown weekday');
+    }
+  }
+}
 r.put('/routes/:id', can('routes.modify'), h((req) => {
   const fieldRules=[
    ['Change fares',['fares','seat_fare_rules','fare_groups']],
@@ -63,12 +90,13 @@ r.put('/routes/:id', can('routes.modify'), h((req) => {
   if(!specialized||Object.keys(req.body).some(k=>!fieldRules.some(([,fields])=>fields.includes(k))))
    Policy.explicitAccess(req,'Edit general details (name, coach, settings, route map)');
   const rt = need(db.col('routes').get(req.params.id));
+  verifyFarePayload(req.body,rt);
   const changes = {};
   for (const k of ROUTE_SECTIONS) if (req.body[k] !== undefined) { changes[k] = [rt[k], req.body[k]]; rt[k] = req.body[k]; }
   if (req.body.stages) { let n = Math.max(10000, ...db.col('routes').all().flatMap((x) => x.stages.map((s) => s.id || 0))); for (const s of rt.stages) if (!s.id) s.id = ++n; }
   if (rt.status === 'active') { const ok = validateRoute(rt); if (ok.length) throw D.httpErr(400, `Cannot activate: ${ok.join('; ')}`); }
   db.persist();
-  const section = Object.keys(changes).some((k) => k === 'stages') ? 'stops' : Object.keys(changes).some((k) => k === 'fares' || k === 'seat_fare_rules') ? 'fares' : 'fields';
+  const section = Object.keys(changes).some((k) => k === 'stages') ? 'stops' : Object.keys(changes).some((k) => k === 'fares' || k === 'seat_fare_rules' || k === 'fare_groups') ? 'fares' : 'fields';
   D.audit('route', rt.id, section, { op: 'update', changes: Object.fromEntries(Object.entries(changes).map(([k, v]) => [k, typeof v[1] === 'object' ? { changed: true } : v])) }, req.user);
   // propagate time changes to future schedules that follow route
   if (changes.departure_time) for (const s of db.col('schedules').filter((x) => x.route_id === rt.id && x.travel_date >= (req.body.effective_from || U.today()) && x.sync_with_route !== false)) s.departure_time = rt.departure_time;
