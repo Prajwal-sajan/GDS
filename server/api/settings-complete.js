@@ -12,6 +12,22 @@ const txt = (v,len=200) => String(v??'').trim().slice(0,len);
 const asId = v => v==null||v===''?null:Number(v);
 const own = req => req.user.real_user_id;
 const authAdmin = req => ['owner','admin'].includes(db.col('users').get(own(req))?.role);
+const effectiveActor=req=>db.col('users').get(req.user.id)||db.col('users').get(own(req));
+const visibleInUserScope=(req,target,label='View users')=>{
+  const actor=effectiveActor(req),role=A.roles()[actor?.role]||{};
+  const scope=actor?.role==='branch_admin'?'Branch':role.scopes?.[label]||'Company';
+  if(!actor||scope==='Off')return false;
+  if(scope==='Own')return actor.id===target.id;
+  if(scope==='Branch')return !!actor.branch_id&&Number(actor.branch_id)===Number(target.branch_id);
+  return scope==='Company';
+};
+const visibleBranch=(req,b)=>{
+  const actor=effectiveActor(req),role=A.roles()[actor?.role]||{};
+  const scope=actor?.role==='branch_admin'?'Branch':role.scopes?.Branches||'Company';
+  if(scope==='Off')return false;
+  if(scope==='Branch'||scope==='Own')return !!actor?.branch_id&&Number(actor.branch_id)===Number(b.id);
+  return scope==='Company';
+};
 const imageType = /^(image\/png|image\/jpeg|image\/webp)$/;
 
 r.get('/settings/branding',allowed('settings.view'),wrap(()=>({operator:db.meta('operator')||{},branding:db.meta('branding')||{color_scheme:'Light',pwa_name:'',pwa_short_name:'',assets:{}}})));
@@ -85,9 +101,9 @@ r.delete('/branches/:id',allowed('settings.modify'),wrap(req=>{
 }));
 // Keep legacy branch POST, and provide direct listing/update/delete with safeguards.
 
-r.get('/branches',allowed('settings.view'),wrap(req=>{const me=db.col('users').get(own(req));return db.col('branches').all().filter(b=>['owner','admin','manager'].includes(me?.role)||String(b.id)===String(me?.branch_id));}));
+r.get('/branches',allowed('settings.view'),wrap(req=>db.col('branches').filter(b=>visibleBranch(req,b))));
 
-r.get('/iam/groups',allowed('settings.view'),wrap(()=>db.col('iam_groups').all()));
+r.get('/iam/groups',allowed('settings.view'),wrap(req=>db.col('iam_groups').filter(g=>(g.user_ids||[]).some(id=>{const u=db.col('users').get(id);return !!u&&visibleInUserScope(req,u);}) || (effectiveActor(req)?.role!=='branch_admin'&&A.roles()[effectiveActor(req)?.role]?.scopes?.['View users']!=='Branch'))));
 r.post('/iam/groups',allowed('iam.manage_roles'),wrap(req=>{
   const name=txt(req.body?.name,90);if(!name)invalid('Group name required');
   const ids=[...new Set((req.body?.user_ids||[]).map(Number))].filter(id=>db.col('users').get(id));
@@ -102,12 +118,12 @@ r.put('/iam/groups/:id',allowed('iam.manage_roles'),wrap(req=>{
 r.delete('/iam/groups/:id',allowed('iam.manage_roles'),wrap(req=>({success:db.col('iam_groups').remove(req.params.id)})));
 r.get('/iam/access-evaluate/:id',allowed('settings.view'),wrap(req=>{
   const u=db.col('users').get(req.params.id);if(!u||u.deleted_at)invalid('User not found',404);
-  const me=db.col('users').get(own(req));
-  if(!['owner','admin','manager'].includes(me?.role)&&u.id!==me?.id&&(!me?.branch_id||String(u.branch_id)!==String(me.branch_id)))invalid('User outside your branch scope',403);
+  if(!visibleInUserScope(req,u))invalid('User outside your assigned scope',403);
   return {user:A.publicUser(u),status:u.status,role_name:A.roles()[u.role]?.name||u.role,groups:db.col('iam_groups').filter(g=>(g.user_ids||[]).includes(Number(u.id))).map(g=>({id:g.id,name:g.name})),note:'Role scope metadata is stored for UI parity; enforcement must be added per endpoint before production.'};
 }));
 r.delete('/iam/users/:id',allowed('iam.manage_users'),wrap(req=>{
   const u=db.col('users').get(req.params.id);if(!u)invalid('User not found',404);
+  if(!visibleInUserScope(req,u,'Remove users'))invalid('Cannot delete users outside your assigned scope',403);
   if(u.role==='owner'||u.id===own(req))invalid('You cannot delete an owner or your own account',403);
   if(!authAdmin(req)&&['admin','manager'].includes(u.role))invalid('Insufficient privileges',403);
   db.col('auth_sessions').filter(s=>s.user_id===u.id&&!s.revoked_at).forEach(s=>db.col('auth_sessions').update(s.id,{revoked_at:new Date().toISOString()}));
