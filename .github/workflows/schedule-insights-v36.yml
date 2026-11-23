@@ -14,6 +14,8 @@ on:
       - 'tests/schedule-insights-v36-*.cjs'
       - 'tests/check-schedules-v6.mjs'
       - 'tests/check-routes-v5.mjs'
+      - 'reports/ROUTES_V5_SCREENSHOT_MATRIX.csv'
+      - 'reports/SCHEDULES_V6_SCREENSHOT_MATRIX.csv'
       - '.github/workflows/schedule-insights-v36.yml'
   workflow_dispatch:
 jobs:
