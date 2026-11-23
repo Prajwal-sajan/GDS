@@ -80,7 +80,7 @@ r.get('/reconciliation/v43/invoices/:id/lines',can('accounts.reconciliation'),wr
  let lines=doc.lines||[];
  const filter=String(req.query.filter||'all');
  const search=String(req.query.q||'').toLowerCase().trim().slice(0,120);
- if(filter!=='all')lines=lines.filter(x=>x.status===filter||filter==='unresolved'&&x.status!=='matched'&&!x.resolution);
+ if(filter!=='all')lines=lines.filter(x=>x.status===filter||filter==='unresolved'&&x.status!=='matched'&&!x.resolution||filter==='disputed'&&x.resolution?.action==='dispute');
  if(search)lines=lines.filter(x=>String(x.pnr).toLowerCase().includes(search)||String(x.why||'').toLowerCase().includes(search));
  const issue=String(req.query.issue||'').slice(0,40);
  if(issue&&issue!=='all')lines=lines.filter(x=>(x.differences||[]).includes(issue));
