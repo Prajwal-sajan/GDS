@@ -26,9 +26,9 @@ function seed() {
     ota_commission: { redbus: 13, abhibus: 12, paytm: 10, website: 0, branch: 0 },
   });
   db.meta('miles', { miles_to_rupee_ratio: 0.1, max_discount_percent: 30, min_redeemable_miles: 1000, min_booking_amount: 50, is_active: true });
-  db.meta('day_rates', [0, 1, 2, 3, 4, 5, 6].map((d) => ({ day_of_week: d, redemption_rate: [75, 75, 75, 30, 30, 50, 75][d] })));
+  db.meta('day_rates', [0, 1, 2, 3, 4, 5, 6].map((d) => ({ day_of_week: d, redemption_rate: [0,75,75,75,30,0,30][d] })));
   db.meta('tier_multipliers', [{ tier_name: 'Bronze', multiplier: 1 }, { tier_name: 'Silver', multiplier: 1.1 }, { tier_name: 'Gold', multiplier: 1.2 }, { tier_name: 'Platinum', multiplier: 1.5 }]);
-  db.meta('blackout_dates', []);
+  db.meta('blackout_dates', [{date:'2026-03-31',rate:0,reason:''}]);
   db.meta('seat_upgrade_policy', { enabled: true, windows: [{ name: 'T-15m', start: 15, notification_channels: ['whatsapp'] }], fare_class_map: { seater: ['sleeper'], semi_sleeper: ['sleeper'] }, default_consent: 'opt_in', auto_apply_when_free: false, max_offers_per_trip: 6 });
   db.meta('hold_settings', { default_minutes: 15, max_minutes: 120 });
   db.meta('speed_dial', { enabled: true, bus_last4_enabled: true });

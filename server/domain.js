@@ -3,6 +3,7 @@
 const db = require('./db');
 const U = require('./util');
 const OfficeHoldV31=require('./office-hold-v31');
+const LoyaltyV34=require('./loyalty-v34');
 
 const GST_PCT = 5;
 const SOURCES = ['redbus', 'abhibus', 'paytm', 'website', 'branch', 'agent'];
@@ -209,7 +210,7 @@ function commissionPct(source, agentPhone) {
   return 0;
 }
 
-function priceBooking({ seatsFares, source, coupon, agentPhone, milesUsed = 0 }) {
+function priceBooking({ seatsFares, source, coupon, agentPhone, milesUsed = 0, contactPhone = '', travelDate = '', paymentMode = 'paid' }) {
   const gross = U.sum(seatsFares); // listed fare (GST-exclusive)
   let discount = 0;
   if (coupon) {
@@ -221,8 +222,8 @@ function priceBooking({ seatsFares, source, coupon, agentPhone, milesUsed = 0 })
     discount = c.discount_type === 'percentage' ? (gross * c.discount_value) / 100 : c.discount_value;
     if (c.max_discount_amount) discount = Math.min(discount, c.max_discount_amount);
   }
-  const milesCfg = db.meta('miles') || {};
-  const milesDisc = milesUsed ? Math.min(milesUsed * (milesCfg.miles_to_rupee_ratio || 0.1), gross * (milesCfg.max_discount_percent || 30) / 100) : 0;
+  const milesValue=LoyaltyV34.eligible({milesUsed,contactPhone,travelDate,gross,couponDiscount:discount,paymentMode});
+  const milesDisc=milesValue.amount;
   discount += milesDisc;
   const net = Math.max(0, gross - discount);
   const gst = U.round2((net * GST_PCT) / 100);
@@ -284,7 +285,7 @@ function createBooking(input, actor) {
   enforceRouteRules(r, s, map, input);
   const source = input.source || 'branch';
   const fares = input.passengers.map((p) => (p.fare != null ? Number(p.fare) : seats[p.seat].fare));
-  const price = priceBooking({ seatsFares: fares, source, coupon: input.coupon, agentPhone: input.agent_phone, milesUsed: input.miles_used });
+  const price = priceBooking({ seatsFares: fares, source, coupon: input.coupon, agentPhone: input.agent_phone, milesUsed: input.miles_used, contactPhone:input.contact.phone, travelDate:s.travel_date, paymentMode:input.payment_mode||'paid' });
   const ticket = nextTicket();
   const payMode = input.payment_mode || 'paid'; // paid | unpaid (hold until paid) | settle_later
   const holdMin = input.hold_minutes || db.meta('hold_settings')?.default_minutes || 15;
@@ -295,14 +296,14 @@ function createBooking(input, actor) {
     pnr: makePnr(ticket), ticket_number: ticket, schedule_id: s.id, route_id: r.id, travel_date: s.travel_date,
     source, channel: source, status: payMode === 'unpaid' ? 'hold' : 'confirmed', payment: payMode,
     payment_method: input.payment_method || (payMode === 'paid' ? 'cash' : null),
-    booked_at: U.nowIso(), booked_by: { phone: actor?.phone, name: actor?.name, role: actor?.role },
+    booked_at: U.nowIso(), booked_by: { phone: db.col('users').get(actor?.real_user_id)?.phone||actor?.phone, name: db.col('users').get(actor?.real_user_id)?.name||actor?.name, role: db.col('users').get(actor?.real_user_id)?.role||actor?.role, acting_as:actor?.real_user_id&&String(actor.real_user_id)!==String(actor.id)?{id:actor.id,name:actor.name,role:actor.role}:null },
     agent_phone: input.agent_phone || null, branch_id: input.branch_id || null,
     contact: { name: input.contact.name || input.passengers[0].name, phone: input.contact.phone, email: input.contact.email || '' },
     from_city_id: fromCity, to_city_id: toCity, boarding_stage_id: input.boarding_stage_id, dropping_stage_id: input.dropping_stage_id,
     passengers: input.passengers.map((p, i) => ({ seat: p.seat, name: p.name, gender: p.gender || 'M', age: Number(p.age) || 30, fare: fares[i], status: 'booked', call_status: null })),
     fare: price, coupon: input.coupon || null, comments: (input.comment || input.remarks) ? [{ text: String(input.comment || input.remarks).slice(0, 500), by: actor?.name, at: U.nowIso() }] : [],
     hold_expires_at: payMode === 'unpaid' ? officeExpiry || new Date(Date.now() + holdMin * 60e3).toISOString() : null,
-    miles_used: input.miles_used || 0,
+    miles_used: Number(input.miles_used)||0,
   });
   if (input.coupon) db.col('coupon_redemptions').insert({ code: input.coupon.toUpperCase(), pnr: b.pnr, amount: price.discount, at: U.nowIso(), source });
   awardMiles(b);
@@ -311,17 +312,7 @@ function createBooking(input, actor) {
   return b;
 }
 
-function awardMiles(b) {
-  const cfg = db.meta('miles'); if (!cfg?.is_active) return;
-  const C = db.col('customers');
-  let c = C.find((x) => x.phone === b.contact.phone);
-  if (!c) c = C.insert({ phone: b.contact.phone, name: b.contact.name, miles: 0, tier: 'Bronze' });
-  if (b.miles_used) c.miles = Math.max(0, c.miles - b.miles_used);
-  const mult = (db.meta('tier_multipliers') || []).find((t) => t.tier_name === c.tier)?.multiplier || 1;
-  c.miles += Math.round(b.fare.net * mult);
-  c.tier = c.miles > 20000 ? 'Platinum' : c.miles > 8000 ? 'Gold' : c.miles > 3000 ? 'Silver' : 'Bronze';
-  db.persist();
-}
+function awardMiles(b) { return LoyaltyV34.settle(b); }
 
 function refundFor(b, cancelledBy = 'passenger', overridePct = null) {
   const s = db.col('schedules').get(b.schedule_id);
@@ -349,6 +340,7 @@ function cancelBooking(pnr, { seats, by = 'operator', reason = '', refund_pct = 
   if (by === 'passenger' && rtRules.allow_cancellation === false) throw httpErr(400, 'Cancellation is disabled for this route');
   const target = seats && seats.length ? b.passengers.filter((p) => seats.includes(p.seat)) : b.passengers.filter((p) => p.status !== 'cancelled');
   const ratio = U.sum(target, (p) => p.fare) / (U.sum(b.passengers.filter((p) => p.status !== 'cancelled'), (p) => p.fare) || 1);
+  const loyaltyRatio=U.sum(target,p=>p.fare)/(U.sum(b.passengers,p=>p.fare)||1);
   const calc = refundFor(b, by, refund_pct);
   const part = { refund: U.round2(calc.refund * ratio), charge: U.round2(calc.charge * ratio), refund_pct: calc.refund_pct };
   target.forEach((p) => (p.status = 'cancelled'));
@@ -357,6 +349,7 @@ function cancelBooking(pnr, { seats, by = 'operator', reason = '', refund_pct = 
   b.cancellations.push({ at: U.nowIso(), by, reason, seats: target.map((p) => p.seat), ...part, actor: actor?.name });
   if (allCancelled) b.status = 'cancelled';
   b.cancelled_at = U.nowIso();
+  LoyaltyV34.reverseForCancellation(b,loyaltyRatio);
   db.persist();
   if (doNotify) notify('booking.cancelled', b);
   audit('schedule', b.schedule_id, 'bookings', { op: 'cancel', pnr, seats: target.map((p) => p.seat), ...part }, actor);
@@ -418,7 +411,8 @@ function templateText(event, b, r) {
 function passengerConvId(b, p) { const r = db.col('routes').get(b.route_id); return `1000_${r?.service_number}_${b.travel_date}_${b.contact.phone}_${b.ticket_number}_${p?.seat || ''}`; }
 
 function audit(entity, entity_id, section, changes, actor) {
-  db.col('edit_history').insert({ entity, entity_id: String(entity_id), section, changes, phone: actor?.phone || 'system', name: actor?.name || 'System', role: actor?.role || 'system', at: U.nowIso() });
+  const real=actor?.real_user_id?db.col('users').get(actor.real_user_id):null;
+  db.col('edit_history').insert({ entity, entity_id: String(entity_id), section, changes, phone: real?.phone||actor?.phone||'system', name:real?.name||actor?.name||'System', role:real?.role||actor?.role||'system', acting_as:real&&String(real.id)!==String(actor.id)?{id:actor.id,name:actor.name,role:actor.role}:null, at: U.nowIso() });
 }
 
 module.exports = {

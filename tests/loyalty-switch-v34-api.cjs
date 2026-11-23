@@ -1,0 +1,141 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+process.env.GDS_DATA_DIR=fs.mkdtempSync(path.join(os.tmpdir(),'loyalty-switch-34-'));
+process.env.GDS_RESEED='1';
+const app=require('../server/index'),db=require('../server/db'),A=require('../server/auth');
+const L=require('../server/loyalty-v34'),D=require('../server/domain'),S=require('../server/switch-user-v34');
+const owner=db.col('users').find(x=>x.role==='owner');
+const manager=db.col('users').find(x=>x.role==='manager');
+const agent=db.col('users').find(x=>x.role==='agent');
+assert.ok(owner&&manager&&agent);
+const http=app.listen(0),base='http://127.0.0.1:'+http.address().port+'/api';
+async function call(method,url,body,person=owner,extra={}){
+ const h={'Authorization':'Bearer '+A.sign({uid:person.id,exp:Date.now()+600000}),...extra};
+ if(body!==undefined)h['Content-Type']='application/json';
+ const r=await fetch(base+url,{method,headers:h,body:body===undefined?undefined:JSON.stringify(body)});
+ return {status:r.status,json:await r.json()};
+}
+const get=(url,p=owner,x={})=>call('GET',url,undefined,p,x);
+const put=(sec,value,p=owner)=>call('PUT','/settings/loyalty-v34/'+sec,{value},p);
+(async()=>{
+ try{
+  let r=await get('/settings/loyalty-v34');
+  assert.equal(r.status,200);
+  assert.equal(r.json.general.miles_to_rupee_ratio,.1);
+  assert.equal(r.json.general.max_discount_percent,30);
+  assert.equal(r.json.general.min_redeemable_miles,1000);
+  assert.equal(r.json.general.min_booking_amount,50);
+  assert.deepEqual(r.json.daily_limits.map(x=>x.redemption_rate),[0,75,75,75,30,0,30]);
+  assert.deepEqual(r.json.tier_bonus.map(x=>x.tier_name),['Bronze','Gold','Platinum','Silver']);
+  assert.deepEqual(r.json.tier_bonus.map(x=>x.multiplier),[1,1.2,1.5,1.1]);
+  assert.equal(r.json.blocked_dates[0].date,'2026-03-31');
+  assert.equal(r.json.seat_upgrades.minutes_before_boarding,20);
+  assert.equal(r.json.seat_upgrades.enabled,false,'Do not auto activate upgrades');
+  r=await put('general',{...L.read().general,is_active:false},agent);
+  assert.equal(r.status,403);
+  r=await put('general',{...L.read().general,max_discount_percent:101});
+  assert.equal(r.status,400);
+  r=await put('daily_limits',[{day_of_week:1,redemption_rate:1}]);
+  assert.equal(r.status,400);
+  r=await put('daily_limits',L.read().daily_limits.map((x,i)=>({...x,redemption_rate:i===1?200:x.redemption_rate})));
+  assert.equal(r.status,400);
+  r=await put('tier_bonus',L.read().tier_bonus.map(x=>({...x,multiplier: x.tier_name==='Gold'?-1:x.multiplier})));
+  assert.equal(r.status,400);
+  r=await put('blocked_dates',[{date:'2026-02-30',rate:0,reason:''}]);
+  assert.equal(r.status,400);
+  r=await put('blocked_dates',[{date:'2026-12-31',rate:200,reason:'peak'}]);
+  assert.equal(r.status,400);
+  r=await put('blocked_dates',[{date:'2026-12-31',rate:10,reason:'Christmas peak'},{date:'2026-12-31',rate:0,reason:''}]);
+  assert.equal(r.status,400);
+  r=await put('general',{...L.read().general,max_discount_percent:25});
+  assert.equal(r.status,200);
+  assert.equal(r.json.configuration.general.max_discount_percent,25);
+  r=await put('general',{...L.read().general,max_discount_percent:30});
+  assert.equal(r.status,200);
+  r=await put('seat_upgrades',{enabled:true});
+  assert.equal(r.status,200);
+  assert.equal(r.json.configuration.seat_upgrades.enabled,true);
+  assert.equal(r.json.configuration.seat_upgrades.execution_status,'configuration_only');
+  r=await put('blocked_dates',[{date:'2026-03-31',rate:0,reason:''},{date:'2026-12-31',rate:20,reason:'Holiday demand'}]);
+  assert.equal(r.status,200);
+  assert.equal(L.read().blocked_dates.length,2);
+  r=await put('blocked_dates',[{date:'2026-03-31',rate:0,reason:''}]);
+  assert.equal(r.status,200);
+  assert.equal(L.read().blocked_dates.length,1);
+  assert.ok(db.col('edit_history').count(x=>x.entity==='settings'&&x.entity_id==='loyalty-v34')>=5);
+  // Old Settings API must not bypass strict bounds.
+  r=await call('PUT','/settings/miles',{max_discount_percent:-1});
+  assert.equal(r.status,400);
+  r=await call('PUT','/settings/day_rates',Array.from({length:7},(_,i)=>({day_of_week:i,redemption_rate:101})));
+  assert.equal(r.status,400);
+  // Booking engine enforces balance, eligibility, max cap, tier redemption multiplier and date blocks.
+  const phone='9123456789';
+  const customer=db.col('customers').insert({phone,name:'Loyal Example',miles:10000,tier:'Gold'});
+  let p=D.priceBooking({seatsFares:[1000],source:'branch',milesUsed:1000,contactPhone:phone,travelDate:'2026-11-24'});
+  assert.equal(p.miles_discount,120,'1000 miles × ₹0.1 × Gold 1.2');
+  assert.equal(p.net,880);
+  assert.throws(()=>D.priceBooking({seatsFares:[1000],source:'branch',milesUsed:20000,contactPhone:phone,travelDate:'2026-11-24'}),/Insufficient/);
+  assert.throws(()=>D.priceBooking({seatsFares:[1000],source:'branch',milesUsed:1000,contactPhone:phone,travelDate:'2026-03-31'}),/allowed 0%/);
+  assert.throws(()=>D.priceBooking({seatsFares:[1000],source:'branch',milesUsed:1000,contactPhone:phone,travelDate:'2026-11-24',paymentMode:'unpaid'}),/paid booking/);
+  assert.throws(()=>D.priceBooking({seatsFares:[1000],source:'branch',milesUsed:1000,contactPhone:'0000000000',travelDate:'2026-11-24'}),/Insufficient/);
+  let cfg=L.read().general;
+  L.store('general',{...cfg,is_active:false});
+  assert.throws(()=>D.priceBooking({seatsFares:[1000],source:'branch',milesUsed:1000,contactPhone:phone,travelDate:'2026-11-24'}),/disabled/);
+  L.store('general',{...cfg,is_active:true});
+  const booking={pnr:'DEMO34',payment:'paid',contact:{phone,name:'Loyal Example'},
+   miles_used:1000,fare:{net:880}};
+  D.awardMiles(booking);
+  assert.equal(booking.loyalty_awarded,880);
+  assert.equal(booking.loyalty_redeemed,1000);
+  assert.equal(customer.miles,9880);
+  D.awardMiles(booking);assert.equal(customer.miles,9880,'settle once');
+  L.reverseForCancellation(booking,.5);
+  assert.equal(customer.miles,9940);
+  L.reverseForCancellation(booking,.5);
+  assert.equal(customer.miles,10000,'cancel restores redemption and reverses earnings');
+  // Switch User: no higher/peer/inactive/unknown targets; no blanket list disclosure.
+  assert.equal(S.canViewAs(owner,manager),true);
+  assert.equal(S.canViewAs(manager,owner),false);
+  assert.equal(S.canViewAs(agent,manager),false);
+  assert.equal(S.canViewAs(owner,owner),false);
+  r=await get('/auth/switchable-users');
+  assert.equal(r.status,200);
+  assert.ok(r.json.some(x=>String(x.id)===String(manager.id)));
+  assert.ok(!r.json.some(x=>String(x.id)===String(owner.id)));
+  r=await get('/auth/switchable-users',agent);assert.deepEqual(r.json,[]);
+  r=await call('POST','/auth/switch-user/v34/resolve',{phone:manager.phone});
+  assert.equal(r.status,200);
+  assert.equal(r.json.id,manager.id);
+  r=await call('POST','/auth/switch-user/v34/resolve',{phone:owner.phone});
+  assert.equal(r.status,404,'Owner cannot impersonate owner');
+  r=await call('POST','/auth/switch-user/v34/resolve',{phone:owner.phone},agent);
+  assert.equal(r.status,403);
+  r=await call('POST','/auth/switch-user/v34/resolve',{phone:'123'},owner);
+  assert.equal(r.status,400);
+  r=await call('POST','/auth/switch-user/v34/resolve',{phone:agent.phone},owner,{'x-view-as':String(manager.id)});
+  assert.equal(r.status,403);
+  r=await get('/auth/me',owner,{'x-view-as':String(manager.id)});
+  assert.equal(r.status,200);
+  assert.equal(r.json.user.role,manager.role);
+  assert.equal(r.json.user.real_user_id,owner.id);
+  r=await get('/auth/me',agent,{'x-view-as':String(owner.id)});
+  assert.equal(r.status,403);
+  db.col('users').update(manager.id,{status:'INACTIVE'});
+  r=await get('/auth/me',owner,{'x-view-as':String(manager.id)});
+  assert.equal(r.status,403);
+  r=await call('POST','/auth/switch-user/v34/resolve',{phone:manager.phone},owner);
+  assert.equal(r.status,404);
+  db.col('users').update(manager.id,{status:'ACTIVE'});
+  // Audit actor remains real operator while viewing as a lower-privilege user.
+  D.audit('settings','audit-v34','change',{setting:'test'},{
+   id:agent.id,real_user_id:owner.id,name:agent.name,phone:agent.phone,role:agent.role
+  });
+  const audit=db.col('edit_history').find(x=>x.entity_id==='audit-v34');
+  assert.equal(audit.name,owner.name);
+  assert.equal(audit.acting_as.id,agent.id);
+  console.log('PASS v34 API: screenshot settings & values, strict validation, old endpoint protection, capped/tiered miles, blocked date, idempotent settlement/reversal, hierarchy-safe impersonation, attribution and audit');
+ }finally{
+  await new Promise(done=>http.close(done));db.persistNow();
+  fs.rmSync(process.env.GDS_DATA_DIR,{force:true,recursive:true});
+ }
+})().catch(e=>{console.error(e);process.exitCode=1;});

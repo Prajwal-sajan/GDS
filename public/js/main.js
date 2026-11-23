@@ -62,7 +62,7 @@
         <button class="stp-head-btn" type="button" data-language-btn aria-haspopup="true" aria-expanded="false">${i('globe')}<span data-current-language>${esc(lang)}</span>${i('chevronDown')}</button>
         <button class="stp-head-btn" type="button" data-settings-btn aria-haspopup="true" aria-expanded="false">${i('settings')}Settings${i('chevronDown')}</button>
         ${menus.language||''}${menus.settings||''}
-      </div></div></div></header><div data-sub></div><main class="page" data-content></main></div>`;
+      </div></div></div></header>${G.viewAs?`<div class="su34-view-banner" role="status">Viewing as ${esc(u.name)} (${esc(u.role)}). Changes are attributed to your account. <button type="button" data-view-as-return>Return to my account</button></div>`:''}<div data-sub></div><main class="page" data-content></main></div>`;
     {const hdr=$('.iconic-app-header');const setH=()=>{if(hdr)document.documentElement.style.setProperty('--hdr-h',hdr.offsetHeight+'px');};setH();addEventListener('resize',setH);if(window.ResizeObserver&&hdr)new ResizeObserver(setH).observe(hdr);}
     const lb=$('[data-language-btn]'),sb=$('[data-settings-btn]');
     const lp=$('[data-lang-pop]'),sp=$('[data-settings-pop]');
@@ -77,16 +77,7 @@
       close();if(value!=='English')G.toast(`${value} selected · other screen translations are not yet available`);
     });
     if(sp)$$('[data-settings-link]',sp).forEach(a=>a.onclick=()=>close());
-    const switchUser=async()=>{
-      try {
-        const users=await G.get('/auth/switchable-users');
-        const v=await G.prompt('Switch User',[{name:'id',label:'View app as',type:'select',options:[['','— Myself —'],...users.map(x=>[String(x.id),`${x.name} · ${G.roles?.[x.role]||x.role}`])],value:G.viewAs,full:1}],{ok:'Switch'});
-        if(!v)return;G.viewAs=v.id||'';
-        if(G.viewAs)localStorage.setItem('viewAs',G.viewAs);else localStorage.removeItem('viewAs');
-        close();await boot();
-      } catch(e){G.err(e);}
-    };
-    if(sp)$$('[data-switch-user]',sp).forEach(a=>a.onclick=e=>{e.preventDefault();switchUser();});
+    if(sp)$('[data-switch-user]',sp).forEach(a=>a.onclick=e=>{e.preventDefault();close();location.hash='#/settings/switch-user';});
     if(sp)$$('[data-settings-logout]',sp).forEach(a=>a.onclick=async e=>{
       e.preventDefault();await G.post('/auth/logout').catch(()=>{});
       localStorage.removeItem('token');localStorage.removeItem('viewAs');G.viewAs='';G.user=null;location.hash='#/login';loginScreen();
@@ -98,6 +89,7 @@
       if(G.user&&(e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();G.searchModal();}
       if(e.key==='Escape'){const l=$('[data-lang-pop]'),s=$('[data-settings-pop]');if(l)l.hidden=true;if(s)s.hidden=true;}
     });}
+    const backToSelf=$('[data-view-as-return]');if(backToSelf)backToSelf.onclick=()=>{G.viewAs='';localStorage.removeItem('viewAs');location.hash='#/';location.reload();};
     G.syncHeaderParity&&G.syncHeaderParity();
   }
 

@@ -1,0 +1,60 @@
+name: Loyalty v34 + Switch User — screenshot, booking and security
+on:
+  push:
+    branches: [savetrip-screenshotcomplete]
+    paths:
+      - 'server/loyalty-v34.js'
+      - 'server/switch-user-v34.js'
+      - 'server/api/loyalty-v34.js'
+      - 'server/api/switch-user-v34.js'
+      - 'server/domain.js'
+      - 'server/api/ops.js'
+      - 'server/api/misc.js'
+      - 'server/auth.js'
+      - 'server/index.js'
+      - 'server/seed.js'
+      - 'public/js/loyalty-switch-v34.js'
+      - 'public/css/loyalty-switch-v34.css'
+      - 'public/js/main.js'
+      - 'public/index.html'
+      - 'tests/loyalty-switch-v34-*.cjs'
+      - '.github/workflows/loyalty-switch-v34.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: JS syntax checks
+        run: |
+          node --check server/loyalty-v34.js
+          node --check server/switch-user-v34.js
+          node --check server/api/loyalty-v34.js
+          node --check server/api/switch-user-v34.js
+          node --check server/domain.js
+          node --check server/auth.js
+          node --check server/api/ops.js
+          node --check server/api/misc.js
+          node --check public/js/loyalty-switch-v34.js
+          node --check public/js/main.js
+      - name: v34 API + screenshot UI acceptance
+        run: |
+          node tests/loyalty-switch-v34-api.cjs
+          node tests/loyalty-switch-v34-ui.cjs
+      - name: Existing GDS, Configuration, About, WhatsApp and Access
+        run: |
+          node tests/configuration-v31-api.cjs
+          node tests/configuration-v31-ui.cjs
+          node tests/configuration-v31-seat.cjs
+          node tests/about-v32-api.cjs
+          node tests/about-v32-ui.cjs
+          node tests/whatsapp-v33-api.cjs
+          node tests/whatsapp-v33-ui.cjs
+          node tests/team-access-v29-ui.cjs
+          npm test

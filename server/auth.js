@@ -1,6 +1,7 @@
 // OTP login, signed tokens and role-based access control.
 const crypto = require('crypto');
 const db = require('./db');
+const SwitchV34=require('./switch-user-v34');
 
 const SECRET = process.env.GDS_SECRET || 'gds-dev-secret-change-me';
 const OTP_DEV = process.env.GDS_OTP || '1234'; // dev OTP (replace with SMS gateway in prod)
@@ -114,7 +115,11 @@ function middleware(req, res, next) {
   // "Switch user" (view as) for owners/admins
   const viewAs = req.headers['x-view-as'];
   let eff = u;
-  if (viewAs && ['owner', 'admin'].includes(u.role)) eff = db.col('users').get(viewAs) || u;
+  if(viewAs){
+    const target=SwitchV34.resolve(u,viewAs);
+    if(!target)return res.status(403).json({success:false,message:'Viewing as this user is not permitted or the account is inactive'});
+    eff=target;
+  }
   req.user = { ...publicUser(eff), real_user_id: u.id, session_id:p.sid || null };
   next();
 }

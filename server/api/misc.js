@@ -6,6 +6,8 @@ const D = require('../domain');
 const Rp = require('../reports');
 const A = require('../auth');
 const { can } = A;
+const SwitchV34=require('../switch-user-v34');
+const LoyaltyV34=require('../loyalty-v34');
 
 const h = (fn) => (req, res) => { try { const out = fn(req, res); if (out !== undefined) res.json(out); } catch (e) { res.status(e.status || 500).json({ success: false, message: e.message }); } };
 
@@ -18,7 +20,7 @@ pub.get('/public/operator', h(() => { const o = db.meta('operator'); return { op
 const r = express.Router();
 r.get('/auth/me', h((req) => ({ user: req.user, operator: db.meta('operator'), roles: Object.fromEntries(Object.entries(A.roles()).map(([k, v]) => [k, v.name])) })));
 r.post('/auth/step-up', h((req) => A.requestStepUp(req.user, req.body.purpose || 'generic')));
-r.get('/auth/switchable-users', h((req) => (['owner', 'admin'].includes(db.col('users').get(req.user.real_user_id)?.role) ? db.col('users').filter((u) => u.status === 'ACTIVE').map(A.publicUser) : [])));
+r.get('/auth/switchable-users', h((req) => SwitchV34.switchableUsers(db.col('users').get(req.user.real_user_id))));
 
 // ---------- Alerts ----------
 r.get('/alerts', h((req) => { const since = req.query.since || U.addDays(U.today(), -1); const all = db.col('alerts').filter((a) => a.ts > since); return { alerts: all.slice(-50).reverse(), server_time: U.nowIso() }; }));
@@ -184,7 +186,10 @@ r.put('/settings/:key', can('settings.modify'), h((req) => {
   const k = req.params.key; if (!SETTABLE.includes(k)) throw D.httpErr(404, 'Unknown setting');
   if (k === 'operator' && req.body.brand_hex && !/^#[0-9a-f]{6}$/i.test(req.body.brand_hex)) throw D.httpErr(400, 'Invalid colour');
   if (k === 'hold_settings' && Number(req.body.default_minutes) > Number(req.body.max_minutes ?? db.meta('hold_settings').max_minutes)) throw D.httpErr(400, 'Default hold cannot exceed max');
-  const cur = db.meta(k); const next = Array.isArray(req.body) ? req.body : { ...cur, ...req.body }; db.meta(k, next);
+  const cur = db.meta(k); let next = Array.isArray(req.body) ? req.body : { ...cur, ...req.body };
+  const section={miles:'general',day_rates:'daily_limits',tier_multipliers:'tier_bonus',blackout_dates:'blocked_dates'}[k];
+  if(section)next=LoyaltyV34.validate(section,next);
+  db.meta(k, next);
   D.audit('settings', k, k, { before: cur, after: next }, req.user); return next;
 }));
 r.post('/branches', can('settings.modify'), h((req) => db.col('branches').insert({ name: req.body.name, city_id: req.body.city_id, address: req.body.address || '', phone: req.body.phone || '' })));

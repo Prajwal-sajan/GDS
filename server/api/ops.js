@@ -268,7 +268,7 @@ r.post('/bookings/quote', can('bookings.create'), h((req) => {
   const s = db.col('schedules').get(req.body.schedule_id); const map = D.seatMap(s, req.body.from_city_id, req.body.to_city_id);
   const seats = Object.fromEntries(map.decks.flatMap((d) => d.seats).map((x) => [x.code, x]));
   const fares = (req.body.seats || []).map((c, i) => (req.body.fares?.[i] != null ? Number(req.body.fares[i]) : seats[c]?.fare || 0));
-  return D.priceBooking({ seatsFares: fares, source: req.body.source || 'branch', coupon: req.body.coupon, agentPhone: req.body.agent_phone, milesUsed: req.body.miles_used });
+  return D.priceBooking({ seatsFares: fares, source: req.body.source || 'branch', coupon: req.body.coupon, agentPhone: req.body.agent_phone, milesUsed: req.body.miles_used, contactPhone:req.body.contact?.phone||req.body.contact_phone||req.body.phone, travelDate:s.travel_date,paymentMode:req.body.payment_mode||'paid' });
 }));
 r.get('/bookings/search', can('bookings.view_all'), h((req) => {
   const q = String(req.query.q || '').toLowerCase().trim(); if (q.length < 3) return { results: [] };
@@ -293,9 +293,9 @@ r.post('/bookings/:pnr/shift', can('bookings.modify'), h((req) => {
   Policy.requireBooking(req,db.col('bookings').find(x=>x.pnr===req.params.pnr),'Shift seat / date');
   return D.shiftBooking(req.params.pnr,req.body,req.user);
 }));
-r.post('/bookings/:pnr/confirm-payment', can('bookings.modify'), h((req) => { const b = db.col('bookings').find((x) => x.pnr === req.params.pnr); if (b.status !== 'hold') throw D.httpErr(400, 'Not on hold'); b.status = 'confirmed'; b.payment = 'paid'; b.payment_method = req.body.method || 'upi'; b.hold_expires_at = null; db.persist(); D.notify('payment.received', b); return b; }));
+r.post('/bookings/:pnr/confirm-payment', can('bookings.modify'), h((req) => { const b = db.col('bookings').find((x) => x.pnr === req.params.pnr); if (b.status !== 'hold') throw D.httpErr(400, 'Not on hold'); b.status = 'confirmed'; const oldPayment=b.payment;b.payment = 'paid';try{D.awardMiles(b);}catch(e){b.payment=oldPayment;throw e;} b.payment_method = req.body.method || 'upi'; b.hold_expires_at = null; db.persist(); D.notify('payment.received', b); return b; }));
 r.post('/bookings/:pnr/release', can('bookings.release_hold'), h((req) => { const b = db.col('bookings').find((x) => x.pnr === req.params.pnr); if (b.status !== 'hold') throw D.httpErr(400, 'Not on hold'); b.status = 'released'; b.release_reason = req.body.reason || 'Force release'; b.cancelled_at = U.nowIso(); db.persist(); D.audit('schedule', b.schedule_id, 'bookings', { op: 'release', pnr: b.pnr, reason: b.release_reason }, req.user); return b; }));
-r.post('/bookings/:pnr/mark-paid', can('accounts.ledger'), h((req) => { const b = db.col('bookings').find((x) => x.pnr === req.params.pnr); b.payment = 'paid'; db.persist(); return b; }));
+r.post('/bookings/:pnr/mark-paid', can('accounts.ledger'), h((req) => { const b = db.col('bookings').find((x) => x.pnr === req.params.pnr); const oldPayment=b.payment;b.payment='paid';try{D.awardMiles(b);}catch(e){b.payment=oldPayment;throw e;} db.persist(); return b; }));
 r.post('/bookings/:pnr/comments', can('bookings.view_all'), h((req) => { Policy.checkComment(req);
   const b=Policy.requireBooking(req,db.col('bookings').find(x=>x.pnr===req.params.pnr)); b.comments = b.comments || []; b.comments.push({ text: req.body.text, by: req.user.name, at: U.nowIso() }); db.persist(); return b.comments; }));
 r.put('/bookings/:pnr', can('bookings.modify'), h((req) => {
