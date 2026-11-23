@@ -1,0 +1,46 @@
+name: v35 Coaches berth filter and PNR communication history
+on:
+  push:
+    branches: [savetrip-screenshotcomplete]
+    paths:
+      - 'public/js/vehicles-parity-v9.js'
+      - 'public/js/trip-parity-v13.js'
+      - 'public/js/communication-history-v35.js'
+      - 'public/css/vehicle-communication-v35.css'
+      - 'public/index.html'
+      - 'server/api/communication-history-v35.js'
+      - 'server/index.js'
+      - 'tests/vehicle-communication-v35-*.cjs'
+      - '.github/workflows/vehicle-communication-v35.yml'
+  workflow_dispatch:
+jobs:
+  screenshot-and-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Validate syntax
+        run: |
+          node --check server/api/communication-history-v35.js
+          node --check public/js/vehicles-parity-v9.js
+          node --check public/js/trip-parity-v13.js
+          node --check public/js/communication-history-v35.js
+          node --check tests/vehicle-communication-v35-api.cjs
+          node --check tests/vehicle-communication-v35-ui.cjs
+      - name: New screenshots and read-only history acceptance
+        run: |
+          echo "v35 API + isolation"
+          timeout 50s node tests/vehicle-communication-v35-api.cjs
+          echo "v35 interactive UI"
+          timeout 50s node tests/vehicle-communication-v35-ui.cjs
+      - name: Existing vehicle, trip, communication regression
+        run: |
+          node tests/check-vehicles-v9.mjs
+          node tests/check-trips-v13.mjs
+          node tests/check-communications-v14.mjs
+          npm test

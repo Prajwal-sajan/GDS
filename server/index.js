@@ -47,6 +47,7 @@ app.use('/api', require('./api/team-access-v28'));
 app.use('/api', require('./api/configuration-v30'));
 app.use('/api', require('./api/about-v32'));
 app.use('/api', require('./api/whatsapp-v33'));
+app.use('/api', require('./api/communication-history-v35'));
 app.use('/api', require('./api/loyalty-v34'));
 app.use('/api', require('./api/switch-user-v34'));
 app.use('/api', require('./api/settings-complete'));

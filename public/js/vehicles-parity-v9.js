@@ -250,10 +250,33 @@
   async function coachesPage(el){
     const data=await G.get('/coaches'),C=arr(data.coaches);
     let s={query:'',ac:'all',berths:'all',sort:'asc',layout:'list'};
-    el.innerHTML=`<div class="vp-scope">${tabs('coaches')}<section class="vp-toolbar-card vp-coaches-tools"><div class="vp-metrics vp-coach-metrics">${metr('bus',C.length,'COACHES','total')}${metr('snowflake',C.filter(ac).length,'AC','ice')}${metr('bed',C.filter(c=>coachCounts(c).sleeper>0).length,'SLEEPER','purple')}${metr('armchair',C.filter(c=>coachCounts(c).seater>0).length,'SEATER','amber')}${metr('video',C.filter(c=>amenHas(c.amenities,'video','Video/Entertainment')).length,'VIDEO','def')}</div><div class="vp-controls vp-coach-controls"><label class="vp-search">${icon('search')}<input placeholder="Search name or type…" data-coach="query" aria-label="Search coaches"/></label><label class="vp-select">${icon('snowflake')}<select data-coach="ac"><option value="all">All</option><option value="ac">A/C</option><option value="non">Non A/C</option></select>${icon('down',13)}</label><label class="vp-select">${icon('bed')}<select data-coach="berths"><option value="all">All</option><option value="mixed">Seater/Sleeper</option><option value="sleeper">Sleeper</option></select>${icon('down',13)}</label><label class="vp-select sort">${icon('sort')}<select data-coach="sort"><option value="asc">Sort: Name (A–Z)</option><option value="desc">Sort: Name (Z–A)</option><option value="seats">Sort: Most seats</option></select>${icon('down',13)}</label><span class="vp-showing" data-showing></span><div class="vp-view-switch">${button('list','plain','data-layout="list"','List view')}${button('grid','plain','data-layout="grid"','Grid view')}</div></div><div class="vp-toolbar-actions">${can('fleet.modify')?b(`${icon('plus')} Add Coach`,'primary','data-action="add-coach"'):''}</div></section><div data-result></div></div>`;
+    const berthLabels={all:'All berths',seater:'Seater',sleeper:'Sleeper'};
+    const berthIcons={all:icon('bed',19),seater:icon('armchair',19),sleeper:icon('bed',19)};
+    const berthOptions=()=>['all','seater','sleeper'].map(key=>
+      `<button type="button" role="option" tabindex="-1" class="vp-berth-option" aria-selected="${s.berths===key}"
+       data-coach-berth="${key}"><span class="vp-berth-optico">${berthIcons[key]}</span>
+       <span>${berthLabels[key]}</span><span class="vp-berth-number" data-coach-berth-count="${key}">0</span>
+       <span class="vp-berth-checked">${icon('check',20)}</span></button>`).join('');
+    const berthWidget=`<div class="vp-berth-filter" data-berth-wrap>
+      <button type="button" class="vp-berth-toggle" data-coach-berth-toggle
+       aria-haspopup="listbox" aria-expanded="false" aria-controls="vp-berth-options">
+       <span class="vp-berth-icon">${icon('bed',21)}</span>
+       <span data-coach-berth-label>All berths</span><span class="vp-berth-caret">${icon('down',16)}</span></button>
+      <div class="vp-berth-menu" id="vp-berth-options" role="listbox" aria-label="Filter coach berths"
+       data-coach-berth-menu hidden>${berthOptions()}</div></div>`;
+    el.innerHTML=`<div class="vp-scope">${tabs('coaches')}<section class="vp-toolbar-card vp-coaches-tools"><div class="vp-metrics vp-coach-metrics">${metr('bus',C.length,'COACHES','total')}${metr('snowflake',C.filter(ac).length,'AC','ice')}${metr('bed',C.filter(c=>coachCounts(c).sleeper>0).length,'SLEEPER','purple')}${metr('armchair',C.filter(c=>coachCounts(c).seater>0).length,'SEATER','amber')}${metr('video',C.filter(c=>amenHas(c.amenities,'video','Video/Entertainment')).length,'VIDEO','def')}</div><div class="vp-controls vp-coach-controls"><label class="vp-search">${icon('search')}<input placeholder="Search name or type…" data-coach="query" aria-label="Search coaches"/></label><label class="vp-select">${icon('snowflake')}<select data-coach="ac"><option value="all">All</option><option value="ac">A/C</option><option value="non">Non A/C</option></select>${icon('down',13)}</label>${berthWidget}<label class="vp-select sort">${icon('sort')}<select data-coach="sort"><option value="asc">Sort: Name (A–Z)</option><option value="desc">Sort: Name (Z–A)</option><option value="seats">Sort: Most seats</option></select>${icon('down',13)}</label><span class="vp-showing" data-showing></span><div class="vp-view-switch">${button('list','plain','data-layout="list"','List view')}${button('grid','plain','data-layout="grid"','Grid view')}</div></div><div class="vp-toolbar-actions">${can('fleet.modify')?b(`${icon('plus')} Add Coach`,'primary','data-action="add-coach"'):''}</div></section><div data-result></div></div>`;
     const root=q('.vp-scope',el);
     const update=()=>{
-      let rows=C.filter(c=>(!s.query||`${c.name} ${c.bus_type} ${c.pattern}`.toLowerCase().includes(s.query))&&(s.ac==='all'||(s.ac==='ac'?ac(c):!ac(c)))&&(s.berths==='all'||(s.berths==='mixed'?coachCounts(c).sleeper>0&&coachCounts(c).seater>0:s.berths==='sleeper'?coachCounts(c).sleeper>0&&!coachCounts(c).seater:coachCounts(c).seater>0)));
+      const possible=C.filter(c=>(!s.query||`${c.name} ${c.bus_type} ${c.pattern}`.toLowerCase().includes(s.query))&&(s.ac==='all'||(s.ac==='ac'?ac(c):!ac(c))));
+      const facet={all:possible.length,seater:possible.filter(c=>coachCounts(c).seater>0).length,
+        sleeper:possible.filter(c=>coachCounts(c).sleeper>0).length};
+      for(const opt of qa('[data-coach-berth]',root)){
+        const key=opt.dataset.coachBerth;
+        opt.setAttribute('aria-selected',String(key===s.berths));
+        const count=q('[data-coach-berth-count]',opt);if(count)count.textContent=String(facet[key]??0);
+      }
+      q('[data-coach-berth-label]',root).textContent=berthLabels[s.berths];
+      let rows=possible.filter(c=>s.berths==='all'||(s.berths==='seater'?coachCounts(c).seater>0:coachCounts(c).sleeper>0));
       rows.sort((a,b)=>s.sort==='seats'?coachCounts(b).capacity-coachCounts(a).capacity:s.sort==='desc'?b.name.localeCompare(a.name):a.name.localeCompare(b.name));
       q('[data-showing]',root).textContent=`Showing ${rows.length} of ${C.length}`;
       const columns=['NAME','TYPE','LAYOUT','SEATS','FEATURES','STATUS','ACTIONS'];
@@ -266,7 +289,36 @@
     };
     root.addEventListener('input',e=>{if(e.target.dataset.coach==='query'){s.query=e.target.value.toLowerCase().trim();update()}});
     root.addEventListener('change',async e=>{if(e.target.dataset.coach&&e.target.dataset.coach!=='query'){s[e.target.dataset.coach]=e.target.value;update();return}if(e.target.dataset.coachStatus){const c=C.find(c=>String(c.id)===e.target.dataset.coachStatus);try{await G.put(`/coaches/${c.id}`,{status:e.target.checked?'active':'inactive'});c.status=e.target.checked?'active':'inactive';update();G.toast('Coach status saved','ok')}catch(err){e.target.checked=!e.target.checked;G.err(err)}}});
-    root.addEventListener('click',async e=>{const layout=e.target.closest('[data-layout]');if(layout){s.layout=layout.dataset.layout;update();return}const a=e.target.closest('[data-action]');if(!a)return;const c=C.find(c=>String(c.id)===a.dataset.id),act=a.dataset.action;if(act==='add-coach'){coachModal({id:null,name:'',bus_type:'A/C Seater',pattern:'2+2',amenities:[],layout:{decks:[],capacity:0}},true,()=>coachesPage(el));return}if(!c)return;
+    const toggleBerths=q('[data-coach-berth-toggle]',root),menuBerths=q('[data-coach-berth-menu]',root);
+    const showBerths=open=>{menuBerths.hidden=!open;toggleBerths.setAttribute('aria-expanded',String(open));};
+    root.addEventListener('keydown',e=>{
+      if(!e.target.closest('[data-berth-wrap]'))return;
+      const options=qa('[data-coach-berth]',menuBerths);
+      if(e.key==='Escape'){showBerths(false);toggleBerths.focus();e.preventDefault();return}
+      if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+        e.preventDefault();if(menuBerths.hidden)showBerths(true);
+        const focused=options.indexOf(document.activeElement);
+        const next=focused<0?options.findIndex(o=>o.dataset.coachBerth===s.berths):
+          (focused+(e.key==='ArrowDown'?1:-1)+options.length)%options.length;
+        options[Math.max(next,0)]?.focus();
+      }
+      if(e.key==='Enter'||e.key===' '){
+        if(e.target===toggleBerths){e.preventDefault();showBerths(menuBerths.hidden);}
+        else if(e.target.dataset.coachBerth){e.preventDefault();e.target.click();}
+      }
+    });
+    if(document?.addEventListener){
+      const outside=e=>{if(!root.isConnected){document.removeEventListener('click',outside,true);return}
+        if(!e.target.closest?.('[data-berth-wrap]'))showBerths(false);};
+      document.addEventListener('click',outside,true);
+    }
+    root.addEventListener('click',async e=>{
+      const btn=e.target.closest('[data-coach-berth-toggle]');
+      if(btn){showBerths(menuBerths.hidden);return}
+      const opt=e.target.closest('[data-coach-berth]');
+      if(opt){s.berths=opt.dataset.coachBerth;showBerths(false);update();toggleBerths.focus();return}
+      if(!menuBerths.hidden)showBerths(false);
+      const layout=e.target.closest('[data-layout]');if(layout){s.layout=layout.dataset.layout;update();return}const a=e.target.closest('[data-action]');if(!a)return;const c=C.find(c=>String(c.id)===a.dataset.id),act=a.dataset.action;if(act==='add-coach'){coachModal({id:null,name:'',bus_type:'A/C Seater',pattern:'2+2',amenities:[],layout:{decks:[],capacity:0}},true,()=>coachesPage(el));return}if(!c)return;
       if(act==='view'){coachModal(c,false,()=>coachesPage(el));return}if(act==='edit'){coachModal(c,true,()=>coachesPage(el));return}
       if(act==='duplicate'){let v=await G.prompt('Duplicate Coach',[{name:'name',label:'New coach name',value:`${c.name} Copy`,required:true}]);if(!v)return;try{await G.post('/coaches',{name:v.name,bus_type:c.bus_type,pattern:c.pattern,layout:c.layout,amenities:c.amenities,emergency_exits:c.emergency_exits});G.toast('Coach duplicated','ok');coachesPage(el)}catch(err){G.err(err)}return}
       if(act==='delete'){if(!await G.confirm('Delete this coach? A coach assigned to a route or vehicle cannot be removed.',{danger:1}))return;try{await G.del(`/coaches/${c.id}`);G.toast('Coach removed','ok');coachesPage(el)}catch(err){G.err(err)}}});
