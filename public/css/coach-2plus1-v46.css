@@ -1,24 +1,24 @@
 /* v46: Vehicles → Edit Coach → 2+1 Seater/Sleeper ONLY.
    Layout & modal details matched against six reference images. Other coach types
    retain the existing v9 styling and renderer. */
-.vp-overlay-coach:has(.cv46-editor){--cv46-blue:#2865f4;--cv46-ink:#12213a}
-.vp-overlay-coach:has(.cv46-editor) .md.lg{width:min(94vw,1600px);height:min(91vh,865px);max-height:calc(100dvh - 40px);border-radius:21px;background:#fff}
-.vp-overlay-coach:has(.cv46-editor) .md .hd{min-height:135px;padding:28px 37px;background:linear-gradient(110deg,#2c67ed 0%,#4c39f6 54%,#8529fb 100%);border:0}
-.vp-overlay-coach:has(.cv46-editor) .vp-modal-title{gap:18px}
-.vp-overlay-coach:has(.cv46-editor) .vp-modal-icon{width:63px;height:63px;border-radius:20px;border:1px solid #ffffff52;background:#ffffff24}
-.vp-overlay-coach:has(.cv46-editor) .vp-modal-title strong{font-size:25px;font-weight:760;line-height:1.35;color:#fff}
-.vp-overlay-coach:has(.cv46-editor) .vp-modal-title small{font-size:17px;color:#d6e0ff;line-height:1.5}
-.vp-overlay-coach:has(.cv46-editor) .md .hd [data-x]{height:51px;width:51px;border:1.5px solid #ffffff6e;background:#ffffff25;border-radius:50%;color:#fff}
-.vp-overlay-coach:has(.cv46-editor) .md .bd{padding:24px 31px 0;background:#fff;overflow:hidden;display:flex;flex-direction:column}
-.vp-overlay-coach:has(.cv46-editor) .vp-coach-modal{min-height:0;flex:1;overflow:hidden}
-.vp-overlay-coach:has(.cv46-editor) .vp-modal-tabs{min-height:68px;margin:0 0 30px;border:1px solid #e0e6ed;border-radius:23px;box-shadow:0 2px 4px #1c31591a;background:#f0f5fa;padding:8px 10px;gap:10px;z-index:2}
-.vp-overlay-coach:has(.cv46-editor) .vp-modal-tabs button{min-height:49px;font-size:17px;font-weight:670;border-radius:17px;gap:11px}
-.vp-overlay-coach:has(.cv46-editor) .vp-modal-tabs button.active{background:linear-gradient(115deg,#2e66f5,#4b3bf5);box-shadow:0 4px 7px #4140e640}
-.vp-overlay-coach:has(.cv46-editor) .vp-coach-content{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;border:0;border-radius:0;background:#fff;padding:0 2px 23px;scrollbar-color:#949a9f #f6f8fb;scrollbar-width:thin}
-.vp-overlay-coach:has(.cv46-editor) .md .ft{min-height:94px;padding:16px 31px;border-top:1px solid #eceef4;background:#fff;box-shadow:none}
-.vp-overlay-coach:has(.cv46-editor) .vp-footer .vp-btn{min-height:50px;font-size:16px;border-radius:11px;padding:12px 21px}
-.vp-overlay-coach:has(.cv46-editor) .vp-footer .primary{background:#2864f1;border-color:#2864f1;color:#fff;font-weight:680;min-width:154px}
-.vp-overlay-coach:has(.cv46-editor) .vp-footer .outline{background:#fff;border:1px solid #e3e6ea;color:#222;min-width:105px}
+.vp-overlay-coach.cv46-target{--cv46-blue:#2865f4;--cv46-ink:#12213a}
+.vp-overlay-coach.cv46-target .md.lg{width:min(94vw,1600px);height:min(91vh,865px);max-height:calc(100dvh - 40px);border-radius:21px;background:#fff}
+.vp-overlay-coach.cv46-target .md .hd{min-height:135px;padding:28px 37px;background:linear-gradient(110deg,#2c67ed 0%,#4c39f6 54%,#8529fb 100%);border:0}
+.vp-overlay-coach.cv46-target .vp-modal-title{gap:18px}
+.vp-overlay-coach.cv46-target .vp-modal-icon{width:63px;height:63px;border-radius:20px;border:1px solid #ffffff52;background:#ffffff24}
+.vp-overlay-coach.cv46-target .vp-modal-title strong{font-size:25px;font-weight:760;line-height:1.35;color:#fff}
+.vp-overlay-coach.cv46-target .vp-modal-title small{font-size:17px;color:#d6e0ff;line-height:1.5}
+.vp-overlay-coach.cv46-target .md .hd [data-x]{height:51px;width:51px;border:1.5px solid #ffffff6e;background:#ffffff25;border-radius:50%;color:#fff}
+.vp-overlay-coach.cv46-target .md .bd{padding:24px 31px 0;background:#fff;overflow:hidden;display:flex;flex-direction:column}
+.vp-overlay-coach.cv46-target .vp-coach-modal{min-height:0;flex:1;overflow:hidden}
+.vp-overlay-coach.cv46-target .vp-modal-tabs{min-height:68px;margin:0 0 30px;border:1px solid #e0e6ed;border-radius:23px;box-shadow:0 2px 4px #1c31591a;background:#f0f5fa;padding:8px 10px;gap:10px;z-index:2}
+.vp-overlay-coach.cv46-target .vp-modal-tabs button{min-height:49px;font-size:17px;font-weight:670;border-radius:17px;gap:11px}
+.vp-overlay-coach.cv46-target .vp-modal-tabs button.active{background:linear-gradient(115deg,#2e66f5,#4b3bf5);box-shadow:0 4px 7px #4140e640}
+.vp-overlay-coach.cv46-target .vp-coach-content{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;border:0;border-radius:0;background:#fff;padding:0 2px 23px;scrollbar-color:#949a9f #f6f8fb;scrollbar-width:thin}
+.vp-overlay-coach.cv46-target .md .ft{min-height:94px;padding:16px 31px;border-top:1px solid #eceef4;background:#fff;box-shadow:none}
+.vp-overlay-coach.cv46-target .vp-footer .vp-btn{min-height:50px;font-size:16px;border-radius:11px;padding:12px 21px}
+.vp-overlay-coach.cv46-target .vp-footer .primary{background:#2864f1;border-color:#2864f1;color:#fff;font-weight:680;min-width:154px}
+.vp-overlay-coach.cv46-target .vp-footer .outline{background:#fff;border:1px solid #e3e6ea;color:#222;min-width:105px}
 .vp-overlay-coach .cv46-editor{color:#26374f;font-size:15px}
 .vp-overlay-coach .cv46-summary{min-height:184px;border:1px solid #b3ddff;background:#dcf5ff;border-radius:15px;padding:22px 23px;gap:24px;margin-bottom:23px}
 .vp-overlay-coach .cv46-summary h3{font-size:17px;color:#0f45bc;font-weight:750;margin:0 0 11px}
@@ -89,22 +89,22 @@
 .vp-overlay-coach .cv46-remove:disabled{color:#ef5260;opacity:.45;cursor:not-allowed}
 .vp-overlay-coach .cv46-assigned-note{font-size:12px;color:#7c8ba3;padding:7px 4px 2px;line-height:1.45}
 @media(max-width:1280px){
- .vp-overlay-coach:has(.cv46-editor) .md .bd{padding:15px 18px 0}
+ .vp-overlay-coach.cv46-target .md .bd{padding:15px 18px 0}
  .vp-overlay-coach .cv46-legend{gap:13px;flex-wrap:wrap}
  .vp-overlay-coach .cv46-legend span{font-size:13px}
  .vp-overlay-coach .cv46-decks{justify-content:flex-start}
  .vp-overlay-coach .cv46-config-actions{justify-content:flex-start}
 }
 @media(max-width:760px){
- .vp-overlay-coach:has(.cv46-editor) .md.lg{width:98vw;height:96dvh;max-height:96dvh}
- .vp-overlay-coach:has(.cv46-editor) .md .hd{min-height:106px;padding:18px}
- .vp-overlay-coach:has(.cv46-editor) .vp-modal-tabs{gap:3px;min-height:52px;padding:5px;margin-bottom:18px}
- .vp-overlay-coach:has(.cv46-editor) .vp-modal-tabs button{min-height:40px;font-size:12px}
+ .vp-overlay-coach.cv46-target .md.lg{width:98vw;height:96dvh;max-height:96dvh}
+ .vp-overlay-coach.cv46-target .md .hd{min-height:106px;padding:18px}
+ .vp-overlay-coach.cv46-target .vp-modal-tabs{gap:3px;min-height:52px;padding:5px;margin-bottom:18px}
+ .vp-overlay-coach.cv46-target .vp-modal-tabs button{min-height:40px;font-size:12px}
  .vp-overlay-coach .cv46-summary{padding:15px;flex-wrap:wrap}
  .vp-overlay-coach .cv46-summary .vp-btn{width:100%}
  .vp-overlay-coach .cv46-diagram{padding:13px}
  .vp-overlay-coach .cv46-config-head{align-items:flex-start}
  .vp-overlay-coach .cv46-config-actions{width:100%}
  .vp-overlay-coach .cv46-search{max-width:none;min-width:100%;width:100%}
- .vp-overlay-coach:has(.cv46-editor) .md .ft{min-height:73px}
+ .vp-overlay-coach.cv46-target .md .ft{min-height:73px}
 }
