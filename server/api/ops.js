@@ -136,7 +136,7 @@ r.get('/schedules', can('schedules.view'), h((req) => {
   if (req.query.route_id) list = list.filter((s) => s.route_id == req.query.route_id);
   if (req.query.status && req.query.status !== 'all') list = list.filter((s) => s.status === req.query.status);
   const fromCity = req.query.from_city_id, toCity = req.query.to_city_id;
-  if (fromCity && toCity) list = list.filter((s) => { const rt = db.col('routes').get(s.route_id); const a = D.cityOrder(rt, fromCity), b = D.cityOrder(rt, toCity); return a >= 0 && b > a; });
+  if (fromCity || toCity) list = list.filter((s) => { const rt = db.col('routes').get(s.route_id); if(!rt)return false; const a = fromCity ? D.cityOrder(rt, fromCity) : -1, b = toCity ? D.cityOrder(rt, toCity) : -1; return (fromCity ? a >= 0 : true) && (toCity ? b >= 0 : true) && (!fromCity || !toCity || b > a); });
   return { from, to, schedules: list.map((s) => { const c = scheduleCard(s); if (req.user.permissions.includes('schedules.financial')) { const p = Rp.tripPnl(s); c.expense_total = p.expense; c.net_profit = p.profit; } return c; }).sort((a, b) => a.travel_date.localeCompare(b.travel_date) || a.departure_time.localeCompare(b.departure_time)) };
 }));
 r.get('/schedules/deleted', can('schedules.view'), h(() => ({ deleted: db.col('routes').all().flatMap((rt) => (rt.deleted_trips || []).map((d) => ({ route_id: rt.id, service_number: rt.service_number, travel_date: d }))) })));

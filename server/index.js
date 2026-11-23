@@ -33,6 +33,7 @@ app.use('/api',(req,res,next)=>{
  next();
 });
 app.use('/api', require('./api/pnl-v18'));
+app.use('/api', require('./api/schedule-insights-v36'));
 app.use('/api', require('./api/ops'));
 app.use('/api', require('./api/vehicle-details-v19'));
 app.use('/api', require('./api/master'));

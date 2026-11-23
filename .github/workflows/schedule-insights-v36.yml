@@ -1,0 +1,48 @@
+name: v36 Schedule Search Calendar and Route Halts
+on:
+  push:
+    branches: [savetrip-screenshotcomplete]
+    paths:
+      - 'public/js/schedule-insights-v36.js'
+      - 'public/css/schedule-insights-v36.css'
+      - 'public/js/schedules-screenshot-v6.js'
+      - 'public/js/routes-screenshot-v5.js'
+      - 'server/api/schedule-insights-v36.js'
+      - 'server/api/ops.js'
+      - 'server/index.js'
+      - 'public/index.html'
+      - 'tests/schedule-insights-v36-*.cjs'
+      - 'tests/check-schedules-v6.mjs'
+      - 'tests/check-routes-v5.mjs'
+      - '.github/workflows/schedule-insights-v36.yml'
+  workflow_dispatch:
+jobs:
+  screenshot-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Syntax checks
+        run: |
+          node --check public/js/schedule-insights-v36.js
+          node --check public/js/schedules-screenshot-v6.js
+          node --check public/js/routes-screenshot-v5.js
+          node --check server/api/schedule-insights-v36.js
+          node --check server/api/ops.js
+          node --check tests/schedule-insights-v36-api.cjs
+          node --check tests/schedule-insights-v36-ui.cjs
+      - name: v36 screenshot and evidence API
+        run: |
+          timeout 100s node tests/schedule-insights-v36-api.cjs
+          timeout 70s node tests/schedule-insights-v36-ui.cjs
+      - name: Existing routes, schedules and full regression
+        run: |
+          node tests/check-routes-v5.mjs
+          node tests/check-schedules-v6.mjs
+          node tests/check-routes-schedules-v7.mjs
+          npm test
