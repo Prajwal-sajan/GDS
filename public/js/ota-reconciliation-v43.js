@@ -105,7 +105,7 @@ function filterLineRows(lines,s){
 function detailPanel(d,s){
  const t=d.totals||{},v=d.summary?.invoice_amount;
  const tabs=[['all','All differences',t.outstanding_issue_count],['missing_in_ota','In our data, not on invoice',t.missing_in_ota],['status','Status differs'],['fare','Fare differs'],['offer','Offer differs'],['commission','Commission differs'],['cancellation_charge','Cancellation charge differs'],['payout','Payout differs']];
- return '<div class="ota43-headline"><div><div class="ota43-line"><span class="ota43-ota-logo">R</span><div><small>RECONCILIATION DASHBOARD</small><h2>RedBus · '+fmt(d.billing_period_start)+' → '+fmt(d.billing_period_end)+'</h2><label>INVOICE '+escH(d.invoice_number)+'</label></div></div></div>'+btn('original',icon('eye')+' View source PDF','')+'</div>'+
+ return '<div class="ota43-headline"><div><div class="ota43-line"><span class="ota43-ota-logo">R</span><div><small>RECONCILIATION DASHBOARD</small><h2>RedBus · '+fmt(d.billing_period_start)+' → '+fmt(d.billing_period_end)+'</h2><label>INVOICE '+escH(d.invoice_number)+'</label></div></div></div><div>'+btn('recheck',icon('refresh')+' Recheck GDS','small')+' '+btn('original',icon('eye')+' View source PDF','')+'</div></div>'+
  noteWarn(d)+
  '<section class="ota43-hero"><div><p>RedBus paid you</p><strong>'+val(v)+'</strong><small>across '+int(d.statement_lines)+' ticket events · '+fmt(d.billing_period_start)+' to '+fmt(d.billing_period_end)+'</small></div>'+
  '<div class="ota43-score"><div class="ota43-ring">'+(t.invoice_lines?Math.round(t.verified/t.invoice_lines*100):0)+'%</div><div><b>'+int(t.verified)+' of '+int(t.invoice_lines)+' verified</b><small>'+int(t.outstanding_issue_count)+' records require review</small></div></div></section>'+
@@ -122,9 +122,15 @@ function detailPanel(d,s){
 }
 async function uploadDialog(s){
  const m=G.modal({title:'Upload OTA Invoice',size:'lg',body:'<div class="ota43-upload-dialog"><div class="ota43-drop">'+icon('upload',32)+'<b>Drop redBus Payment Advice PDF here</b><small>Or select PDF from your computer</small><input data-upload-pdf type="file" accept=".pdf,application/pdf" aria-label="Choose PDF"/></div><label class="ota43-upload-label">OTA<select data-upload-ota><option value="redbus">RedBus</option></select></label><p>The file is stored privately with the operator GDS. Matching uses only bookings actually present. Max file size: 7 MB.</p><div class="ota43-modal-actions"><button class="ota43-btn" data-upload-cancel>Cancel</button><button class="ota43-btn primary" data-upload-submit>Upload & Verify</button></div></div>'});
+ let pendingFile=null;
+ const picker=m.$('[data-upload-pdf]'),drop=m.$('.ota43-drop');
+ picker.addEventListener('change',()=>{pendingFile=picker.files?.[0]||null});
+ drop.addEventListener('dragover',ev=>{ev.preventDefault();drop.classList.add('dragover')});
+ drop.addEventListener('dragleave',()=>drop.classList.remove('dragover'));
+ drop.addEventListener('drop',ev=>{ev.preventDefault();drop.classList.remove('dragover');pendingFile=ev.dataTransfer?.files?.[0]||null;if(pendingFile){drop.querySelector('small').textContent=pendingFile.name}});
  m.$('[data-upload-cancel]').onclick=()=>m.close();
  m.$('[data-upload-submit]').onclick=async()=>{
-  const f=m.$('[data-upload-pdf]').files?.[0];if(!f)return G.toast('Choose a PDF','bad');
+  const f=pendingFile||picker.files?.[0];if(!f)return G.toast('Choose a PDF','bad');
   if(!/\.pdf$/i.test(f.name)||f.size>7*1024*1024)return G.toast('PDF required, max 7MB','bad');
   const submit=m.$('[data-upload-submit]');submit.disabled=true;submit.textContent='Parsing invoice…';
   try{
