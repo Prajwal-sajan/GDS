@@ -35,7 +35,11 @@ w.G={
   return JSON.parse(JSON.stringify(model));},
  put:async(url,body)=>{
   log.push(['PUT',url,body]);
-  if(body.contact)model.contact={...body.contact};
+  if(body.contact){
+   model.contact={...body.contact};
+   // The real backend maps each ticket passenger to the booking contact mobile.
+   model.passengers.forEach(p=>p.phone=body.contact.phone);
+  }
   if(body.boarding_stage_id)model.boarding={...model.boarding,id:body.boarding_stage_id,
    name:stops.pickups.find(p=>p.id===body.boarding_stage_id)?.name||model.boarding.name};
   if(body.dropping_stage_id)model.dropping={...model.dropping,id:body.dropping_stage_id,
@@ -51,6 +55,7 @@ w.fetch=async(url,opts)=>{
  return {ok:true,blob:async()=>new w.Blob(['%PDF-1.4 test ticket'],{type:'application/pdf'})};
 };
 w.URL.createObjectURL=()=>('blob:test');
+w.HTMLAnchorElement.prototype.click=function(){log.push(['ANCHOR',this.download||this.href])};
 w.URL.revokeObjectURL=()=>{};
 const share=[];
 w.navigator.share=async files=>{share.push(files);return undefined};
@@ -87,6 +92,8 @@ const V={ticket:{pnr:'ST-TEST-095301',ticket_number:'095301',status:'confirmed'}
  assert.ok(root.querySelector('.ticket41-legal svg'));
  root.querySelector('[data-t41="download"]').click();await delay(20);
  assert.ok(api.some(x=>x[0].endsWith('/bookings/ST-TEST-095301/ticket/v41.pdf')));
+ root.querySelector('[data-t41="print"]').click();await delay(20);
+ assert.ok(d.querySelector('.ticket41-print-frame'),'Print action should open a PDF frame');
  root.querySelector('[data-t41="share"]').click();await delay(20);
  assert.equal(share.length,1);assert.equal(share[0].files[0].type,'application/pdf');
  root.querySelector('[data-t41="tab-update"]').click();
