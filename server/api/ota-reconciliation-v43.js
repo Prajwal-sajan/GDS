@@ -82,6 +82,8 @@ r.get('/reconciliation/v43/invoices/:id/lines',can('accounts.reconciliation'),wr
  const search=String(req.query.q||'').toLowerCase().trim().slice(0,120);
  if(filter!=='all')lines=lines.filter(x=>x.status===filter||filter==='unresolved'&&x.status!=='matched'&&!x.resolution);
  if(search)lines=lines.filter(x=>String(x.pnr).toLowerCase().includes(search)||String(x.why||'').toLowerCase().includes(search));
+ const issue=String(req.query.issue||'').slice(0,40);
+ if(issue&&issue!=='all')lines=lines.filter(x=>(x.differences||[]).includes(issue));
  const count=lines.length,offset=Math.min(Math.max(0,Number(req.query.offset)||0),count);
  const limit=Math.min(100,Math.max(1,Number(req.query.limit)||30));
  res.json({rows:lines.slice(offset,offset+limit),count,offset,limit,has_more:offset+limit<count});
