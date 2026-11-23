@@ -163,6 +163,9 @@ test('authenticated CRM endpoint retains seat status, private count metadata and
  const masked=await get('/crm/booking/'+encodeURIComponent(b.pnr));
  assert.equal(masked.code,200);
  assert.notEqual(masked.data.booking.contact.phone,b.contact.phone);
+ const Ticket=require('../server/booking-ticket-v41');
+ const restrictedTicket=Ticket.model({user:actor},b.pnr);
+ assert.equal(restrictedTicket.contact.phone,'**********','Ticket print must also mask protected phone numbers');
  actor={...actor,permissions:[]};
  const denied=await get('/crm/booking/'+encodeURIComponent(b.pnr));
  assert.equal(denied.code,403);
