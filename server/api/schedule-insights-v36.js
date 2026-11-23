@@ -68,11 +68,12 @@ router.get('/schedules/month-insights',Auth.can('schedules.view'),handler(req=>{
   if(capacity<=0)continue;
   const day=byDay.get(schedule.travel_date);
   if(!day)continue;
-  const paid=bookings.filter(b=>String(b.schedule_id)===String(schedule.id)&&
-   !['cancelled','released','expired','hold'].includes(b.status));
+  // Match the existing Schedule/Reports contract: only confirmed bookings
+  // contribute, and no-show seats remain sold until a formal cancellation.
+  const confirmed=bookings.filter(b=>String(b.schedule_id)===String(schedule.id)&&b.status==='confirmed');
   let count=0;
-  for(const b of paid)for(const p of b.passengers||[])if(
-    !['cancelled','no_show'].includes(p.status))count++;
+  for(const b of confirmed)for(const p of b.passengers||[])
+   if(p.status!=='cancelled')count++;
   day.services++;day.capacity+=capacity;day.booked_seats+=Math.min(capacity,count);
  }
  for(const day of byDay.values())if(day.capacity>0)
