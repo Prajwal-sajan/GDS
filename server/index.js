@@ -18,9 +18,16 @@ app.use((req, res, next) => { res.setHeader('X-Content-Type-Options', 'nosniff')
 
 const misc = require('./api/misc');
 app.use('/api', misc.pub);
+app.use('/', require('./api/branding-public-v17')); // public read-only branded PWA metadata
 // Platform-key only; explicitly outside operator login/session routes.
 app.use('/api/platform-billing/v25', require('./api/platform-billing-v25').internal);
 app.use('/api', auth.middleware);
+app.use('/api/accounts',(req,res,next)=>{
+ if(req.method==='GET' && (/^\/reports\/[^/]+\.(pdf|xlsx|csv)$/i.test(req.path)||/^\/invoices-v24\/bundle\/[^/]+$/i.test(req.path)||/^\/invoices-v24\/documents\/[^/]+\/pdf$/i.test(req.path))){
+  if(!req.user?.permissions?.includes('accounts.export'))return res.status(403).json({success:false,message:'Missing permission: accounts.export'});
+ }
+ next();
+});
 // A restrictive read-only access rule must cover all mutation endpoints,
 // not only the screenshot's individually mapped handler checks.
 const AccessRules=require('./team-access-policy-v28');
