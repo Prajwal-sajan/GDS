@@ -34,7 +34,7 @@
   let alertsSince = null; let unreadAlerts = []; let pollT = null;
 
   function loginScreen() {
-    clearInterval(pollT);
+    clearInterval(pollT);window.BookingNoticeV39?.stop();
     $('#app').innerHTML = `<div class="login"><div class="card"><h2 style="margin:0 0 4px">Sign in</h2><p class="muted small">Bus operations GDS</p>
       <div data-s1><label class="f">Mobile number<input data-ph maxlength="10" inputmode="numeric" placeholder="10-digit mobile" value="${esc(localStorage.getItem('lastPhone') || '')}"/></label><button class="btn p" data-otp style="width:100%;margin-top:12px">Get OTP</button></div>
       <div data-s2 style="display:none"><label class="f">Enter OTP<input data-code maxlength="6" inputmode="numeric" placeholder="OTP"/></label><p class="small muted" data-hint></p><button class="btn p" data-ver style="width:100%;margin-top:8px">Verify & continue</button><a href="#" data-back class="small">Change number</a></div></div></div>`;
@@ -96,7 +96,7 @@
   async function pollAlerts() {
     try {
       const r = await G.get(`/alerts${alertsSince ? `?since=${encodeURIComponent(alertsSince)}` : ''}`);
-      if (alertsSince) for (const a of r.alerts.slice().reverse()) G.toast(`🔔 ${a.title || a.message || a.type}`, a.level === 'critical' ? 'bad' : '');
+      if (alertsSince) for (const a of r.alerts.slice().reverse()) if(!['booking.created','payment.received'].includes(a.action)) G.toast(`🔔 ${a.title || a.message || a.type}`, a.level === 'critical' ? 'bad' : '');
       unreadAlerts = [...r.alerts, ...unreadAlerts].slice(0, 50); alertsSince = r.server_time;
       const bc = $('[data-bc]'); if (bc) { bc.textContent = unreadAlerts.length; bc.style.display = unreadAlerts.length ? '' : 'none'; }
       if (can('chats.view')) { const c = await G.get('/chats').catch(() => null); const el = $('[data-cnt="chats"]'); if (c && el) { el.textContent = ''; el.style.display = 'none'; } }
@@ -134,7 +134,7 @@
     if (!localStorage.getItem('token')) return loginScreen();
     try { const me = await G.get('/auth/me'); G.user = me.user; G.operator = me.operator; G.roles = me.roles; }
     catch (e) { if (G.viewAs) { G.viewAs = ''; localStorage.removeItem('viewAs'); return boot(); } return loginScreen(); }
-    shell(); alertsSince = null; unreadAlerts = [];
+    shell(); alertsSince = null; unreadAlerts = [];window.BookingNoticeV39?.start();
     await pollAlerts(); clearInterval(pollT); pollT = setInterval(pollAlerts, 30000);
     if (/^#\/?login/.test(location.hash)) location.hash = '#/';
     route();

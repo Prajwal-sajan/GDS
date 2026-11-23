@@ -30,7 +30,7 @@ const put=(sec,value,p=owner)=>call('PUT','/settings/loyalty-v34/'+sec,{value},p
   assert.deepEqual(r.json.tier_bonus.map(x=>x.multiplier),[1,1.2,1.5,1.1]);
   assert.equal(r.json.blocked_dates[0].date,'2026-03-31');
   assert.equal(r.json.seat_upgrades.minutes_before_boarding,20);
-  assert.equal(r.json.seat_upgrades.enabled,true,'Screenshot demo starts with configuration preference enabled; no auto worker');
+  assert.equal(r.json.seat_upgrades.enabled,true,'Upgrade offers enabled; acceptance still requires consent');
   r=await put('general',{...L.read().general,is_active:false},agent);
   assert.equal(r.status,403);
   r=await put('general',{...L.read().general,max_discount_percent:101});
@@ -55,7 +55,7 @@ const put=(sec,value,p=owner)=>call('PUT','/settings/loyalty-v34/'+sec,{value},p
   r=await put('seat_upgrades',{enabled:true});
   assert.equal(r.status,200);
   assert.equal(r.json.configuration.seat_upgrades.enabled,true);
-  assert.equal(r.json.configuration.seat_upgrades.execution_status,'configuration_only');
+  assert.equal(r.json.configuration.seat_upgrades.execution_status,'automated_offers_with_consent_required');
   r=await put('blocked_dates',[{date:'2026-03-31',rate:0,reason:''},{date:'2026-12-31',rate:20,reason:'Holiday demand'}]);
   assert.equal(r.status,200);
   assert.equal(L.read().blocked_dates.length,2);

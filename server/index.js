@@ -35,6 +35,9 @@ app.use('/api',(req,res,next)=>{
 app.use('/api', require('./api/pnl-v18'));
 app.use('/api', require('./api/schedule-insights-v36'));
 app.use('/api', require('./api/booking-workspace-v38'));
+app.use('/api', require('./api/booking-live-v39'));
+const loyaltyUpgradesV39=require('./api/loyalty-upgrades-v39');
+app.use('/api',loyaltyUpgradesV39.router);
 app.use('/api', require('./api/ops'));
 app.use('/api', require('./api/vehicle-details-v19'));
 app.use('/api', require('./api/master'));
@@ -74,6 +77,9 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.get('*',sendAppHtml);
 
 setInterval(() => { try { D.expireHolds(); } catch (e) { console.error(e); } }, 60e3);
+// Offer suggestions only: the passenger seat is NEVER moved without consent.
+// Single-process JSON DB scheduler; use a distributed lease if deploying multiple writers.
+setInterval(()=>{try{loyaltyUpgradesV39.scanAutoOffers();}catch(e){console.error('[loyalty upgrades]',e.message)}},60000);
 const billing = require('./platform-billing-v25');
 function billingRun(){
  try { if (db.meta('platform_billing_v25')) billing.runDue(); }

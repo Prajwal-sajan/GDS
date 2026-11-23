@@ -42,8 +42,8 @@ function upgrades(){
  return {enabled:curr.enabled??true,minutes_before_boarding:20,
  description:'Unsold seats in the last 20 minutes before boarding are offered to eligible loyal passengers as a free upgrade.',
  preference_order:['shared → single','upper → lower berth','back → front row'],
- execution_status:'configuration_only',
- notice:'Actual automatic seat movements require passenger consent, booking/seat eligibility verification and a transaction-safe inventory worker.'};
+ execution_status:'automated_offers_with_consent_required',
+ notice:'Eligible unsold-seat offers are generated within 20 minutes of boarding; seat changes require operator-recorded passenger consent and live inventory validation. Provider delivery is not implied.'};
 }
 function read(){
  return {general:general(),daily_limits:dayRates(),tier_bonus:tiers(),
