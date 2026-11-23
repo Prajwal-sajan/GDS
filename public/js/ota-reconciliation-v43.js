@@ -42,11 +42,23 @@ const pricing=(d)=>{
  ['Retention credit (c)','cancellation_credit','+'],['Operator cancellations (d)','operator_cancel','−'],
  ['Exceptional refund (e)','exception_refund','−'],['Operator offers (h)','operator_offers','−'],
  ['TCS deductions (l)','tcs','−'],['TDS 194-O (m)','tds','−']];
+ const invoiceFormulaItems=[
+ ['a','Bookings','bookings','+'],['b','Passenger cancellations','pax_cancel','−'],['c','Cancellation retention','cancellation_credit','+'],
+ ['d','Bus cancellations','operator_cancel','−'],['e','Exceptional refund','exception_refund','−'],['f','Dynamic pricing','dynamic_pricing','−'],
+ ['g','Advertisements deduction','ads','−'],['h','Operator offers','operator_offers','−'],['i','Partner commission','partner_commission','−'],
+ ['j','YourBus charge','yourbus','−'],['k','GDS commission incl. GST','gds_commission','−'],['l','TCS deductions','tcs','−'],
+ ['m','TDS 194-O','tds','−'],['n','Reschedule charges','reschedule','+'],['o','Reschedule excess fare','reschedule_excess','+'],
+ ['p','Differential GST','differential_gst','+'],['q','Open ticket offers','open_ticket_offers','−'],['r','Generic add-on','generic_addon','+'],
+ ['s','Rise Program','rise','−'],['t','SRP','srp','−'],['u','Sponsored listing','sponsored','−'],['v','Nova','nova','−'],['w','Bus operator rewards','bo_rewards','−']];
+ const formulaDetails='<details class="ota43-formula-details"><summary>Full invoice calculation · all 23 categories (a–w)</summary>'+
+ '<div class="ota43-scroll"><table><thead><tr><th>Code</th><th>Category</th><th>Sign</th><th>PDF total</th></tr></thead><tbody>'+
+ invoiceFormulaItems.map(x=>'<tr><td>'+x[0]+'</td><td>'+x[1]+'</td><td>'+x[3]+'</td><td>'+v(x[2])+'</td></tr>').join('')+
+ '<tr class="total"><td>Z</td><td>Stated invoice amount</td><td>=</td><td>'+v('invoice_amount')+'</td></tr></tbody></table></div></details>';
  return '<div class="ota43-breakdown"><div class="ota43-breakdown-head"><p>INVOICE BREAKDOWN</p><h2>How RedBus arrived at <strong>'+v('invoice_amount')+'</strong></h2><span>Every rupee traced from statement revenue to bank payout · '+int(d.statement_lines)+' ticket events</span>'+(d.summary_delta===0?'<span class="ota43-tag matched">PDF TOTAL AGREES</span>':badge('needs_review'))+'</div>'+
  '<div class="ota43-revenue"><div><span class="ota43-label good">● REVENUE EARNED</span><p>Fare collected and settlement amount before deductions</p></div><div class="ota43-large">'+icon('receipt',24)+'<div><b>Bookings (a)</b><br><small>'+int(d.by_section?.sold)+' statement rows</small></div></div><strong>'+v('bookings')+'</strong></div>'+
  '<div class="ota43-adjust"><div><span class="ota43-label orange">● CANCELLATION ADJUSTMENTS</span><p>Refunds, retention credits and bus cancellations</p></div><div>'+entries.slice(1,5).map(x=>'<div class="ota43-finrow"><span>'+x[0]+'</span><b class="'+(x[2]==='+'?'green':'red')+'">'+x[2]+' '+v(x[1])+'</b></div>').join('')+'</div></div>'+
  '<div class="ota43-adjust"><div><span class="ota43-label blue">● OTHER DEDUCTIONS</span><p>Offers, TCS and TDS from the invoice summary</p></div><div>'+entries.slice(5).map(x=>'<div class="ota43-finrow"><span>'+x[0]+'</span><b>'+x[2]+' '+v(x[1])+'</b></div>').join('')+'</div></div>'+
- '<div class="ota43-payout"><div><span>● NET PAYOUT</span><p>As stated on the redBus payment advice</p></div><strong>'+v('invoice_amount')+'</strong><div>'+icon('check',30)+'</div></div></div>';
+ formulaDetails+'<div class="ota43-payout"><div><span>● NET PAYOUT</span><p>As stated on the redBus payment advice</p></div><strong>'+v('invoice_amount')+'</strong><div>'+icon('check',30)+'</div></div></div>';
 };
 const summaryTable=d=>{
  const stats=d.section_stats||{},detail=d.summary_details||{};
