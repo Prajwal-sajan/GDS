@@ -1,0 +1,26 @@
+name: OTA Ratings Settings v44
+on:
+  push:
+    branches:
+      - feature/dailyops-ota-ratings-settings-v44
+  pull_request:
+    paths:
+      - "public/js/ota-ratings-v44.js"
+      - "public/js/dailyops-parity-v12.js"
+      - "public/css/ota-ratings-settings-v44.css"
+      - "server/api/ota-ratings-settings-v44.js"
+      - "tests/ota-ratings-settings-v44.test.cjs"
+      - ".github/workflows/ota-ratings-settings-v44.yml"
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Test OTA Ratings account/settings API and UI
+        run: node --test tests/ota-ratings-settings-v44.test.cjs
