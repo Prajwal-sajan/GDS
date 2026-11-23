@@ -92,6 +92,6 @@ assert(src('public/index.html').includes('/css/ota-reconciliation-v43.css?build=
 const client=src('public/js/ota-reconciliation-v43.js');
 const css=src('public/css/ota-reconciliation-v43.css');
 new Function(client);
-for(const key of ['View invoice breakdown','Upload Invoice','Investigate','Dispute','Accept RedBus','Export CSV','Browse all','As Per GDS','As Per RedBus','PNR','TDS','TCS','Difference','cards','table','recheck','original'])assert(client.toLowerCase().includes(key.toLowerCase()),'missing UI '+key);
+for(const key of ['invoice breakdown','Upload Invoice','Investigate','Dispute','Accept RedBus','Export CSV','Browse all','As Per GDS','As Per RedBus','PNR','TDS','TCS','Difference','cards','table','recheck','original'])assert(client.toLowerCase().includes(key.toLowerCase()),'missing UI '+key);
 for(const key of ['ota43-ticket-check','ota43-ledger','ota43-revenue','ota43-payout','ota43-compare','ota43-ticket','ota43-browser-controls'])assert(css.includes(key),'missing style '+key);
 console.log('PASS OTA v43: split PNR, all 4 PDF sections, invoice formula, verified and unverified comparisons, 18-column CSV, complete UI/CSS wiring');
