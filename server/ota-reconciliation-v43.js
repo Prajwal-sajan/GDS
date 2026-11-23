@@ -294,9 +294,19 @@ function compareInvoice(parsed,bookings,config={}){
 const statusForCsv=s=>({matched:'Matched',mismatched:'Mismatched',needs_review:'Needs Review',unmatched_ota:'Missing in GDS',unmatched_gds:'Missing in OTA'}[s]||s||'');
 const EXPORT_HEADERS=['PNR','DOJ (SaveTrip)','DOJ (OTA)','Fare (SaveTrip)','Fare (OTA)','Operator Offer (OTA)','Tax (SaveTrip)','Tax (OTA)','Commission (OTA)','Tax on Commission (OTA)','TDS (OTA)','TCS (OTA)','Payable (SaveTrip)','Take-home (OTA)','Take-home Diff','Status','Resolved By','Notes'];
 const csvEscape=v=>{let value=String(v??'');if(typeof v!=='number'&&/^[=+@\t\r]|^-(?!\d+(?:\.\d+)?$)/.test(value))value="'"+value;return '"'+value.replace(/"/g,'""')+'"'};
+const csvMoney=v=>v===null||v===undefined||v===''?'':Number.isFinite(Number(v))?Number(v).toFixed(2):'';
+const csvDate=v=>v?String(v).slice(0,10)+'T00:00:00':'';
+const gdsPaid=r=>r.expected&&Number.isFinite(Number(r.expected.fare))?money(Number(r.expected.fare)+Number(r.expected.tax||0)):null;
 function exportCsv(doc,filter='all'){
  const rows=doc.lines.filter(x=>filter==='all'||x.status===filter);
- const mapped=rows.map(r=>[r.pnr,r.doj_gds||r.expected?.doj||'',r.doj||'',r.expected?.fare,r.fare,r.operator_offer,r.expected?.tax,r.tax,r.commission,r.commission_tax,'','',r.expected?.take_home,r.take_home,r.delta,statusForCsv(r.status),r.resolution?.by||'',[(r.resolution?.action?'Resolution: '+r.resolution.action:''),r.resolution?.note||r.why||''].filter(Boolean).join(' | ')]);
+ const mapped=rows.map(r=>[
+  r.pnr,csvDate(r.doj_gds||r.expected?.doj),csvDate(r.doj),
+  csvMoney(gdsPaid(r)),csvMoney(r.fare),csvMoney(r.operator_offer),
+  csvMoney(r.expected?.tax),csvMoney(r.tax),csvMoney(r.commission),csvMoney(r.commission_tax),
+  csvMoney(r.tds),csvMoney(r.tcs),csvMoney(gdsPaid(r)),csvMoney(r.take_home),csvMoney(r.delta),
+  statusForCsv(r.status),r.resolution?.by||'',
+  [(r.resolution?.action?'Resolution: '+r.resolution.action:''),r.resolution?.note||r.why||''].filter(Boolean).join(' | ')
+ ]);
  return '\ufeff'+[EXPORT_HEADERS,...mapped].map(x=>x.map(csvEscape).join(',')).join('\r\n')+'\r\n';
 }
 module.exports={invoiceFormula,extractPdf,parsePaymentAdviceText,parseLineItems,parseSummary,compareInvoice,exportCsv,EXPORT_HEADERS,positionedLines};
