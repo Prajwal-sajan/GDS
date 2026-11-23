@@ -163,7 +163,7 @@ r.post('/coaches', can('fleet.modify'), h((req) => {
   Policy.explicitAccess(req,"Create & edit coaches");
   const b=req.body||{};
   const identity={name:b.name||'New coach',bus_type:b.bus_type||'',pattern:b.pattern||'2+1'};
-  const layout=b.layout||D.buildLayout({kind:b.kind||'seater_sleeper',pattern:identity.pattern});
+  const layout=b.layout||D.buildLayout({kind:b.kind||(Coach22.isTarget(identity)?'seater':'seater_sleeper'),pattern:identity.pattern});
   const patternHelper=Coach21.isTarget(identity)?Coach21:Coach22.isTarget(identity)?Coach22:null;
   if(patternHelper){
     layout.capacity=patternHelper.activeCount(layout);
