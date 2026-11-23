@@ -387,7 +387,7 @@
             b('Generate Layout','primary','data-generate '+(disabled?'disabled title="Physical layout editing is unavailable for assigned coaches"':''))+
           '</section>'+
           '<div class="vp-seat-legend cv46-legend">'+legend.map(([name,kind])=>'<span><i class="'+kind+'"></i>'+name+'</span>').join('')+'</div>'+
-          '<div class="vp-diagram-wrap cv46-diagram">'+coach21.renderDiagram(draft.layout,{selected:[...selected],disabled:!editing})+'</div>'+
+          '<div class="vp-diagram-wrap cv46-diagram">'+coach21.renderDiagram(draft.layout,{selected:[...selected],disabled:!editing,emergencyExits:draft.emergency_exits})+'</div>'+
           '<div class="vp-config-header cv46-config-head"><h3>Seat Configuration <small>('+total+' Total seats)</small></h3>'+
            '<div class="cv46-config-actions"><label class="cv46-search">'+icon('search',18)+
              '<input type="search" data-search-seat value="'+safe(search)+'" placeholder="Search by seat ID or type" aria-label="Search seat configuration" /></label>'+
