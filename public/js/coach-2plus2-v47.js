@@ -9,7 +9,8 @@
  const E=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const list=v=>Array.isArray(v)?v:[];
  const isTarget=c=>String(c?.pattern||'').replace(/\s/g,'')==='2+2' &&
-    /seater/i.test(String(c?.bus_type||c?.name||'')) && !/sleeper/i.test(String(c?.bus_type||c?.name||''));
+    /a\/c\s+seater/i.test(String(c?.bus_type||c?.name||'')) &&
+    !/non\s*a\/c|sleeper|pickup/i.test(String(c?.bus_type||c?.name||'')+' '+String(c?.name||''));
  function build(){
   const lower={deck:'LOWER',rows:12,cols:5,seats:[],fixtures:[
    {code:'Side Exit',name:'Side Exit',type:'EE_EXIT',row:4,col:4,w:1,h:1,orientation:'—'},
