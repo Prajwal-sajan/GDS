@@ -53,7 +53,7 @@ function model(req,pnr){
  const drop=list.find(st=>String(st.id)===String(b.dropping_stage_id));
  if(!board||!drop)throw D.httpErr(409,'Ticket boarding/drop points have not been configured');
  const op=db.meta('operator')||{};
- const allowPhone=Policy.viewPhone(req);
+ const allowPhone=!!req.user?.permissions?.includes('bookings.see_phone') && Policy.viewPhone(req);
  const from=stageDate(b.travel_date,board),to=stageDate(b.travel_date,drop);
  const reportingOffset=Number.isFinite(Number(op.reporting_minutes))?Number(op.reporting_minutes):12;
  const reporting=from?new Date(new Date(from).getTime()-Math.max(0,reportingOffset)*60000).toISOString():'';

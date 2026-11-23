@@ -7,6 +7,7 @@ const Rp = require('../reports');
 const A = require('../auth');
 const { can } = A;
 const SwitchV34=require('../switch-user-v34');
+const CRMAccess=require('../access-runtime-v27');
 const LoyaltyV34=require('../loyalty-v34');
 
 const h = (fn) => (req, res) => { try { const out = fn(req, res); if (out !== undefined) res.json(out); } catch (e) { res.status(e.status || 500).json({ success: false, message: e.message }); } };
@@ -92,14 +93,48 @@ r.get('/crm/passenger-search', can('crm.view'), h((req) => {
   return { mode, query: raw, total: match.length, customers: summaries, bookings: match.map(crmDisplayBooking) };
 }));
 r.get('/crm/booking/:pnr', can('crm.view'), h((req) => {
-  const b = db.col('bookings').find(x=>String(x.pnr).toLowerCase() === String(req.params.pnr).toLowerCase() || String(x.ticket_number) === req.params.pnr);
+  const b = db.col('bookings').find(x=>String(x.pnr).toLowerCase()===String(req.params.pnr).toLowerCase() ||
+    String(x.ticket_number).toLowerCase()===String(req.params.pnr).toLowerCase());
   if (!b) throw D.httpErr(404, 'Booking not found');
+  // CRM detail must honor the same per-branch/own-booking scope as ticket workspace.
+  CRMAccess.requireBooking(req,b);
   const s = db.col('schedules').get(b.schedule_id);
-  const rawMap = s ? D.seatMap(s, b.from_city_id, b.to_city_id) : null;
-  // Only seat status/fare is needed for this CRM graphic. Never expose other passengers' names/PNRs.
-  const map = rawMap ? { ...rawMap, decks: rawMap.decks.map(d => ({ ...d, seats: d.seats.map(seat => ({ ...seat, booking: seat.booking ? { is_current: seat.booking.pnr === b.pnr } : null })) })) } : null;
-  const history = db.col('edit_history').filter(x => x.entity === 'schedule' && String(x.entity_id) === String(b.schedule_id) && (x.changes?.pnr === b.pnr || x.changes?.details?.pnr === b.pnr));
-  return { booking: { ...crmDisplayBooking(b), cancellations: b.cancellations || [], comments: b.comments || [], coupon: b.coupon, miles_used: b.miles_used, booked_by: b.booked_by, agent_phone: b.agent_phone }, map, history };
+  const rawMap = s ? D.seatMap(s,b.from_city_id,b.to_city_id) : null;
+  const reservationCounts = new Map();
+  // Counts represent real currently active reservations for this schedule; never invented
+  // reference screenshot numbers. A seat may be sold on multiple non-overlapping legs.
+  for (const reservation of db.col('bookings').filter(x=>String(x.schedule_id)===String(b.schedule_id) &&
+    (x.status==='confirmed'||x.status==='hold'))) {
+    for (const passenger of reservation.passengers||[]) {
+      if (passenger.status==='cancelled'||!passenger.seat) continue;
+      const code=String(passenger.seat);
+      reservationCounts.set(code,(reservationCounts.get(code)||0)+1);
+    }
+  }
+  // Never expose other passengers' names/PNRs in the seat map.
+  // Expose only requested PNR identity and aggregate counts; never other passengers,
+  // their names, their PNRs, journey legs, or their contact information in the map.
+  const map = rawMap ? { ...rawMap, decks:rawMap.decks.map(d=>({
+    ...d,
+    seats:d.seats.map(seat=>({
+      code:seat.code,row:seat.row,col:seat.col,w:seat.w,h:seat.h,type:seat.type,
+      status:seat.status,fare:seat.fare,
+      reservation_count:reservationCounts.get(String(seat.code))||0,
+      booking:seat.booking?{is_current:seat.booking.pnr===b.pnr}:null
+    }))
+  })) } : null;
+  const history = db.col('edit_history').filter(x=>x.entity==='schedule' &&
+    String(x.entity_id)===String(b.schedule_id) &&
+    (x.changes?.pnr===b.pnr||x.changes?.details?.pnr===b.pnr));
+  // PII permission is distinct from CRM access; keep phone masked for restricted roles.
+  const canSeePhone=req.user.permissions.includes('bookings.see_phone')&&CRMAccess.viewPhone(req);
+  const displayed=CRMAccess.maskedBooking(crmDisplayBooking(b),canSeePhone);
+  return { booking:{
+    ...displayed,cancellations:b.cancellations||[],comments:b.comments||[],
+    coupon:b.coupon,miles_used:b.miles_used,
+    booked_by:b.booked_by?{name:b.booked_by.name,role:b.booked_by.role}:null,
+    agent_phone:canSeePhone?b.agent_phone:null
+  }, map, history };
 }));
 // ---------- Chats ----------
 r.get('/chats', can('chats.view'), h((req) => {

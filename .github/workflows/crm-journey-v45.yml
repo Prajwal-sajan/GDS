@@ -1,0 +1,31 @@
+name: CRM Journey Seat Layout v45
+on:
+  push:
+    branches:
+      - feature/crm-journey-seat-layout-v45
+  pull_request:
+    paths:
+      - "public/js/crm-journey-v45.js"
+      - "public/js/crm-screenshot-v8.js"
+      - "public/css/crm-journey-v45.css"
+      - "server/api/misc.js"
+      - "tests/crm-journey-v45.test.cjs"
+      - "tests/check-crm-v8.mjs"
+      - ".github/workflows/crm-journey-v45.yml"
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Run source-backed CRM ticket, inventory and privacy tests
+        run: node --test tests/crm-journey-v45.test.cjs
+      - name: Run original CRM screenshot regression
+        run: node tests/check-crm-v8.mjs
+      - name: Run integrated API regression
+        run: npm test

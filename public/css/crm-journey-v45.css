@@ -1,0 +1,129 @@
+/* CRM current-journey ticket v45. All rules scoped to this modal; other modules unchanged.
+   Screenshot calibration: two 255px 2+1 decks, 44px seat rows, 6px vertical gaps,
+   2-column card panel, blue/pink/green gradient seats. */
+body.cv8-locked{overflow:hidden}
+.cv8-overlay.cv8-v45-overlay{background:rgba(0,0,0,.78);padding:19px 32px;z-index:2050}
+.cv8-v45-overlay .cv8-dialog{width:min(1640px,100%);height:min(940px,calc(100dvh - 38px));max-height:calc(100dvh - 38px);border-radius:13px;box-shadow:0 18px 55px #0004}
+.cv8-v45-overlay .cv8-dialog-hd{padding:31px 32px 20px;min-height:128px;flex:0 0 auto}
+.cv8-v45-overlay .cv8-dialog-hd h2{font-weight:750;font-size:24px;line-height:1.32;color:#050c17;margin:3px 54px 12px 0}
+.cv8-v45-overlay .cv8-dialog-hd>div{font-size:18px;line-height:1.45;letter-spacing:.01em;color:#6c7d99;padding-right:55px}
+.cv8-v45-overlay .cv8-dialog-close{top:22px;right:25px;width:50px;height:50px;background:#fff;border:1px solid #e0e7f0;border-radius:50%;color:#9ba5b4;box-shadow:0 2px 5px #21314a1c}
+.cv8-v45-overlay .cv8-dialog-close:hover{background:#f4f7ff;color:#355fe5}
+.cv8-v45-overlay .cv8-dialog-close:focus-visible,.cv8-v45-overlay button:focus-visible{outline:3px solid #91adff;outline-offset:2px}
+.cv8-v45-overlay .cv8-dialog-body{display:grid;grid-template-columns:minmax(0,1.035fr) minmax(0,1fr);gap:22px;padding:0 32px 16px;min-height:0;overflow:hidden}
+.cv8-v45-overlay .cv8-map-side{overflow:auto;min-width:0;min-height:0;gap:10px;scrollbar-width:thin}
+.cv8-v45-overlay .cv8-map-wrap{border:2px solid #cbd1da;border-radius:14px;min-height:0;flex:none;overflow:auto;padding:17px 15px 16px;background:#fff}
+.cv8-v45-overlay .cv8-busmaps{display:flex;justify-content:center;gap:18px;min-width:max-content;padding:0 4px 6px}
+.cv8-v45-overlay .cv8-deck{box-sizing:border-box;width:256px;min-height:0;flex:none;border:2.5px solid #96a6be;border-radius:32px;background:linear-gradient(180deg,#f9fbff 0%,#eff3fb 100%);padding:16px 13px 24px;align-items:stretch;position:relative;box-shadow:0 2px 4px #263d6220}
+.cv8-v45-overlay .cv8-deck-title{height:76px;flex:none;display:flex;align-items:flex-start;justify-content:space-between;gap:9px;padding:21px 5px 17px;margin:0 0 18px;border-bottom:1px dashed #cdd4df;font-size:13px;font-weight:700;color:#344e70}
+.cv8-v45-overlay .cv8-deck-title strong{font-weight:700}
+.cv8-v45-overlay .cv8-wheel{height:43px;width:43px;flex:none;margin-top:-12px;background:radial-gradient(circle at 40% 30%,#2d7efb,#001c4a);border:3px solid #0b2245;border-radius:50%;box-shadow:0 0 0 2px #b6c9e1,0 3px 7px #132c5990}
+.cv8-v45-overlay .cv8-wheel-svg{height:36px;width:36px;display:block}
+.cv8-v45-overlay .cv8-seatgrid{display:grid;gap:6px 4px;align-content:start;min-width:0;width:100%;flex:none}
+.cv8-v45-overlay .cv8-seat.cv8-v45-seat{box-sizing:border-box;min-width:0;min-height:0;margin:0;padding:3px 2px 4px;border-radius:5px;display:flex;justify-content:center;align-items:center;flex-direction:column;position:relative;overflow:hidden;white-space:nowrap;text-align:center;font-weight:750;font-family:Poppins,Arial,sans-serif;line-height:1.12;background:linear-gradient(180deg,#fdfefe,#f8faff);border:1.7px solid #899db7;color:#4f627e;box-shadow:inset 0 1px #fff,0 2px 5px #25406222;cursor:default}
+.cv8-v45-overlay .cv8-seat.cv8-v45-seat.cv8-chair{font-size:15px;gap:0}
+.cv8-v45-overlay .cv8-seat.cv8-v45-seat.cv8-berth{font-size:15px;gap:5px}
+.cv8-v45-overlay .cv8-seat.cv8-v45-seat strong{font-size:16px;font-weight:780;line-height:1.06;text-shadow:0 1px 2px #1d3d6d19}
+.cv8-v45-overlay .cv8-seat.cv8-v45-seat .cv8-seat-fare{font-size:12px;font-weight:780;line-height:1.1}
+.cv8-v45-overlay .cv8-seat.cv8-v45-seat.cv8-chair .cv8-seat-fare{font-size:13px}
+.cv8-v45-overlay .cv8-seat.cv8-v45-seat.booked_male{color:#fff;border:2px solid #4a8dff;background:linear-gradient(180deg,#79b0ff,#317af1 88%);box-shadow:inset 0 2px 0 #c3dfff8c,inset 0 -2px 0 #1967dc69,0 3px 7px #276bd968}
+.cv8-v45-overlay .cv8-seat.cv8-v45-seat.booked_female{color:#fff;border:2px solid #f155a5;background:linear-gradient(180deg,#ff9ccc,#eb4695 90%);box-shadow:inset 0 2px 0 #ffe4f28c,inset 0 -2px 0 #d5367e61,0 3px 7px #dd488e67}
+.cv8-v45-overlay .cv8-seat.cv8-v45-seat.selected{color:#fff;border:2px solid #0a9d4f;background:linear-gradient(180deg,#23cd72,#008d46 92%);box-shadow:inset 0 2px 0 #b5ffd174,inset 0 -2px 0 #007b377e,0 4px 8px #087b4799}
+.cv8-v45-overlay .cv8-seat.cv8-v45-seat.hold{background:linear-gradient(#ffe9a0,#eab84e);color:#62460b;border:2px solid #dbad38}
+.cv8-v45-overlay .cv8-seat.cv8-v45-seat.blocked{background:linear-gradient(#e5e9f2,#bac3d3);color:#58677c;border:2px solid #aeb8c6}
+.cv8-v45-overlay .cv8-seat.cv8-v45-seat.no_show{background:linear-gradient(#ffc58c,#ec7c3b);color:#fff;border:2px solid #f59343}
+.cv8-v45-overlay .cv8-seat.cv8-v45-seat.other_leg{background:linear-gradient(#e4efff,#b8d1fa);color:#3e639c;border:2px solid #b4ccf6}
+.cv8-v45-overlay .cv8-seat-count{position:absolute;top:1px;right:2px;font-size:9px;font-weight:800;color:inherit;line-height:1;letter-spacing:-.04em;text-shadow:0 1px 2px #244b8599;opacity:.94}
+.cv8-v45-overlay .cv8-seat-count.bottom{top:auto;right:4px;left:4px;bottom:4px;font-size:11px;line-height:1.06;border:1px solid #ffffff91;border-radius:3px;background:#ffffff36;box-shadow:inset 0 1px #ffffff30}
+.cv8-v45-overlay .cv8-seat.cv8-v45-seat.cv8-berth:has(.cv8-seat-count.bottom){padding-bottom:22px}
+.cv8-v45-overlay .cv8-emergency{display:grid;place-items:center;position:absolute;bottom:16px;left:77px;height:39px;width:46px;color:#ec252e}
+.cv8-v45-overlay .cv8-emergency-svg{width:42px;height:42px}
+.cv8-v45-overlay .cv8-deck .cv8-exit{width:43px;height:7px;left:76px;bottom:0;background:#ed2528;border-radius:3px 3px 0 0}
+.cv8-v45-overlay .cv8-deck-lower{padding-bottom:24px}
+.cv8-v45-overlay .cv8-seat-inspection{display:flex;gap:8px;align-items:center;line-height:1.4;font-size:12px;color:#56708e;padding:9px 12px;border:1px solid #dbe6f6;border-radius:10px;background:#f7faff}
+.cv8-v45-overlay .cv8-seat-inspection:empty{display:none}
+.cv8-v45-overlay .cv8-seat-rule{background:#f7faff;border-color:#dbe7fa;color:#6b7c96;padding:10px 12px;line-height:1.5}
+.cv8-v45-overlay .cv8-dialog-side{gap:22px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;padding:0 5px 20px 0}
+.cv8-v45-overlay .cv8-actionbar{display:grid;grid-template-columns:1.12fr 1fr 1.08fr .9fr;gap:10px 9px;align-items:center;border:1px solid #e0e8f4;border-radius:23px;background:linear-gradient(#fff,#fafbfe);padding:14px 13px;position:relative}
+.cv8-v45-overlay .cv8-actionbar button{font-size:13px;font-weight:640;min-width:0;min-height:40px;width:100%;padding:8px 9px;border:1px solid #dce5f2;border-radius:12px;color:#1d385a;background:#fff;display:flex;gap:7px;align-items:center;justify-content:center;white-space:nowrap}
+.cv8-v45-overlay .cv8-actionbar button svg{color:#1565f7;flex:none;width:17px;height:17px}
+.cv8-v45-overlay .cv8-actionbar button.primary{background:linear-gradient(128deg,#2967f8,#0b43cd);color:#fff;border-color:#1557e5;box-shadow:0 4px 8px #154cce2e}
+.cv8-v45-overlay .cv8-actionbar button.primary svg{color:#fff}
+.cv8-v45-overlay .cv8-actionbar button.danger{color:#f12236;border-color:#ffcbd1;background:#fff}
+.cv8-v45-overlay .cv8-actionbar button.danger svg{color:#f12236}
+.cv8-v45-overlay .cv8-actionbar button:disabled{opacity:.43;cursor:not-allowed}
+.cv8-v45-overlay .cv8-actionbar .cv8-notifyholder{min-width:0;display:flex;width:100%;position:relative}
+.cv8-v45-overlay .cv8-notifymenu{min-width:260px;top:calc(100% + 5px);right:0;box-shadow:0 9px 22px #0d1e3836;z-index:40}
+.cv8-v45-overlay .cv8-actionbar button:hover:not(:disabled){border-color:#92b3ff}
+.cv8-v45-overlay .cv8-detailcard{background:linear-gradient(114deg,#fff,#f1f5ff);border:1.8px solid #b4ccff;border-radius:22px;padding:21px 21px}
+.cv8-v45-overlay .cv8-detailcard.booking{display:grid;grid-template-columns:56px minmax(0,1fr) 28px;gap:13px;align-items:start;min-height:133px}
+.cv8-v45-overlay .cv8-booking-icon{width:52px;height:52px;border-radius:14px;background:linear-gradient(#1d65f6,#1247c7);color:#fff;box-shadow:0 5px 9px #164bc54d;display:grid;place-items:center}
+.cv8-v45-overlay .cv8-booking-main{min-width:0;overflow-wrap:anywhere}
+.cv8-v45-overlay .cv8-booking-main h3{font-size:19px;letter-spacing:-.4px;margin:3px 0 6px;color:#0e1524;font-weight:780}
+.cv8-v45-overlay .cv8-booking-main h3 small{color:#2558cb;font-weight:550;font-size:14px}
+.cv8-v45-overlay .cv8-booking-main p{margin:5px 0;font-size:13px;color:#576b88;line-height:1.45}
+.cv8-v45-overlay .cv8-booking-main .cv8-blue{font-size:16px;color:#0e5af1}
+.cv8-v45-overlay .cv8-booking-main .cv8-source{font-size:12px;display:inline-flex;padding:3px 11px;margin-left:6px;vertical-align:middle}
+.cv8-v45-overlay .cv8-booking-collapse{background:none;border:0;color:#94a3b5;padding:3px;width:28px;height:28px;display:grid;place-items:center}
+.cv8-v45-overlay .cv8-booking-collapse:hover{color:#2753d1}
+.cv8-v45-overlay .cv8-detailcard.booking.is-collapsed{min-height:73px;align-items:center}
+.cv8-v45-overlay .cv8-detailcard.booking.is-collapsed .cv8-booking-main p{display:none}
+.cv8-v45-overlay .cv8-commentcard{border:1px solid #dfe8f3;border-radius:21px;padding:17px;color:#6d809e;font-size:13px;background:#fff}
+.cv8-v45-overlay .cv8-commentcard>div{font-size:13px;letter-spacing:.01em;color:#687b9a}
+.cv8-v45-overlay .cv8-commentcard button{font-size:13px;color:#1265fe}
+.cv8-v45-overlay .cv8-commentcard p{font-size:12px}
+.cv8-v45-overlay .cv8-detailcard.contact{padding:20px 19px 21px}
+.cv8-v45-overlay .cv8-detailcard.contact h3{font-size:18px;color:#101827;margin-bottom:13px}
+.cv8-v45-overlay .cv8-contactgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:12px}
+.cv8-v45-overlay .cv8-contactgrid>div{border:1px solid #dfe5f0;border-radius:19px;min-height:64px;padding:9px 12px}
+.cv8-v45-overlay .cv8-contactgrid>div>svg{width:40px;height:40px;border-radius:13px;flex:none}
+.cv8-v45-overlay .cv8-contactgrid small{font-size:11px;letter-spacing:.01em;color:#879dc1}
+.cv8-v45-overlay .cv8-contactgrid strong{font-size:14px;color:#12203a;font-weight:550}
+.cv8-v45-overlay .cv8-contactgrid>div>b{padding:7px 12px;font-size:12px}
+.cv8-v45-overlay .cv8-sectionhead{gap:11px}
+.cv8-v45-overlay .cv8-sectionhead h3{font-weight:750;color:#07142c;font-size:19px}
+.cv8-v45-overlay .cv8-passenger{background:#fff;border:2px solid #bad0ff;border-radius:18px;padding:15px 17px;min-height:94px;margin:0}
+.cv8-v45-overlay .cv8-seatlabel{border-radius:10px;padding:9px 13px;font-size:14px;background:linear-gradient(#2565f4,#1047cd)}
+.cv8-v45-overlay .cv8-passenger>div{display:flex;flex-direction:column;gap:5px;min-width:0}
+.cv8-v45-overlay .cv8-passenger>div b{font-weight:600}
+.cv8-v45-overlay .cv8-gender{background:#dbeaff;color:#225dc1;border-radius:20px;font-size:12px;padding:5px 11px}
+.cv8-v45-overlay .cv8-gender.female{background:#ffe8f4;color:#db278a}
+.cv8-v45-overlay .cv8-gender.other{background:#eee9ff;color:#7c54b6}
+.cv8-v45-overlay .cv8-passfare{white-space:nowrap;border-radius:19px;background:#ecf2ff;color:#1554d0;font-size:14px}
+.cv8-v45-overlay .cv8-detailcard.fare,.cv8-v45-overlay .cv8-detailcard.payment{background:#fff}
+.cv8-v45-overlay .cv8-outerfooter{display:none}
+@media (max-width:1260px){
+ .cv8-v45-overlay .cv8-dialog-body{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;padding:0 16px 12px}
+ .cv8-v45-overlay .cv8-map-wrap{padding:13px}
+ .cv8-v45-overlay .cv8-deck{width:235px;padding-left:11px;padding-right:11px}
+ .cv8-v45-overlay .cv8-actionbar{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:960px){
+ .cv8-overlay.cv8-v45-overlay{padding:9px}
+ .cv8-v45-overlay .cv8-dialog{height:calc(100dvh - 18px);max-height:calc(100dvh - 18px)}
+ .cv8-v45-overlay .cv8-dialog-hd{padding:18px;min-height:0}
+ .cv8-v45-overlay .cv8-dialog-hd h2{font-size:20px}
+ .cv8-v45-overlay .cv8-dialog-hd>div{font-size:13px}
+ .cv8-v45-overlay .cv8-dialog-body{display:flex;flex-direction:column;overflow-y:auto;gap:16px;padding:0 12px 16px}
+ .cv8-v45-overlay .cv8-map-side,.cv8-v45-overlay .cv8-dialog-side{overflow:visible}
+ .cv8-v45-overlay .cv8-busmaps{justify-content:flex-start}
+ .cv8-v45-overlay .cv8-deck{width:256px}
+ .cv8-v45-overlay .cv8-dialog-side{padding-right:0}
+}
+@media(max-width:560px){
+ .cv8-v45-overlay .cv8-dialog-hd{padding:16px 12px}
+ .cv8-v45-overlay .cv8-dialog-close{top:12px;right:12px;width:38px;height:38px}
+ .cv8-v45-overlay .cv8-actionbar{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:10px}
+ .cv8-v45-overlay .cv8-contactgrid{grid-template-columns:1fr}
+ .cv8-v45-overlay .cv8-deck{width:220px}
+ .cv8-v45-overlay .cv8-busmaps{gap:13px}
+ .cv8-v45-overlay .cv8-booking-main h3{font-size:16px}
+}
+
+/* CRM actions use the shared GDS modal host; place confirmations above this ticket overlay. */
+body.cv8-locked #modal-root .ov{z-index:2300}
+body.cv8-locked #toasts{z-index:2400}
+.cv8-v45-overlay .cv8-commentcard button:disabled{opacity:.45;cursor:not-allowed}
+.cv8-v45-overlay .cv8-passenger-cancelled{font-size:11px;color:#d12c44;font-weight:650}
+
+.cv8-v45-overlay .cv8-deck-upper{padding-bottom:28px}
