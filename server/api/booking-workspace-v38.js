@@ -14,12 +14,23 @@ const need=(req,label='View bookings')=>{
  return Access.requireBooking(req,b,label);
 };
 const active=b=>(b.passengers||[]).filter(p=>p.status!=='cancelled');
+const autoCompatible=(b,targetRoute)=>{
+ const old=db.col('routes').get(b.route_id);
+ if(!old||!targetRoute)return false;
+ if(String(old.id)===String(targetRoute.id))return true;
+ const from=(old.stages||[]).find(p=>String(p.id)===String(b.boarding_stage_id));
+ const to=(old.stages||[]).find(p=>String(p.id)===String(b.dropping_stage_id));
+ return !!from&&!!to&&(targetRoute.stages||[]).some(p=>p.type==='pickup'&&
+   String(p.city_id)===String(b.from_city_id)&&p.name===from.name)&&
+  (targetRoute.stages||[]).some(p=>p.type==='drop'&&
+   String(p.city_id)===String(b.to_city_id)&&p.name===to.name);
+};
 const eligible=(b,s)=>{
  if(!s||s.status!=='active')return false;
  const route=db.col('routes').get(s.route_id);
  if(!route)return false;
  const a=D.cityOrder(route,b.from_city_id),z=D.cityOrder(route,b.to_city_id);
- return a>=0&&z>a;
+ return a>=0&&z>a&&autoCompatible(b,route);
 };
 const stagesFor=(b)=>{
  const s=db.col('schedules').get(b.schedule_id);

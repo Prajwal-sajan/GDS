@@ -75,6 +75,13 @@ const bookingUrl=b=>'/bookings/'+enc(b.pnr);
   assert.equal(saved.body.contact.email,'v38@example.com');
   assert.equal(saved.body.passengers.find(p=>String(p.seat)===String(live[0].seat)).gender,'F');
   assert.ok((await get(prefix+'/history')).body.events.some(x=>x.kind==='edit'));
+  // Legacy G.bookingModal sends passenger name-only rows; v38 must preserve their age/gender.
+  const legacy=await request('PUT',prefix,{
+    contact:editInput.contact,
+    passengers:live.map(p=>({seat:p.seat,name:'Legacy '+String(p.name).slice(0,90)}))
+  });
+  assert.equal(legacy.status,200,JSON.stringify(legacy.body));
+  assert.ok(legacy.body.passengers.some(p=>String(p.seat)===String(live[0].seat)&&p.gender==='F'));
   assert.equal((await request('PUT',prefix,editInput,viewer)).status,403);
 
   // Choose a future date and one direction-compatible, free target service.

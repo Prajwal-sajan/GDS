@@ -62,7 +62,7 @@ r.get('/trips/:sid', can('trips.view'), h((req) => {
   for (const b of bs) for (const p of b.passengers) {
     const bst = stages.find((x) => x.id == b.boarding_stage_id), dst = stages.find((x) => x.id == b.dropping_stage_id);
     const conv = D.passengerConvId(b, p);
-    passengers.push({ pnr: b.pnr, ticket: b.ticket_number, seat: p.seat, name: p.name, gender: p.gender, age: p.age, status: b.status === 'cancelled' || p.status === 'cancelled' ? 'cancelled' : b.status === 'hold' ? 'hold' : p.status, call_status: p.call_status, phone: b.contact.phone, source: b.source, payment: b.payment, fare: p.fare, from: D.cityName(b.from_city_id), to: D.cityName(b.to_city_id), boarding: bst ? { id: bst.id, name: bst.name, time: bst.time, day: bst.day, pickup_type: bst.pickup_type } : null, dropping: dst ? { id: dst.id, name: dst.name, time: dst.time, day: dst.day } : null, tier: db.col('customers').find((c) => c.phone === b.contact.phone)?.tier || 'Bronze', trips: db.col('bookings').count((x) => x.contact.phone === b.contact.phone && x.status === 'confirmed'), unread: db.col('messages').count((m) => m.conversation_id === conv && m.direction === 'in' && !m.read), conversation_id: conv, comments: b.comments });
+    passengers.push({ pnr: b.pnr, ticket: b.ticket_number, booked_at:b.booked_at, seat: p.seat, name: p.name, gender: p.gender, age: p.age, status: b.status === 'cancelled' || p.status === 'cancelled' ? 'cancelled' : b.status === 'hold' ? 'hold' : p.status, call_status: p.call_status, phone: b.contact.phone, source: b.source, payment: b.payment, fare: p.fare, from: D.cityName(b.from_city_id), to: D.cityName(b.to_city_id), boarding: bst ? { id: bst.id, name: bst.name, time: bst.time, day: bst.day, pickup_type: bst.pickup_type } : null, dropping: dst ? { id: dst.id, name: dst.name, time: dst.time, day: dst.day } : null, tier: db.col('customers').find((c) => c.phone === b.contact.phone)?.tier || 'Bronze', trips: db.col('bookings').count((x) => x.contact.phone === b.contact.phone && x.status === 'confirmed'), unread: db.col('messages').count((m) => m.conversation_id === conv && m.direction === 'in' && !m.read), conversation_id: conv, comments: b.comments });
   }
   const stops = stages.map((st) => ({ ...st, pickups: passengers.filter((p) => p.boarding?.id === st.id && p.status !== 'cancelled').length, drops: passengers.filter((p) => p.dropping?.id === st.id && p.status !== 'cancelled').length, event: (s.stop_events || {})[st.id] || null }));
   const v = s.vehicle_id ? db.col('vehicles').get(s.vehicle_id) : null;
@@ -326,21 +326,32 @@ r.put('/bookings/:pnr',can('bookings.modify'),h(req=>{
     update.contact={name,phone,email};fields.push('Contact & Journey Details');
   }
   if(passengers!==undefined){
-    if(!Array.isArray(passengers)||passengers.length!==(b.passengers||[]).filter(p=>p.status!=='cancelled').length)
-      throw D.httpErr(400,'Provide every active passenger in this ticket');
+    if(!Array.isArray(passengers)||!passengers.length||passengers.length>b.passengers.length)
+      throw D.httpErr(400,'Provide valid passenger seat records');
     const seen=new Set(),pax=[];
     for(const input of passengers){
       const seat=String(input.seat||'');
       if(seen.has(seat))throw D.httpErr(400,'Duplicate passenger seat');
       seen.add(seat);
-      const old=b.passengers.find(p=>String(p.seat)===seat&&p.status!=='cancelled');
-      if(!old)throw D.httpErr(400,'Seat does not belong to this active PNR');
-      const name=String(input.name||'').trim(),age=Number(input.age);
-      const gender=String(input.gender||'').trim().toUpperCase();
+      const existing=b.passengers.find(p=>String(p.seat)===seat);
+      if(!existing)throw D.httpErr(400,'Seat does not belong to this PNR');
+      if(existing.status==='cancelled'){
+        // The older booking editor may submit unchanged cancelled rows.
+        // Never modify or reactivate a cancelled passenger.
+        if(input.name!==undefined&&String(input.name)!==String(existing.name))
+          throw D.httpErr(400,'Cancelled passenger records cannot be edited');
+        continue;
+      }
+      const old=existing;
+      const name=String(input.name??old.name??'').trim(),age=Number(input.age??old.age);
+      const rawGender=String(input.gender??old.gender??'').trim().toUpperCase();
+      const gender=rawGender==='FEMALE'?'F':rawGender==='MALE'?'M':
+        rawGender==='OTHER'?'O':rawGender;
       if(!name||name.length>120||!Number.isInteger(age)||age<1||age>120||!['M','F','O'].includes(gender))
         throw D.httpErr(400,'Each passenger needs a name, age 1–120 and gender M/F/O');
       pax.push({old,name,age,gender});
     }
+    if(!pax.length)throw D.httpErr(400,'No active passenger updates supplied');
     update.passengers=pax;fields.push('Passenger Information');
   }
   const route=db.col('routes').get(b.route_id),schedule=db.col('schedules').get(b.schedule_id);
