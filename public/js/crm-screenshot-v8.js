@@ -91,22 +91,72 @@ function detailsBox(icon,title,content,more=''){return `<section class="cv8-deta
 function printBooking(b,invoice=false){const win=window.open('','_blank','width=860,height=700');if(!win){G.toast('Allow popups to print the ticket','warn');return;}
  const safe=v=>E(v);
  win.document.write(`<!doctype html><html><head><title>${invoice?'Payment statement':'Ticket'} ${safe(b.pnr)}</title><style>body{font:15px Arial,sans-serif;color:#17213d;margin:40px}h1{color:#235de9}table{border-collapse:collapse;width:100%}td,th{padding:10px;border:1px solid #ddd;text-align:left}</style></head><body><h1>${invoice?'Booking payment statement':'Passenger ticket'}</h1><p>Service ${safe(b.service)} · PNR ${safe(b.pnr)} · ${safe(dmy(b.travel_date))}</p><p>${safe(b.from)} → ${safe(b.to)}</p><p>Contact ${safe(b.contact?.name)} · ${safe(b.contact?.phone)}</p><table><tr><th>Passenger</th><th>Seat</th><th>Fare</th></tr>${(b.passengers||[]).map(p=>`<tr><td>${safe(p.name)}</td><td>${safe(p.seat)}</td><td>${R(p.fare)}</td></tr>`).join('')}</table><h2>Total ${R(b.fare?.total)}</h2><p>Payment status: ${safe(b.payment)}</p>${invoice?'<p>This is a payment statement, not a statutory GST tax invoice. Verify operator invoice details before issuing one.</p>':''}</body></html>`);win.document.close();win.focus();win.print();}
+async function shiftBookingV45(b){
+ const pnr=b.pnr;
+ const active=(b.passengers||[]).filter(p=>p.status!=='cancelled');
+ if(!active.length){G.toast('This booking has no active passenger seats','warn');return false;}
+ const proposed=b.travel_date>=today()?b.travel_date:today();
+ const datePrompt=await G.prompt('Shift Passenger · Select journey date',[
+  {name:'date',label:'Target journey date',type:'date',required:true,value:proposed}
+ ],{ok:'Find services'});
+ if(!datePrompt)return false;
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(String(datePrompt.date||''))){G.toast('Select a valid journey date','bad');return false;}
+ const options=await G.get('/bookings/'+encodeURIComponent(pnr)+'/shift-options?date='+encodeURIComponent(datePrompt.date));
+ const services=options.services||[];
+ if(!services.length){G.toast('No eligible active services with this journey direction','warn');return false;}
+ const serviceChoice=await G.prompt('Shift Passenger · Select service',[
+  {name:'schedule_id',type:'select',label:'Target service',full:true,required:true,
+   options:services.map(x=>[String(x.id),x.service+' · '+x.departure_time+' · '+x.free_seats+' free seats'])}
+ ],{ok:'Choose passenger seats'});
+ if(!serviceChoice)return false;
+ const selected=services.find(x=>String(x.id)===String(serviceChoice.schedule_id));
+ if(!selected){G.toast('Choose an available service','bad');return false;}
+ const layout=await G.get('/bookings/'+encodeURIComponent(pnr)+'/shift-seats?schedule_id='+encodeURIComponent(selected.id));
+ const choices=layout.seats||[];
+ if(choices.length<active.length){G.toast('Not enough available seats on the target service','warn');return false;}
+ const fields=active.map((p,i)=>({
+  name:'seat_'+i,label:'New seat for '+p.name+' ('+p.seat+')',type:'select',required:true,full:true,
+  options:choices.map(x=>[String(x.seat),x.seat+' · '+(x.status||'available').replace(/_/g,' ')])
+ }));
+ fields.push({name:'notify',label:'Record passenger notification after shift',type:'checkbox',value:true,full:true});
+ const assignment=await G.prompt('Shift Passenger · Assign seats',fields,{ok:'Review shift'});
+ if(!assignment)return false;
+ const assigned=active.map((p,i)=>String(assignment['seat_'+i]||''));
+ if(assigned.some(x=>!choices.some(y=>String(y.seat)===x))||new Set(assigned).size!==assigned.length){
+  G.toast('Select a different available target seat for every passenger','bad');return false;
+ }
+ const seat_map=Object.fromEntries(active.map((p,i)=>[String(p.seat),assigned[i]]));
+ const description=active.length+' passenger(s) to '+datePrompt.date+' · '+selected.service+
+  ' · '+Object.entries(seat_map).map(([from,to])=>from+' → '+to).join(', ');
+ const confirmed=await G.confirm('Confirm shift of '+description+'?',{ok:'Confirm Shift'});
+ if(!confirmed)return false;
+ await G.post('/bookings/'+encodeURIComponent(pnr)+'/shift',{schedule_id:Number(selected.id),seat_map});
+ if(assignment.notify&&can('trips.chat')){
+  try {
+   const notice=await G.post('/trips/'+encodeURIComponent(selected.id)+'/notify',{
+    template:'ticket_confirmation',pnrs:[pnr]
+   });
+   if(notice.recorded)G.toast('Passenger message recorded; external delivery not verified','ok');
+  }catch(error){G.toast('Shift saved, but notification was not recorded: '+error.message,'warn');}
+ }
+ return true;
+}
 async function openBooking(pnr,refreshCustomer){
  let resp;try{resp=await G.get(`/crm/booking/${encodeURIComponent(pnr)}`)}catch(e){G.err(e);return;}
  const b=resp.booking,map=resp.map,previousFocus=document.activeElement,root=document.createElement('div');root.className='cv8-overlay cv8-v45-overlay';root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-label',`Booking details ${pnr}`);
  const maptpl=CRMJourneyV45.mapHtml(map,b);
  const fare=b.fare||{}, base=Number(fare.gross||0),discount=Number(fare.discount||0),miles=Number(fare.miles_discount||0),net=base-discount-miles,gst=Number(fare.gst||0),total=Number(fare.total||0);
  const fareBox=detailsBox('clipboard','',`<div class="cv8-fare-row"><span>Base Fare (${b.passengers.length} seat${b.passengers.length>1?'s':''})</span>${R(base)}</div><div class="cv8-fare-row good"><span>Discount</span>−${R(discount)}</div>${miles?`<div class="cv8-fare-row good"><span>Miles redeemed</span>−${R(miles)}</div>`:''}<div class="cv8-fare-row"><span>Net Fare</span>${R(net)}</div><div class="cv8-fare-row"><span>GST (5%)</span>${R(gst)}</div><div class="cv8-fare-row total"><strong>Total Payable</strong><strong>${R(total)}</strong></div><div class="cv8-fare-row good"><span>Amount Paid</span>${b.payment==='paid'?R(total):b.payment==='settle_later'?'Pending settlement':b.payment==='unpaid'?'Not paid':'—'}</div>`,'fare');
- root.innerHTML=`<div class="cv8-dialog"><header class="cv8-dialog-hd"><h2>Book Seats - ${E(b.service)}</h2><div>${E(b.from)} → ${E(b.to)} • ${journeyDate(b.travel_date)}</div><button class="cv8-dialog-close" data-cv8-close title="Close">${I('x',24)}</button></header><div class="cv8-dialog-body"><div class="cv8-map-side"><div class="cv8-map-wrap"><div class="cv8-busmaps">${maptpl}</div></div><div class="cv8-seat-inspection" data-cv8-seat-inspection role="status" aria-live="polite"></div><div class="cv8-seat-rule">${I('users',18)} Seat availability and adjacency restrictions follow the current route configuration.</div></div><aside class="cv8-dialog-side"><section class="cv8-actionbar"><button class="primary" data-cv8-action="edit">${I('edit')} Update Ticket</button><button data-cv8-action="print">${I('printer')} Print Ticket</button><button data-cv8-action="invoice">${I('clipboard')} Print Invoice</button><span class="cv8-notifyholder"><button data-cv8-action="notify-toggle">${I('bell')} Notify ${I('chevron',14)}</button><div class="cv8-notifymenu" data-cv8-notifymenu hidden>${[['ticket_confirmation','Ticket Confirmation','Resend booking confirmation'],['bus_details','Bus Details','Tracker + bus + driver'],['custom','Bus Delay / Early','Reason + minutes + tracker'],['bus_cancellation','Bus Cancellation','Inform pax; cancellation is separate']].map(([k,t,st])=>`<button data-cv8-notify="${k}"><b>${t}</b><small>${st}</small></button>`).join('')}</div></span><button class="danger" data-cv8-action="cancel">${I('circlex')} Cancel Ticket</button><button data-cv8-action="shift">${I('arrows')} Shift Passenger</button><button data-cv8-action="history">${I('history')} Show History</button><button data-cv8-action="chat">${I('chat')} Chat Pax</button><button data-cv8-action="comment">${I('plus')} Comment</button></section>
+ root.innerHTML=`<div class="cv8-dialog"><header class="cv8-dialog-hd"><h2>Book Seats - ${E(b.service)}</h2><div>${E(b.from)} → ${E(b.to)} • ${journeyDate(b.travel_date)}</div><button class="cv8-dialog-close" data-cv8-close title="Close">${I('x',24)}</button></header><div class="cv8-dialog-body"><div class="cv8-map-side"><div class="cv8-map-wrap"><div class="cv8-busmaps">${maptpl}</div></div><div class="cv8-seat-inspection" data-cv8-seat-inspection role="status" aria-live="polite"></div><div class="cv8-seat-rule">${I('users',18)} Seat availability and adjacency restrictions follow the current route configuration.</div></div><aside class="cv8-dialog-side"><section class="cv8-actionbar"><button class="primary" data-cv8-action="edit" ${b.status==='confirmed'&&can('bookings.modify')?'':'disabled title="Requires confirmed booking and permission"'}>${I('edit')} Update Ticket</button><button data-cv8-action="print">${I('printer')} Print Ticket</button><button data-cv8-action="invoice">${I('clipboard')} Print Invoice</button><span class="cv8-notifyholder"><button data-cv8-action="notify-toggle" ${can('trips.chat')?'':'disabled title="Messaging permission required"'}>${I('bell')} Notify ${I('chevron',14)}</button><div class="cv8-notifymenu" data-cv8-notifymenu hidden>${[['ticket_confirmation','Ticket Confirmation','Resend booking confirmation'],['bus_details','Bus Details','Tracker + bus + driver'],['custom','Bus Delay / Early','Reason + minutes + tracker'],['bus_cancellation','Bus Cancellation','Inform pax; cancellation is separate']].map(([k,t,st])=>`<button data-cv8-notify="${k}"><b>${t}</b><small>${st}</small></button>`).join('')}</div></span><button class="danger" data-cv8-action="cancel" ${b.status==='confirmed'&&can('bookings.cancel')?'':'disabled title="Requires confirmed booking and cancellation permission"'}>${I('circlex')} Cancel Ticket</button><button data-cv8-action="shift" ${b.status==='confirmed'&&can('bookings.modify')&&can('bookings.view_all')?'':'disabled title="Requires confirmed booking and access"'}>${I('arrows')} Shift Passenger</button><button data-cv8-action="history" ${can('bookings.view_all')?'':'disabled title="Booking history requires access"'}>${I('history')} Show History</button><button data-cv8-action="chat" ${can('chats.view')?'':'disabled title="Chat permission required"'}>${I('chat')} Chat Pax</button><button data-cv8-action="comment" ${can('bookings.comments')?'':'disabled title="Booking comment permission required"'}>${I('plus')} Comment</button></section>
  ${CRMJourneyV45.ticketCard(b,I,datetime)}
- <section class="cv8-commentcard"><div>COMMENTS <button data-cv8-action="comment">${I('plus',16)} Add comment</button></div>${b.comments?.length?b.comments.map(c=>`<p>${E(c.text)}<small> · ${E(c.by)} ${datetime(c.at)}</small></p>`).join(''):'<p class="cv8-muted">No comments yet</p>'}</section>
+ <section class="cv8-commentcard"><div>COMMENTS <button data-cv8-action="comment" ${can('bookings.comments')?'':'disabled title="Booking comment permission required"'}>${I('plus',16)} Add comment</button></div>${b.comments?.length?b.comments.map(c=>`<p>${E(c.text)}<small> · ${E(c.by)} ${datetime(c.at)}</small></p>`).join(''):'<p class="cv8-muted">No comments yet</p>'}</section>
  ${detailsBox('calendar','Contact & Journey Details',`<div class="cv8-contactgrid"><div>${I('phone',22)} <span><small>MOBILE</small><strong>${E(b.contact?.phone||'—')}</strong></span></div><div>${I('mail',22)} <span><small>EMAIL</small><strong>${E(b.contact?.email||'N/A')}</strong></span></div><div>${I('pin',22)} <span><small>PICKUP POINT</small><strong>${E(b.boarding?.name||b.from)}</strong></span><b>${time(b.boarding?.time)}</b></div><div>${I('pin',22)} <span><small>DROP POINT</small><strong>${E(b.dropping?.name||b.to)}</strong></span><b>${time(b.dropping?.time)}</b></div></div>`,'contact')}
  <div class="cv8-sectionhead">${I('users',24)} <h3>Passenger Information</h3></div>${CRMJourneyV45.passengerCards(b,I,R)}
  ${fareBox}${detailsBox('wallet','',`<div class="cv8-paid">Payment: <span class="cv8-paidbadge">${E(b.payment||'Unknown')}</span></div><div class="cv8-fare-row"><span>Method</span>${E(b.payment_method||'Not recorded')}</div><div class="cv8-fare-row"><span>Source</span>${E(b.source)}</div>${fare.commission!=null?`<div class="cv8-fare-row"><span>Commission</span>${R(fare.commission)}</div>`:''}`,'payment')}
  <div class="cv8-dialog-foot"><button class="cv8-primary" data-cv8-close>${I('x',18)} Close</button></div></aside></div><div class="cv8-outerfooter"><button data-cv8-close>Close</button></div></div>`;
  document.body.appendChild(root);document.body.classList.add('cv8-locked');
  const close=()=>{root.remove();if(!document.querySelector('.cv8-overlay'))document.body.classList.remove('cv8-locked');document.removeEventListener('keydown',escClose);if(previousFocus?.isConnected)previousFocus.focus()};
- function escClose(ev){if(ev.key==='Escape'){ev.preventDefault();close();return;}if(ev.key==='Tab'){const items=[...root.querySelectorAll('button:not(:disabled),[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled)')].filter(x=>x.offsetParent!==null);if(!items.length)return;const first=items[0],last=items[items.length-1];if(ev.shiftKey&&document.activeElement===first){ev.preventDefault();last.focus()}else if(!ev.shiftKey&&document.activeElement===last){ev.preventDefault();first.focus()}}}
+ function escClose(ev){if(ev.key==='Escape'){if(document.querySelector('#modal-root .ov'))return;ev.preventDefault();close();return;}if(ev.key==='Tab'){const items=[...root.querySelectorAll('button:not(:disabled),[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled)')].filter(x=>x.offsetParent!==null);if(!items.length)return;const first=items[0],last=items[items.length-1];if(ev.shiftKey&&document.activeElement===first){ev.preventDefault();last.focus()}else if(!ev.shiftKey&&document.activeElement===last){ev.preventDefault();first.focus()}}}
  document.addEventListener('keydown',escClose);root.querySelector('.cv8-dialog-close')?.focus();root.addEventListener('click',async ev=>{
   const seatButton=ev.target.closest('[data-cv8-seat]');if(seatButton){const note=root.querySelector('[data-cv8-seat-inspection]');if(note)note.textContent=seatButton.getAttribute('aria-label');return;}
 
