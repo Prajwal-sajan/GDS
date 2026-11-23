@@ -392,8 +392,14 @@ async function click(action,node,S,V,ctx){
     if(!p?.conversation_id)return G.toast('Passenger conversation is not available','warn');
     location.hash='#/chats/'+encodeURIComponent(p.conversation_id);return true;
    }
-  case 'print-ticket':printTicket(V,false);return true;
-  case 'print-invoice':printTicket(V,true);return true;
+  case 'print-ticket':
+   if(window.TicketPrintV41)TicketPrintV41.open(V.pnr);
+   else G.toast('Ticket preview module is unavailable','bad');
+   return true;
+  case 'print-invoice':
+   if(window.TicketPrintV41)TicketPrintV41.invoiceNotice();
+   else G.toast('Print invoice feature coming soon','warn');
+   return true;
  }
  return false;
 }

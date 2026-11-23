@@ -1,0 +1,45 @@
+name: v41 Schedule Booking Ticket Print & Invoice Notice
+on:
+  push:
+    branches: [savetrip-screenshotcomplete]
+    paths:
+      - 'server/booking-ticket-v41.js'
+      - 'server/api/booking-ticket-v41.js'
+      - 'server/index.js'
+      - 'public/js/ticket-print-v41.js'
+      - 'public/css/ticket-print-v41.css'
+      - 'public/js/booking-ticket-v38.js'
+      - 'public/index.html'
+      - 'tests/ticket-print-v41-*.cjs'
+      - '.github/workflows/ticket-print-v41.yml'
+  workflow_dispatch:
+jobs:
+  ticket-v41:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Validate syntax
+        run: |
+          node --check server/booking-ticket-v41.js
+          node --check server/api/booking-ticket-v41.js
+          node --check public/js/ticket-print-v41.js
+          node --check public/js/booking-ticket-v38.js
+          node --check tests/ticket-print-v41-api.cjs
+          node --check tests/ticket-print-v41-ui.cjs
+      - name: Ticket 3-page A4 PDF and security
+        run: node tests/ticket-print-v41-api.cjs
+      - name: Ticket tab, Update cards, share, notification and SVG parity
+        run: node tests/ticket-print-v41-ui.cjs
+      - name: Existing schedule, booking and chart regressions
+        run: |
+          node tests/schedule-bookings-v38-api.cjs
+          node tests/schedule-bookings-v38-ui.cjs
+          node tests/pickup-chart-v40-api.cjs
+          node tests/pickup-chart-v40-ui.cjs
+          npm test
