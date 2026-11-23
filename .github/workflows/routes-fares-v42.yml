@@ -9,6 +9,7 @@ on:
       - 'server/domain.js'
       - 'server/api/master.js'
       - 'tests/check-route-fares-v42.cjs'
+      - 'tests/regression.js'
       - '.github/workflows/routes-fares-v42.yml'
   pull_request:
     branches: [savetrip-screenshotcomplete]
