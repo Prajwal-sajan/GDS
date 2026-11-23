@@ -196,7 +196,7 @@ function parsePaymentAdviceText(pages){
  const year=+(header.billing_period_start||header.issue_date||'').slice(0,4)||new Date().getFullYear();
  const {rows,sections}=parseLineItems(pages,year);
  if(!rows.length)throw new Error('No PNR payment/cancellation rows found in the document');
- const seen=new Set();for(const r of rows){const k=r.section+':'+r.pnr;r.id=k+':'+(seen.has(k)?r.id:'1');seen.add(k)}
+ const occurrence=new Map();for(const r of rows){const k=r.section+':'+r.pnr,n=(occurrence.get(k)||0)+1;occurrence.set(k,n);r.id=k+':'+n}
  const bySection=Object.fromEntries(['sold','pax_cancelled','bus_cancelled','exceptional_refund'].map(s=>[s,rows.filter(x=>x.section===s).length]));
  const uniquePNRs=new Set(rows.map(x=>x.pnr)).size;
  const warnings=[];
@@ -234,7 +234,8 @@ function compareInvoice(parsed,bookings,config={}){
   const commissionTax=Number(fare.ota_commission_gst??commission*(Number(config.gst_on_commission_percent??18)/100));
   const operatorOffer=Number(fare.operator_offer??0);
   const tax=Number(fare.gst??Math.max(0,Number(fare.total??0)-Number(fare.net??0)));
-  const hasActual=Number.isFinite(Number(fare.ota_commission))&&Number.isFinite(Number(fare.ota_commission_gst))&&fare.operator_offer!==undefined;
+  const actualNumber=value=>value!==undefined&&value!==null&&value!==''&&Number.isFinite(Number(value));
+  const hasActual=actualNumber(fare.ota_commission)&&actualNumber(fare.ota_commission_gst)&&actualNumber(fare.operator_offer)&&actualNumber(fare.ota_take_home);
   const ourPay=Number(fare.ota_take_home??(Number(fare.total??0)-commission-commissionTax-operatorOffer));
   const diff=entry.take_home==null?null:money(entry.take_home-ourPay);
   if(entry.commission!=null&&Math.abs(entry.commission-commission)>tolerance)flags.push('commission');
@@ -259,6 +260,8 @@ function compareInvoice(parsed,bookings,config={}){
  const stmtAmount=parsed.summary.invoice_amount;
  const totals={
   invoice_amount:stmtAmount,invoice_lines:parsed.statement_lines,parsed_events:parsed.rows.length,
+  invoice_adjustment_events:parsed.rows.filter(x=>x.section==='exceptional_refund').length,
+  ticket_rows:rows.filter(x=>!['exceptional_refund','missing_in_ota'].includes(x.section)).length,
   gds_comparable:invoiceLines.filter(x=>!!x.expected).length,verified:rows.filter(x=>x.verified).length,
   matched:rows.filter(x=>x.status==='matched').length,mismatched:rows.filter(x=>x.status==='mismatched').length,
   needs_review:rows.filter(x=>x.status==='needs_review').length,
@@ -293,7 +296,7 @@ const EXPORT_HEADERS=['PNR','DOJ (SaveTrip)','DOJ (OTA)','Fare (SaveTrip)','Fare
 const csvEscape=v=>{let value=String(v??'');if(typeof v!=='number'&&/^[=+@\t\r]|^-(?!\d+(?:\.\d+)?$)/.test(value))value="'"+value;return '"'+value.replace(/"/g,'""')+'"'};
 function exportCsv(doc,filter='all'){
  const rows=doc.lines.filter(x=>filter==='all'||x.status===filter);
- const mapped=rows.map(r=>[r.pnr,r.doj_gds||r.expected?.doj||'',r.doj||'',r.expected?.fare,r.fare,r.operator_offer,r.expected?.tax,r.tax,r.commission,r.commission_tax,'','',r.expected?.take_home,r.take_home,r.delta,r.resolution?.action?'Resolved: '+r.resolution.action:statusForCsv(r.status),r.resolution?.by||'',r.resolution?.note||r.why||'']);
+ const mapped=rows.map(r=>[r.pnr,r.doj_gds||r.expected?.doj||'',r.doj||'',r.expected?.fare,r.fare,r.operator_offer,r.expected?.tax,r.tax,r.commission,r.commission_tax,'','',r.expected?.take_home,r.take_home,r.delta,statusForCsv(r.status),r.resolution?.by||'',[(r.resolution?.action?'Resolution: '+r.resolution.action:''),r.resolution?.note||r.why||''].filter(Boolean).join(' | ')]);
  return '\ufeff'+[EXPORT_HEADERS,...mapped].map(x=>x.map(csvEscape).join(',')).join('\r\n')+'\r\n';
 }
 module.exports={invoiceFormula,extractPdf,parsePaymentAdviceText,parseLineItems,parseSummary,compareInvoice,exportCsv,EXPORT_HEADERS,positionedLines};
