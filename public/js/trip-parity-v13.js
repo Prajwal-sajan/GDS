@@ -151,8 +151,9 @@
       p.seat_upgrade?.status==='offered'&&Date.parse(p.seat_upgrade.expires_at||0)<=Date.now()?'expired':''
     ].join(':')).join('|');
     let busyUpgradeRefresh=false;
-    const liveUpgradeInterval=setInterval(async()=>{
-      if(!el.isConnected){clearInterval(liveUpgradeInterval);return;}
+    if(typeof window.setInterval==='function'){
+    const liveUpgradeInterval=window.setInterval(async()=>{
+      if(!el.isConnected){window.clearInterval?.(liveUpgradeInterval);return;}
       if(document.hidden||state.loading||busyUpgradeRefresh||!state.sid||!state.trip)return;
       busyUpgradeRefresh=true;
       try{
@@ -165,5 +166,6 @@
       }catch(_){/* keep last authenticated trip state during temporary offline periods */}
       finally{busyUpgradeRefresh=false}
     },5000);
+    }
   };
 })();
