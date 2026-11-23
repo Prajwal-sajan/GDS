@@ -47,7 +47,7 @@ async function loyalty(){await w.G.screens.settings(el,['loyalty-program']);}
  assert.ok(el.textContent.includes('2026-03-31'));
  const how=el.querySelector('[data-lv34-how]');how.click();
  assert.equal(el.querySelector('[data-lv34-overlay]').hidden,false);
- assert.match(el.querySelector('.lv34-dialog').textContent,/Redemption/);
+ assert.match(el.querySelector('.lv34-dialog').textContent,/Redeemed miles/);
  el.querySelector('[data-lv34-close]').click();
  assert.equal(el.querySelector('[data-lv34-overlay]').hidden,true);
  el.querySelector('[name="max_discount_percent"]').value='25';
