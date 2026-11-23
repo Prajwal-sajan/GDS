@@ -8,6 +8,7 @@ const { can, checkStepUp } = require('../auth');
 const r = express.Router();
 const Policy=require('../access-runtime-v27');
 const Coach21=require('../../public/js/coach-2plus1-v46');
+const Coach22=require('../../public/js/coach-2plus2-v47');
 const h = (fn) => (req, res) => { try { const out = fn(req, res); if (out !== undefined) res.json(out); } catch (e) { res.status(e.status || 500).json({ success: false, message: e.message }); } };
 const need = (x, msg = 'Not found') => { if (!x) throw D.httpErr(404, msg); return x; };
 
@@ -163,9 +164,10 @@ r.post('/coaches', can('fleet.modify'), h((req) => {
   const b=req.body||{};
   const identity={name:b.name||'New coach',bus_type:b.bus_type||'',pattern:b.pattern||'2+1'};
   const layout=b.layout||D.buildLayout({kind:b.kind||'seater_sleeper',pattern:identity.pattern});
-  if(Coach21.isTarget(identity)){
-    layout.capacity=Coach21.activeCount(layout);
-    try{Coach21.validateLayout(layout)}catch(e){throw D.httpErr(400,e.message)}
+  const patternHelper=Coach21.isTarget(identity)?Coach21:Coach22.isTarget(identity)?Coach22:null;
+  if(patternHelper){
+    layout.capacity=patternHelper.activeCount(layout);
+    try{patternHelper.validateLayout(layout)}catch(e){throw D.httpErr(400,e.message)}
   }
   return db.col('coaches').insert({name:identity.name,bus_type:identity.bus_type,pattern:identity.pattern,layout,
     amenities:b.amenities||[],emergency_exits:b.emergency_exits||[]});
@@ -179,11 +181,14 @@ r.put('/coaches/:id', can('fleet.modify'), h((req) => {
       throw D.httpErr(400,'Invalid coach layout');
     b.layout.capacity=b.layout.decks.reduce((a,d)=>a+d.seats.length,0);
   }
-  if(Coach21.isTarget(c)||Coach21.isTarget({...c,...b})){
-    if(b.layout){try{Coach21.validateLayout(b.layout)}catch(e){throw D.httpErr(400,e.message)}}
+  const existingHelper=Coach21.isTarget(c)?Coach21:Coach22.isTarget(c)?Coach22:null;
+  const futureHelper=Coach21.isTarget({...c,...b})?Coach21:Coach22.isTarget({...c,...b})?Coach22:null;
+  if(existingHelper||futureHelper){
+    if(b.layout&&futureHelper){try{futureHelper.validateLayout(b.layout)}catch(e){throw D.httpErr(400,e.message)}}
     const inUse=db.col('vehicles').count(v=>String(v.coach_template_id)===String(c.id))+
       db.col('routes').count(rt=>String(rt.coach_template_id)===String(c.id)&&rt.status!=='deleted');
-    if(inUse&&(b.layout&&Coach21.structuralSignature(c.layout)!==Coach21.structuralSignature(b.layout)||
+    if(inUse&&(b.layout&&(existingHelper||futureHelper).structuralSignature(c.layout)!==
+                             (existingHelper||futureHelper).structuralSignature(b.layout)||
        b.pattern&&b.pattern!==c.pattern||
        b.bus_type&&b.bus_type!==c.bus_type))
       throw D.httpErr(409,'Coach is assigned to vehicles/routes; physical seats and seat IDs cannot be changed without inventory migration');
