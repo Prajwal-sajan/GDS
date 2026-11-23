@@ -256,6 +256,7 @@ function compareInvoice(parsed,bookings,config={}){
   needs_review:rows.filter(x=>x.status==='needs_review').length,
   missing_in_gds:rows.filter(x=>x.status==='unmatched_ota').length,missing_in_ota:rows.filter(x=>x.status==='unmatched_gds').length,
   resolved:rows.filter(x=>x.resolution?.action).length,
+  disputed:rows.filter(x=>x.resolution?.action==='dispute').length,
   gds_expected:sum(expectedRows.map(x=>({v:x.expected.take_home})),'v'),
   ota_ticket_take_home:sum(invoiceLines.filter(x=>x.section==='sold'),'take_home'),
   discrepancy_total:sum(rows.filter(x=>x.delta!=null),'delta'),
