@@ -42,7 +42,7 @@ const pricing=(d)=>{
  ['Retention credit (c)','cancellation_credit','+'],['Operator cancellations (d)','operator_cancel','−'],
  ['Exceptional refund (e)','exception_refund','−'],['Operator offers (h)','operator_offers','−'],
  ['TCS deductions (l)','tcs','−'],['TDS 194-O (m)','tds','−']];
- return '<div class="ota43-breakdown"><div class="ota43-breakdown-head"><p>INVOICE BREAKDOWN</p><h2>How RedBus arrived at <strong>'+v('invoice_amount')+'</strong></h2><span>Every rupee traced from statement revenue to bank payout · '+int(d.statement_lines)+' ticket events</span>'+badge('matched')+'</div>'+
+ return '<div class="ota43-breakdown"><div class="ota43-breakdown-head"><p>INVOICE BREAKDOWN</p><h2>How RedBus arrived at <strong>'+v('invoice_amount')+'</strong></h2><span>Every rupee traced from statement revenue to bank payout · '+int(d.statement_lines)+' ticket events</span>'+(d.summary_delta===0?'<span class="ota43-tag matched">PDF TOTAL AGREES</span>':badge('needs_review'))+'</div>'+
  '<div class="ota43-revenue"><div><span class="ota43-label good">● REVENUE EARNED</span><p>Fare collected and settlement amount before deductions</p></div><div class="ota43-large">'+icon('receipt',24)+'<div><b>Bookings (a)</b><br><small>'+int(d.by_section?.sold)+' statement rows</small></div></div><strong>'+v('bookings')+'</strong></div>'+
  '<div class="ota43-adjust"><div><span class="ota43-label orange">● CANCELLATION ADJUSTMENTS</span><p>Refunds, retention credits and bus cancellations</p></div><div>'+entries.slice(1,5).map(x=>'<div class="ota43-finrow"><span>'+x[0]+'</span><b class="'+(x[2]==='+'?'green':'red')+'">'+x[2]+' '+v(x[1])+'</b></div>').join('')+'</div></div>'+
  '<div class="ota43-adjust"><div><span class="ota43-label blue">● OTHER DEDUCTIONS</span><p>Offers, TCS and TDS from the invoice summary</p></div><div>'+entries.slice(5).map(x=>'<div class="ota43-finrow"><span>'+x[0]+'</span><b>'+x[2]+' '+v(x[1])+'</b></div>').join('')+'</div></div>'+
@@ -144,7 +144,7 @@ function ledger(docs){
  '</tbody></table></div></section>';
 }
 async function loadLines(s){
- const query=new URLSearchParams({filter:s.filter||'all',q:s.search||'',offset:String(s.offset||0),limit:'35'});
+ const query=new URLSearchParams({filter:s.filter||'all',q:s.search||'',issue:s.issue&&s.issue!=='all'?s.issue:'',offset:String(s.offset||0),limit:'35'});
  const out=await G.get(q('/'+s.id+'/lines?'+query));
  s.rows=out.rows||[];s.rowCount=out.count||0;
 }
@@ -166,10 +166,10 @@ async function render(s){
  root.innerHTML=detailPanel(s.doc,s);
  const inline=root.querySelector('[data-ota43-inline]');
  if(inline){
-  await loadLines({...s,filter:s.issue==='all'?'unresolved':s.issue});
-  const target={...s,filter:s.issue==='all'?'unresolved':s.issue};
+  const target={...s,filter:s.issue==='all'?'unresolved':'all'};
   await loadLines(target);
-  const visible=filterLineRows(target.rows,target).slice(0,15);
+  s.rows=target.rows;
+  const visible=target.rows.slice(0,15);
   inline.innerHTML=visible.length?tableRows(visible):'<p class="ota43-empty">No rows in this category. Use Browse all tickets for the complete ledger.</p>';
  }
 }
@@ -193,7 +193,8 @@ async function resolveDialog(s,row,action){
  G.toast('Resolution recorded with operator identity','ok');await render(s);
 }
 async function inspect(s,id){
- const row=(s.rows||[]).find(x=>x.id===id) || ((await G.get(q('/'+s.id+'/lines?'+new URLSearchParams({q:'',limit:'100'})))).rows||[]).find(x=>x.id===id);
+ const pnr=String(id).split(':')[1]||'';
+ const row=(s.rows||[]).find(x=>x.id===id) || ((await G.get(q('/'+s.id+'/lines?'+new URLSearchParams({q:pnr,limit:'100'})))).rows||[]).find(x=>x.id===id);
  if(!row)return G.toast('Open this row from Browse all tickets','warn');
  const m=G.modal({title:'Investigate · '+escH(row.pnr),size:'xl',body:'<div class="ota43-investigate">'+
  '<div class="ota43-investigate-head">'+badge(row.status)+'<p>'+escH(row.why||'—')+'</p></div>'+
