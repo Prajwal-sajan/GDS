@@ -11,6 +11,8 @@ on:
       - 'server/api/communication-history-v35.js'
       - 'server/index.js'
       - 'tests/vehicle-communication-v35-*.cjs'
+      - 'tests/check-vehicles-v9.mjs'
+      - 'tests/check-trips-v13.mjs'
       - '.github/workflows/vehicle-communication-v35.yml'
   workflow_dispatch:
 jobs:
