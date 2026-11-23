@@ -264,17 +264,17 @@ function compareInvoice(parsed,bookings,config={}){
   const d=String(b.travel_date||'').slice(0,10);
   if(String(b.source||'').toLowerCase()!==source||!d||d<parsed.billing_period_start||d>parsed.billing_period_end||invoicePNRs.has(key(b.pnr)))continue;
   rows.push({id:'missing-'+b.id,pnr:b.pnr,doj:d,section:'missing_in_ota',status:'unmatched_gds',
-   booking_status:b.status,expected:{fare:money(b.fare?.net??0),take_home:null},take_home:null,delta:null,differences:['missing_in_ota'],verified:false,why:'GDS redBus PNR absent from uploaded statement'});
+   booking_status:b.status,expected:{fare:b.fare&&(b.fare.net!=null||b.fare.total!=null)?money(b.fare.net??b.fare.total):null,take_home:null},take_home:null,delta:null,differences:['missing_in_ota'],verified:false,why:'GDS redBus PNR absent from uploaded statement'});
  }
  const sum=(arr,k)=>money(arr.reduce((n,x)=>n+(Number(x[k])||0),0));
  const invoiceLines=rows.filter(x=>x.section!=='missing_in_ota');
- const expectedRows=invoiceLines.filter(x=>x.expected?.take_home!==null&&x.section==='sold');
+ const expectedRows=invoiceLines.filter(x=>x.expected?.take_home!=null&&x.section==='sold');
  const stmtAmount=parsed.summary.invoice_amount;
  const totals={
   invoice_amount:stmtAmount,invoice_lines:parsed.statement_lines,parsed_events:parsed.rows.length,
   invoice_adjustment_events:parsed.rows.filter(x=>x.section==='exceptional_refund').length,
   ticket_rows:rows.filter(x=>!['exceptional_refund','missing_in_ota'].includes(x.section)).length,
-  gds_comparable:invoiceLines.filter(x=>x.expected?.fare!==null&&x.expected?.take_home!==null).length,verified:rows.filter(x=>x.verified).length,
+  gds_comparable:invoiceLines.filter(x=>x.expected?.fare!=null&&x.expected?.take_home!=null).length,verified:rows.filter(x=>x.verified).length,
   matched:rows.filter(x=>x.status==='matched').length,mismatched:rows.filter(x=>x.status==='mismatched').length,
   needs_review:rows.filter(x=>x.status==='needs_review').length,
   missing_in_gds:rows.filter(x=>x.status==='unmatched_ota').length,missing_in_ota:rows.filter(x=>x.status==='unmatched_gds').length,
@@ -288,7 +288,7 @@ function compareInvoice(parsed,bookings,config={}){
  };
  const sectionStats={};
  for(const section of ['sold','pax_cancelled','bus_cancelled','exceptional_refund']){
-  const set=rows.filter(x=>x.section===section);const comparable=set.filter(x=>x.expected?.fare!==null&&x.expected?.take_home!==null);
+  const set=rows.filter(x=>x.section===section);const comparable=set.filter(x=>x.expected?.fare!=null&&x.expected?.take_home!=null);
   sectionStats[section]={count:set.length,invoice_fare:sum(set,'fare'),invoice_tax:sum(set,'tax'),invoice_gross:money(sum(set,'fare')+sum(set,'tax')),take_home:sum(set,'take_home'),
   gds_count:comparable.length,gds_expected_fare:comparable.length?money(comparable.reduce((v,x)=>v+(x.expected.fare||0)+(x.expected.tax||0),0)):null,
   gds_expected_payout:comparable.length?money(comparable.reduce((v,x)=>v+(x.expected.take_home||0),0)):null,
