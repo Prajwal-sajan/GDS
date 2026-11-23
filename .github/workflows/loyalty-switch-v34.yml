@@ -45,8 +45,10 @@ jobs:
           node --check public/js/main.js
       - name: v34 API + screenshot UI acceptance
         run: |
-          node tests/loyalty-switch-v34-api.cjs
-          node tests/loyalty-switch-v34-ui.cjs
+          echo 'BEGIN v34 API tests'
+          timeout 35s node tests/loyalty-switch-v34-api.cjs
+          echo 'BEGIN v34 UI tests'
+          timeout 35s node tests/loyalty-switch-v34-ui.cjs
       - name: Existing GDS, Configuration, About, WhatsApp and Access
         run: |
           node tests/configuration-v31-api.cjs
