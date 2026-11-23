@@ -23,7 +23,7 @@ function rebuild(doc){
  const current=reconcile.compareInvoice(parsed,db.col('bookings').all(),cfg);
  const previous=new Map((doc.lines||[]).map(line=>[line.id,line.resolution]));
  doc.lines=current.rows.map(line=>({...line,resolution:previous.get(line.id)||null}));
- doc.totals=current.totals;doc.section_stats=current.section_stats;
+ doc.totals=current.totals;doc.section_stats=current.section_stats;doc.issue_counts=current.issue_counts;
  doc.status=doc.parse_warnings.length?'review_required':'parsed';
  doc.updated_at=new Date().toISOString();
  // Uploaded third-party data is never certified against a different operator's demo GDS.
@@ -64,7 +64,9 @@ r.post('/reconciliation/v43/invoices',can('accounts.reconciliation'),wrap(async(
   operator_name:parsed.operator_name,operator_code:parsed.operator_code,operator_gstin:parsed.operator_gstin,
   invoice_number:parsed.invoice_number,issue_date:parsed.issue_date,payment_mode:parsed.payment_mode,
   billing_period_start:parsed.billing_period_start,billing_period_end:parsed.billing_period_end,
-  summary:parsed.summary,by_section:parsed.by_section,statement_lines:parsed.statement_lines,unique_pnrs:parsed.unique_pnrs,
+  summary:parsed.summary,summary_details:parsed.summary_details,summary_delta:parsed.summary_delta,
+  computed_invoice_amount:parsed.computed_invoice_amount,statement_gross_fare:parsed.statement_gross_fare,
+  by_section:parsed.by_section,statement_lines:parsed.statement_lines,unique_pnrs:parsed.unique_pnrs,
   parse_warnings:parsed.parse_warnings,sections:parsed.sections,parsed_rows:parsed.rows,
   operator_matches_gds:true,totals:{},section_stats:{},lines:[],status:'parsed',
   uploaded_by:req.user.name||req.user.id,uploaded_at:new Date().toISOString()
