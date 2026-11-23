@@ -103,7 +103,7 @@ async function req(url,user=owner){
   assert.equal((await req('/routes/'+route.id+'/halt-evidence?days=5')).status,400);
   assert.equal((await req('/routes/bad/halt-evidence')).status,404);
   assert.equal((await req('/routes/halts-overview',agent)).status,403);
-  assert.equal((await req('/schedules/month-insights?month=2026-11',agent)).status,403);
+  assert.equal((await req('/schedules/month-insights?month=2026-11',agent)).status,200,'Scheduling roles are authorized to view aggregate occupancy');
   assert.equal(helpers.median([1,9,3]),3);
   assert.ok(Math.abs(helpers.haversine(0,0,0,0))<0.01);
   assert.equal(helpers.observationFor({source:'demo',provider_verified:true},route,schedules[0],st),null);
