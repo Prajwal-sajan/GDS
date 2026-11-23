@@ -39,7 +39,7 @@ const DEFAULT_ROLES = {
   viewer: { name: 'Viewer', permissions: [] },
   service_associate: { name: 'Service Associate', permissions: ['trips.view','trips.update_passengers','schedules.view'] },
   service_agent: { name: 'Service Agent', permissions: ['trips.view','schedules.view','bookings.create','bookings.view_all'] },
-  branch_admin: { name: 'Branch Admin', permissions: ['trips.view','trips.location','bookings.create','bookings.view_all','schedules.view','routes.view','dailyops.view','settings.view'] },
+  branch_admin: { name: 'Branch Admin', permissions: ['trips.view','trips.location','bookings.create','bookings.view_all','schedules.view','routes.view','dailyops.view','settings.view','iam.manage_users'], scopes: { 'View users':'Branch','Add users (roles below their own)':'Branch','Edit users (name, branch, status, routes)':'Branch','Remove users':'Branch',Branches:'Branch' } },
 };
 
 function roles() {
