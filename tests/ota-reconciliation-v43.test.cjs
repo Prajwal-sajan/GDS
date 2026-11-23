@@ -82,9 +82,9 @@ assert.notEqual(noEvidence.rows[0].status,'matched');
 
 const nullEvidence=engine.compareInvoice(parsed,[{...booking,fare:{...booking.fare,ota_commission:null,ota_commission_gst:null,operator_offer:null,ota_take_home:null}}],{ota_slug:'redbus'});
 assert.equal(nullEvidence.totals.verified,0,'Null fields cannot certify an invoice');
-const duplicated=engine.parsePaymentAdviceText([pdf,rows+'\\n'+[
+const duplicated=engine.parsePaymentAdviceText([pdf,rows+'\n'+[
  'ST2606190040050','7BFRM55K 19/06 25/06 49208542 9U 1,049.00 129.56 52.45 948.56 0.00 52.45 0.00','49714'
-].join('\\n')]);
+].join('\n')]);
 assert.equal(duplicated.rows.filter(x=>x.pnr===booking.pnr).length,2,'Preserve duplicate PNR payment events');
 assert.equal(new Set(duplicated.rows.map(x=>x.id)).size,duplicated.rows.length,'Stable unique event IDs');
 const csv=engine.exportCsv({lines:results.rows});
