@@ -138,7 +138,7 @@ async function login(who, phone) { await call('POST', '/api/auth/request-otp', {
       const p2 = (await call('GET', `/api/schedules/${sch.id}/pnl`)).body; ok(p2.expense_breakdown.fixed < p.expense_breakdown.fixed, 'fixed cost reduced');
       eq((await call('PUT', `/api/schedules/${sch.id}`, { expense_overrides: { [key]: 1 } }, 'agent')).status, 403);
     });
-    await t('route editor saves extended fields', async () => { const r = (await call('PUT', '/api/routes/2', { alt_name: 'Night Rider', hub: 'Central', fare_groups: [{ name: 'Front', seats: ['1A'] }] })).body; eq(r.alt_name, 'Night Rider'); eq((await call('GET', '/api/routes/2')).body.hub, 'Central'); });
+    await t('route editor saves extended fields', async () => { eq((await call('PUT', '/api/routes/2', { fare_groups: [{ name: 'Bad', seats: ['1A'] }] })).status, 400, 'reject missing weekdays/unknown seat'); const r = (await call('PUT', '/api/routes/2', { alt_name: 'Night Rider', hub: 'Central', fare_groups: [{ name: 'Front', seats: ['1L'], days: [1400, 1200, 1300, 1450, 1650, 1250, 2200] }] })).body; eq(r.alt_name, 'Night Rider'); eq((await call('GET', '/api/routes/2')).body.hub, 'Central'); });
     await t('agent terms persist and drive commission', async () => {
       eq((await call('PUT', '/api/accounts/channels/agents', { name: 'X', phone: '12', commission_pct: 5 })).status, 400);
       eq((await call('PUT', '/api/accounts/channels/agents', { name: 'Owner', phone: '9999999999', commission_pct: 5 })).status, 409, 'non-agent phone');
