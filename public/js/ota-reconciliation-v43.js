@@ -49,14 +49,27 @@ const pricing=(d)=>{
  '<div class="ota43-payout"><div><span>● NET PAYOUT</span><p>As stated on the redBus payment advice</p></div><strong>'+v('invoice_amount')+'</strong><div>'+icon('check',30)+'</div></div></div>';
 };
 const summaryTable=d=>{
- const rows=d.section_stats||{},invoice=d.summary||{};
- const lines=[
- ['Travelled','Confirmed bookings',rows.sold?.count,'bookings','sold'],
- ['Pax cancellations','Passenger initiated',rows.pax_cancelled?.count,'pax_cancel','pax_cancelled'],
- ['Operator cancellations','Bus did not run',rows.bus_cancelled?.count,'operator_cancel','bus_cancelled']];
- return '<section class="ota43-summary"><header><h3>Reconciliation summary</h3><small>Fares incl. GST, then payout after commission · GDS vs RedBus · '+int(d.statement_lines)+' lines</small></header><div class="ota43-scroll"><table><thead><tr><th>CATEGORY</th><th>COUNT</th><th>GDS EXPECTED</th><th>REDBUS REPORTED</th><th>FARE DIFF</th><th>PAYOUT DIFF</th></tr></thead><tbody>'+
- lines.map(row=>'<tr><td><b>'+row[0]+'</b><small>'+row[1]+'</small></td><td>'+int(row[2])+'</td><td>—</td><td>'+val(invoice[row[3]])+'</td><td>—</td><td>—</td></tr>').join('')+
- '<tr class="total"><td>Total</td><td>'+int(d.statement_lines)+'</td><td>'+val(d.totals?.gds_expected)+'</td><td>'+val(invoice.invoice_amount)+'</td><td>—</td><td>'+val(d.totals?.discrepancy_total)+'</td></tr></tbody></table></div><footer>'+icon('adjust')+'<strong>GDS comparison is evidence-based</strong><span>Missing GDS financial fields remain unverified; unallocated invoice deductions are not assigned to PNRs.</span></footer></section>';
+ const stats=d.section_stats||{},detail=d.summary_details||{};
+ const cats=[['Travelled','Confirmed bookings','sold','bookings'],['Pax cancellations','Passenger initiated','pax_cancelled','pax_cancel'],['Operator cancellations','Bus did not run','bus_cancelled','operator_cancel']];
+ const inRows=cats.map(([name,sub,section,category])=>{
+  const x=stats[section]||{},invoiceGross=detail[category]?.gross??x.invoice_gross;
+  const comparable=x.gds_count>0;
+  return '<tr><td><b>'+name+'</b><small>'+sub+'</small></td><td>'+int(x.count)+'</td>'+
+   '<td>'+val(comparable?x.gds_expected_fare:null)+(comparable?'<small>'+int(x.gds_count)+' GDS comparable</small>':'<small>No GDS evidence</small>')+'</td>'+
+   '<td>'+val(invoiceGross)+'</td>'+
+   '<td class="'+(count(x.fare_diff)<0?'red':'blue')+'">'+amount(comparable?x.fare_diff:null,true)+'</td>'+
+   '<td class="'+(count(x.payout_diff)<0?'red':'blue')+'">'+amount(comparable?x.payout_diff:null,true)+'</td></tr>';
+ }).join('');
+ const redbusGross=cats.reduce((n,[,,,category])=>n+Number(detail[category]?.gross||0),0);
+ const gdsGross=cats.reduce((n,[,,section])=>n+Number(stats[section]?.gds_expected_fare||0),0);
+ const valid=cats.some(([,,section])=>stats[section]?.gds_count>0);
+ const fareDelta=cats.reduce((n,[,,section])=>n+Number(stats[section]?.fare_diff||0),0);
+ return '<section class="ota43-summary"><header><h3>Reconciliation summary</h3><small>Fares incl. GST, then payout after commission · GDS vs RedBus · '+int(d.statement_lines)+' ticket rows</small></header>'+
+ '<div class="ota43-scroll"><table><thead><tr><th>CATEGORY</th><th>COUNT</th><th>GDS EXPECTED</th><th>REDBUS PAID</th><th>FARE DIFF</th><th>PAYOUT DIFF</th></tr></thead><tbody>'+
+ inRows+'<tr class="total"><td>Total<small>Across all three categories</small></td><td>'+int(d.statement_lines)+'</td>'+
+ '<td>'+val(valid?gdsGross:null)+(valid?'<small>Comparable GDS rows only</small>':'')+'</td>'+
+ '<td>'+val(redbusGross)+'</td><td>'+amount(valid?fareDelta:null,true)+'</td><td>'+amount(valid?d.totals?.discrepancy_total:null,true)+'</td></tr></tbody></table></div>'+
+ '<footer>'+icon('adjust')+'<strong>Source-backed comparison</strong><span>Only bookings found in this GDS are compared. Unverified amounts and unallocated invoice deductions remain separate; differences are not invented.</span></footer></section>';
 };
 function filters(d,s){
  const t=d.totals||{},data=[
