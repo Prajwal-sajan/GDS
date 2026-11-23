@@ -20,7 +20,7 @@ No unshown selectors or filters were invented.
 - `PUT /api/settings/loyalty-v34/:section` validates fields before mutation and audits each section.
 - The legacy `PUT /settings/:key` remains supported but now enforces the same validation on miles, rates, tiers, and blocked dates (closes bypass).
 - The 2026-03-31 0%-rate reference and weekday screenshot values are seeded for **new local demo databases only**. Existing operator database values remain authoritative and are NOT overwritten.
-- Only the seat-upgrade switch is stored in `loyalty_upgrade_v34`; automatic upgrades are **not** executed in the absence of passenger consent, verified seat eligibility and transaction-safe seat assignment. UI explicitly marks execution `configuration_only` in API.
+- Only the seat-upgrade switch is stored in `loyalty_upgrade_v34`; new demo configurations show the screenshot's enabled preference, but automatic upgrades are **not** executed in the absence of passenger consent, verified seat eligibility and transaction-safe seat assignment. UI explicitly marks execution `configuration_only` in API.
 - Earlier paid seat upgrade policy remains unchanged.
 
 ## Actual booking integration
