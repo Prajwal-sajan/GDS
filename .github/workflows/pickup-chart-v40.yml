@@ -1,0 +1,51 @@
+name: v40 Schedule Booking Pickup Charts
+on:
+  push:
+    branches: [savetrip-screenshotcomplete]
+    paths:
+      - 'server/pickup-chart-v40.js'
+      - 'server/pickup-chart-pdf-v40.js'
+      - 'server/pickup-chart-import-v40.js'
+      - 'server/api/pickup-chart-v40.js'
+      - 'server/index.js'
+      - 'public/js/pickup-chart-v40.js'
+      - 'public/css/pickup-chart-v40.css'
+      - 'public/js/schedule-bookings-v38.js'
+      - 'public/index.html'
+      - 'tests/pickup-chart-v40-*.cjs'
+      - '.github/workflows/pickup-chart-v40.yml'
+  workflow_dispatch:
+jobs:
+  pickup-chart-v40:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: JS syntax and dependency-free PDF builder
+        run: |
+          node --check server/pickup-chart-v40.js
+          node --check server/pickup-chart-pdf-v40.js
+          node --check server/pickup-chart-import-v40.js
+          node --check server/api/pickup-chart-v40.js
+          node --check server/index.js
+          node --check public/js/pickup-chart-v40.js
+          node --check public/js/schedule-bookings-v38.js
+          node --check tests/pickup-chart-v40-api.cjs
+          node --check tests/pickup-chart-v40-ui.cjs
+      - name: Pickup chart PDF + import backend integration
+        run: timeout 180s node tests/pickup-chart-v40-api.cjs
+      - name: Screenshot feature UI / event flow
+        run: timeout 120s node tests/pickup-chart-v40-ui.cjs
+      - name: Existing schedule / booking / loyalty regression
+        run: |
+          node tests/schedule-bookings-v38-api.cjs
+          node tests/schedule-bookings-v38-ui.cjs
+          node tests/booking-loyalty-v39-api.cjs
+          node tests/booking-loyalty-v39-ui.cjs
+          node tests/check-trips-v13.mjs
+          npm test

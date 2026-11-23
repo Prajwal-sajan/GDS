@@ -35,6 +35,7 @@ app.use('/api',(req,res,next)=>{
 app.use('/api', require('./api/pnl-v18'));
 app.use('/api', require('./api/schedule-insights-v36'));
 app.use('/api', require('./api/booking-workspace-v38'));
+app.use('/api', require('./api/pickup-chart-v40'));
 app.use('/api', require('./api/booking-live-v39'));
 const loyaltyUpgradesV39=require('./api/loyalty-upgrades-v39');
 app.use('/api',loyaltyUpgradesV39.router);

@@ -200,8 +200,8 @@ async function act(action,node,S,V,ctx){
   case 'group':V.group=node.dataset.group;return ctx.redraw();
   case 'select-all':people(S).forEach(p=>V.selected.add(key(p)));return ctx.redraw();
   case 'clear':V.selected.clear();return ctx.redraw();
-  case 'print':window.print();return;
-  case 'import':G.toast('Import requires a validated pickup-chart CSV/PDF ingestion API; no data has been imported.','warn');return;
+  case 'print':return window.PickupChartV40?PickupChartV40.openPrint(S,V,ctx):G.toast('Pickup Chart PDF module is not loaded','bad');
+  case 'import':return window.PickupChartV40?PickupChartV40.openImport(S,V,ctx):G.toast('Pickup Chart importer is not loaded','bad');
   case 'notify-selected':
    if(!V.selected.size||!can('trips.chat'))return;
    return notify(S,[...new Set(people(S).filter(p=>V.selected.has(key(p))).map(p=>p.pnr))]);
