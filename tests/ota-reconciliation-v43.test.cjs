@@ -79,6 +79,14 @@ assert.equal(missing.rows.at(-1).status,'unmatched_gds');
 const noEvidence=engine.compareInvoice(parsed,[{...booking,fare:{net:1049,total:1101.45}}],{ota_slug:'redbus',commission_percent:12.35});
 assert.equal(noEvidence.totals.verified,0);
 assert.notEqual(noEvidence.rows[0].status,'matched');
+
+const nullEvidence=engine.compareInvoice(parsed,[{...booking,fare:{...booking.fare,ota_commission:null,ota_commission_gst:null,operator_offer:null,ota_take_home:null}}],{ota_slug:'redbus'});
+assert.equal(nullEvidence.totals.verified,0,'Null fields cannot certify an invoice');
+const duplicated=engine.parsePaymentAdviceText([pdf,rows+'\\n'+[
+ 'ST2606190040050','7BFRM55K 19/06 25/06 49208542 9U 1,049.00 129.56 52.45 948.56 0.00 52.45 0.00','49714'
+].join('\\n')]);
+assert.equal(duplicated.rows.filter(x=>x.pnr===booking.pnr).length,2,'Preserve duplicate PNR payment events');
+assert.equal(new Set(duplicated.rows.map(x=>x.id)).size,duplicated.rows.length,'Stable unique event IDs');
 const csv=engine.exportCsv({lines:results.rows});
 const head=csv.replace(/^\ufeff/,'').split(/\r?\n/)[0].match(/"[^"]*"/g).map(x=>x.slice(1,-1));
 assert.deepEqual(head,engine.EXPORT_HEADERS);
@@ -86,6 +94,11 @@ assert.equal(head.length,18);
 assert(csv.includes('"ST260619004005049714"'));
 assert(csv.includes('"Matched"'));
 assert(!csv.includes('undefined'));
+
+const reviewed=engine.exportCsv({lines:[{...results.rows[0],status:'mismatched',resolution:{action:'dispute',by:'Finance reviewer',note:'Commission evidence differs'}}]});
+assert(reviewed.includes('"Mismatched"'),'Status must retain actual comparison outcome after review');
+assert(reviewed.includes('"Finance reviewer"'),'Reviewer identity survives CSV export');
+assert(reviewed.includes('Resolution: dispute'),'Review action survives in Notes');
 assert(src('server/index.js').includes("require('./api/ota-reconciliation-v43')"));
 assert(src('public/index.html').includes('/js/ota-reconciliation-v43.js?build=43'));
 assert(src('public/index.html').includes('/css/ota-reconciliation-v43.css?build=43'));
@@ -94,6 +107,9 @@ const css=src('public/css/ota-reconciliation-v43.css');
 new Function(client);
 for(const key of ['invoice breakdown','Upload Invoice','Investigate','Dispute','Accept RedBus','Export CSV','Browse all','As Per GDS','As Per RedBus','PNR','TDS','TCS','Difference','cards','table','recheck','original'])assert(client.toLowerCase().includes(key.toLowerCase()),'missing UI '+key);
 for(const key of ['ota43-ticket-check','ota43-ledger','ota43-revenue','ota43-payout','ota43-compare','ota43-ticket','ota43-browser-controls'])assert(css.includes(key),'missing style '+key);
+
+assert(client.includes('invoiceFormulaItems'),'Full 23-category PDF formula is rendered');
+assert(client.includes('gds_expected_fare')&&client.includes('payout_diff'),'Category summaries must display actual comparisons rather than fixed dashes');
 
 const wrapped=engine.parseLineItems([
 '29AAICN5264C1ZD-Payment\nST2606202306180 49208657 22,19,20,1\nTV7J92620628 20/06 25/06 4,145.00 458.02 207.25 3,811.79 0.00 621.75 0.00\n50450 8,21'
