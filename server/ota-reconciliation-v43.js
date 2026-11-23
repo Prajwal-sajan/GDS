@@ -94,9 +94,16 @@ function parseSummary(text){
  const head=lines.slice(0,idx>=0?idx:20).join(' ');
  const op=(head.match(/\b([A-Z][A-Z ]{3,55}(?:TRAVELS|TRANSPORT|LINES))\b/)||[])[1];
  header.operator_name=op?.trim()||null;
+ header.summary_details={};
  for(const [name,find] of SUMMARY){
   const at=lines.findIndex(x=>x.toLowerCase().includes(find.toLowerCase()));
-  if(at>=0)header.summary[name]=summaryValue(lines,at);
+  if(at>=0){
+   header.summary[name]=summaryValue(lines,at);
+   const columns=values(lines[at]);
+   if(['bookings','pax_cancel','operator_cancel'].includes(name)&&columns.length>=7){
+    header.summary_details[name]={ticket_fare:columns[0],commission:columns[1],cgst_commission:columns[2],sgst_commission:columns[3],igst_commission:columns[4],ac_service_tax:columns[5],net_settlement:columns[6],gross:money(columns[0]+columns[5])};
+   }
+  }
  }
  // The Z row wraps; use the last numeric value from the formula row before the footer.
  const zAt=lines.findIndex(x=>/Invoice Amount\(Z\)/i.test(x));
@@ -198,7 +205,8 @@ function parsePaymentAdviceText(pages){
  const calc=invoiceFormula(header.summary);
  if(header.summary.invoice_amount!=null&&Math.abs(calc-header.summary.invoice_amount)>0.05)warnings.push('Invoice summary formula does not equal stated net payout: check document parse');
  if(rows.some(x=>!x.doj||!x.fare))warnings.push('Some rows have incomplete date or amount fields');
- return {...header,rows,sections,by_section:bySection,unique_pnrs:uniquePNRs,statement_lines:rows.filter(x=>x.section!=='exceptional_refund').length,computed_invoice_amount:calc,summary_delta:header.summary.invoice_amount==null?null:money(header.summary.invoice_amount-calc),parse_warnings:warnings};
+ const gross=money(['bookings','pax_cancel','operator_cancel'].reduce((acc,k)=>acc+(header.summary_details[k]?.gross||0),0));
+ return {...header,rows,sections,by_section:bySection,unique_pnrs:uniquePNRs,statement_lines:rows.filter(x=>x.section!=='exceptional_refund').length,statement_gross_fare:gross,computed_invoice_amount:calc,summary_delta:header.summary.invoice_amount==null?null:money(header.summary.invoice_amount-calc),parse_warnings:warnings};
 }
 const DAY=1000*60*60*24;
 function compareInvoice(parsed,bookings,config={}){
@@ -260,11 +268,17 @@ function compareInvoice(parsed,bookings,config={}){
   gds_expected:sum(expectedRows.map(x=>({v:x.expected.take_home})),'v'),
   ota_ticket_take_home:sum(invoiceLines.filter(x=>x.section==='sold'),'take_home'),
   discrepancy_total:sum(rows.filter(x=>x.delta!=null),'delta'),
-  outstanding_issue_count:rows.filter(x=>x.status!=='matched').length
+  outstanding_issue_count:rows.filter(x=>x.status!=='matched').length,
+  at_risk_amount:money(rows.filter(x=>x.status==='mismatched'&&x.delta!=null).reduce((acc,x)=>acc+Math.abs(x.delta),0))
  };
  const sectionStats={};
  for(const section of ['sold','pax_cancelled','bus_cancelled','exceptional_refund']){
-  const set=rows.filter(x=>x.section===section);sectionStats[section]={count:set.length,invoice_fare:sum(set,'fare'),take_home:sum(set,'take_home')};
+  const set=rows.filter(x=>x.section===section);const comparable=set.filter(x=>!!x.expected);
+  sectionStats[section]={count:set.length,invoice_fare:sum(set,'fare'),invoice_tax:sum(set,'tax'),invoice_gross:money(sum(set,'fare')+sum(set,'tax')),take_home:sum(set,'take_home'),
+  gds_count:comparable.length,gds_expected_fare:comparable.length?money(comparable.reduce((v,x)=>v+(x.expected.fare||0)+(x.expected.tax||0),0)):null,
+  gds_expected_payout:comparable.length?money(comparable.reduce((v,x)=>v+(x.expected.take_home||0),0)):null,
+  fare_diff:comparable.length?money(comparable.reduce((v,x)=>v+(x.fare||0)+(x.tax||0)-(x.expected.fare||0)-(x.expected.tax||0),0)):null,
+  payout_diff:comparable.length?sum(comparable,'delta'):null};
  }
  return {rows,totals,section_stats:sectionStats};
 }
