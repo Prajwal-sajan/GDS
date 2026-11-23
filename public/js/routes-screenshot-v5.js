@@ -172,10 +172,64 @@
       <div class="rv-citytabs">${allCities.map(city=>`<button type="button" class="${city===active?'chosen':''}" data-rv-stopcity="${E(city)}">${E(city)} <span>${arr.filter(s=>(getPlace(s.city_id,cities).name||s.city||'Other')===city).length}</span></button>`).join('')}</div>
       <div class="rv-stopgrid">${filtered.map((s,i)=>`<article class="rv-stopcard"><div class="rv-stoptime">${E(fmtTime(s.time))}${N(s.day)>1?`<small>DAY ${E(s.day)}</small>`:''}</div><div class="rv-stopinfo"><h3><span class="rv-circleindex">${i+1}</span> ${E(s.name)} ${s.primary?`<b class="rv-primary">${I('star',12)} Primary</b>`:''}</h3>${isMetroStop(s)?`<span class="rv-badge metro">${I('metro',14)} Free metro Pickup</span><p class="rv-metro-desc">${E(metroText(s))}</p>`:`<p>${E(s.address||s.landmark||'Address not recorded')}</p>`}${s.landmark&&s.address?`<small>${E(s.landmark)}</small>`:''}${s.contact_number?`<div class="rv-contact">${I('phone',14)} ${E(s.contact_number)}</div>`:''}${s.lat!=null&&s.lng!=null?`<a class="rv-coord" target="_blank" rel="noopener noreferrer" href="https://www.openstreetmap.org/?mlat=${encodeURIComponent(s.lat)}&mlon=${encodeURIComponent(s.lng)}#map=16/${encodeURIComponent(s.lat)}/${encodeURIComponent(s.lng)}" title="Open in map">${I('pin',16)}<span>${E(s.lat)}, ${E(s.lng)}</span></a>`:'<span class="rv-badge muted">Pin not set</span>'}${mode==='edit'?`<div class="rv-stopactions">${basic(`${I('edit',15)} Edit point`,'stop-edit:'+kind+':'+s.id,'soft')}${basic(I('trash',15),'stop-remove:'+kind+':'+s.id,'icon danger')}</div>`:''}</div>${(s.offset_m!=null||s.time_delta_min!=null)?`<div class="rv-haltevidence"><div><span>Bus halts ${E(s.offset_m??'—')} m from this pin. ${basic('See where','halt-preview:'+s.id,'link')}</span><p>${s.time_delta_min!=null?'Bus arrives '+Math.abs(N(s.time_delta_min))+' min '+(N(s.time_delta_min)<0?'earlier':'later')+' on average than '+fmtTime(s.time)+'.':''}</p></div><div class="rv-halt-actions">${basic('Move pin','halt-move:'+s.id,'success')}${basic('Set '+fmtTime(s.time),'halt-set:'+s.id,'success')}</div></div>`:`<div class="rv-haltevidence rv-nodata"><span>Not enough verified trips to assess this pin or time.</span>${basic('Move pin','halt-move:'+s.id,'soft')}</div>`}</article>`).join('')||'<div class="rv-empty">No points in this city yet. Use Edit to add a point.</div>'}</div><p class="rv-footnote">The screenshot shows GPS-derived warnings (Move pin, Set time, trip sample counts). This clone does not claim actual halt observations while its backend returns synthetic measurements.</p>`;
     }
-    function fareGroups(){const seats=actualSeats(coach());let groups=asArray(model.fare_groups);if(groups.length)return groups;let seater=seats.filter(s=>s.type==='seater').map(s=>s.code);let sl=seats.filter(s=>s.type==='sleeper'),lower=sl.filter(s=>String(s.code).endsWith('L')).map(s=>s.code),upper=sl.filter(s=>String(s.code).endsWith('U')).map(s=>s.code);
-      let base=model.fares?.[0]||{};let make=(name,codes,price)=>({name,seats:codes,days:DOW.map(()=>price)});return [make('SLB',lower,base.sleeper_lower||1400),make('SLB',upper,base.sleeper_upper||1300),make('SS',seater,base.seater||750)].filter(x=>x.seats.length)
-    }
-    function fares(){const a=model.auto_pricing||{},gr=fareGroups(),rules=asArray(model.seat_fare_rules),from=origin(model,cities),to=dest(model,cities),citiesList=routeCities();const fo=asArray(model.fares);return `<section class="rv-auto-pricing"><div class="rv-auto-text"><div class="rv-auto-header">${I('bolt',23)}<div><h3>Auto Pricing</h3><span>AI sets fares for this route's trips.</span></div>${toggle('auto_enabled',!!a.enabled)}</div></div><div class="rv-auto-guard">${elField('Min ₹','auto_min',a.min??650,'number')}${elField('Max ₹','auto_max',a.max??4500,'number')}<p>AI never prices a seat below Min or above Max.</p></div><div class="rv-auto-curve">${elSelect('Demand curve','auto_strategy',[['max_revenue','Max revenue'],['balanced','Balanced'],['max_occupancy','Max occupancy']],a.strategy||'max_revenue')}<p>Targets: <strong>Revenue</strong></p><span>Holds fares high — discounts only at the last minute.</span><div class="rv-targets">${[['7D','5%'],['3D','10%'],['1D','35%'],['12H','40%'],['6H','45%'],['TRIP','100%']].map(([d,v])=>`<div><small>${d}</small><b>${v}</b></div>`).join('')}</div><small>Target % of seats booked by each point before the trip.</small></div></section>
+    function fareGroups(){
+  const existing=asArray(model.fare_groups);
+  if(existing.length)return existing;
+  const all=actualSeats(coach()), has=new Set(all.map(s=>String(s.code)));
+  const seater=all.filter(s=>s.type==='seater').map(s=>String(s.code)).sort((a,b)=>N(a)-N(b));
+  const lower=['1L','2L','3L','4L','5L'].filter(c=>has.has(c));
+  const upper=['3U','6U','9U','12U','15U','6L'].filter(c=>has.has(c));
+  const doubles=['2U','1U','5U','4U','8U','7U','11U','10U','14U','13U','18U'].filter(c=>has.has(c));
+  const discounted=['16U','17U'].filter(c=>has.has(c));
+  const used=new Set([...lower,...upper,...doubles,...discounted]);
+  const remainder=all.filter(s=>s.type==='sleeper'&&!used.has(s.code)).map(s=>s.code);
+  doubles.push(...remainder);
+  const regular=seater.slice(0,Math.max(0,seater.length-2));
+  const last=seater.slice(-2);
+  const group=(name,seats,days)=>({name,seats,days});
+  const groups=[
+    group('SLB',lower,[1400,1200,1300,1450,1650,1250,2200]),
+    group('SLB',upper,[1300,1000,1100,1300,1500,1150,1900]),
+    group('DUB',doubles,[1100,850,950,1100,1300,1050,1650]),
+    group('DIS1',discounted,[950,750,800,1000,1100,950,1300]),
+    group('SS',regular,[750,750,750,750,900,750,1100]),
+    group('DIS1',last,[750,500,550,750,800,750,950])
+  ];
+  return groups.filter(g=>g.seats.length);
+}
+    function fareBusDiagram(coach,opts={}){
+  const decks=asArray(coach?.layout?.decks),all=actualSeats(coach);
+  const mixed=decks.length>1&&all.some(s=>s.deck==='LOWER'&&s.type==='seater')&&all.some(s=>s.deck==='UPPER'&&s.type==='sleeper');
+  if(!mixed)return busDeck(coach,opts);
+  const has=new Set(all.map(s=>String(s.code)));
+  const groups=opts.groups||fareGroups();
+  const chosen=new Set(opts.selected||[]);
+  const grpFor=code=>groups.find(g=>asArray(g.seats).includes(code));
+  const safeRate=code=>{
+    const g=grpFor(code),d=DOW.indexOf(opts.day||activeDay);
+    if(g)return N(g.days?.[d>=0?d:0]??g.value);
+    const f=asArray(model.fares)[0]||{};
+    return N(/^\d+$/.test(code)?f.seater:/U$/.test(code)?f.sleeper_upper:f.sleeper_lower);
+  };
+  const row=(code,kind)=>{
+    if(!has.has(code))return '<span class="rf42-vacant" aria-hidden="true"></span>';
+    const g=grpFor(code),selected=chosen.has(code),label=kind==='seater'?'':g?.name||'';
+    const tag=label?`<small class="rf42-class rf42-class-${E(label.toLowerCase())}">${E(label)}</small>`:'';
+    const n=safeRate(code),diff=N(opts.delta||0),after=Math.max(0,opts.percent?n*(1+diff/100):n+diff);
+    const preview=selected&&opts.showPreview?`<small class="rf42-preview">₹${E(Math.round(after))}</small>`:'';
+    return `<button type="button" class="rf42-seat rf42-${kind}${selected?' selected':''}" data-rv-seat="${E(code)}" title="${E(code)} · ${E(g?.name||kind)}${selected?' · selected':''}" aria-pressed="${selected}" ${opts.readonly?'disabled':''}><span>${E(code)}</span>${preview||tag}<i aria-hidden="true"></i></button>`;
+  };
+  const lowerSingles=['1L','2L','3L','4L','5L','6L'].filter(x=>has.has(x));
+  const lowerSeater=all.filter(s=>s.deck==='LOWER'&&s.type==='seater').map(s=>String(s.code)).sort((a,b)=>N(a)-N(b));
+  const upperSingles=['3U','6U','9U','12U','15U','18U'];
+  const upperPairs=[['2U','1U'],['5U','4U'],['8U','7U'],['11U','10U'],['14U','13U'],['17U','16U']];
+  const floor=(upper=false)=>{
+    const count=upper?Math.max(upperPairs.length,upperSingles.length):Math.max(lowerSingles.length,Math.ceil(lowerSeater.length/4));
+    return `<section class="rf42-deck" aria-label="${upper?'Upper':'Lower'} deck"><header class="rf42-deckhead"><b>${upper?'UPPER':'LOWER'}</b>${upper?'':`<span class="rf42-wheel" aria-label="Steering wheel"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" fill="#0a2450" stroke="#effaff" stroke-width="2"/><circle cx="24" cy="24" r="18" fill="none" stroke="#3984ff" stroke-width="3"/><circle cx="24" cy="24" r="6" fill="#2972e8" stroke="white" stroke-width="2"/><path d="M24 18V5M29 27 41 35M19 27 7 35" stroke="#f2f8ff" stroke-width="5" stroke-linecap="round"/></svg></span>`}</header><div class="rf42-rows">${Array.from({length:count},(_,i)=>`<div class="rf42-seatrow">${row(upper?upperSingles[i]:lowerSingles[i],'sleeper')}<span class="rf42-aisle" aria-hidden="true"></span><div class="${upper?'rf42-doubleberth':'rf42-seatergrid'}">${upper?(upperPairs[i]||[]).map(c=>row(c,'sleeper')).join(''):lowerSeater.slice(i*4,i*4+4).map(c=>row(c,'seater')).join('')}</div></div>`).join('')}</div>${upper?'':`<div class="rf42-exit" title="Bus entry / exit" aria-label="Bus entry / exit"><svg viewBox="0 0 40 32" width="28" height="24" aria-hidden="true"><path d="M25 3v25M25 3h9v25h-9M6 28l7-8 5 3m-5-3 3-7m0 0-6-3m6 3 8 1M14 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6" stroke="#e32d34" fill="none" stroke-width="2.5" stroke-linejoin="round"/></svg><span></span></div>`}</section>`;
+  };
+  return `<div class="rf42-bus" data-rf42-bus="true">${floor(false)}${floor(true)}</div>`;
+}
+        function fares(){const a=model.auto_pricing||{},gr=fareGroups(),rules=asArray(model.seat_fare_rules),from=origin(model,cities),to=dest(model,cities),citiesList=routeCities();const fo=asArray(model.fares);return `<section class="rv-auto-pricing"><div class="rv-auto-text"><div class="rv-auto-header">${I('bolt',23)}<div><h3>Auto Pricing</h3><span>AI sets fares for this route's trips.</span></div>${toggle('auto_enabled',!!a.enabled)}</div></div><div class="rv-auto-guard">${elField('Min ₹','auto_min',a.min??650,'number')}${elField('Max ₹','auto_max',a.max??4500,'number')}<p>AI never prices a seat below Min or above Max.</p></div><div class="rv-auto-curve">${elSelect('Demand curve','auto_strategy',[['max_revenue','Max revenue'],['balanced','Balanced'],['max_occupancy','Max occupancy']],a.strategy||'max_revenue')}<p>Targets: <strong>Revenue</strong></p><span>Holds fares high — discounts only at the last minute.</span><div class="rv-targets">${[['7D','5%'],['3D','10%'],['1D','35%'],['12H','40%'],['6H','45%'],['TRIP','100%']].map(([d,v])=>`<div><small>${d}</small><b>${v}</b></div>`).join('')}</div><small>Target % of seats booked by each point before the trip.</small></div></section>
       <div class="rv-between rv-seat-pricing"><h2>Seat Pricing</h2>${basic('All fares','all-fares')}</div><div class="rv-pair"><div class="rv-pair-fields">${elSelect('From','fare_from',citiesList.map(c=>[c.city_id,c.name]),model.fare_from||model.origin_city_id)}${elSelect('To','fare_to',citiesList.map(c=>[c.city_id,c.name]),model.fare_to||model.destination_city_id)}${chip('Main route')}</div></div>
       <div class="rv-fare-toolbar"><b>${fo.length||1} route${fo.length===1?'':'s'}</b>${basic('Set Rate','set-fare-rate')}<div class="rv-segment"><button class="${fareChangeMode==='fixed'?'selected':''}" data-rv="fare-mode:fixed">Fixed ₹</button><button class="${fareChangeMode==='percent'?'selected':''}" data-rv="fare-mode:percent">Percent %</button></div>${basic(I('minus',17),'fare-minus','minus')}<label class="rv-field rv-unitfield"><span>Change</span><div class="rv-unitwrap"><b data-rv-unit-pre>${fareChangeMode==='fixed'?'₹':''}</b><input type="number" min="0" data-rv-field="fare_change" value="0"><b data-rv-unit-post>${fareChangeMode==='percent'?'%':''}</b></div></label>${basic(I('plus',17),'fare-plus','plus')}<div class="rv-fare-weekdays"><button class="${selectedDays.size===7?'on':''}" data-rv="days-all">All</button>${DOW.map(day=>`<button class="${day===activeDay?'on':''}" data-rv-day="${day}">${day}</button>`).join('')}</div></div>
       <div class="rv-fare-grid"><div class="rv-faretable-area"><div class="rv-position-hint">Name groups by seat position</div><div class="rv-scroll"><table class="rv-table rv-faretable"><thead><tr><th>☑</th><th>NAME</th><th>SEAT IDS</th><th>− / +</th>${DOW.map(s=>`<th>${s.toUpperCase()}</th>`).join('')}<th>ACTIONS</th></tr></thead><tbody>${gr.map((g,i)=>`<tr><td><input type="checkbox" data-rv-group-check="${i}" checked></td><td><b>${E(g.name)}</b></td><td><div class="rv-seat-ids">${asArray(g.seats).map(s=>chip(s,'seat')).join('')}</div></td><td><span class="rv-smallminus" data-rv="group-adjust:${i}:-1">−</span><span class="rv-smallplus" data-rv="group-adjust:${i}:1">+</span></td>${DOW.map((day,j)=>`<td><input class="rv-dayfare" type="number" min="0" data-rv-fare="${i}:${j}" value="${E(g.days?.[j]??g.value??750)}" ${mode==='view'?'disabled':''}></td>`).join('')}<td>${basic(I('trash',17),'group-remove:'+i,'icon danger')}</td></tr>`).join('')}<tr class="rv-fare-auto"><td></td><td>AUTO</td><td><input data-rv-ignore data-rv-auto-seat placeholder="e.g. SL1, SL2, SL3"></td><td></td>${DOW.map((_,j)=>`<td><input data-rv-fare-new="${j}" type="number" value="10"></td>`).join('')}<td>${basic('Add','group-add','primary')}</td></tr></tbody></table></div></div><div class="rv-fare-diagram">${busDeck(coach(),{selected:selectedSeats})}</div></div>
