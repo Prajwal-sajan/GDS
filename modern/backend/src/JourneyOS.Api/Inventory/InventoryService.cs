@@ -52,6 +52,7 @@ public sealed class InventoryService(GdsDbContext db, IGdsCache cache, RedBusNot
     public async Task<Route> LoadRouteAsync(long routeId) =>
         await db.Routes
             .Include(r => r.CoachTemplate!).ThenInclude(c => c.Seats)
+            .Include(r => r.CoachTemplate!).ThenInclude(c => c.Fixtures)
             .Include(r => r.Stops).ThenInclude(s => s.City).Include(r => r.Stages).Include(r => r.Fares)
             .Include(r => r.RefundSlabs).Include(r => r.SeatFareRules)
             .AsSplitQuery()
