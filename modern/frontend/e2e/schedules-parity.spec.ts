@@ -106,7 +106,7 @@ test("Manage Schedules renders reference-shaped lower/upper decks, booking chart
   await expect(page.getByText("Day 2")).toBeVisible();
   await page.getByRole("button",{name:"Pickups",exact:true}).click();
   await expect(page.getByText("Hyderabad Central")).toBeVisible();
-  await page.getByRole("button",{name:"Fares",exact:true}).click();
+  await page.getByRole("dialog").getByRole("button",{name:"Fares",exact:true}).click();
   await expect(page.getByText("₹799")).toBeVisible();
   await page.getByRole("button",{name:"✕ Close"}).last().click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
