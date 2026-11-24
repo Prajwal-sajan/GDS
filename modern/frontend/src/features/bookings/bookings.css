@@ -1,0 +1,35 @@
+.booking-desk{background:#fff;border:1px solid #dce5ed;border-radius:12px;padding:20px;min-height:420px}
+.booking-desk .desk-title h2{font-size:22px;margin:0 0 4px;color:#16344f}
+.booking-desk .desk-title p{margin:0 0 18px}
+.booking-desk .desk-search{flex-wrap:wrap;align-items:end;border-bottom:1px solid #e9edf2;padding-bottom:16px}
+.booking-desk .desk-search input{min-width:260px}
+.booking-desk .desk-overview{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin:16px 0}
+.booking-desk .desk-overview>div{background:#f6f9fc;border:1px solid #e7edf3;border-radius:7px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.booking-desk .desk-overview strong{font-size:17px;color:#173b56;overflow-wrap:anywhere}
+.booking-desk .desk-tabs{display:flex;flex-wrap:wrap;gap:8px;border-bottom:1px solid #dee6ed;padding-bottom:12px;margin-top:18px}
+.booking-desk .desk-tabs button{min-height:38px}
+.booking-desk .desk-tabs button.active{background:#123e65;color:#fff}
+.booking-desk .desk-ticket,.booking-desk .desk-task{max-width:100%;overflow-x:auto;padding:10px 0 18px}
+.booking-desk h3{font-size:17px;margin:18px 0 10px}
+.booking-desk .desk-ticket-actions{justify-content:space-between}
+.booking-desk .desk-actions{display:flex;flex-wrap:wrap;gap:6px}
+.booking-desk .desk-checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin:12px 0}
+.booking-desk .desk-checks label{border:1px solid #dce5ec;padding:10px;border-radius:7px;display:flex;align-items:center;gap:7px}
+.booking-desk .desk-checks input{margin:0}
+.booking-desk .desk-quote{border:1px solid #dce5ed;border-radius:9px;padding:14px;margin-top:18px}
+.booking-desk .desk-quote label{display:flex;flex-direction:column;gap:7px;margin:12px 0}
+.booking-desk textarea{width:100%;min-height:75px;border:1px solid #c8d0db;border-radius:6px;padding:10px;font:inherit}
+.booking-desk button.danger{background:#b42318;color:#fff;border-color:#b42318}
+.booking-desk button:disabled{opacity:.55;cursor:not-allowed}
+.booking-desk .desk-task>.row{flex-wrap:wrap}
+.booking-desk .desk-task>label{display:block;margin:14px 0}
+.booking-desk .desk-task>label input{display:block;margin:7px 0;width:min(100%,440px)}
+@media print {
+  .gds-modern-header,.gds-modern-subbar,.booking-desk .desk-title,
+  .booking-desk .desk-search,.booking-desk .desk-tabs,.booking-desk .desk-task,
+  .booking-desk .desk-ticket-actions button,.booking-desk .desk-actions,.booking-desk .note,
+  .booking-desk .banner{display:none!important}
+  .gds-modern-main{padding:0!important;max-width:100%!important}
+  .booking-desk{border:none!important;padding:0!important}
+  .booking-desk .desk-ticket{overflow:visible}
+}
