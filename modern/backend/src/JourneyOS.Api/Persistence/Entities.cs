@@ -36,6 +36,8 @@ public sealed class CoachTemplate : ITenantOwned
     public string BusType { get; set; } = "";
     public string Pattern { get; set; } = "";      // 2+1 / 2+2
     public bool IsAc { get; set; }
+    /// <summary>Non-inventory physical fixtures, amenities, and coach display metadata.</summary>
+    public string LayoutMetaJson { get; set; } = "{}";
     public List<CoachSeat> Seats { get; set; } = [];
 }
 
@@ -44,6 +46,8 @@ public sealed class CoachSeat
     public long Id { get; set; }
     public long CoachTemplateId { get; set; }
     public string Code { get; set; } = "";
+    /// <summary>Editable passenger-facing alias. Never changes immutable booking seat Code.</summary>
+    public string? DisplayName { get; set; }
     public string Deck { get; set; } = "LOWER";    // LOWER / UPPER
     public int Row { get; set; }
     public int Col { get; set; }
