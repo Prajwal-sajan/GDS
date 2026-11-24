@@ -8,8 +8,9 @@ namespace JourneyOS.Api.Reports;
 /// Reporting over authoritative modern data (port of legacy server/reports.js). Differences from legacy are deliberate:
 /// <list type="bullet">
 /// <item>Net sales are the GST-exclusive passenger base fares actually captured at booking; nothing is re-derived from ratios.</item>
-/// <item>Expenses are only recorded trip expenses. Legacy route expense templates / telematics diesel are not migrated, so
-/// <c>expenseCoverage</c> reports how many trips have any recorded expense — profit is not meaningful where coverage is low.</item>
+/// <item>Expense per trip = route expense template (legacy route.expenses: fixed items every scheduled day, running items only when
+/// the trip runs) with any recorded trip expense of the same key superseding its estimate (actual beats estimate), plus other
+/// recorded expenses. Every figure carries its basis (actual / estimate) so profit is never silently presented as fact.</item>
 /// <item>OTA commission is unknown until the OTA invoice is reconciled; it is not deducted here.</item>
 /// </list>
 /// </summary>
@@ -18,7 +19,44 @@ public sealed class ReportsService(GdsDbContext db, TimeProvider clock)
     public const int MaxRangeDays = 93;
 
     public sealed record Day(DateOnly Date, int Bookings, int Seats, decimal Gross, decimal NetSales, decimal CancelCharges, int CancelledPnrs, int CancelledSeats,
-        decimal Refunds, decimal Expense, int Capacity, int Trips, int TripsWithExpense, decimal Asp, decimal OccupancyPct, decimal Profit);
+        decimal Refunds, decimal Expense, decimal ExpenseActual, decimal ExpenseEstimated, int Capacity, int Trips, decimal Asp, decimal OccupancyPct, decimal Profit);
+
+    public sealed record CostLine(string Type, string Key, string Label, decimal Amount, string Basis, decimal? Estimate);
+    public sealed record TripCost(List<CostLine> Lines, decimal Total, decimal Actual, decimal Estimated, string Basis);
+
+    /// <summary>Stable key for matching recorded expenses to template items ("Driver Bata" ≡ "driver_bata").</summary>
+    public static string ExpenseKey(string s) => string.Join('_', new string((s ?? "").ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : ' ').ToArray())
+        .Split(' ', StringSplitOptions.RemoveEmptyEntries));
+
+    /// <summary>Pure cost model (unit-tested). Cancelled trips keep fixed costs only; recorded expenses always count.</summary>
+    public static TripCost Cost(bool running, IEnumerable<RouteExpenseItem> template, IEnumerable<TripExpense> recorded)
+    {
+        var actualByKey = recorded.GroupBy(e => ExpenseKey(e.Category)).ToDictionary(g => g.Key, g => (Amount: g.Sum(x => x.Amount), Label: g.First().Category));
+        var lines = new List<CostLine>();
+        foreach (var t in template.Where(t => running || t.Type == "fixed").OrderBy(t => t.Type))
+        {
+            var k = ExpenseKey(t.Key); var lk = ExpenseKey(t.Label);
+            var hit = actualByKey.ContainsKey(k) ? k : actualByKey.ContainsKey(lk) ? lk : null;
+            if (hit is not null) { lines.Add(new(t.Type, k, t.Label, actualByKey[hit].Amount, "actual", t.PerTrip)); actualByKey.Remove(hit); }
+            else lines.Add(new(t.Type, k, t.Label, t.PerTrip, "estimate", t.PerTrip));
+        }
+        foreach (var (k, v) in actualByKey) lines.Add(new("other", k, v.Label, v.Amount, "actual", null));
+        var actual = lines.Where(l => l.Basis == "actual").Sum(l => l.Amount);
+        var est = lines.Where(l => l.Basis == "estimate").Sum(l => l.Amount);
+        var basis = lines.Count == 0 ? "none" : est == 0 && lines.All(l => l.Basis == "actual") ? "actual" : actual == 0 ? "estimate" : "mixed";
+        return new(lines, R2(actual + est), R2(actual), R2(est), basis);
+    }
+
+    private async Task<Dictionary<long, TripCost>> CostsAsync(Dictionary<long, (DateOnly Date, int Capacity, string Service, string Route, string Status, long RouteId)> trips)
+    {
+        var tripIds = trips.Keys.ToList();
+        var routeIds = trips.Values.Select(t => t.RouteId).Distinct().ToList();
+        var tmpl = (await db.Set<RouteExpenseItem>().AsNoTracking().Where(x => routeIds.Contains(x.RouteId)).ToListAsync()).GroupBy(x => x.RouteId).ToDictionary(g => g.Key, g => g.ToList());
+        var rec = (await db.TripExpenses.AsNoTracking().Where(e => tripIds.Contains(e.TripId)).ToListAsync()).GroupBy(e => e.TripId).ToDictionary(g => g.Key, g => g.ToList());
+        return trips.ToDictionary(t => t.Key, t => Cost(t.Value.Status == "active", tmpl.GetValueOrDefault(t.Value.RouteId) ?? [], rec.GetValueOrDefault(t.Key) ?? []));
+    }
+
+    private static object Basis(IEnumerable<TripCost> costs) { var c = costs.ToList(); return new { actual = c.Count(x => x.Basis == "actual"), mixed = c.Count(x => x.Basis == "mixed"), estimate = c.Count(x => x.Basis == "estimate"), none = c.Count(x => x.Basis == "none"), trips = c.Count }; }
 
     private sealed record Bk(long Id, string Pnr, long TripId, DateOnly TravelDate, string ServiceNumber, string RouteName, string Channel, string Status,
         string? Mobile, string? Email, DateTime IssuedAt, long BoardingStageId, string? AgentPhone, string? BookedBy, List<BookingPassenger> Pax);
@@ -55,11 +93,11 @@ public sealed class ReportsService(GdsDbContext db, TimeProvider clock)
     private static IEnumerable<BookingPassenger> LivePax(Bk b) => b.Pax.Where(p => p.Status == "CONFIRMED");
     private static decimal R2(decimal d) => Math.Round(d, 2, MidpointRounding.AwayFromZero);
 
-    private async Task<Dictionary<long, (DateOnly Date, int Capacity, string Service, string Route, string Status)>> TripsAsync(DateOnly from, DateOnly to)
+    private async Task<Dictionary<long, (DateOnly Date, int Capacity, string Service, string Route, string Status, long RouteId)>> TripsAsync(DateOnly from, DateOnly to)
     {
         var trips = await db.Trips.AsNoTracking().Where(t => t.TravelDate >= from && t.TravelDate <= to)
-            .Select(t => new { t.Id, t.TravelDate, t.Status, t.Route!.ServiceNumber, t.Route.Name, Capacity = t.Route.CoachTemplate!.Seats.Count }).ToListAsync();
-        return trips.ToDictionary(t => t.Id, t => (t.TravelDate, t.Capacity, t.ServiceNumber, t.Name, t.Status));
+            .Select(t => new { t.Id, t.TravelDate, t.Status, t.RouteId, t.Route!.ServiceNumber, t.Route.Name, Capacity = t.Route.CoachTemplate!.Seats.Count }).ToListAsync();
+        return trips.ToDictionary(t => t.Id, t => (t.TravelDate, t.Capacity, t.ServiceNumber, t.Name, t.Status, t.RouteId));
     }
 
     private async Task<List<(Cancellation C, Bk B)>> CancellationsAsync(List<Bk> bookings)
@@ -78,8 +116,7 @@ public sealed class ReportsService(GdsDbContext db, TimeProvider clock)
         var bks = await BookingsAsync(from, to, channel);
         var trips = await TripsAsync(from, to);
         var cxl = await CancellationsAsync(bks);
-        var tripIds = trips.Keys.ToList();
-        var expenses = (await db.TripExpenses.AsNoTracking().Where(e => tripIds.Contains(e.TripId)).ToListAsync()).GroupBy(e => e.TripId).ToDictionary(g => g.Key, g => g.Sum(e => e.Amount));
+        var costs = await CostsAsync(trips);
         var gstDiv = 1 + tenant.GstPercent / 100m;
 
         var rows = new List<Day>();
@@ -93,9 +130,10 @@ public sealed class ReportsService(GdsDbContext db, TimeProvider clock)
             var charges = dc.Sum(x => x.C.Charge) / gstDiv;
             var activeTrips = trips.Where(t => t.Value.Date == d && t.Value.Status == "active").ToList();
             var cap = activeTrips.Sum(t => t.Value.Capacity);
-            var exp = activeTrips.Sum(t => expenses.GetValueOrDefault(t.Key));
+            var dayCosts = trips.Where(t => t.Value.Date == d).Select(t => costs[t.Key]).ToList();
+            var exp = dayCosts.Sum(c => c.Total);
             rows.Add(new Day(d, live.Count, seats, R2(gross), R2(net), R2(charges), dc.Select(x => x.B.Id).Distinct().Count(), dc.Sum(x => x.C.Seats.Length),
-                R2(dc.Sum(x => x.C.Refund)), R2(exp), cap, activeTrips.Count, activeTrips.Count(t => expenses.ContainsKey(t.Key)),
+                R2(dc.Sum(x => x.C.Refund)), R2(exp), R2(dayCosts.Sum(c => c.Actual)), R2(dayCosts.Sum(c => c.Estimated)), cap, activeTrips.Count,
                 seats > 0 ? R2(net / seats) : 0, cap > 0 ? R2(seats * 100m / cap) : 0, R2(net + charges - exp)));
         }
         int tSeats = rows.Sum(r => r.Seats), tCap = rows.Sum(r => r.Capacity), tTrips = rows.Sum(r => r.Trips);
@@ -105,7 +143,8 @@ public sealed class ReportsService(GdsDbContext db, TimeProvider clock)
             bookings = rows.Sum(r => r.Bookings), seats = tSeats, gross = rows.Sum(r => r.Gross), netSales = tNet, asp = tSeats > 0 ? R2(tNet / tSeats) : 0,
             occupancyPct = tCap > 0 ? R2(tSeats * 100m / tCap) : 0, trips = tTrips, cancelCharges = rows.Sum(r => r.CancelCharges), cancelledPnrs = rows.Sum(r => r.CancelledPnrs),
             cancelledSeats = rows.Sum(r => r.CancelledSeats), refunds = rows.Sum(r => r.Refunds), gst = R2(tNet * tenant.GstPercent / 100m), expense = rows.Sum(r => r.Expense),
-            profit = rows.Sum(r => r.Profit), expenseCoverage = new { tripsWithExpense = rows.Sum(r => r.TripsWithExpense), trips = tTrips },
+            profit = rows.Sum(r => r.Profit), expenseActual = rows.Sum(r => r.ExpenseActual), expenseEstimated = rows.Sum(r => r.ExpenseEstimated),
+            expenseBasis = Basis(costs.Values),
         };
         var liveAll = bks.Where(Live).ToList();
         var channels = liveAll.GroupBy(b => b.Channel).Select(g => new { channel = g.Key, bookings = g.Count(), seats = g.Sum(b => LivePax(b).Count()), netSales = R2(g.Sum(b => LivePax(b).Sum(p => p.BaseFare))) })
@@ -113,7 +152,7 @@ public sealed class ReportsService(GdsDbContext db, TimeProvider clock)
         var services = liveAll.GroupBy(b => b.ServiceNumber).Select(g => new { service = g.Key, name = g.First().RouteName, bookings = g.Count(), seats = g.Sum(b => LivePax(b).Count()), netSales = R2(g.Sum(b => LivePax(b).Sum(p => p.BaseFare))) })
             .OrderByDescending(x => x.netSales).ToList();
         return new { from, to, channel = channel ?? "all", totals, rows, channels, services,
-            notes = new[] { "Net sales = GST-exclusive base fares of confirmed passengers by travel date.", "Expense = recorded trip expenses only; see expenseCoverage.", "OTA commission is not deducted until reconciled." } };
+            notes = new[] { "Net sales = GST-exclusive base fares of confirmed passengers by travel date.", "Expense = recorded actuals where entered, otherwise the route expense template estimate; see expenseActual / expenseEstimated / expenseBasis.", "OTA commission is not deducted until reconciled." } };
     }
 
     // ---------------- catalogue ----------------
@@ -158,8 +197,7 @@ public sealed class ReportsService(GdsDbContext db, TimeProvider clock)
         var bks = await BookingsAsync(from, to);
         var trips = await TripsAsync(from, to);
         var cxl = await CancellationsAsync(bks);
-        var tripIds = trips.Keys.ToList();
-        var exp = (await db.TripExpenses.AsNoTracking().Where(e => tripIds.Contains(e.TripId)).ToListAsync()).GroupBy(e => e.TripId).ToDictionary(g => g.Key, g => g.ToList());
+        var costs = await CostsAsync(trips);
         var gstDiv = 1 + tenant.GstPercent / 100m;
         var rows = trips.OrderBy(t => t.Value.Date).ThenBy(t => t.Value.Service).Select(t =>
         {
@@ -167,15 +205,14 @@ public sealed class ReportsService(GdsDbContext db, TimeProvider clock)
             var seats = live.Sum(b => LivePax(b).Count());
             var net = live.Sum(b => LivePax(b).Sum(p => p.BaseFare));
             var charges = cxl.Where(x => x.B.TripId == t.Key).Sum(x => x.C.Charge) / gstDiv;
-            var e = exp.GetValueOrDefault(t.Key) ?? [];
-            var expense = t.Value.Status == "active" ? e.Sum(x => x.Amount) : 0;
-            return new { tripId = t.Key, date = t.Value.Date, service = t.Value.Service, route = t.Value.Route, running = t.Value.Status == "active", capacity = t.Value.Capacity, seats,
-                occupancyPct = t.Value.Capacity > 0 ? R2(seats * 100m / t.Value.Capacity) : 0, netSales = R2(net), cancellationCharges = R2(charges), expense = R2(expense),
-                expenseRecorded = e.Count > 0, profit = R2(net + charges - expense),
-                expenses = e.Select(x => new { x.Id, x.Category, x.Amount, x.Note, x.By, x.At }) };
+            var c = costs[t.Key];
+            return new { tripId = t.Key, routeId = t.Value.RouteId, date = t.Value.Date, service = t.Value.Service, route = t.Value.Route, running = t.Value.Status == "active", capacity = t.Value.Capacity, seats,
+                occupancyPct = t.Value.Capacity > 0 ? R2(seats * 100m / t.Value.Capacity) : 0, netSales = R2(net), cancellationCharges = R2(charges), expense = c.Total,
+                expenseActual = c.Actual, expenseEstimated = c.Estimated, expenseBasis = c.Basis, profit = R2(net + charges - c.Total), expenses = c.Lines };
         }).ToList();
-        return new { rows, summary = new { trips = rows.Count, netSales = rows.Sum(r => r.netSales), expense = rows.Sum(r => r.expense), profit = rows.Sum(r => r.profit),
-            lossTrips = rows.Count(r => r.running && r.expenseRecorded && r.profit < 0), tripsWithoutExpense = rows.Count(r => r.running && !r.expenseRecorded) } };
+        return new { rows, summary = new { trips = rows.Count, netSales = rows.Sum(r => r.netSales), expense = rows.Sum(r => r.expense), expenseActual = rows.Sum(r => r.expenseActual),
+            expenseEstimated = rows.Sum(r => r.expenseEstimated), profit = rows.Sum(r => r.profit), lossTrips = rows.Count(r => r.profit < 0 && r.expenseBasis != "none"),
+            expenseBasis = Basis(costs.Values) } };
     }
 
     // ---------------- daily ops ----------------

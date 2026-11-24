@@ -11,6 +11,7 @@ namespace JourneyOS.Api.Admin;
 
 public sealed record LedgerInput(string ChannelKey, string Type, decimal Amount, string? Note, DateOnly? Date);
 public sealed record ExpenseInput(string Category, decimal Amount, string? Note);
+public sealed record ExpenseTemplateInput(string Type, string? Key, string Label, decimal PerTrip);
 
 public static class BusinessEndpoints
 {
@@ -35,6 +36,11 @@ public static class BusinessEndpoints
         auth.MapPost("/login", async (LoginInput i, IamService iam) =>
         {
             var (token, u, exp) = await iam.LoginAsync(i);
+            return Results.Ok(new { token, expiresAt = exp, user = new { u.Id, u.Name, u.Phone, u.Role } });
+        }).RequireRateLimiting("login");
+        auth.MapPost("/activate", async (ActivateInput i, IamService iam) =>
+        {
+            var (token, u, exp) = await iam.ActivateAsync(i);
             return Results.Ok(new { token, expiresAt = exp, user = new { u.Id, u.Name, u.Phone, u.Role } });
         }).RequireRateLimiting("login");
         auth.MapPost("/logout", async (HttpContext h, IamService iam) =>
@@ -85,6 +91,26 @@ public static class BusinessEndpoints
         rp.MapGet("/trip-pnl", async (string? from, string? to, ReportsService s) => { var (f, t) = Range(from, to, await s.TodayAsync()); return Results.Ok(await s.TripPnlAsync(f, t)); });
 
         // trip expenses (feed P&L)
+        g.MapGet("/routes/{id:long}/expense-template", async (long id, GdsDbContext db) =>
+        {
+            if (!await db.Routes.AnyAsync(r => r.Id == id)) throw new GdsException("ROUTE_NOT_FOUND", "Route not found", 404);
+            return Results.Ok(await db.Set<RouteExpenseItem>().AsNoTracking().Where(x => x.RouteId == id).OrderBy(x => x.Type).ThenByDescending(x => x.PerTrip).ToListAsync());
+        }).RequireAuthorization(Policies.Reports);
+        g.MapPut("/routes/{id:long}/expense-template", async (long id, List<ExpenseTemplateInput> items, GdsDbContext db, HttpContext h) =>
+        {
+            if (!await db.Routes.AnyAsync(r => r.Id == id)) throw new GdsException("ROUTE_NOT_FOUND", "Route not found", 404);
+            if (items.Count > 50 || items.Any(x => x.Type is not ("fixed" or "running") || string.IsNullOrWhiteSpace(x.Label) || x.PerTrip < 0 || x.PerTrip > 10_000_000))
+                throw new GdsException("VALIDATION", "Each item needs type fixed|running, a label and a non-negative amount");
+            var norm = items.Select(x => (x.Type, Key: ReportsService.ExpenseKey(x.Key ?? x.Label), Label: x.Label.Trim(), x.PerTrip)).ToList();
+            if (norm.GroupBy(x => (x.Type, x.Key)).Any(g => g.Count() > 1)) throw new GdsException("VALIDATION", "Duplicate expense item");
+            await using var tx = await db.Database.BeginTransactionAsync();
+            db.Set<RouteExpenseItem>().RemoveRange(await db.Set<RouteExpenseItem>().Where(x => x.RouteId == id).ToListAsync());
+            db.Set<RouteExpenseItem>().AddRange(norm.Select(x => new RouteExpenseItem { RouteId = id, Type = x.Type, Key = x.Key, Label = x.Label, PerTrip = x.PerTrip }));
+            db.AuditLogs.Add(new AuditLog { TenantId = db.CurrentTenantId, Actor = Actor(h), Action = "EXPENSE_TEMPLATE_SET", Entity = "route", EntityId = id.ToString(), DataJson = System.Text.Json.JsonSerializer.Serialize(items), At = DateTime.UtcNow });
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+            return Results.Ok(new { items = norm.Count });
+        }).RequireAuthorization(Policies.Operations);
         g.MapPost("/trips/{id:long}/expenses", async (long id, ExpenseInput i, GdsDbContext db, HttpContext h) =>
         {
             if (string.IsNullOrWhiteSpace(i.Category) || i.Amount < 0 || i.Amount > 10_000_000) throw new GdsException("VALIDATION", "Category and a non-negative amount are required");
@@ -156,10 +182,15 @@ public static class BusinessEndpoints
             new { role = "agent", grants = "own profile and own ledger only" },
         }));
         iam.MapGet("/users", async (GdsDbContext db) => Results.Ok(await db.Users.AsNoTracking().OrderBy(u => u.Name)
-            .Select(u => new { u.Id, u.Phone, u.Name, u.Email, u.Role, u.Status, u.LegacyRole, u.CommissionPct, u.CreditLimit, hasPassword = u.PasswordHash != null, u.LastLoginAt,
+            .Select(u => new { u.Id, u.Phone, u.Name, u.Email, u.Role, u.Status, u.LegacyRole, u.CommissionPct, u.CreditLimit, hasPassword = u.PasswordHash != null, invitePendingUntil = u.InviteExpiresAt > DateTime.UtcNow ? u.InviteExpiresAt : null, u.LastLoginAt,
                 locked = u.LockedUntil != null && u.LockedUntil > DateTime.UtcNow }).ToListAsync()));
         iam.MapPost("/users", async (UserInput i, IamService s, HttpContext h) => { var u = await s.SaveUserAsync(null, i, Actor(h), Role(h)); return Results.Ok(new { u.Id, u.Phone, u.Name, u.Role, u.Status }); });
         iam.MapPut("/users/{id:long}", async (long id, UserInput i, IamService s, HttpContext h) => { var u = await s.SaveUserAsync(id, i, Actor(h), Role(h)); return Results.Ok(new { u.Id, u.Phone, u.Name, u.Role, u.Status }); });
+        iam.MapPost("/users/{id:long}/invite", async (long id, IamService s, HttpContext h) =>
+        {
+            var (code, exp) = await s.InviteAsync(id, Actor(h), Role(h));
+            return Results.Ok(new { code, expiresAt = exp, notice = "Shown once. Give it to the user in person or by phone; they set their own password at sign-in → 'Activate with invite code'." });
+        });
         iam.MapPost("/users/{id:long}/password", async (long id, PasswordInput i, IamService s, HttpContext h) => { await s.SetPasswordAsync(id, i.Password, Actor(h), Role(h)); return Results.NoContent(); });
         iam.MapGet("/branches", async (GdsDbContext db) => Results.Ok(await db.Branches.AsNoTracking().OrderBy(b => b.Name).ToListAsync()));
         iam.MapGet("/audit", async (string? entity, GdsDbContext db) =>

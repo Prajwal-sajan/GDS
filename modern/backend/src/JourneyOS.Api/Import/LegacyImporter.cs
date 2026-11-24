@@ -318,6 +318,24 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
         long? L(JsonElement e, string p) => e.TryGetProperty(p, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt64() : null;
 
         var phones = await db.Customers.Select(c => c.Phone).ToHashSetAsync();
+        // Route expense templates (legacy route.expenses.fixed/running, per_day ≙ per scheduled trip-day)
+        var routesWithTemplate = await db.Set<RouteExpenseItem>().Select(x => x.RouteId).Distinct().ToHashSetAsync();
+        var knownRoutes = await db.Routes.Select(r => r.Id).ToHashSetAsync();
+        foreach (var r in Col("routes"))
+        {
+            if (L(r, "id") is not { } rid || !knownRoutes.Contains(rid) || routesWithTemplate.Contains(rid)) continue;
+            if (!r.TryGetProperty("expenses", out var ex) || ex.ValueKind != JsonValueKind.Object) continue;
+            var seen = new HashSet<(string, string)>();
+            foreach (var type in new[] { "fixed", "running" })
+                if (ex.TryGetProperty(type, out var arr) && arr.ValueKind == JsonValueKind.Array)
+                    foreach (var it in arr.EnumerateArray())
+                    {
+                        var label = Str(it, "label") ?? Str(it, "key") ?? "";
+                        var key = Reports.ReportsService.ExpenseKey(Str(it, "key") ?? label);
+                        if (key.Length == 0 || Dec(it, "per_day") is not >= 0 || !seen.Add((type, key))) continue;
+                        db.Set<RouteExpenseItem>().Add(new RouteExpenseItem { RouteId = rid, Type = type, Key = key, Label = label, PerTrip = Dec(it, "per_day")!.Value });
+                    }
+        }
         foreach (var c in Col("customers"))
         {
             var phone = Str(c, "phone");

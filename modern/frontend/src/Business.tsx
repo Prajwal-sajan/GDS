@@ -3,6 +3,13 @@ import { api, type CustomerDetail, type CustomerHit, type Ledger, type Me, type 
 import { err, today, useAsync } from "./Operations";
 
 const inr = (n: number | null | undefined) => (n == null ? "—" : `₹${Math.round(n).toLocaleString("en-IN")}`);
+
+type Basis = { actual: number; mixed: number; estimate: number; none: number; trips: number };
+function ExpenseBasis({ total }: { total: { expense: number; expenseActual: number; expenseEstimated: number; expenseBasis: Basis } }) {
+  const b = total.expenseBasis;
+  const pct = total.expense > 0 ? Math.round((100 * total.expenseEstimated) / total.expense) : 0;
+  return <span>Expense {inr(total.expenseActual)} recorded + {inr(total.expenseEstimated)} route-template estimate ({pct}% estimated). Trips: {b.actual} actual · {b.mixed} mixed · {b.estimate} estimate · {b.none} no template{b.none > 0 ? " (profit overstated for these)" : ""}.</span>;
+}
 const addDays = (d: string, n: number) => { const x = new Date(`${d}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 
 function Table({ rows, empty = "No rows" }: { rows: Record<string, unknown>[]; empty?: string }) {
@@ -139,9 +146,9 @@ export function ReportsPanel({ me }: { me: Me }) {
       {d && name === "analytics" && <>
         <div className="cards">
           {[["Seats", d.totals.seats], ["Net sales", inr(d.totals.netSales)], ["ASP", inr(d.totals.asp)], ["Occupancy", `${d.totals.occupancyPct}%`], ["Cancellations", d.totals.cancelledPnrs],
-            ["Refunds", inr(d.totals.refunds)], ["Expense (recorded)", inr(d.totals.expense)], ["Profit", inr(d.totals.profit)]].map(([l, v]) => <div className="card" key={l}><div className="muted">{l}</div><div className="value" data-testid={`kpi-${l}`}>{v}</div></div>)}
+            ["Refunds", inr(d.totals.refunds)], ["Expense", inr(d.totals.expense)], ["Profit", inr(d.totals.profit)]].map(([l, v]) => <div className="card" key={l}><div className="muted">{l}</div><div className="value" data-testid={`kpi-${l}`}>{v}</div></div>)}
         </div>
-        <p className="muted">Expense recorded on {d.totals.expenseCoverage.tripsWithExpense} of {d.totals.expenseCoverage.trips} trips. {d.notes.join(" ")}</p>
+        <p className="muted" data-testid="expense-basis"><ExpenseBasis total={d.totals} /> {d.notes.join(" ")}</p>
         <h3>By day</h3><Table rows={d.rows} />
         <h3>Channels</h3><Table rows={d.channels} />
         <h3>Services</h3><Table rows={d.services} />
@@ -158,13 +165,15 @@ export function ReportsPanel({ me }: { me: Me }) {
         <h3>Low ratings</h3><Table rows={d.ratings.low} empty="None" />
       </>}
       {d && name === "trip-pnl" && <>
-        <p>{d.summary.trips} trips · net {inr(d.summary.netSales)} · expense {inr(d.summary.expense)} · profit {inr(d.summary.profit)} · {d.summary.tripsWithoutExpense} running trips without recorded expense</p>
-        <table><thead><tr><th>Date</th><th>Service</th><th>Seats</th><th>Occ.</th><th>Net</th><th>Expense</th><th>Profit</th><th /></tr></thead>
-          <tbody>{d.rows.map((x: { tripId: number; date: string; service: string; seats: number; occupancyPct: number; netSales: number; expense: number; profit: number; running: boolean; expenseRecorded: boolean }) =>
+        <p>{d.summary.trips} trips · net {inr(d.summary.netSales)} · expense {inr(d.summary.expense)} · profit {inr(d.summary.profit)}</p>
+        <p className="muted" data-testid="expense-basis"><ExpenseBasis total={d.summary} /></p>
+        <table><thead><tr><th>Date</th><th>Service</th><th>Seats</th><th>Occ.</th><th>Net</th><th>Expense</th><th>Basis</th><th>Profit</th><th /></tr></thead>
+          <tbody>{d.rows.map((x: { tripId: number; date: string; service: string; seats: number; occupancyPct: number; netSales: number; expense: number; expenseEstimated: number; profit: number; running: boolean; expenseBasis: string }) =>
             <tr key={x.tripId}><td>{x.date}</td><td>{x.service}{x.running ? "" : " (off)"}</td><td>{x.seats}</td><td>{x.occupancyPct}%</td><td>{inr(x.netSales)}</td>
-              <td>{x.expenseRecorded ? inr(x.expense) : <span className="muted">not recorded</span>}</td><td>{inr(x.profit)}</td>
+              <td>{x.expenseBasis === "none" ? <span className="muted">no template</span> : inr(x.expense)}</td>
+              <td><span className={`badge b-${x.expenseBasis}`} title={x.expenseEstimated ? `${inr(x.expenseEstimated)} estimated` : "all recorded"}>{x.expenseBasis}</span></td><td>{inr(x.profit)}</td>
               <td>{["owner", "admin", "ops"].includes(me.role) && x.running && <button className="link" onClick={() => {
-                const cat = prompt("Expense category (e.g. Diesel, Toll, Driver bata)"); const amt = Number(prompt("Amount (₹)"));
+                const cat = prompt("Actual expense category — use the template name to replace its estimate (e.g. Diesel, Tolls, Driver Bata)"); const amt = Number(prompt("Amount (₹)"));
                 if (cat && amt >= 0) void api.addExpense(x.tripId, cat, amt, "").then(() => { setMsg("Expense recorded."); return r.reload(); }).catch((e) => setMsg(err(e)));
               }}>Add expense</button>}</td></tr>)}</tbody></table>
       </>}
@@ -250,11 +259,14 @@ export function UsersPanel({ me }: { me: Me }) {
   const audit = useAsync(api.audit, []);
   const [form, setForm] = useState({ phone: "", name: "", role: "ops", commissionPct: "" });
   const [msg, setMsg] = useState<string>();
+  const [invite, setInvite] = useState<{ name: string; code: string; expiresAt: string }>();
   const roles = me.role === "owner" ? ["owner", "admin", "accounts", "ops", "viewer", "agent"] : ["admin", "accounts", "ops", "viewer", "agent"];
   const act = (f: () => Promise<unknown>, ok: string) => void f().then(() => { setMsg(ok); return users.reload(); }).catch((e) => setMsg(err(e)));
   return (
     <section>
-      <div className="banner">Users sign in with phone + password. Legacy users were imported without passwords (legacy used SMS OTP, which needs a provider) — set a password before they can sign in.</div>
+      <div className="banner">Legacy users signed in with SMS OTP, which needs a provider that is not connected. Click <strong>Issue invite</strong>, give the one-time code to the user in person or by phone (valid 72 h); they choose their own password under “Activate with invite code”.</div>
+      {invite && <div className="card wide" role="status" data-testid="invite-code">Invite for <strong>{invite.name}</strong>: <code>{invite.code}</code> · expires {new Date(invite.expiresAt).toLocaleString()} · shown once
+        <button className="link" onClick={() => setInvite(undefined)}>Dismiss</button></div>}
       {msg && <p className="note" role="status">{msg}</p>}
       <form className="row" onSubmit={(e) => { e.preventDefault(); act(() => api.saveUser({ phone: form.phone, name: form.name, role: form.role, status: "ACTIVE", commissionPct: form.commissionPct ? Number(form.commissionPct) : null }), "User created."); }}>
         <label>Phone<input required pattern="\d{10}" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} aria-label="User phone" /></label>
@@ -266,8 +278,9 @@ export function UsersPanel({ me }: { me: Me }) {
       {users.error && <p className="error" role="alert">{users.error}</p>}
       <table><thead><tr><th>Name</th><th>Phone</th><th>Role</th><th>Legacy role</th><th>Status</th><th>Password</th><th>Last login</th><th /></tr></thead>
         <tbody>{users.data?.map((u) => <tr key={u.id}><td>{u.name}</td><td>{u.phone}</td><td>{u.role}</td><td>{u.legacyRole ?? "—"}</td><td>{u.status}{u.locked ? " · locked" : ""}</td>
-          <td>{u.hasPassword ? "set" : <span className="muted">not set</span>}</td><td>{u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : "—"}</td>
+          <td>{u.hasPassword ? "active" : u.invitePendingUntil ? <span className="muted">invite pending</span> : <span className="muted">not activated</span>}</td><td>{u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : "—"}</td>
           <td>
+            {u.status === "ACTIVE" && <button className="link" onClick={() => void api.invite(u.id).then((r) => { setInvite({ name: u.name, code: r.code, expiresAt: r.expiresAt }); setMsg(undefined); return users.reload(); }).catch((e) => setMsg(err(e)))}>{u.hasPassword ? "Reset via invite" : "Issue invite"}</button>}
             <button className="link" onClick={() => { const p = prompt("New password (min 10 characters)"); if (p) act(() => api.setPassword(u.id, p), "Password set; existing sessions revoked."); }}>Set password</button>
             <button className="link danger" onClick={() => act(() => api.saveUser({ ...u, status: u.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" }, u.id), "Status updated.")}>{u.status === "ACTIVE" ? "Deactivate" : "Activate"}</button>
           </td></tr>)}</tbody></table>

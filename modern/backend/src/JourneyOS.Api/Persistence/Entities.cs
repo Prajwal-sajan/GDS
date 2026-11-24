@@ -75,6 +75,21 @@ public sealed class Route : ITenantOwned
     public List<RouteFare> Fares { get; set; } = [];
     public List<RefundSlab> RefundSlabs { get; set; } = [];
     public List<SeatFareRule> SeatFareRules { get; set; } = [];
+    public List<RouteExpenseItem> ExpenseItems { get; set; } = [];
+}
+
+/// <summary>
+/// Per-trip cost estimate for a route (legacy route.expenses). Fixed items accrue every scheduled day (EMI, permit, insurance);
+/// running items only when the trip runs. A recorded trip expense with the same key/label supersedes the estimate.
+/// </summary>
+public sealed class RouteExpenseItem
+{
+    public long Id { get; set; }
+    public long RouteId { get; set; }
+    public string Type { get; set; } = "running";   // fixed / running
+    public string Key { get; set; } = "";
+    public string Label { get; set; } = "";
+    public decimal PerTrip { get; set; }
 }
 
 /// <summary>Ordered city on a route. Sequence defines segment boundaries.</summary>

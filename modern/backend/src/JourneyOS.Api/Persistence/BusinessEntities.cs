@@ -146,7 +146,9 @@ public sealed class AppUser : ITenantOwned
     public string? LegacyRole { get; set; }
     public decimal? CommissionPct { get; set; }             // agents
     public decimal? CreditLimit { get; set; }               // agents
-    public string? PasswordHash { get; set; }               // PBKDF2; null ⇒ cannot sign in until an admin sets one
+    public string? PasswordHash { get; set; }               // PBKDF2; null ⇒ cannot sign in until activated via invite
+    public string? InviteCodeSha256 { get; set; }           // one-time activation code (hash only), see IamService.InviteAsync
+    public DateTime? InviteExpiresAt { get; set; }
     public int FailedLogins { get; set; }
     public DateTime? LockedUntil { get; set; }
     public DateTime CreatedAt { get; set; }

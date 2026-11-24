@@ -9,10 +9,12 @@ namespace JourneyOS.Api.Security;
 public sealed record LoginInput(string Tenant, string Phone, string Password);
 public sealed record UserInput(string Phone, string Name, string? Email, string Role, string? Status, decimal? CommissionPct, decimal? CreditLimit);
 public sealed record PasswordInput(string Password);
+public sealed record ActivateInput(string Tenant, string Phone, string Code, string Password);
 
 /// <summary>
 /// Operator user accounts and sessions. Passwords are PBKDF2-SHA256 (210k iterations); session tokens are random
-/// 256-bit values stored only as SHA-256. Legacy OTP login is not reproduced because no SMS provider is configured.
+/// 256-bit values stored only as SHA-256. Legacy SMS-OTP login is replaced by one-time invite codes (no SMS provider):
+/// an admin issues a code, hands it over out-of-band, and the user chooses their own password. Admins never need to know it.
 /// </summary>
 public sealed class IamService(GdsDbContext db, TimeProvider clock, IConfiguration cfg)
 {
@@ -125,5 +127,62 @@ public sealed class IamService(GdsDbContext db, TimeProvider clock, IConfigurati
     private async Task RevokeSessionsAsync(long userId)
     {
         foreach (var s in await db.UserSessions.Where(s => s.UserId == userId && s.RevokedAt == null).ToListAsync()) s.RevokedAt = Now;
+    }
+
+    // ---------------- invitations (replaces legacy SMS OTP onboarding) ----------------
+    private const string CodeAlphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no 0/O/1/I/L
+    public const int InviteHours = 72;
+
+    /// <summary>12 chars from a 31-symbol alphabet ≈ 59 bits; shown once, stored only as SHA-256.</summary>
+    public static string NewInviteCode()
+    {
+        var chars = new char[12];
+        for (var i = 0; i < chars.Length; i++) chars[i] = CodeAlphabet[RandomNumberGenerator.GetInt32(CodeAlphabet.Length)];
+        return $"{new string(chars, 0, 4)}-{new string(chars, 4, 4)}-{new string(chars, 8, 4)}";
+    }
+
+    private static string NormalizeCode(string? c) => new((c ?? "").ToUpperInvariant().Where(char.IsLetterOrDigit).ToArray());
+
+    /// <summary>
+    /// Issues a one-time activation code. The admin hands it to the user out-of-band (in person / phone); the user then
+    /// chooses their own password. Re-issuing invalidates the previous code. Existing passwords keep working until activation.
+    /// </summary>
+    public async Task<(string Code, DateTime ExpiresAt)> InviteAsync(long id, string actor, string actorRole)
+    {
+        var u = await db.Users.FirstOrDefaultAsync(x => x.Id == id) ?? throw new GdsException("NOT_FOUND", "User not found", 404);
+        if (actorRole != "owner" && u.Role == "owner") throw new GdsException("FORBIDDEN", "Only an owner can invite an owner", 403);
+        if (u.Status != "ACTIVE") throw new GdsException("USER_INACTIVE", "Activate the user before inviting", 409);
+        var code = NewInviteCode();
+        u.InviteCodeSha256 = Sha(NormalizeCode(code));
+        u.InviteExpiresAt = Now.AddHours(InviteHours);
+        u.FailedLogins = 0; u.LockedUntil = null;
+        db.AuditLogs.Add(new AuditLog { TenantId = u.TenantId, Actor = actor, Action = "INVITE_ISSUED", Entity = "user", EntityId = u.Id.ToString(), At = Now });
+        await db.SaveChangesAsync();
+        return (code, u.InviteExpiresAt.Value);
+    }
+
+    /// <summary>Redeems an invite: sets the user's own password and signs them in. Wrong codes count toward lockout.</summary>
+    public async Task<(string Token, AppUser User, DateTime ExpiresAt)> ActivateAsync(ActivateInput i)
+    {
+        var fail = new GdsException("INVALID_INVITE", "Invalid or expired invite code", 401);
+        ValidatePassword(i.Password);
+        var tenant = await db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Code == i.Tenant) ?? throw fail;
+        var u = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.TenantId == tenant.Id && x.Phone == i.Phone) ?? throw fail;
+        if (u.LockedUntil is { } lu && lu > Now) throw new GdsException("ACCOUNT_LOCKED", "Too many failed attempts; try again later", 423);
+        var ok = u.Status == "ACTIVE" && u.InviteCodeSha256 is not null && u.InviteExpiresAt > Now &&
+                 CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(u.InviteCodeSha256), Encoding.ASCII.GetBytes(Sha(NormalizeCode(i.Code))));
+        if (!ok)
+        {
+            u.FailedLogins++;
+            if (u.FailedLogins >= 5) { u.LockedUntil = Now.AddMinutes(15); u.FailedLogins = 0; }
+            await db.SaveChangesAsync();
+            throw fail;
+        }
+        u.PasswordHash = HashPassword(i.Password);
+        u.InviteCodeSha256 = null; u.InviteExpiresAt = null; u.FailedLogins = 0;
+        foreach (var s in await db.UserSessions.IgnoreQueryFilters().Where(s => s.UserId == u.Id && s.RevokedAt == null).ToListAsync()) s.RevokedAt = Now;
+        db.AuditLogs.Add(new AuditLog { TenantId = tenant.Id, Actor = u.Name, Action = "INVITE_REDEEMED", Entity = "user", EntityId = u.Id.ToString(), At = Now });
+        await db.SaveChangesAsync();
+        return await LoginAsync(new LoginInput(i.Tenant, i.Phone, i.Password));
     }
 }

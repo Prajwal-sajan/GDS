@@ -88,11 +88,21 @@ builder.Services.AddHealthChecks();
 var app = builder.Build();
 
 // ---------- CLI: migrations / legacy import ----------
-if (args.Length > 0 && args[0] is "migrate" or "import-legacy")
+if (args.Length > 0 && args[0] is "migrate" or "import-legacy" or "invite-user")
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<GdsDbContext>();
     await db.Database.MigrateAsync();
+    if (args[0] == "invite-user")
+    {
+        // Break-glass / first-owner bootstrap: prints a one-time code to the operator console. Requires server access.
+        if (args.Length < 3) throw new ArgumentException("usage: invite-user <tenantCode> <phone>");
+        var tid = await db.Tenants.Where(t => t.Code == args[1]).Select(t => (long?)t.Id).FirstOrDefaultAsync() ?? throw new ArgumentException("Unknown tenant");
+        scope.ServiceProvider.GetRequiredService<TenantContext>().TenantId = tid;
+        var uid = await db.Users.Where(u => u.Phone == args[2]).Select(u => (long?)u.Id).FirstOrDefaultAsync() ?? throw new ArgumentException("Unknown user phone");
+        var (code, exp) = await scope.ServiceProvider.GetRequiredService<IamService>().InviteAsync(uid, "cli", "owner");
+        Console.WriteLine($"Invite code for {args[2]}: {code} (expires {exp:u}). Redeem at sign-in → Activate with invite code.");
+    }
     if (args[0] == "import-legacy")
     {
         var path = args.ElementAtOrDefault(1) ?? throw new ArgumentException("usage: import-legacy <db.json> [tenantCode] [fromDate] [redbusOperatorCode]");

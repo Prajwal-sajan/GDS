@@ -66,9 +66,11 @@ public sealed class SarathiService(GdsDbContext db, ReportsService reports, Time
         }
         if (q.Contains("profit") || q.Contains("p&l") || q.Contains("pnl") || q.Contains("expense"))
         {
-            var cov = t["expenseCoverage"]!;
-            var caveat = D(cov["tripsWithExpense"]) < D(cov["trips"]) ? $" Only {D(cov["tripsWithExpense"])} of {D(cov["trips"])} trips have recorded expenses, so profit is overstated." : "";
-            return new($"For {label}: net sales {Inr(D(t["netSales"]))}, recorded expenses {Inr(D(t["expense"]))}, profit {Inr(D(t["profit"]))}.{caveat}",
+            var b = t["expenseBasis"]!;
+            var est = D(t["expenseEstimated"]);
+            var caveat = (D(b["none"]) > 0 ? $" {D(b["none"])} trips have no expense template or actuals, so profit there is overstated." : "")
+                       + (est > 0 ? $" {Inr(est)} of expenses are route-template estimates, not recorded actuals." : " All expenses are recorded actuals.");
+            return new($"For {label}: net sales {Inr(D(t["netSales"]))}, expenses {Inr(D(t["expense"]))}, profit {Inr(D(t["profit"]))}.{caveat}",
                 Table(r => new { date = (string)r["date"]!, netSales = D(r["netSales"]), expense = D(r["expense"]), profit = D(r["profit"]) }), "profit", P);
         }
         if (q.Contains("passenger") || q.Contains("travelled") || q.Contains("traveled") || q.Contains("seats"))

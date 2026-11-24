@@ -83,6 +83,11 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
         b.Entity<OtaInvoiceLine>(e => { e.HasIndex(x => new { x.InvoiceId, x.LineKey }).IsUnique(); e.HasIndex(x => x.Pnr); });
 
         b.Entity<Customer>(e => e.HasIndex(x => new { x.TenantId, x.Phone }).IsUnique());
+        b.Entity<RouteExpenseItem>(e =>
+        {
+            e.HasIndex(x => new { x.RouteId, x.Type, x.Key }).IsUnique();
+            e.ToTable(t => t.HasCheckConstraint("ck_route_expense_items", "per_trip >= 0 AND type IN ('fixed','running')"));
+        });
         b.Entity<CrmNote>(e => e.HasIndex(x => new { x.TenantId, x.Phone }));
         b.Entity<ChatMessage>(e => { e.HasIndex(x => new { x.TenantId, x.ConversationId }); e.HasIndex(x => new { x.TenantId, x.Phone }); });
         b.Entity<ChatBlock>(e => e.HasIndex(x => new { x.TenantId, x.Phone }).IsUnique());

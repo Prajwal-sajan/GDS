@@ -55,6 +55,12 @@ export async function login(tenant: string, phone: string, password: string) {
   if (!res.ok) throw new ApiError(res.status, data?.message ?? `HTTP ${res.status}`);
   return data as { token: string; user: { name: string; role: string } };
 }
+export async function activate(tenant: string, phone: string, code: string, password: string) {
+  const res = await fetch("/api/auth/activate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tenant, phone, code, password }) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new ApiError(res.status, data?.message ?? `HTTP ${res.status}`);
+  return data as { token: string; user: { name: string; role: string } };
+}
 export const logout = () => fetch("/api/auth/logout", { method: "POST", headers: authHeaders() }).catch(() => undefined);
 
 async function call<T>(method: string, url: string, body?: unknown): Promise<T> {
@@ -136,6 +142,7 @@ export const api = {
   users: () => call<UserRow[]>("GET", "/api/admin/iam/users"),
   saveUser: (u: Partial<UserRow>, id?: number) => call<unknown>(id ? "PUT" : "POST", `/api/admin/iam/users${id ? `/${id}` : ""}`, u),
   setPassword: (id: number, password: string) => call<void>("POST", `/api/admin/iam/users/${id}/password`, { password }),
+  invite: (id: number) => call<{ code: string; expiresAt: string; notice: string }>("POST", `/api/admin/iam/users/${id}/invite`, {}),
   audit: () => call<{ id: number; actor: string; action: string; entity: string; entityId: string; at: string }[]>("GET", "/api/admin/iam/audit"),
 };
 
@@ -153,7 +160,7 @@ export interface Rating { id: number; ota: string; pnr: string | null; passenger
 export interface Ledger { channelKey: string; balance: number; totalDebits: number; totalCredits: number;
   entries: { date: string; kind: string; ref: string; debit: number; credit: number; note: string; id: number | null; balance: number }[] }
 export interface UserRow { id: number; phone: string; name: string; email: string | null; role: string; status: string; legacyRole: string | null; commissionPct: number | null;
-  creditLimit: number | null; hasPassword: boolean; lastLoginAt: string | null; locked: boolean }
+  creditLimit: number | null; hasPassword: boolean; invitePendingUntil: string | null; lastLoginAt: string | null; locked: boolean }
 
 export interface Vehicle { id: number; registrationNumber: string; coachTemplateId: number | null; status: string; modelName: string | null; gpsEnabled: boolean;
   insuranceExpiry: string | null; permitExpiry: string | null; fitnessExpiry: string | null; pucExpiry: string | null }

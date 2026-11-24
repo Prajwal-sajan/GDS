@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, ApiError, getKey, login, logout, setKey, type Attempt, type Me, type OutboxRow, type RedBusStatus, type TripRow } from "./api";
+import { activate, api, ApiError, getKey, login, logout, setKey, type Attempt, type Me, type OutboxRow, type RedBusStatus, type TripRow } from "./api";
 
 import { DispatchPanel, FaresPanel, FleetPanel, ReconciliationPanel, StaffPanel } from "./Operations";
 import { CommsPanel, CrmPanel, LedgerPanel, ReportsPanel, SarathiPanel, UsersPanel } from "./Business";
@@ -76,30 +76,39 @@ export default function App() {
 }
 
 function Login({ onLogin }: { onLogin: (k: string) => void }) {
-  const [mode, setMode] = useState<"user" | "key">("user");
-  const [f, setF] = useState({ tenant: "demo", phone: "", password: "", key: "" });
+  const [mode, setMode] = useState<"user" | "invite" | "key">("user");
+  const [f, setF] = useState({ tenant: "demo", phone: "", password: "", key: "", code: "", confirm: "" });
   const [error, setError] = useState<string>();
   const submit = async () => {
     setError(undefined);
     if (mode === "key") { if (f.key.trim()) onLogin(f.key.trim()); return; }
-    try { onLogin((await login(f.tenant, f.phone, f.password)).token); } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+    try {
+      if (mode === "invite") {
+        if (f.password !== f.confirm) throw new Error("Passwords do not match");
+        onLogin((await activate(f.tenant, f.phone, f.code, f.password)).token);
+      } else onLogin((await login(f.tenant, f.phone, f.password)).token);
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
   };
   return (
     <form className="login" onSubmit={(e) => { e.preventDefault(); void submit(); }}>
       <h1>JourneyOS</h1>
       <div className="row">
         <button type="button" className={mode === "user" ? "active" : "link"} onClick={() => setMode("user")}>User sign-in</button>
+        <button type="button" className={mode === "invite" ? "active" : "link"} onClick={() => setMode("invite")}>Activate with invite code</button>
         <button type="button" className={mode === "key" ? "active" : "link"} onClick={() => setMode("key")}>Service key</button>
       </div>
-      {mode === "user" ? <>
+      {mode !== "key" ? <>
         <label>Operator code<input value={f.tenant} onChange={(e) => setF({ ...f, tenant: e.target.value })} aria-label="Operator code" /></label>
         <label>Phone<input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} inputMode="numeric" aria-label="Phone" required /></label>
-        <label>Password<input type="password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} aria-label="Password" required /></label>
+        {mode === "invite" && <label>Invite code<input value={f.code} onChange={(e) => setF({ ...f, code: e.target.value })} autoComplete="one-time-code" aria-label="Invite code" required /></label>}
+        <label>{mode === "invite" ? "New password (min 10)" : "Password"}<input type="password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} aria-label="Password" required minLength={mode === "invite" ? 10 : undefined} autoComplete={mode === "invite" ? "new-password" : "current-password"} /></label>
+        {mode === "invite" && <label>Confirm password<input type="password" value={f.confirm} onChange={(e) => setF({ ...f, confirm: e.target.value })} aria-label="Confirm password" required autoComplete="new-password" /></label>}
+        {mode === "invite" && <p className="muted">Your administrator gives you a one-time code (valid 72 h). You choose your own password.</p>}
       </> : <>
         <label>Admin key<input type="password" value={f.key} onChange={(e) => setF({ ...f, key: e.target.value })} autoComplete="off" aria-label="Admin key" /></label>
         <p className="muted">Service keys are for automation and break-glass access.</p>
       </>}
-      <button type="submit">Sign in</button>
+      <button type="submit">{mode === "invite" ? "Activate & sign in" : "Sign in"}</button>
       {error && <p className="error" role="alert">{error}</p>}
     </form>
   );

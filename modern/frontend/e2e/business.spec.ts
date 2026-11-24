@@ -18,7 +18,7 @@ async function provision(request: APIRequestContext, role: string) {
 async function signInUser(page: Page, phone: string, password = PASSWORD) {
   await page.goto("/");
   await page.getByLabel("Phone").fill(phone);
-  await page.getByLabel("Password").fill(password);
+  await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
 }
 
@@ -69,6 +69,41 @@ test("reports, Sarathi and users render from live data", async ({ page, request 
 
   await page.getByRole("button", { name: "Users" }).click();
   await expect(page.getByRole("cell", { name: "booking_executive" })).toBeVisible(); // imported legacy role shown alongside mapped role
+});
+
+test("admin issues invite; user activates with own password; code is single-use", async ({ page, browser, request }) => {
+  const phone = "7" + String(Math.floor(Math.random() * 1e9)).padStart(9, "0");
+  const u = await request.post(`${API}/api/admin/iam/users`, { headers: { "X-Admin-Key": KEY }, data: { phone, name: `E2E Invitee ${phone}`, role: "accounts", status: "ACTIVE" } });
+  expect(u.ok()).toBeTruthy();
+  await signInUser(page, await provision(request, "admin"));
+  await page.getByRole("button", { name: "Users" }).click();
+  await page.getByRole("row", { name: new RegExp(phone) }).getByRole("button", { name: "Issue invite" }).click();
+  const code = ((await page.getByTestId("invite-code").locator("code").textContent()) ?? "").trim();
+  expect(code).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+
+  const p2 = await (await browser.newContext()).newPage();
+  const activateWith = async () => {
+    await p2.goto("/");
+    await p2.getByRole("button", { name: "Activate with invite code" }).click();
+    await p2.getByLabel("Phone").fill(phone);
+    await p2.getByLabel("Invite code").fill(code.toLowerCase().replace(/-/g, ""));
+    await p2.getByLabel("Password", { exact: true }).fill("my-own-password-42");
+    await p2.getByLabel("Confirm password").fill("my-own-password-42");
+    await p2.getByRole("button", { name: "Activate & sign in" }).click();
+  };
+  await activateWith();
+  await expect(p2.getByTestId("whoami")).toContainText("accounts");
+  await p2.getByRole("button", { name: "Sign out" }).click();
+  await activateWith();
+  await expect(p2.getByRole("alert")).toBeVisible();
+  await signInUser(p2, phone, "my-own-password-42");
+  await expect(p2.getByTestId("whoami")).toContainText("accounts");
+});
+
+test("profit report states its expense basis", async ({ page, request }) => {
+  await signInUser(page, await provision(request, "admin"));
+  await page.getByRole("button", { name: "Reports" }).click();
+  await expect(page.getByTestId("expense-basis")).toContainText("route-template estimate");
 });
 
 // ---------------------------------------------------------------- visual regression

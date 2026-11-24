@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
+using JourneyOS.Api.Persistence;
 using Microsoft.EntityFrameworkCore;
 using static JourneyOS.Tests.RedBusClient;
 
@@ -49,7 +50,7 @@ public sealed class BusinessTests(GdsFixture fx)
         Assert.Equal(8, users.Count);
         Assert.Equal("admin", users.Single(u => u.LegacyRole == "manager").Role);
         Assert.Equal("accounts", users.Single(u => u.LegacyRole == "accountant").Role);
-        Assert.All(users, u => Assert.Null(u.PasswordHash)); // OTP users cannot sign in until a password is set
+        Assert.All(users.Where(u => u.Phone != "9666666666"), u => Assert.Null(u.PasswordHash)); // OTP users cannot sign in until activated (9666666666 is activated by another test)
     }
 
     [Fact]
@@ -86,6 +87,79 @@ public sealed class BusinessTests(GdsFixture fx)
         var (s4, e4) = await anon.Post("/api/auth/login", new { tenant = "demo", phone = lockPhone, password = "correct-horse-1" });
         Assert.Equal((HttpStatusCode)423, s4);
         Assert.Equal("ACCOUNT_LOCKED", (string)e4!["errorCode"]!);
+    }
+
+    [Fact]
+    public async Task Imported_user_activates_with_one_time_invite_and_chooses_own_password()
+    {
+        // Imported accountant (legacy OTP user, no password).
+        var id = await fx.Sql(db => db.Users.Where(u => u.Phone == "9666666666").Select(u => u.Id).FirstAsync());
+        var anon = fx.Factory.CreateClient();
+        var (s0, i0) = await Admin.Post($"/api/admin/iam/users/{id}/invite", new { });
+        Assert.True(s0 == HttpStatusCode.OK, i0?.ToJsonString());
+        var oldCode = (string)i0!["code"]!;
+        var (_, i1) = await Admin.Post($"/api/admin/iam/users/{id}/invite", new { });
+        var code = (string)i1!["code"]!;
+        Assert.Matches("^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$", code);
+        Assert.Null(await fx.Sql(db => db.Users.Where(u => u.Id == id).Select(u => u.PasswordHash).FirstAsync()));
+        Assert.DoesNotContain(code, await fx.Sql(db => db.Users.Where(u => u.Id == id).Select(u => u.InviteCodeSha256).FirstAsync()) ?? "");
+
+        // Re-issue invalidates the old code; weak password rejected before the code is consumed.
+        var (sa, ea) = await anon.Post("/api/auth/activate", new { tenant = "demo", phone = "9666666666", code = oldCode, password = "accounts-pass-1" });
+        Assert.Equal(HttpStatusCode.Unauthorized, sa);
+        Assert.Equal("INVALID_INVITE", (string)ea!["errorCode"]!);
+        var (sw, _) = await anon.Post("/api/auth/activate", new { tenant = "demo", phone = "9666666666", code, password = "short" });
+        Assert.Equal(HttpStatusCode.BadRequest, sw);
+
+        // Lower-case / no dashes accepted; activation signs the user in.
+        var (sb, tb) = await anon.Post("/api/auth/activate", new { tenant = "demo", phone = "9666666666", code = code.Replace("-", "").ToLowerInvariant(), password = "accounts-pass-1" });
+        Assert.True(sb == HttpStatusCode.OK, tb?.ToJsonString());
+        Assert.Equal("accounts", (string)tb!["user"]!["role"]!);
+        // Single use.
+        var (sc, _) = await anon.Post("/api/auth/activate", new { tenant = "demo", phone = "9666666666", code, password = "another-pass-2" });
+        Assert.Equal(HttpStatusCode.Unauthorized, sc);
+        var c = await Login("9666666666", "accounts-pass-1");
+        Assert.Equal(HttpStatusCode.OK, (await c.GetAsync("/api/admin/accounts/channels")).StatusCode);
+        Assert.True(await fx.Sql(db => db.AuditLogs.AnyAsync(a => a.Action == "INVITE_REDEEMED" && a.EntityId == id.ToString())));
+
+        // Admins cannot invite owners.
+        var (_, adminPhone) = await CreateUser("admin");
+        var admin = await Login(adminPhone);
+        var ownerId = await fx.Sql(db => db.Users.Where(u => u.Phone == "9999999999").Select(u => u.Id).FirstAsync());
+        var (sf, _) = await admin.Post($"/api/admin/iam/users/{ownerId}/invite", new { });
+        Assert.Equal(HttpStatusCode.Forbidden, sf);
+    }
+
+    [Fact]
+    public async Task Legacy_route_expense_templates_are_imported_and_editable()
+    {
+        var routeId = await fx.Sql(db => db.Routes.OrderBy(r => r.Id).Select(r => r.Id).FirstAsync());
+        var items = await Admin.GetJson($"/api/admin/routes/{routeId}/expense-template");
+        Assert.Equal(15, items.AsArray().Count);
+        Assert.Equal(14800m, (decimal)items.AsArray().First(x => (string)x!["key"]! == "diesel")!["perTrip"]!);
+        var (sb, _) = await Admin.Post($"/api/admin/routes/{routeId}/expense-template", new { });
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, sb);
+        var bad = await Admin.PutAsJsonAsync($"/api/admin/routes/{routeId}/expense-template", new[] { new { type = "weekly", label = "X", perTrip = 1m } });
+        Assert.Equal(HttpStatusCode.BadRequest, bad.StatusCode);
+    }
+
+    [Fact]
+    public void Cost_model_supersedes_estimates_and_keeps_fixed_costs_for_cancelled_trips()
+    {
+        RouteExpenseItem I(string type, string key, decimal v) => new() { Type = type, Key = key, Label = key, PerTrip = v };
+        TripExpense E(string cat, decimal v) => new() { Category = cat, Amount = v };
+        var tmpl = new[] { I("fixed", "emi_loan", 3500), I("running", "diesel", 14800), I("running", "driver_bata", 2500) };
+        var est = JourneyOS.Api.Reports.ReportsService.Cost(true, tmpl, []);
+        Assert.Equal(("estimate", 20800m, 0m), (est.Basis, est.Total, est.Actual));
+        var mixed = JourneyOS.Api.Reports.ReportsService.Cost(true, tmpl, [E("Diesel", 9000), E("Diesel", 1000), E("Toll plaza", 700)]);
+        Assert.Equal("mixed", mixed.Basis);
+        Assert.Equal(3500m + 10000m + 2500m + 700m, mixed.Total);
+        Assert.Equal(10700m, mixed.Actual);
+        var cancelled = JourneyOS.Api.Reports.ReportsService.Cost(false, tmpl, []);
+        Assert.Equal(3500m, cancelled.Total); // EMI accrues even when the bus does not run
+        Assert.Equal("none", JourneyOS.Api.Reports.ReportsService.Cost(true, [], []).Basis);
+        Assert.Equal("actual", JourneyOS.Api.Reports.ReportsService.Cost(true, [], [E("Diesel", 1)]).Basis);
+        Assert.Equal("driver_bata", JourneyOS.Api.Reports.ReportsService.ExpenseKey(" Driver  Bata "));
     }
 
     [Fact]
@@ -167,7 +241,13 @@ public sealed class BusinessTests(GdsFixture fx)
         Assert.Equal(HttpStatusCode.OK, se);
         var pnl = await Admin.GetJson($"/api/admin/reports/trip-pnl?from={d}&to={d}");
         var row = pnl["rows"]!.AsArray().First(r => (long)r!["tripId"]! == tripId)!;
-        Assert.True((bool)row["expenseRecorded"]!);
+        Assert.NotEqual("none", (string)row["expenseBasis"]!);
+        // Imported template has a "diesel" item: the recorded Diesel actual supersedes that estimate instead of adding to it.
+        var diesel = row["expenses"]!.AsArray().Where(l => (string)l!["key"]! == "diesel").ToList();
+        Assert.Single(diesel);
+        Assert.Equal("actual", (string)diesel[0]!["basis"]!);
+        Assert.Equal(12000m, (decimal)diesel[0]!["amount"]!);
+        Assert.Equal((decimal)row["expense"]!, (decimal)row["expenseActual"]! + (decimal)row["expenseEstimated"]!);
         Assert.InRange((decimal)row["netSales"]! + (decimal)row["cancellationCharges"]! - (decimal)row["expense"]! - (decimal)row["profit"]!, -0.011m, 0.011m);
 
         var (sr, _) = await Admin.Get("/api/admin/reports/analytics?from=2026-01-01&to=2026-12-31");

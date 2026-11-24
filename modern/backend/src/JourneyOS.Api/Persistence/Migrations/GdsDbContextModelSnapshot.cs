@@ -54,6 +54,14 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("failed_logins");
 
+                    b.Property<string>("InviteCodeSha256")
+                        .HasColumnType("text")
+                        .HasColumnName("invite_code_sha256");
+
+                    b.Property<DateTime?>("InviteExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("invite_expires_at");
+
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_login_at");
@@ -1853,6 +1861,52 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.ToTable("routes");
                 });
 
+            modelBuilder.Entity("JourneyOS.Api.Persistence.RouteExpenseItem", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("key");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("label");
+
+                    b.Property<decimal>("PerTrip")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("per_trip");
+
+                    b.Property<long>("RouteId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("route_id");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("type");
+
+                    b.HasKey("Id")
+                        .HasName("pk_route_expense_item");
+
+                    b.HasIndex("RouteId", "Type", "Key")
+                        .IsUnique()
+                        .HasDatabaseName("ix_route_expense_item_route_id_type_key");
+
+                    b.ToTable("route_expense_item", t =>
+                        {
+                            t.HasCheckConstraint("ck_route_expense_items", "per_trip >= 0 AND type IN ('fixed','running')");
+                        });
+                });
+
             modelBuilder.Entity("JourneyOS.Api.Persistence.RouteFare", b =>
                 {
                     b.Property<long>("Id")
@@ -2730,6 +2784,16 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.Navigation("CoachTemplate");
                 });
 
+            modelBuilder.Entity("JourneyOS.Api.Persistence.RouteExpenseItem", b =>
+                {
+                    b.HasOne("JourneyOS.Api.Persistence.Route", null)
+                        .WithMany("ExpenseItems")
+                        .HasForeignKey("RouteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_route_expense_item_routes_route_id");
+                });
+
             modelBuilder.Entity("JourneyOS.Api.Persistence.RouteFare", b =>
                 {
                     b.HasOne("JourneyOS.Api.Persistence.Route", null)
@@ -2808,6 +2872,8 @@ namespace JourneyOS.Api.Persistence.Migrations
 
             modelBuilder.Entity("JourneyOS.Api.Persistence.Route", b =>
                 {
+                    b.Navigation("ExpenseItems");
+
                     b.Navigation("Fares");
 
                     b.Navigation("RefundSlabs");
