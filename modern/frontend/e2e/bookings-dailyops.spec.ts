@@ -65,7 +65,7 @@ test("Ticket desk requests an authoritative quote and explicitly records a refun
   await page.getByRole("button",{name:"Confirm Cancellation"}).click();
   await expect(page.getByRole("status").filter({hasText:"Refund settlement remains pending"})).toBeVisible();
   expect(calls.cancel).toEqual({seats:["L1"],notes:"Passenger requested cancellation"});
-  await expect(page.getByText("PARTIALLY_CANCELLED", {exact:true})).toBeVisible();
+  await expect(page.getByText("PARTIALLY_CANCELLED", {exact:true}).first()).toBeVisible();
 });
 
 test("OTA ticket cancellation is not exposed in the operator ticket desk",async({page})=>{
