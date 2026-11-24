@@ -131,6 +131,30 @@ export const api = {
 
   saveFares: (routeId: number, fares: Fare[]) => call<{ updated: number }>("PUT", `/api/admin/routes/${routeId}/fares`, fares),
   counterBook: (body: unknown) => call<CounterResult>("POST", "/api/admin/bookings/counter", body),
+  bookingSearch: (date: string, q: string) => call<BookingListRow[]>("GET",
+    "/api/admin/bookings?" + new URLSearchParams({date,q,take:"100"}).toString()),
+  bookingWorkspace: (pnr: string) => call<BookingWorkspaceView>("GET",
+    "/api/admin/bookings/" + encodeURIComponent(pnr) + "/workspace"),
+  bookingHistory: (pnr: string) => call<BookingHistoryEvent[]>("GET",
+    "/api/admin/bookings/" + encodeURIComponent(pnr) + "/history"),
+  bookingShiftOptions: (pnr:string,date:string) => call<BookingShiftOption[]>("GET",
+    "/api/admin/bookings/" + encodeURIComponent(pnr) + "/shift-options?date=" + date),
+  bookingCancellationQuote: (pnr:string,seats:string[]) => call<BookingCancelQuote>("GET",
+    "/api/admin/bookings/" + encodeURIComponent(pnr) + "/cancellation-quote?" +
+      new URLSearchParams({seats:seats.join(",")}).toString()),
+  bookingUpdate: (pnr:string,body:{mobile:string|null;boardingAt:number|null;dropOff:number|null}) =>
+    call<{pnr:string;notice:string}>("PUT","/api/admin/bookings/"+encodeURIComponent(pnr)+"/update",body),
+  bookingComment: (pnr:string,text:string) => call<{notice:string}>("POST",
+    "/api/admin/bookings/"+encodeURIComponent(pnr)+"/comments",{text}),
+  bookingCancel: (pnr:string,seats:string[],reason:string,notes:string) =>
+    call<{pnr:string;status:string;charge:number;refund:number;at:string;refundObligation:string;refundPaymentCompleted:boolean}>(
+      "POST","/api/admin/bookings/"+encodeURIComponent(pnr)+"/cancel",{seats,reason,notes}),
+  bookingShift: (pnr:string,tripId:number,seats:string[]) =>
+    call<{pnr:string;tripId:number;seats:string[]}>("POST",
+      "/api/admin/bookings/"+encodeURIComponent(pnr)+"/shift",{tripId,seats}),
+  bookingBoarding: (pnr:string,seat:string,status:string) =>
+    call<void>("POST","/api/admin/bookings/"+encodeURIComponent(pnr)+"/boarding",{seat,status}),
+
   invoices: () => call<InvoiceRow[]>("GET", "/api/admin/reconciliation/invoices"),
   uploadInvoice: (body: unknown) => call<{ id: number; duplicate: boolean }>("POST", "/api/admin/reconciliation/invoices", body),
   invoice: (id: number) => call<{ id: number; invoiceNumber: string; status: string; warningsJson: string | null; totals: Record<string, unknown> }>("GET", `/api/admin/reconciliation/invoices/${id}`),
@@ -254,3 +278,42 @@ export interface TripPnlReport { rows:TripPnlRow[]; summary:{
   trips:number;netSales:number;expense:number;expenseActual:number;
   expenseEstimated:number;profit:number;lossTrips:number;expenseBasis:string;
 } }
+
+export interface BookingListRow {
+  pnr:string;tripId:number;channel:string;status:string;totalFare:number;
+  dateOfIssue:string;seatCount:number;
+  passengers:{seatCode:string;name:string;status:string;boardingStatus:string}[];
+}
+export interface BookedStage {
+  id:number;name:string;address:string|null;landmark:string|null;
+  contactNumber:string|null;day:number;time:string;stopSequence:number;
+}
+export interface BookedPassenger {
+  id:number;seatCode:string;name:string;title:string|null;gender:string;age:number;
+  status:string;boardingStatus:string;fare:number;baseFare:number;gst:number;
+  isPrimary:boolean;cancellationCharge:number;refundAmount:number;cancelledAt:string|null;
+}
+export interface BookingWorkspaceView {
+  id:number;pnr:string;status:string;channel:string;tripId:number;fromSeq:number;toSeq:number;
+  totalFare:number;currency:string;dateOfIssue:string;dateOfCancellation:string|null;
+  cancellationPolicy:string;contactMobile:string|null;contactEmail:string|null;
+  boardingStageId:number;droppingStageId:number;travelDate:string;routeId:number;
+  routeName:string;serviceNumber:string;coachName:string|null;fromCity:string;toCity:string;
+  fromCityId:number;toCityId:number;boarding:BookedStage|null;dropping:BookedStage|null;
+  availableBoarding:BookedStage[];availableDropping:BookedStage[];
+  passengers:BookedPassenger[];
+  refunds:{amount:number;status:string;createdAt:string;seats:string[];charge:number;refund:number}[];
+}
+export interface BookingHistoryEvent {
+  id:number;at:string;actor:string;action:string;comment:string|null;
+}
+export interface BookingShiftOption {
+  id:number;travelDate:string;routeId:number;serviceNumber:string;routeName:string;
+  coachName:string|null;fromSequence:number;toSequence:number;departure:string;
+  stagesOkay:boolean;
+}
+export interface BookingCancelQuote {
+  pnr:string;percent:number;totalFare:number;charge:number;refund:number;
+  breakdown:{seatCode:string;name:string;fare:number;charge:number;refund:number}[];
+  subjectToRevalidation:boolean;payoutStatus:string;
+}
