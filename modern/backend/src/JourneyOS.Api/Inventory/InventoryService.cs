@@ -29,6 +29,11 @@ public sealed record HoldInput(long InventoryId, long BoardingPointId, long Drop
 
 public sealed record CancelResult(Booking Booking, decimal Charge, decimal Refund, DateTime At);
 
+// Informational estimate only. CancelAsync recomputes the policy under a trip/booking lock.
+public sealed record CancellationQuote(string Pnr, string[] Seats, decimal Fare, decimal ChargePercent,
+    decimal Charge, decimal Refund, DateTime BoardingAtUtc, DateTime QuotedAtUtc,
+    string SettlementNotice);
+
 public sealed record PaymentInput(string Method, string Status, string? Reference, string? BookedBy = null, string? AgentPhone = null);
 
 /// <summary>
@@ -297,7 +302,50 @@ WHERE hold_id IN (SELECT id FROM expired) AND is_active");
 
     // ---------------- cancellation ----------------
 
-    public async Task<CancelResult> CancelAsync(string pnr, IReadOnlyCollection<string> seats, string? notes, string reason = "customer", bool fullRefund = false)
+    /// <summary>
+    /// The operator can quote a cancellation for operator-originated bookings only.
+    /// OTA tickets must be cancelled through their authorized provider flow.
+    /// This read never creates a refund, releases inventory or sends callbacks.
+    /// </summary>
+    public async Task<CancellationQuote> QuoteCancellationAsync(string pnr, IReadOnlyCollection<string> seats)
+    {
+        if (string.IsNullOrWhiteSpace(pnr) || seats.Count == 0 || seats.Count > 100 ||
+            seats.Any(s => string.IsNullOrWhiteSpace(s)) ||
+            seats.Distinct(StringComparer.OrdinalIgnoreCase).Count() != seats.Count)
+            throw new GdsException("INVALID_SEATS", "Select unique seat codes to cancel");
+
+        var b = await db.Bookings.AsNoTracking().Include(x => x.Passengers)
+            .FirstOrDefaultAsync(x => x.Pnr == pnr)
+            ?? throw new GdsException("BOOKING_NOT_FOUND", "PNR not found", 404);
+        if (b.Channel is not ("counter" or "agent" or "branch" or "website"))
+            throw new GdsException("PROVIDER_MANAGED", "Provider-issued bookings must be cancelled through the authorized OTA flow", 409);
+        var t = await db.Trips.AsNoTracking().FirstOrDefaultAsync(x => x.Id == b.TripId)
+            ?? throw new GdsException("TRIP_NOT_FOUND", "Service not found", 404);
+        var route = await LoadRouteAsync(t.RouteId);
+        var active = b.Passengers.Where(x => x.Status == "CONFIRMED").ToList();
+        var chosen = active.Where(x => seats.Contains(x.SeatCode, StringComparer.OrdinalIgnoreCase)).ToList();
+        if (chosen.Count != seats.Count)
+            throw new GdsException("SEAT_NOT_CANCELLABLE", "One or more selected seats are not confirmed on this PNR", 409);
+        if (chosen.Count < active.Count && !route.PartialCancellationAllowed)
+            throw new GdsException("PARTIAL_NOT_ALLOWED", "Partial cancellation is not allowed", 409);
+        if (chosen.Count < active.Count && chosen.Any(x => x.IsPrimary) && !route.PrimaryPaxCancellable)
+            throw new GdsException("PRIMARY_NOT_CANCELLABLE", "Primary passenger cannot be cancelled alone", 409);
+
+        var bp = route.Stages.FirstOrDefault(x => x.Id == b.BoardingStageId)
+            ?? throw new GdsException("BOARDING_NOT_FOUND", "Boarding stage not found", 409);
+        var local = TripClock.Local(t.TravelDate, bp.Day, bp.Time);
+        var boardingUtc = TripClock.ToUtc(local, (await TenantAsync()).TimeZone);
+        var now = UtcNow;
+        if (boardingUtc <= now) throw new GdsException("DEPARTED", "Cannot cancel after boarding time", 409);
+        var percent = CancellationPolicy.ChargePercent(b.CancellationPolicy, (boardingUtc - now).TotalHours);
+        var fare = chosen.Sum(x => x.Fare);
+        var charge = chosen.Sum(x => Math.Round(x.Fare * percent / 100m, 2, MidpointRounding.AwayFromZero));
+        return new CancellationQuote(b.Pnr, chosen.Select(x => x.SeatCode).ToArray(), fare, percent,
+            charge, fare - charge, boardingUtc, now,
+            "Refund is an accounting obligation only; no gateway payout or OTA settlement is executed.");
+    }
+
+    public async Task<CancelResult> CancelAsync(string pnr, IReadOnlyCollection<string> seats, string? notes, string reason = "customer", bool fullRefund = false, string? actor = null)
     {
         if (seats.Count == 0) throw new GdsException("NO_SEATS", "seatsToCancel is required");
         await using var tx = await db.Database.BeginTransactionAsync();
@@ -338,7 +386,7 @@ WHERE hold_id IN (SELECT id FROM expired) AND is_active");
         await db.SaveChangesAsync();
         db.Refunds.Add(new Refund { TenantId = db.CurrentTenantId, CancellationId = cancellation.Id, Amount = refund, CreatedAt = now });
         if (reason != "bus_cancellation") await notifier.ServiceChangedAsync(trip, booking.FromSeq, booking.ToSeq);
-        Audit(booking.Channel, "CANCEL", "booking", booking.Pnr, new { seats = cancellation.Seats, charge, refund, reason });
+        Audit(actor ?? booking.Channel, "CANCEL", "booking", booking.Pnr, new { seats = cancellation.Seats, charge, refund, reason });
         await db.SaveChangesAsync();
         await tx.CommitAsync();
         await InvalidateAsync(trip.Id);
