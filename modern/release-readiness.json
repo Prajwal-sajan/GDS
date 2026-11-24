@@ -30,9 +30,13 @@
     },
     {
       "id": "coach-editor",
-      "status": "not-migrated",
+      "status": "partial",
       "visualParity": "unverified",
-      "workflowEvidence": [],
+      "workflowEvidence": [
+        "modern/backend/tests/JourneyOS.Tests/CoachManagementTests.cs",
+        "modern/frontend/tests/coach-model.test.cjs",
+        "modern/frontend/e2e/coaches-parity.spec.ts"
+      ],
       "screenshotEvidence": []
     },
     {
@@ -47,7 +51,9 @@
       "status": "partial",
       "visualParity": "unverified",
       "workflowEvidence": [
-        "modern/backend/tests/JourneyOS.Tests/PassengerBookingShareTests.cs: route/date Share only; no deep-link/booking certification"
+        "modern/backend/tests/JourneyOS.Tests/PassengerBookingShareTests.cs: route/date Share only; no deep-link/booking certification",
+        "modern/backend/tests/JourneyOS.Tests/BookingWorkspaceTests.cs",
+        "modern/frontend/e2e/bookings-parity.spec.ts"
       ],
       "screenshotEvidence": []
     },
@@ -90,14 +96,18 @@
       "id": "ota-invoice-verifier",
       "status": "partial",
       "visualParity": "unverified",
-      "workflowEvidence": [],
+      "workflowEvidence": [
+        "modern/frontend/e2e/invoice-verifier-parity.spec.ts"
+      ],
       "screenshotEvidence": []
     },
     {
       "id": "daily-ops",
       "status": "partial",
       "visualParity": "unverified",
-      "workflowEvidence": [],
+      "workflowEvidence": [
+        "modern/frontend/e2e/daily-ops-parity.spec.ts"
+      ],
       "screenshotEvidence": []
     },
     {
