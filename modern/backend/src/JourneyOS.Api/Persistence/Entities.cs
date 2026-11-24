@@ -14,6 +14,17 @@ public sealed class Tenant
 
 public interface ITenantOwned { long TenantId { get; set; } }
 
+/// <summary>Operator-authorized passenger website. City mappings are explicit, never inferred from GDS IDs.</summary>
+public sealed class PublicBookingSite : ITenantOwned
+{
+    public long TenantId { get; set; }
+    public string SearchUrl { get; set; } = "";
+    public string CityMapJson { get; set; } = "{}";
+    public string UpdatedBy { get; set; } = "";
+    public DateTime UpdatedAt { get; set; }
+}
+
+
 // ---------- Master data ----------
 public sealed class City : ITenantOwned
 {
