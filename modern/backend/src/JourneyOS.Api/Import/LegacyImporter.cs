@@ -522,6 +522,71 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
                     });
         await db.SaveChangesAsync();
         await ImportAccountsSuiteAsync(root, tenantId);
+        await ImportSettingsAsync(root);
+    }
+
+    /// <summary>
+    /// Settings suite: legacy <c>_meta</c> keys and settings collections become tenant documents (only when absent, so
+    /// edits made in the new app are never overwritten); users get branch / login count / Team &amp; access profile and
+    /// branches their code and extra fields (backfilled only where still empty).
+    /// </summary>
+    private async Task ImportSettingsAsync(JsonElement root)
+    {
+        var existing = await db.TenantDocuments.Select(d => d.Key).ToHashSetAsync();
+        void Put(string key, JsonElement v)
+        {
+            if (!existing.Add(key)) return;
+            db.TenantDocuments.Add(new TenantDocument { TenantId = db.CurrentTenantId, Key = key, Json = v.GetRawText(), UpdatedAt = DateTime.UtcNow });
+        }
+        if (root.TryGetProperty("_meta", out var meta) && meta.ValueKind == JsonValueKind.Object)
+            foreach (var p in meta.EnumerateObject())
+                if (p.Name is not ("reconciliation_config")) Put(p.Name, p.Value);
+        foreach (var col in new[] { "speed_dials", "notification_subscriptions", "notification_delivery_log", "iam_groups", "iam_access_rules_v28" })
+            if (root.TryGetProperty(col, out var a) && a.ValueKind == JsonValueKind.Array) Put(col, a);
+        // Legacy collections list in insertion order (db.col().all()); keep the city order for pickers.
+        if (root.TryGetProperty("cities", out var ca) && ca.ValueKind == JsonValueKind.Array && existing.Add("city_order"))
+            db.TenantDocuments.Add(new TenantDocument { TenantId = db.CurrentTenantId, Key = "city_order", UpdatedAt = DateTime.UtcNow,
+                Json = JsonSerializer.Serialize(ca.EnumerateArray().Select(c => c.GetProperty("id").GetInt64())) });
+
+        static long? Lng(JsonElement e, string p) => e.TryGetProperty(p, out var v) ? v.ValueKind switch
+        {
+            JsonValueKind.Number => v.GetInt64(), JsonValueKind.String when long.TryParse(v.GetString(), out var x) => x, _ => null,
+        } : null;
+        static string[] Strs(JsonElement e, string p) => e.TryGetProperty(p, out var v) && v.ValueKind == JsonValueKind.Array ? v.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.String).Select(x => x.GetString()!).ToArray() : [];
+        var users = await db.Users.ToDictionaryAsync(u => u.Phone);
+        if (root.TryGetProperty("users", out var ua) && ua.ValueKind == JsonValueKind.Array)
+            foreach (var u in ua.EnumerateArray())
+            {
+                if (Str(u, "phone") is not { } phone || !users.TryGetValue(phone, out var row)) continue;
+                row.BranchId ??= Lng(u, "branch_id");
+                if (row.LoginCount == 0) row.LoginCount = (int)(Lng(u, "login_count") ?? 0);
+                if (row.LastLoginAt is null && Str(u, "last_login_at") is { } ll && DateTime.TryParse(ll, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AdjustToUniversal, out var lld)) row.LastLoginAt = lld;
+                if (row.DeletedAt is null && Str(u, "deleted_at") is { } da && DateTime.TryParse(da, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AdjustToUniversal, out var dd)) row.DeletedAt = dd;
+                if (row.ProfileJson is null)
+                    row.ProfileJson = Settings.LegacyIam.ProfileJson(new Settings.LegacyIam.Profile
+                    {
+                        Language = Str(u, "language") ?? "English", Mode = Str(u, "mode") ?? "Online", AgentCategory = Str(u, "agent_category") ?? "agent",
+                        AgentType = Str(u, "agent_type") ?? "postpaid", MasterAgentId = Lng(u, "master_agent_id"),
+                        LimitRoutes = u.TryGetProperty("limit_routes", out var lr) && lr.ValueKind == JsonValueKind.True,
+                        RouteIds = u.TryGetProperty("route_ids", out var ri) && ri.ValueKind == JsonValueKind.Array ? ri.EnumerateArray().Select(x => x.ValueKind == JsonValueKind.Number ? x.GetInt64() : long.TryParse(x.GetString(), out var n) ? n : 0).Where(x => x > 0).ToArray() : [],
+                        ExtraPermissions = Strs(u, "extra_permissions"), DeniedPermissions = Strs(u, "denied_permissions"), CorridorTags = Strs(u, "corridor_tags"),
+                    });
+            }
+        var branches = await db.Branches.ToDictionaryAsync(b => b.Id);
+        if (root.TryGetProperty("branches", out var ba) && ba.ValueKind == JsonValueKind.Array)
+            foreach (var b in ba.EnumerateArray())
+            {
+                if (Lng(b, "id") is not { } id || !branches.TryGetValue(id, out var row)) continue;
+                row.Code ??= Str(b, "code");
+                if (row.ExtraJson is null)
+                {
+                    var extra = new System.Text.Json.Nodes.JsonObject();
+                    foreach (var p in b.EnumerateObject())
+                        if (p.Name is not ("id" or "name" or "city_id" or "address" or "phone" or "code")) extra[p.Name] = System.Text.Json.Nodes.JsonNode.Parse(p.Value.GetRawText());
+                    if (extra.Count > 0) row.ExtraJson = extra.ToJsonString();
+                }
+            }
+        await db.SaveChangesAsync();
     }
 
     /// <summary>

@@ -32,7 +32,7 @@ public static class TeamAccessEndpoints
     internal static double? Number(JsonNode? n) => n switch
     {
         null => null,
-        JsonValue v when v.GetValueKind() == JsonValueKind.Number => v.GetValue<double>(),
+        JsonValue v when v.GetValueKind() == JsonValueKind.Number => double.Parse(v.ToJsonString(), System.Globalization.CultureInfo.InvariantCulture),
         JsonValue v when v.GetValueKind() == JsonValueKind.String => double.TryParse(v.GetValue<string>(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var d) ? d : (v.GetValue<string>().Trim() == "" ? 0 : double.NaN),
         JsonValue v when v.GetValueKind() is JsonValueKind.True => 1, JsonValue v when v.GetValueKind() is JsonValueKind.False => 0,
         _ => double.NaN,
@@ -80,7 +80,9 @@ public static class TeamAccessEndpoints
                 return (JsonNode)o;
             }).ToArray();
             var routes = await db.Routes.AsNoTracking().OrderBy(r => r.Id).Select(r => new { r.Id, r.Name, r.ServiceNumber }).ToListAsync();
-            var cities = await db.Cities.AsNoTracking().OrderBy(c => c.Id).Select(c => new { c.Id, c.Name }).ToListAsync();
+            var cityOrder = (await Doc(db, "city_order") as JsonArray ?? []).Select(x => (long)(Number(x) ?? 0)).ToList();
+            var cities = (await db.Cities.AsNoTracking().OrderBy(c => c.Id).Select(c => new { c.Id, c.Name }).ToListAsync())
+                .OrderBy(c => cityOrder.IndexOf(c.Id) is var i && i >= 0 ? i : int.MaxValue).ToList();
             var manageBranches = a.Role is "owner" or "admin";
             return Results.Text(new JsonObject
             {

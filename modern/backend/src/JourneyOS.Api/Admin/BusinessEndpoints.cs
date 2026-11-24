@@ -102,6 +102,7 @@ public static class BusinessEndpoints
         OtaVerifierEndpoints.Map(g);
         AgentLoyaltyEndpoints.Map(g);
         JourneyOS.Api.Settings.TeamAccessEndpoints.Map(g);
+        JourneyOS.Api.Settings.SettingsEndpoints.Map(g);
         g.MapGet("/accounts/reports/v21/options", async (ReportSuiteService s) => Results.Ok(await s.OptionsV21Async())).RequireAuthorization(Policies.Reports);
         g.MapGet("/accounts/reports/v22/options", async (ReportSuiteService s) => Results.Ok(await s.OptionsV22Async())).RequireAuthorization(Policies.Reports);
         g.MapGet("/accounts/reports/fleet-operations/options", async (ReportSuiteService s) => Results.Ok(await s.FleetOptionsAsync())).RequireAuthorization(Policies.Reports);

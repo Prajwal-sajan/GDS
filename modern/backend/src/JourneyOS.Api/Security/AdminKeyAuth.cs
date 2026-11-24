@@ -41,9 +41,9 @@ public sealed class AdminKeyHandler(IOptionsMonitor<AuthenticationSchemeOptions>
                            join u in db.Users.IgnoreQueryFilters() on x.UserId equals u.Id
                            join t in db.Tenants on u.TenantId equals t.Id
                            where x.TokenSha256 == hash && x.RevokedAt == null && x.ExpiresAt > now && u.Status == "ACTIVE"
-                           select new { u.Id, u.Name, u.Phone, u.Role, t.Code }).FirstOrDefaultAsync();
+                           select new { u.Id, u.Name, u.Phone, u.Role, t.Code, Sid = x.Id }).FirstOrDefaultAsync();
             if (s is null) return AuthenticateResult.Fail("Invalid or expired session");
-            return Success(s.Name, s.Code, s.Role, [new Claim("uid", s.Id.ToString()), new Claim("phone", s.Phone), new Claim("auth", "session")]);
+            return Success(s.Name, s.Code, s.Role, [new Claim("uid", s.Id.ToString()), new Claim("phone", s.Phone), new Claim("auth", "session"), new Claim("sid", s.Sid.ToString())]);
         }
 
         // Service key (interim; kept for automation and break-glass). /hubs may pass it as bearer.
