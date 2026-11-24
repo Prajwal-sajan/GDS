@@ -3,6 +3,7 @@
 param([int]$Port = 5080)
 Get-CimInstance Win32_Process -Filter "Name='dotnet.exe' OR Name='JourneyOS.Api.exe'" |
   Where-Object { $_.CommandLine -match 'JourneyOS.Api' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+Get-Process JourneyOS.Api -ErrorAction SilentlyContinue | Stop-Process -Force
 $root = Split-Path $PSScriptRoot -Parent
 dotnet build "$root/backend/src/JourneyOS.Api" -c Debug -v q --nologo | Select-String -Pattern "error|Warn|Build succeeded" | Select-Object -First 10
 $env:ASPNETCORE_ENVIRONMENT = "Development"
