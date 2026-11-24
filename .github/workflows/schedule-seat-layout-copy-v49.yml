@@ -1,0 +1,33 @@
+name: Schedule Seat Layout Copy Image v49
+on:
+  push:
+    branches:
+      - feature/schedule-seat-layout-copy-v49
+  pull_request:
+    paths:
+      - "public/js/seat-layout-copy-v49.js"
+      - "public/js/schedules-screenshot-v6.js"
+      - "public/index.html"
+      - "tests/schedule-seat-layout-copy-v49.test.cjs"
+      - ".github/workflows/schedule-seat-layout-copy-v49.yml"
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Image geometry and actual clipboard/download acceptance
+        run: node --test tests/schedule-seat-layout-copy-v49.test.cjs
+      - name: Keep Manage Bookings API and popup behavior intact
+        run: node --test tests/schedule-manage-v48.test.cjs
+      - name: Keep existing Manage Bookings popup UI intact
+        run: node --test tests/schedule-manage-v48-ui.cjs
+      - name: Keep prior Seat Layout and pickup-chart behavior
+        run: node tests/schedule-bookings-v38-ui.cjs
+      - name: Full GDS regression
+        run: npm test
