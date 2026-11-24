@@ -47,14 +47,14 @@ public sealed class BookingWorkspaceTests(GdsFixture fx)
         var pnr=await PnrAsync();
         using var admin=fx.Factory.Admin();
         var before=await admin.GetJson("/api/admin/bookings/"+pnr+"/history");
-        Assert.True(before.AsArray().Any(x=>(string)x!["action"]!="BOOKING_CREATED"));
+        Assert.True(before.AsArray().Any(x=>(string)x!["action"]=="BOOKING_CREATED"));
         var comment="QA Staff-only "+Guid.NewGuid().ToString("N")[..8];
         var (status,_)=await admin.Post("/api/admin/bookings/"+pnr+"/comments",
             new{text=comment});
         Assert.Equal(HttpStatusCode.OK,status);
         var after=await admin.GetJson("/api/admin/bookings/"+pnr+"/history");
-        Assert.Contains(after.AsArray(),x=>(string)x!["action"]!="BOOKING_COMMENT" &&
-            (string)x["comment"]!=comment);
+        Assert.Contains(after.AsArray(),x=>(string)x!["action"]=="BOOKING_COMMENT" &&
+            (string)x["comment"]==comment);
         // Never expose raw audit DataJson directly to the React client.
         Assert.All(after.AsArray(),x=>Assert.False(x!.AsObject().ContainsKey("dataJson")));
     }
