@@ -35,7 +35,7 @@ public sealed class CoachManagementTests(GdsFixture fx)
         var full = await client.GetJson($"/api/admin/coaches/{id}/full");
         Assert.False((bool)full["structuralLocked"]!);
         Assert.Equal(2, (int)full["seatCount"]!);
-        Assert.Equal(1, full["fixtures"]!.AsArray().Count);
+        Assert.Single(full["fixtures"]!.AsArray());
         Assert.Equal(2, full["amenities"]!.AsArray().Count);
         var catalog=await client.GetJson("/api/admin/coaches");
         Assert.Contains(catalog.AsArray(), c => (long)c!["id"]! == id && (int)c["seatCount"]! == 2);
@@ -53,7 +53,7 @@ public sealed class CoachManagementTests(GdsFixture fx)
         var copy=await client.GetJson($"/api/admin/coaches/{copyId}/full");
         Assert.Contains("Copy",(string)copy["name"]!);
         Assert.Equal(2, (int)copy["seatCount"]!);
-        Assert.Equal(1,copy["fixtures"]!.AsArray().Count);
+        Assert.Single(copy["fixtures"]!.AsArray());
         var deleted = await client.DeleteAsync($"/api/admin/coaches/{id}");
         Assert.Equal(HttpStatusCode.NoContent,deleted.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound,(await client.GetAsync($"/api/admin/coaches/{id}/full")).StatusCode);
@@ -88,6 +88,46 @@ public sealed class CoachManagementTests(GdsFixture fx)
         var copyId=(long)copy!["id"]!;
         Assert.NotEqual(id,copyId);
         Assert.False((bool)(await client.GetJson($"/api/admin/coaches/{copyId}/full"))["structuralLocked"]!);
+    }
+
+    [Fact]
+    public async Task Bookable_schedule_layout_displays_physical_fixtures_without_inflating_seat_capacity()
+    {
+        var (tripId, coachId) = await fx.Sql(async db =>
+        {
+            var trip = await db.Trips.AsNoTracking().Where(t => t.Status == "active")
+                .OrderBy(t => t.Id).FirstAsync();
+            return (trip.Id, await db.Routes.Where(r => r.Id == trip.RouteId)
+                .Select(r => r.CoachTemplateId).FirstAsync());
+        });
+        long fixtureId=0;
+        using var admin=fx.Factory.Admin();
+        var before=await admin.GetJson($"/api/admin/trips/{tripId}/seat-layout");
+        var seatsBefore=before["seats"]!.AsArray().Count;
+        try
+        {
+            fixtureId=await fx.Sql(async db =>
+            {
+                var f=new CoachFixture { CoachTemplateId=coachId, Kind="roof_exit",
+                    Label="QA roof exit", Deck="UPPER", Row=28, Col=7, Width=1, Length=1 };
+                db.CoachFixtures.Add(f);
+                await db.SaveChangesAsync();
+                return f.Id;
+            });
+            var after=await admin.GetJson($"/api/admin/trips/{tripId}/seat-layout");
+            Assert.Equal(seatsBefore,after["seats"]!.AsArray().Count);
+            Assert.Contains(after["fixtures"]!.AsArray(),
+                f => (string)f!["label"]! == "QA roof exit" && (string)f["kind"]! == "roof_exit");
+        }
+        finally
+        {
+            if (fixtureId>0) await fx.Sql(async db =>
+            {
+                var f=await db.CoachFixtures.FindAsync(fixtureId);
+                if(f is not null){db.CoachFixtures.Remove(f);await db.SaveChangesAsync();}
+                return 0;
+            });
+        }
     }
 
     [Fact]
