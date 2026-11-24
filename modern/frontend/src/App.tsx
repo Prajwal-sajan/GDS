@@ -1,11 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, ApiError, getKey, setKey, type Attempt, type OutboxRow, type RedBusStatus, type TripRow } from "./api";
+import { api, ApiError, getKey, login, logout, setKey, type Attempt, type Me, type OutboxRow, type RedBusStatus, type TripRow } from "./api";
 
 import { DispatchPanel, FaresPanel, FleetPanel, ReconciliationPanel, StaffPanel } from "./Operations";
+import { CommsPanel, CrmPanel, LedgerPanel, ReportsPanel, SarathiPanel, UsersPanel } from "./Business";
 
-type Tab = "redbus" | "outbox" | "trips" | "dispatch" | "fleet" | "staff" | "fares" | "recon";
-const TABS: [Tab, string][] = [["redbus", "RedBus"], ["outbox", "Outbox"], ["trips", "Trips"], ["dispatch", "Dispatch"], ["fleet", "Fleet"],
-  ["staff", "Staff"], ["fares", "Fares"], ["recon", "Reconciliation"]];
+type Tab = "redbus" | "outbox" | "trips" | "dispatch" | "fleet" | "staff" | "fares" | "recon" | "crm" | "comms" | "reports" | "ledger" | "sarathi" | "users";
+const ALL = ["owner", "admin", "accounts", "ops", "viewer"];
+const OPS = ["owner", "admin", "ops"];
+const ACC = ["owner", "admin", "accounts"];
+// Mirrors the API authorization policies; the API remains the enforcement point.
+const TABS: [Tab, string, string[]][] = [["redbus", "RedBus", ALL], ["outbox", "Outbox", ALL], ["trips", "Trips", ALL], ["dispatch", "Dispatch", OPS], ["fleet", "Fleet", OPS],
+  ["staff", "Staff", OPS], ["fares", "Fares", OPS], ["recon", "Reconciliation", ACC], ["crm", "CRM", ALL], ["comms", "Chats & calls", OPS], ["reports", "Reports", ALL],
+  ["ledger", "Ledger", [...ACC, "agent"]], ["sarathi", "Sarathi", ALL], ["users", "Users", ["owner", "admin"]]];
 
 function useLoad<T>(fn: () => Promise<T>, deps: unknown[]) {
   const [data, setData] = useState<T>();
@@ -26,21 +32,31 @@ const today = () => new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0,
 
 export default function App() {
   const [key, setKeyState] = useState(getKey());
-  const [tab, setTab] = useState<Tab>("redbus");
+  const [tab, setTab] = useState<Tab>();
+  const [me, setMe] = useState<Me>();
+  const signOut = useCallback(() => { void logout(); setKey(""); setKeyState(""); setMe(undefined); setTab(undefined); }, []);
+  useEffect(() => {
+    if (!key) return;
+    api.me().then((m) => { setMe(m); setTab((t) => t ?? (TABS.find(([, , r]) => r.includes(m.role))?.[0])); })
+      .catch((e) => { if (e instanceof ApiError && e.status === 401) signOut(); });
+  }, [key, signOut]);
   if (!key) return <Login onLogin={(k) => { setKey(k); setKeyState(k); }} />;
+  if (!me) return <p>Loading…</p>;
+  const tabs = TABS.filter(([, , roles]) => roles.includes(me.role));
   return (
     <div className="shell">
       <header>
         <strong>JourneyOS</strong> <span className="muted">Operations</span>
         <nav>
-          {TABS.map(([t, label]) => (
+          {tabs.map(([t, label]) => (
             <button key={t} className={tab === t ? "active" : ""} onClick={() => setTab(t)}>{label}</button>
           ))}
         </nav>
-        <button className="link" onClick={() => { setKey(""); setKeyState(""); }}>Sign out</button>
+        <span className="muted" data-testid="whoami">{me.name} · {me.role}</span>
+        <button className="link" onClick={signOut}>Sign out</button>
       </header>
       <main>
-        {tab === "redbus" && <RedBusPanel onUnauthorized={() => { setKey(""); setKeyState(""); }} />}
+        {tab === "redbus" && <RedBusPanel onUnauthorized={signOut} />}
         {tab === "outbox" && <OutboxPanel />}
         {tab === "trips" && <TripsPanel />}
         {tab === "dispatch" && <DispatchPanel />}
@@ -48,19 +64,43 @@ export default function App() {
         {tab === "staff" && <StaffPanel />}
         {tab === "fares" && <FaresPanel />}
         {tab === "recon" && <ReconciliationPanel />}
+        {tab === "crm" && <CrmPanel me={me} />}
+        {tab === "comms" && <CommsPanel />}
+        {tab === "reports" && <ReportsPanel me={me} />}
+        {tab === "ledger" && <LedgerPanel me={me} />}
+        {tab === "sarathi" && <SarathiPanel />}
+        {tab === "users" && <UsersPanel me={me} />}
       </main>
     </div>
   );
 }
 
 function Login({ onLogin }: { onLogin: (k: string) => void }) {
-  const [k, setK] = useState("");
+  const [mode, setMode] = useState<"user" | "key">("user");
+  const [f, setF] = useState({ tenant: "demo", phone: "", password: "", key: "" });
+  const [error, setError] = useState<string>();
+  const submit = async () => {
+    setError(undefined);
+    if (mode === "key") { if (f.key.trim()) onLogin(f.key.trim()); return; }
+    try { onLogin((await login(f.tenant, f.phone, f.password)).token); } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+  };
   return (
-    <form className="login" onSubmit={(e) => { e.preventDefault(); if (k.trim()) onLogin(k.trim()); }}>
-      <h1>JourneyOS Integrations</h1>
-      <label>Admin key<input type="password" value={k} onChange={(e) => setK(e.target.value)} autoComplete="off" aria-label="Admin key" /></label>
+    <form className="login" onSubmit={(e) => { e.preventDefault(); void submit(); }}>
+      <h1>JourneyOS</h1>
+      <div className="row">
+        <button type="button" className={mode === "user" ? "active" : "link"} onClick={() => setMode("user")}>User sign-in</button>
+        <button type="button" className={mode === "key" ? "active" : "link"} onClick={() => setMode("key")}>Service key</button>
+      </div>
+      {mode === "user" ? <>
+        <label>Operator code<input value={f.tenant} onChange={(e) => setF({ ...f, tenant: e.target.value })} aria-label="Operator code" /></label>
+        <label>Phone<input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} inputMode="numeric" aria-label="Phone" required /></label>
+        <label>Password<input type="password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} aria-label="Password" required /></label>
+      </> : <>
+        <label>Admin key<input type="password" value={f.key} onChange={(e) => setF({ ...f, key: e.target.value })} autoComplete="off" aria-label="Admin key" /></label>
+        <p className="muted">Service keys are for automation and break-glass access.</p>
+      </>}
       <button type="submit">Sign in</button>
-      <p className="muted">Interim service-key sign-in. Replaced by JourneyOS IAM when migrated.</p>
+      {error && <p className="error" role="alert">{error}</p>}
     </form>
   );
 }

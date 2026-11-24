@@ -41,13 +41,26 @@ export class ApiError extends Error {
 }
 
 const KEY = "journeyos.adminKey";
+/** Credential: either a user session token (jos_…, from phone+password login) or an interim service key. */
 export const getKey = () => sessionStorage.getItem(KEY) ?? "";
 export const setKey = (k: string) => (k ? sessionStorage.setItem(KEY, k) : sessionStorage.removeItem(KEY));
+export const authHeaders = (): Record<string, string> => {
+  const k = getKey();
+  return k.startsWith("jos_") ? { Authorization: `Bearer ${k}` } : { "X-Admin-Key": k };
+};
+
+export async function login(tenant: string, phone: string, password: string) {
+  const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tenant, phone, password }) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new ApiError(res.status, data?.message ?? `HTTP ${res.status}`);
+  return data as { token: string; user: { name: string; role: string } };
+}
+export const logout = () => fetch("/api/auth/logout", { method: "POST", headers: authHeaders() }).catch(() => undefined);
 
 async function call<T>(method: string, url: string, body?: unknown): Promise<T> {
   const res = await fetch(url, {
     method,
-    headers: { "X-Admin-Key": getKey(), ...(body !== undefined ? { "Content-Type": "application/json" } : {}) },
+    headers: { ...authHeaders(), ...(body !== undefined ? { "Content-Type": "application/json" } : {}) },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   const text = await res.text();
@@ -88,13 +101,59 @@ export const api = {
   recheck: (id: number) => call<unknown>("POST", `/api/admin/reconciliation/invoices/${id}/recheck`),
   resolve: (id: number, lineId: number, action: string, note: string) => call<unknown>("POST", `/api/admin/reconciliation/invoices/${id}/resolve`, { lineId, action, note }),
   exportInvoice: async (id: number, name: string) => {
-    const res = await fetch(`/api/admin/reconciliation/invoices/${id}/export`, { headers: { "X-Admin-Key": getKey() } });
+    const res = await fetch(`/api/admin/reconciliation/invoices/${id}/export`, { headers: authHeaders() });
     if (!res.ok) throw new ApiError(res.status, `HTTP ${res.status}`);
     const a = document.createElement("a");
     a.href = URL.createObjectURL(await res.blob()); a.download = `reconciliation-${name}.csv`; a.click();
     URL.revokeObjectURL(a.href);
   },
+  // identity
+  me: () => call<Me>("GET", "/api/admin/me"),
+  // CRM
+  passengerSearch: (mode: string, q: string) => call<{ total: number; customers: CustomerHit[] }>("GET", `/api/admin/crm/passenger-search?mode=${mode}&q=${encodeURIComponent(q)}`),
+  customer: (phone: string) => call<CustomerDetail>("GET", `/api/admin/crm/customers/${encodeURIComponent(phone)}`),
+  addNote: (phone: string, text: string) => call<unknown>("POST", `/api/admin/crm/customers/${encodeURIComponent(phone)}/notes`, { text }),
+  chats: (filter?: string) => call<{ conversations: Conversation[]; unreadTotal: number }>("GET", `/api/admin/chats${filter ? `?filter=${filter}` : ""}`),
+  chat: (id: string) => call<{ messages: ChatMsg[]; templates: string[] }>("GET", `/api/admin/chats/${encodeURIComponent(id)}`),
+  sendChat: (id: string, text: string) => call<{ notice: string }>("POST", `/api/admin/chats/${encodeURIComponent(id)}`, { text }),
+  calls: () => call<{ calls: CallRow[]; stats: { total: number; answered: number; missed: number; avgDuration: number } }>("GET", "/api/admin/calls"),
+  logCall: (body: unknown) => call<{ notice: string }>("POST", "/api/admin/calls", body),
+  ratings: (max?: number) => call<{ rows: Rating[]; avg: number; distribution: number[] }>("GET", `/api/admin/ratings${max ? `?max=${max}` : ""}`),
+  reply: (id: number, reply: string) => call<{ notice: string }>("POST", `/api/admin/ratings/${id}/reply`, { reply }),
+  // reports
+  report: <T,>(name: string, qs: string) => call<T>("GET", `/api/admin/reports/${name}?${qs}`),
+  addExpense: (tripId: number, category: string, amount: number, note: string) => call<unknown>("POST", `/api/admin/trips/${tripId}/expenses`, { category, amount, note }),
+  // accounts
+  channels: () => call<{ agents: { channelKey: string; name: string; phone: string; commissionPct: number | null; active: boolean }[]; otas: { channelKey: string; name: string }[]; branches: { channelKey: string; name: string }[] }>("GET", "/api/admin/accounts/channels"),
+  ledger: (channelKey: string) => call<Ledger>("GET", `/api/admin/accounts/ledger?channelKey=${encodeURIComponent(channelKey)}`),
+  myLedger: () => call<Ledger>("GET", "/api/admin/me/ledger"),
+  addLedger: (body: { channelKey: string; type: string; amount: number; note: string; date?: string }) => call<unknown>("POST", "/api/admin/accounts/ledger", body),
+  voidLedger: (id: number) => call<unknown>("POST", `/api/admin/accounts/ledger/${id}/void`, {}),
+  // Sarathi
+  suggestions: () => call<string[]>("GET", "/api/admin/sarathi/suggestions"),
+  ask: (question: string, conversationId?: number) => call<{ conversationId: number; answer: { text: string; table: Record<string, unknown>[]; intent: string; period: string } }>("POST", "/api/admin/sarathi/ask", { question, conversationId }),
+  // IAM
+  users: () => call<UserRow[]>("GET", "/api/admin/iam/users"),
+  saveUser: (u: Partial<UserRow>, id?: number) => call<unknown>(id ? "PUT" : "POST", `/api/admin/iam/users${id ? `/${id}` : ""}`, u),
+  setPassword: (id: number, password: string) => call<void>("POST", `/api/admin/iam/users/${id}/password`, { password }),
+  audit: () => call<{ id: number; actor: string; action: string; entity: string; entityId: string; at: string }[]>("GET", "/api/admin/iam/audit"),
 };
+
+export interface Me { name: string; role: string; tenant: string; auth: string; phone: string | null }
+export interface BookingView { pnr: string; status: string; channel: string; travelDate: string; service: string; amount: number; from: string | null; to: string | null;
+  contact: string | null; passengers: { seatCode: string; name: string; status: string; boardingStatus: string }[] }
+export interface CustomerHit { phone: string; phoneKey: string | null; name: string; tier: string; miles: number; totalTrips: number; totalBookings: number; cancelled: number;
+  upcoming: number; cancellationPct: number; spend: number; lastTravel: string | null; bookings: BookingView[] }
+export interface CustomerDetail { phone: string; name: string; loyalty: { tier: string; miles: number }; bookings: BookingView[]; notes: { id: number; text: string; by: string; at: string }[];
+  calls: CallRow[]; messages: ChatMsg[]; ratings: Rating[] }
+export interface Conversation { conversationId: string; name: string; phone: string; service: string; lastMessage: string; lastTs: string; channel: string; unread: number; blocked: boolean }
+export interface ChatMsg { id: number; direction: string; text: string; ts: string; by: string | null; deliveryStatus: string }
+export interface CallRow { id: number; direction: string; kind: string; phone: string; passengerName: string | null; pnr: string | null; status: string; durationS: number; agent: string; ts: string; notes: string | null }
+export interface Rating { id: number; ota: string; pnr: string | null; passengerName: string | null; rating: number; ratedAt: string; review: string | null; operatorReply: string | null }
+export interface Ledger { channelKey: string; balance: number; totalDebits: number; totalCredits: number;
+  entries: { date: string; kind: string; ref: string; debit: number; credit: number; note: string; id: number | null; balance: number }[] }
+export interface UserRow { id: number; phone: string; name: string; email: string | null; role: string; status: string; legacyRole: string | null; commissionPct: number | null;
+  creditLimit: number | null; hasPassword: boolean; lastLoginAt: string | null; locked: boolean }
 
 export interface Vehicle { id: number; registrationNumber: string; coachTemplateId: number | null; status: string; modelName: string | null; gpsEnabled: boolean;
   insuranceExpiry: string | null; permitExpiry: string | null; fitnessExpiry: string | null; pucExpiry: string | null }

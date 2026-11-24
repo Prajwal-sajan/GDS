@@ -4,13 +4,14 @@ const KEY = process.env.JOURNEYOS_ADMIN_KEY ?? "dev-owner-key";
 
 async function signIn(page: import("@playwright/test").Page, key = KEY) {
   await page.goto("/");
+  await page.getByRole("button", { name: "Service key" }).click();
   await page.getByLabel("Admin key").fill(key);
   await page.getByRole("button", { name: "Sign in" }).click();
 }
 
 test("rejects an invalid admin key", async ({ page }) => {
   await signIn(page, "not-a-key");
-  await expect(page.getByLabel("Admin key")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
 });
 
 test("RedBus status is honest about verification and outbound state", async ({ page }) => {

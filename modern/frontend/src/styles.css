@@ -52,3 +52,9 @@ tr.selected { background: #eef4ff; }
 .r-matched { background: #dff3e4; } .r-mismatched { background: #fde2e2; } .r-needs_review { background: #fff4d6; }
 .r-unmatched_ota, .r-unmatched_gds { background: #ece2fd; }
 td.danger { color: #b42318; font-weight: 600; }
+
+.card.wide{grid-column:1/-1;margin:.75rem 0;display:block}
+.chip{border-radius:999px;font-size:.85em;margin:.2rem}
+p.out{text-align:right}
+.login .row button.active{font-weight:600}
+

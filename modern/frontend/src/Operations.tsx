@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as signalR from "@microsoft/signalr";
 import { api, ApiError, getKey, type Assignment, type Fare, type InvoiceLine, type InvoiceRow, type RouteRow, type SeatRow, type Staff, type TripRow, type Vehicle } from "./api";
 
-const err = (e: unknown) => (e instanceof ApiError ? `Error ${e.status}: ${e.message}` : e instanceof Error ? e.message : String(e));
-const today = () => new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0, 10);
+export const err = (e: unknown) => (e instanceof ApiError ? `Error ${e.status}: ${e.message}` : e instanceof Error ? e.message : String(e));
+export const today = () => new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0, 10);
 
-function useAsync<T>(fn: () => Promise<T>, deps: unknown[]) {
+export function useAsync<T>(fn: () => Promise<T>, deps: unknown[]) {
   const [data, setData] = useState<T>();
   const [error, setError] = useState<string>();
   const seq = useRef(0);
@@ -287,6 +287,13 @@ export function FaresPanel() {
 // ---------------------------------------------------------------- Reconciliation
 const STATUS_LABEL: Record<string, string> = { matched: "Matched", mismatched: "Mismatched", needs_review: "Needs review", unmatched_ota: "Missing in GDS", unmatched_gds: "Missing in OTA" };
 
+async function toBase64(file: File): Promise<string> {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+
 export function ReconciliationPanel() {
   const list = useAsync<InvoiceRow[]>(api.invoices, []);
   const [open, setOpen] = useState<InvoiceRow>();
@@ -300,9 +307,11 @@ export function ReconciliationPanel() {
 
   const upload = async () => {
     if (!file) return;
-    if (file.size > 10_000_000) { setMsg("File is larger than 10 MB"); return; }
+    if (file.size > 20_000_000) { setMsg("File is larger than 20 MB"); return; }
     try {
-      const r = await api.uploadInvoice({ ...up, operatorCode: up.operatorCode || null, fileName: file.name, csv: await file.text() });
+      const isPdf = file.name.toLowerCase().endsWith(".pdf");
+      const content = isPdf ? { pdfBase64: await toBase64(file) } : { csv: await file.text() };
+      const r = await api.uploadInvoice({ ...up, invoiceNumber: up.invoiceNumber || null, operatorCode: up.operatorCode || null, fileName: file.name, ...content });
       setMsg(r.duplicate ? "This file was already uploaded; showing the existing invoice." : "Invoice uploaded and compared.");
       await list.reload();
       const inv = (await api.invoices()).find((x) => x.id === r.id);
@@ -320,14 +329,14 @@ export function ReconciliationPanel() {
   return (
     <section>
       <div className="banner">Compares RedBus statement rows against GDS-recorded bookings. Rows without captured GDS settlement evidence are flagged for review — never auto-matched.
-        PDF payment-advice parsing is not yet migrated; upload the normalised CSV (section, pnr, doj, fare, tax, commission, commission_tax, operator_offer, cancellation_charge, take_home).</div>
+        Upload the RedBus payment-advice PDF (invoice number, operator code and amounts are read from it) or a normalised CSV (section, pnr, doj, fare, tax, commission, commission_tax, operator_offer, cancellation_charge, take_home).</div>
       <h2>Upload statement</h2>
       <form className="grid" onSubmit={(e) => { e.preventDefault(); void upload(); }}>
-        <label>Invoice number<input required value={up.invoiceNumber} onChange={(e) => setUp({ ...up, invoiceNumber: e.target.value })} aria-label="Invoice number" /></label>
+        <label>Invoice number (CSV only)<input required={!file?.name.toLowerCase().endsWith(".pdf")} value={up.invoiceNumber} onChange={(e) => setUp({ ...up, invoiceNumber: e.target.value })} aria-label="Invoice number" /></label>
         <label>Operator code<input value={up.operatorCode} onChange={(e) => setUp({ ...up, operatorCode: e.target.value })} /></label>
         <label>Period start<input type="date" required value={up.periodStart} onChange={(e) => setUp({ ...up, periodStart: e.target.value })} aria-label="Period start" /></label>
         <label>Period end<input type="date" required value={up.periodEnd} onChange={(e) => setUp({ ...up, periodEnd: e.target.value })} aria-label="Period end" /></label>
-        <label>CSV file<input type="file" accept=".csv,text/csv" required onChange={(e) => setFile(e.target.files?.[0])} aria-label="Statement file" /></label>
+        <label>PDF or CSV file<input type="file" accept=".pdf,application/pdf,.csv,text/csv" required onChange={(e) => setFile(e.target.files?.[0])} aria-label="Statement file" /></label>
         <button type="submit">Upload & compare</button>
       </form>
       {msg && <p className="note" role="status">{msg}</p>}

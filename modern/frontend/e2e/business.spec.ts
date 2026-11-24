@@ -1,0 +1,90 @@
+import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+
+const API = process.env.JOURNEYOS_API ?? "http://localhost:5080";
+const KEY = process.env.JOURNEYOS_ADMIN_KEY ?? "dev-owner-key";
+const PASSWORD = "e2e-password-123";
+
+/** Provisions a real user through the IAM API (service key), so the UI test signs in exactly like an operator. */
+async function provision(request: APIRequestContext, role: string) {
+  const phone = "7" + String(Math.floor(Math.random() * 1e9)).padStart(9, "0");
+  const u = await request.post(`${API}/api/admin/iam/users`, { headers: { "X-Admin-Key": KEY }, data: { phone, name: `E2E ${role}`, role, status: "ACTIVE", commissionPct: role === "agent" ? 5 : null } });
+  expect(u.ok(), await u.text()).toBeTruthy();
+  const id = (await u.json()).id;
+  const p = await request.post(`${API}/api/admin/iam/users/${id}/password`, { headers: { "X-Admin-Key": KEY }, data: { password: PASSWORD } });
+  expect(p.status()).toBe(204);
+  return phone;
+}
+
+async function signInUser(page: Page, phone: string, password = PASSWORD) {
+  await page.goto("/");
+  await page.getByLabel("Phone").fill(phone);
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+}
+
+test("user sign-in: wrong password is rejected; role decides visible tabs", async ({ page, request }) => {
+  const phone = await provision(request, "ops");
+  await signInUser(page, phone, "definitely-wrong");
+  await expect(page.getByRole("alert")).toContainText("Invalid phone or password");
+  await signInUser(page, phone);
+  await expect(page.getByTestId("whoami")).toContainText("ops");
+  await expect(page.getByRole("button", { name: "Dispatch" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Users" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Ledger" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page.getByLabel("Phone")).toBeVisible();
+});
+
+test("agent sees only their own ledger", async ({ page, request }) => {
+  const phone = await provision(request, "agent");
+  await signInUser(page, phone);
+  await expect(page.getByRole("button", { name: "Ledger" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Dispatch" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "My ledger" })).toBeVisible();
+  await expect(page.getByTestId("ledger-balance")).toBeVisible();
+});
+
+test("CRM search validates input and never lists customers without a query", async ({ page, request }) => {
+  await signInUser(page, await provision(request, "admin"));
+  await page.getByRole("button", { name: "CRM" }).click();
+  await page.getByLabel("Search mode").selectOption("pnr");
+  await page.getByLabel("Search query").fill("AB");
+  await page.getByRole("button", { name: "Search" }).click();
+  await expect(page.getByRole("alert")).toContainText("at least 4 PNR characters");
+  await page.getByLabel("Search query").fill("");
+  await page.getByRole("button", { name: "Search" }).click();
+  await expect(page.getByTestId("customer-hit")).toHaveCount(0);
+});
+
+test("reports, Sarathi and users render from live data", async ({ page, request }) => {
+  await signInUser(page, await provision(request, "admin"));
+  await page.getByRole("button", { name: "Reports" }).click();
+  await expect(page.getByTestId("kpi-Seats")).toBeVisible();
+  await page.getByLabel("Report").selectOption("daily-ops");
+  await expect(page.getByRole("heading", { name: "Fleet" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Sarathi" }).click();
+  await page.getByRole("button", { name: "How many passengers travelled this week?" }).click();
+  await expect(page.getByTestId("sarathi-answer")).toContainText("passengers travelled in the last 7 days");
+
+  await page.getByRole("button", { name: "Users" }).click();
+  await expect(page.getByRole("cell", { name: "booking_executive" })).toBeVisible(); // imported legacy role shown alongside mapped role
+});
+
+// ---------------------------------------------------------------- visual regression
+// Baselines live in e2e/business.spec.ts-snapshots (platform-suffixed). Data-dependent regions are masked so
+// the snapshot guards layout/styling, not numbers. Regenerate intentionally with: npx playwright test --update-snapshots
+test("visual: login screen", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("form.login")).toHaveScreenshot("login.png", { maxDiffPixelRatio: 0.01 });
+});
+
+test("visual: reports shell with data masked", async ({ page, request }) => {
+  await signInUser(page, await provision(request, "viewer"));
+  await page.getByRole("button", { name: "Reports" }).click();
+  await expect(page.getByTestId("kpi-Seats")).toBeVisible();
+  await expect(page).toHaveScreenshot("reports.png", {
+    fullPage: false, maxDiffPixelRatio: 0.02,
+    mask: [page.locator("table"), page.locator(".cards .value"), page.locator("p.muted"), page.getByTestId("whoami"), page.locator("input[type=date]")],
+  });
+});

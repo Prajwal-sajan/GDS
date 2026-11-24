@@ -5,6 +5,7 @@ const day = (offset: number) => new Date(Date.now() + 5.5 * 3600_000 + offset * 
 
 async function signIn(page: Page) {
   await page.goto("/");
+  await page.getByRole("button", { name: "Service key" }).click();
   await page.getByLabel("Admin key").fill(KEY);
   await page.getByRole("button", { name: "Sign in" }).click();
 }
