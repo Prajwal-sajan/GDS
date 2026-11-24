@@ -239,20 +239,32 @@ function downloadImage(png: Blob, layout: ScheduleSeatLayout) {
 export async function copySeatPoster(
   refresh: ()=>Promise<ScheduleSeatLayout>
 ):Promise<"copied"|"downloaded"> {
-  const pngPromise=refresh().then((layout)=>svgToPng(seatPosterSvg(layout)));
+  // A single, freshly fetched snapshot owns both the clipboard write and
+  // the fallback image. The browser may reject the clipboard permission after
+  // rendering; re-fetching then could produce a *different* seat state.
+  const snapshot = refresh().then(async (layout) => ({
+    layout, png: await svgToPng(seatPosterSvg(layout))
+  }));
+  const pngPromise = snapshot.then((value) => value.png);
   if (navigator.clipboard?.write && typeof ClipboardItem !== "undefined") {
-    let item:ClipboardItem|undefined;
-    try { item=new ClipboardItem({ "image/png": pngPromise }); } catch { /* unsupported promise-backed clipboard */ }
+    let item: ClipboardItem | undefined;
+    try { item = new ClipboardItem({ "image/png": pngPromise }); }
+    catch { /* unsupported promise-backed clipboard */ }
     if (item) {
-      try { await navigator.clipboard.write([item]); return "copied"; }
-      catch {
-        const layout=await refresh(); // never download an unvalidated stale snapshot
-        downloadImage(await svgToPng(seatPosterSvg(layout)),layout);
+      try {
+        await navigator.clipboard.write([item]);
+        await snapshot;
+        return "copied";
+      } catch {
+        // Refresh/image failures propagate here rather than downloading an old
+        // visible diagram. Only a valid live snapshot can be downloaded.
+        const {layout, png} = await snapshot;
+        downloadImage(png, layout);
         return "downloaded";
       }
     }
   }
-  const layout=await refresh();
-  downloadImage(await svgToPng(seatPosterSvg(layout)),layout);
+  const {layout, png} = await snapshot;
+  downloadImage(png, layout);
   return "downloaded";
 }
