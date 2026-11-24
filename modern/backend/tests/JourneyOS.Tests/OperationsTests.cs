@@ -128,12 +128,8 @@ public sealed class OperationsTests(GdsFixture fx)
         var c = Rb;
         var f = await FindTrip(c, 2);
         var tripId = await TripOf(f.InventoryId);
-        var (bp, dp) = await fx.Sql(async db =>
-        {
-            var rid = await db.Trips.Where(t => t.Id == tripId).Select(t => t.RouteId).FirstAsync();
-            var st = await db.Routes.Where(r => r.Id == rid).SelectMany(r => r.Stages).ToListAsync();
-            return (st.Where(s => s.Kind == "pickup").OrderBy(s => s.StopSequence).First().Id, st.Where(s => s.Kind == "drop").OrderBy(s => s.StopSequence).Last().Id);
-        });
+        // board/drop at the points RedBus search offered (still open); the route's first pickup may already have departed
+        var (bp, dp) = (f.Bp, f.Dp);
         var (sc, cb) = await Admin.Post("/api/admin/bookings/counter", new
         {
             tripId, boardingPointId = bp, droppingPointId = dp, paymentMethod = "agent_credit", paymentReference = "AGT-1", channel = "agent", agentPhone = "9444444441",

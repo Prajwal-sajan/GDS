@@ -1,0 +1,15 @@
+{
+  "id": "trips-timings",
+  "region": "table",
+  "legacy": [
+    1294,
+    1961
+  ],
+  "react": [
+    1294,
+    1961
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

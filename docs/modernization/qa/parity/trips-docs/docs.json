@@ -1,0 +1,15 @@
+{
+  "id": "trips-docs",
+  "region": "docs",
+  "legacy": [
+    1296,
+    713
+  ],
+  "react": [
+    1296,
+    713
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

@@ -187,6 +187,24 @@ public sealed class BusinessTests(GdsFixture fx)
     }
 
     [Fact]
+    public async Task Trip_sheets_list_services_for_a_date_and_return_crew_stops_and_passengers()
+    {
+        var trip = await fx.Sql(db => db.Trips.Where(t => db.Bookings.Any(b => b.TripId == t.Id)).FirstAsync());
+        var list = (await Admin.GetJson($"/api/admin/trip-sheets?date={trip.TravelDate:yyyy-MM-dd}"))["trips"]!.AsArray();
+        Assert.Equal(await fx.Sql(db => db.Trips.CountAsync(t => t.TravelDate == trip.TravelDate)), list.Count);
+        Assert.Contains(list, x => (long)x!["id"]! == trip.Id);
+        var d = await Admin.GetJson($"/api/admin/trip-sheets/{trip.Id}");
+        Assert.Equal(trip.Id, (long)d["id"]!);
+        Assert.Equal(await fx.Sql(db => db.RouteStages.CountAsync(s => s.RouteId == trip.RouteId)), d["stops"]!.AsArray().Count);
+        var pax = d["passengers"]!.AsArray();
+        Assert.Equal(await fx.Sql(db => db.Bookings.Where(b => b.TripId == trip.Id).SelectMany(b => b.Passengers).CountAsync()), pax.Count);
+        Assert.All(pax, p => Assert.NotNull(p!["pnr"]));
+        Assert.Equal(HttpStatusCode.NotFound, (await Admin.GetAsync("/api/admin/trip-sheets/999")).StatusCode);
+        var (_, phone) = await CreateUser("viewer");
+        Assert.Equal(HttpStatusCode.OK, (await (await Login(phone)).GetAsync($"/api/admin/trip-sheets/{trip.Id}")).StatusCode);
+    }
+
+    [Fact]
     public async Task Fleet_lists_reflect_postgres_and_status_switches_are_audited()
     {
         var vehicles = (await Admin.GetJson("/api/admin/vehicle-list"))["vehicles"]!.AsArray();

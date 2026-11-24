@@ -7,6 +7,23 @@
     ]
   },
   "views": {
+    "V001": {
+      "status": "VISUAL_PASS",
+      "react": "src/features/trips/TripsPage.tsx",
+      "evidence": [
+        "e2e/parity/trips.parity.spec.ts — HB1 2026-11-24, Pickup/Drop/Timings/Docs: filterbar, crew, tabs, summary and body identical DOM skeleton + text; pixel regions <= 1% (8/8); data from GET /api/admin/trip-sheets?date= and /api/admin/trip-sheets/{id}",
+        "BusinessTests.Trip_sheets_list_services_for_a_date_and_return_crew_stops_and_passengers; e2e integrations 'trip sheet shows crew, tabs and passenger boards'",
+        "Status Update persists Boarded / No-show via POST /api/admin/bookings/{pnr}/boarding"
+      ],
+      "gaps": [
+        "Call status (To call / Called / Not reachable), Check-in and Dropped are not recorded: Update explains via toast",
+        "Passenger live location / views, stop arrival-departure events and telemetry (fuel, mileage, driving score) are not recorded: shown as — / Awaiting arrival",
+        "Call, chat/communication history, customer rating and loyalty seat upgrade are preview-only (no telephony / ratings / offer API); legacy loyalty-offer badges are not migrated",
+        "Route break (meal/rest) stops are not imported, so they are absent from Timings (normalised in the parity spec)",
+        "RTG trip counts can differ by 1 where the import skipped 154 legacy PNRs that overlap seats (exclusion constraint)",
+        "Service cancellation moved to interim #/trips/services"
+      ]
+    },
     "V002": {
       "status": "VISUAL_PASS",
       "react": "src/features/schedules/SchedulesPage.tsx",

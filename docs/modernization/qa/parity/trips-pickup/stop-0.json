@@ -1,0 +1,15 @@
+{
+  "id": "trips-pickup",
+  "region": "stop-0",
+  "legacy": [
+    1296,
+    316
+  ],
+  "react": [
+    1296,
+    316
+  ],
+  "sizeMatch": true,
+  "diffPixels": 15,
+  "diffRatio": 0
+}

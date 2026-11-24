@@ -1290,6 +1290,321 @@
     "diffRatio": 0
   },
   {
+    "id": "trips-docs",
+    "region": "crew",
+    "legacy": [
+      1296,
+      46
+    ],
+    "react": [
+      1296,
+      46
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "trips-docs",
+    "region": "docs",
+    "legacy": [
+      1296,
+      713
+    ],
+    "react": [
+      1296,
+      713
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "trips-docs",
+    "region": "filterbar",
+    "legacy": [
+      1296,
+      96
+    ],
+    "react": [
+      1296,
+      96
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "trips-docs",
+    "region": "tabs",
+    "legacy": [
+      1296,
+      75
+    ],
+    "react": [
+      1296,
+      75
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "trips-drop",
+    "region": "crew",
+    "legacy": [
+      1296,
+      46
+    ],
+    "react": [
+      1296,
+      46
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "trips-drop",
+    "region": "filterbar",
+    "legacy": [
+      1296,
+      96
+    ],
+    "react": [
+      1296,
+      96
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "trips-drop",
+    "region": "stop-0",
+    "legacy": [
+      1296,
+      259
+    ],
+    "react": [
+      1296,
+      259
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "trips-drop",
+    "region": "stop-1",
+    "legacy": [
+      1296,
+      377
+    ],
+    "react": [
+      1296,
+      377
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "trips-drop",
+    "region": "summary",
+    "legacy": [
+      1296,
+      100
+    ],
+    "react": [
+      1296,
+      100
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "trips-drop",
+    "region": "tabs",
+    "legacy": [
+      1296,
+      75
+    ],
+    "react": [
+      1296,
+      75
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "trips-pickup",
+    "region": "crew",
+    "legacy": [
+      1296,
+      46
+    ],
+    "react": [
+      1296,
+      46
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "trips-pickup",
+    "region": "filterbar",
+    "legacy": [
+      1296,
+      96
+    ],
+    "react": [
+      1296,
+      96
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "trips-pickup",
+    "region": "stop-0",
+    "legacy": [
+      1296,
+      316
+    ],
+    "react": [
+      1296,
+      316
+    ],
+    "sizeMatch": true,
+    "diffPixels": 15,
+    "diffRatio": 0
+  },
+  {
+    "id": "trips-pickup",
+    "region": "stop-1",
+    "legacy": [
+      1296,
+      316
+    ],
+    "react": [
+      1296,
+      316
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "trips-pickup",
+    "region": "summary",
+    "legacy": [
+      1296,
+      100
+    ],
+    "react": [
+      1296,
+      100
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "trips-pickup",
+    "region": "tabs",
+    "legacy": [
+      1296,
+      75
+    ],
+    "react": [
+      1296,
+      75
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "trips-timings",
+    "region": "crew",
+    "legacy": [
+      1296,
+      46
+    ],
+    "react": [
+      1296,
+      46
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "trips-timings",
+    "region": "filterbar",
+    "legacy": [
+      1296,
+      96
+    ],
+    "react": [
+      1296,
+      96
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "trips-timings",
+    "region": "summary",
+    "legacy": [
+      1296,
+      229
+    ],
+    "react": [
+      1296,
+      229
+    ],
+    "sizeMatch": true,
+    "diffPixels": 85,
+    "diffRatio": 0.0003
+  },
+  {
+    "id": "trips-timings",
+    "region": "table",
+    "legacy": [
+      1294,
+      1961
+    ],
+    "react": [
+      1294,
+      1961
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "trips-timings",
+    "region": "tabs",
+    "legacy": [
+      1296,
+      75
+    ],
+    "react": [
+      1296,
+      75
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
     "id": "vehicles",
     "region": "card-0",
     "legacy": [

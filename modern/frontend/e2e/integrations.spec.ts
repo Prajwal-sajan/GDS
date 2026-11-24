@@ -39,8 +39,20 @@ test("outbox list filters and opens message details", async ({ page }) => {
 
 test("trips view lists services for a date", async ({ page }) => {
   await signIn(page);
-  await open(page, "trips");
+  await page.goto("/#/trips/services");
   const d = new Date(Date.now() + 5.5 * 3600_000 + 86_400_000).toISOString().slice(0, 10);
   await page.getByLabel("Travel date").fill(d);
   await expect(page.locator("tbody tr").first()).toBeVisible();
+});
+
+test("trip sheet shows crew, tabs and passenger boards", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/#/trips?date=2026-11-24");
+  await expect(page.locator(".tp13-crew")).toBeVisible({ timeout: 15000 });
+  await expect(page.locator(".tp13-stop.pickup").first()).toBeVisible();
+  for (const tab of ["drop", "timings", "docs"]) {
+    await page.locator(`[data-trip-tab=${tab}]`).click();
+    await expect(page.locator(`[data-trip-tab=${tab}]`)).toHaveAttribute("aria-selected", "true");
+  }
+  await expect(page.locator(".tp13-docrow")).toHaveCount(8);
 });

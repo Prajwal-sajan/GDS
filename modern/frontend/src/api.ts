@@ -84,6 +84,20 @@ export type ScheduleStage = {
   lat: number | null; lng: number | null; day: number; time: string; prime: boolean; pickupType: string | null; cityId: number; city: string; passengers: number;
 };
 export type ScheduleHistoryRow = { pnr: string; seats: string[]; totalAmount: number; source: string; contactName: string; bookedAt: string; status: string };
+export type TripSheetRow = { id: number; serviceNumber: string; serviceName: string; status: string; registration: string | null; staff: number };
+export type TripStageRef = { id: number; name: string; time: string; day: number; pickupType?: string | null; exchangePoint?: string | null; exchangeTime?: string | null };
+export type TripSheetPassenger = {
+  pnr: string; seat: string; name: string; phone: string | null; source: string; status: string; callStatus: string | null; trips: number | null;
+  boarding: TripStageRef | null; dropping: TripStageRef | null;
+};
+export type TripSheetStop = TripStageRef & { type: string; lat: number | null; lng: number | null; arrivedAt: string | null; departedAt: string | null };
+export type TripSheet = {
+  id: number; travelDate: string; status: string; serviceNumber: string; serviceName: string; origin: string; destination: string;
+  vehicle: { id: number; registration: string } | null;
+  crew: { role: string; staffId: number; name: string | null; phone: string | null }[];
+  stops: TripSheetStop[]; passengers: TripSheetPassenger[];
+  documents: { id: number; documentType: string; documentName: string; expiryDate: string | null; verificationStatus: string | null }[];
+};
 export type ScheduleDetail = {
   id: number; routeId: number; travelDate: string; status: string; bookable: boolean; serviceNumber: string; serviceName: string; coach: string;
   origin: string; destination: string; departureTime: string; arrivalTime: string; arrivalDay: number;
@@ -99,6 +113,7 @@ export const api = {
   resync: (from: string, to: string) => call<{ sourceDestinations: number; searchEvents: number }>("POST", `${rb}/resync`, { from, to }),
   trips: (date: string) => call<TripRow[]>("GET", `/api/admin/trips?date=${date}`),
   cancelTrip: (id: number) => call<{ cancelledBookings: number }>("POST", `/api/admin/trips/${id}/cancel`),
+  setBoarding: (pnr: string, seat: string, status: "Boarded" | "No-Show" | "Yet-To-Board") => call<void>("POST", `/api/admin/bookings/${encodeURIComponent(pnr)}/boarding`, { seat, status }),
   // operations
   vehicles: () => call<Vehicle[]>("GET", "/api/admin/vehicles"),
   saveVehicle: (v: Partial<Vehicle>, id?: number) => call<Vehicle>(id ? "PUT" : "POST", `/api/admin/vehicles${id ? `/${id}` : ""}`, { gpsEnabled: false, ...v }),
@@ -113,6 +128,8 @@ export const api = {
   routes: () => call<RouteRow[]>("GET", "/api/admin/routes"),
   schedules: (from: string, to: string) => call<{ schedules: ScheduleRow[] }>("GET", `/api/admin/schedules?from=${from}&to=${to}`),
   scheduleDetail: (id: number) => call<ScheduleDetail>("GET", `/api/admin/schedule-detail/${id}`),
+  tripSheets: (date: string) => call<{ trips: TripSheetRow[] }>("GET", `/api/admin/trip-sheets?date=${date}`),
+  tripSheet: (id: number | string) => call<TripSheet>("GET", `/api/admin/trip-sheets/${id}`),
   toggleSchedule: (id: number, active: boolean) => call<{ bookable: boolean }>("POST", `/api/admin/schedules/${id}/toggle`, { active }),
   routeList: () => call<{ routes: RouteListRow[] }>("GET", "/api/admin/route-list"),
   vehicleList: () => call<{ vehicles: VehicleListRow[] }>("GET", "/api/admin/vehicle-list"),

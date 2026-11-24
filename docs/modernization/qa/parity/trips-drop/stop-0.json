@@ -1,0 +1,15 @@
+{
+  "id": "trips-drop",
+  "region": "stop-0",
+  "legacy": [
+    1296,
+    259
+  ],
+  "react": [
+    1296,
+    259
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}
