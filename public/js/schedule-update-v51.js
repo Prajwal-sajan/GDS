@@ -92,7 +92,7 @@
     (c.staff_id&&!member?'<option selected value="'+E(c.staff_id)+'">'+E(valid?.name||'Assigned staff unavailable')+'</option>':'')+
     '</select>'+
     '<input class="'+fieldClass+' u51-staff-phone" aria-label="Phone '+(index+1)+'" '+
-    'value="'+E(member?.phone||valid?.phone||'')+'" placeholder="Staff phone" readonly>'+
+    'value="'+E(c.phone_override||member?.phone||valid?.phone||'')+'" data-u51-phone="'+index+'" placeholder="Staff phone">'+
     '<button type="button" class="u51-delete" data-u51-action="remove" data-index="'+index+
     '" aria-label="Remove staff '+(index+1)+'" title="Remove staff">'+I('trash')+'</button></div>';
   }).join('');
@@ -192,7 +192,7 @@
   const s=state(S),d=s.data;
   if(action==='edit'){
    if(!d.can_modify){toast('Schedule modification permission required','bad');return true}
-   s.editing=true;s.edit={vehicle_id:d.vehicle_id||'',crew:d.crew.map(x=>({staff_id:x.staff_id,role:x.role})),
+   s.editing=true;s.edit={vehicle_id:d.vehicle_id||'',crew:d.crew.map(x=>({staff_id:x.staff_id,role:x.role,phone_override:x.phone_override||''})),
     call_settings:{...d.call_settings},escalation_contacts:[...d.escalation_contacts],cab_mode:d.cab_mode};
    await rerender();return true;
   }
@@ -223,7 +223,7 @@
    try{
     s.data=await G.put('/schedules/'+encodeURIComponent(S.detail.id)+'/update-v51/assignment',{
      vehicle_id:draft.vehicle_id?Number(draft.vehicle_id):null,
-     crew:draft.crew.map(x=>({role:x.role,staff_id:Number(x.staff_id)})),
+     crew:draft.crew.map(x=>({role:x.role,staff_id:Number(x.staff_id),phone_override:x.phone_override||''})),
      call_settings:draft.call_settings,escalation_contacts:escalation,cab_mode:draft.cab_mode
     });
     s.editing=false;s.edit=null;await reload();toast('Trip assignment and overrides saved; route template unchanged','ok');
@@ -243,10 +243,12 @@
   else if(element.hasAttribute('data-u51-role'))edit.crew[index('u51Role')].role=element.value;
   else if(element.hasAttribute('data-u51-staff')){
    edit.crew[index('u51Staff')].staff_id=element.value;
+   edit.crew[index('u51Staff')].phone_override='';
    const selected=s.data?.staff_options?.find(x=>String(x.id)===String(element.value));
    const phoneField=element.closest?.('[data-u51-row]')?.querySelector('.u51-staff-phone');
    if(phoneField)phoneField.value=selected?.phone||'';
   }
+  else if(element.hasAttribute('data-u51-phone'))edit.crew[index('u51Phone')].phone_override=element.value;
   else if(element.hasAttribute('data-u51-call'))edit.call_settings[element.dataset.u51Call]=element.checked;
   else if(element.hasAttribute('data-u51-escalation'))edit.escalation_contacts=element.value.split(',').map(v=>v.replace(/[\s()-]/g,'')).filter(Boolean);
   else return false;
