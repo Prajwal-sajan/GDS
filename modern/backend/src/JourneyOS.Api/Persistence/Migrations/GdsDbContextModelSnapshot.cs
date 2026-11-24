@@ -765,6 +765,59 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.ToTable("cities");
                 });
 
+            modelBuilder.Entity("JourneyOS.Api.Persistence.CoachFixture", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CoachTemplateId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("coach_template_id");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("label");
+
+                    b.Property<string>("Deck")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("deck");
+
+                    b.Property<int>("Row")
+                        .HasColumnType("integer")
+                        .HasColumnName("row");
+
+                    b.Property<int>("Col")
+                        .HasColumnType("integer")
+                        .HasColumnName("col");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("integer")
+                        .HasColumnName("width");
+
+                    b.Property<int>("Length")
+                        .HasColumnType("integer")
+                        .HasColumnName("length");
+
+                    b.HasKey("Id")
+                        .HasName("pk_coach_fixtures");
+
+                    b.HasIndex("CoachTemplateId", "Deck", "Row", "Col")
+                        .HasDatabaseName("ix_coach_fixtures_coach_template_id_deck_row_col");
+
+                    b.ToTable("coach_fixtures");
+                });
+
             modelBuilder.Entity("JourneyOS.Api.Persistence.CoachSeat", b =>
                 {
                     b.Property<long>("Id")
@@ -837,6 +890,13 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.Property<bool>("IsAc")
                         .HasColumnType("boolean")
                         .HasColumnName("is_ac");
+
+                    b.Property<string[]>("Amenities")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text[]")
+                        .HasDefaultValueSql("ARRAY[]::text[]")
+                        .HasColumnName("amenities");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -2730,6 +2790,16 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_booking_passengers_bookings_booking_id");
+                });
+
+            modelBuilder.Entity("JourneyOS.Api.Persistence.CoachFixture", b =>
+                {
+                    b.HasOne("JourneyOS.Api.Persistence.CoachTemplate", null)
+                        .WithMany("Fixtures")
+                        .HasForeignKey("CoachTemplateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_coach_fixtures_coach_templates_coach_template_id");
                 });
 
             modelBuilder.Entity("JourneyOS.Api.Persistence.CoachSeat", b =>
