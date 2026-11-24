@@ -22,7 +22,10 @@
       "id": "schedules",
       "status": "partial",
       "visualParity": "unverified",
-      "workflowEvidence": [],
+      "workflowEvidence": [
+        "modern/frontend/e2e/schedules-parity.spec.ts: Bookings, segment seat blocks, P&L, Share, Update, History",
+        "modern/backend/tests/JourneyOS.Tests/ScheduleManageTests.cs: PostgreSQL-backed seat, P&L and history"
+      ],
       "screenshotEvidence": []
     },
     {
@@ -43,7 +46,9 @@
       "id": "bookings-and-tickets",
       "status": "partial",
       "visualParity": "unverified",
-      "workflowEvidence": [],
+      "workflowEvidence": [
+        "modern/backend/tests/JourneyOS.Tests/PassengerBookingShareTests.cs: route/date Share only; no deep-link/booking certification"
+      ],
       "screenshotEvidence": []
     },
     {
@@ -143,7 +148,9 @@
     {
       "id": "legacy-data-reconciliation",
       "status": "partial",
-      "evidence": []
+      "evidence": [
+        "modern/backend/tests/JourneyOS.Tests/BusinessTests.cs: synthetic import conservation; real operator parity not signed off"
+      ]
     },
     {
       "id": "authorized-redbus-sandbox-certification",

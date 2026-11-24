@@ -2,7 +2,7 @@
 
 **Target:** modernization/react-dotnet-postgres  
 **Original UI reference:** savetrip-screenshotcomplete  
-**Delivery branches:** feature/modern-ui-schedules-seatmap-parity-v1 (v1), feature/modern-gds-parity-v2-routes-shell (v2)
+**Delivery branches:** feature/modern-ui-schedules-seatmap-parity-v1 (v1), feature/modern-gds-parity-v2-routes-shell (v2), feature/modern-gds-parity-v3-pnl-share (v3)
 
 This register deliberately separates **implemented** from **tested**, **full behavioral parity**, and **pixel-level visual parity**. New user-interface work is a migration increment, not a complete GDS replacement.
 
@@ -16,11 +16,11 @@ This register deliberately separates **implemented** from **tested**, **full beh
 | 2+1 coach diagram | coach-2plus1-v46.js | Ported 46-seat geometry and legacy-coordinate projection | Physical browser screenshot comparison |
 | 2+2 coach diagram | coach-2plus2-v47.js | Generic native geometry support | Dedicated fixture and snapshot parity test |
 | Seat image Copy | seat-layout-copy-v49.js | New native typed SVG→PNG clipboard | WhatsApp paste and browser permission UAT |
-| Share booking URL | schedule-booking-share-v50.js | Disabled honestly | Modern operator URL and city ID mapping API missing |
+| Share booking URL | schedule-booking-share-v50.js | **v3:** authenticated route/date link and clipboard copy with Day-2 boarding dates, explicit per-tenant HTTPS site and city-ID mappings | Modern Settings Website configuration UI still pending; real passenger website and WhatsApp paste UAT required; no exact service deep link guaranteed |
 | Schedule Manage Update | schedule-update-v51.js | Basic vehicle/staff editor using real .NET assignment API | Provider settings, route sync, cab policies, complete form/details parity |
 | Cities, Pickups and Drops | schedules-screenshot-v6.js | Read-only source-backed tabs | Real edit/cutoff/booking impact workflows |
 | Fares | schedule-parity.js | Read-only in Manage, existing Fares editor retained | Full fare variants and visual parity |
-| P&L and History | schedule-pnl-v18.js, schedule-manage-v48.js | **History: partially migrated in v2** with authenticated audit timestamps and event filters; P&L remains disabled | Full booking/passenger history from original, exact screen parity, and P&L domain API |
+| P&L and History | schedule-pnl-v18.js, schedule-manage-v48.js | **v3 P&L:** server-backed income/actual/estimated expenses/indicative profit, audited trip expense entry, CSV export/print; **v2 History** uses actual audit timestamps | Legacy trip override/version workflow, editable source allocation, full historical booking events, pixels and accounting reconciliation remain outstanding |
 | Bookings/Ticketing | booking-ticket-v38.js | Partial counter booking only | Ticket, shift, cancellation/refund and dialogs |
 | Vehicles and Coach Editor | vehicles-parity-v9.js, vehicle-detail-v19.js | Partial Fleet | Full coach editor and vehicle screens |
 | Staff | staff-parity-v11.js | Partial Staff | Payroll/docs/assignment editor parity |
@@ -52,6 +52,10 @@ This register deliberately separates **implemented** from **tested**, **full beh
 - **v2:** Source-inspired React pill navigation preserving the major GDS menu order, without iframe or old HTML injection.
 - **v2:** Audit-backed Schedule Manage History shows only timestamps backed by persisted trip events; missing historical records are not fabricated.
 - **v2:** Visual comparison tool `modern/frontend/visual/capture-compare.mjs` can produce real legacy-vs-React screenshots, pixel diff and mismatch report when authenticated URLs and identical test data are supplied. **No pixel fidelity score has been verified yet.**
+- **v3:** Passenger-facing booking link Share is now backed by an authenticated ASP.NET Core service with no default website, validated HTTPS hostname, explicit operator-specific city-ID mapping, selected route segment, boarding-date rollover and clipboard manual fallback. The link is a **route/date search**, not an exact bus deep link.
+- **v3:** Schedule Manage P&L is now rendered from the existing PostgreSQL-backed ReportsService.TripPnlAsync, with actual/estimated expense provenance, audited actual expense entry, browser print and CSV export with formula injection protection. OTA commission is deliberately excluded without verified settlement evidence.
+- **v3:** Added PostgreSQL/API tests covering cross-tenant Share, canonical reference message, external site validation and financial expense/P&L consistency, and Playwright tests covering Share permission fallback and P&L action wiring.
+- **v3 security hardening:** Booking PNR details now require the dedicated booking-detail permission (owner/admin/ops/accounts), excluding general viewers. Ops sees payment amounts/status but not gateway references or OTA commission evidence; accounts roles retain finance visibility. Responses are marked private/no-store. HTTP tests cover role and tenant isolation.
 - **v2:** Explicit fail-closed `modern/release-readiness.json` and `modern/scripts/check-release-readiness.mjs`. It intentionally prevents a production cutover while required evidence is missing.
 
 ## Non-negotiable gates before retirement of original GDS

@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, type Assignment, type RouteRow, type ScheduleBookingChart, type Staff, type TripRow, type TripHistoryEvent, type Vehicle } from "../../api";
 import { SeatLayoutView } from "./SeatLayoutView";
+import { TripPnlPanel } from "./TripPnlPanel";
+import { copyBookingMessage } from "./bookingShare";
 import { copySeatPoster, formatDate, titleFor, type ScheduleSeatLayout, type SeatCell } from "./seatLayoutModel";
 import "./schedules.css";
 
-type ManageTab = "Bookings" | "Block" | "Update" | "Cities" | "Pickups" | "Drops" | "Fares" | "History";
+type ManageTab = "Bookings" | "Block" | "Update" | "Cities" | "Pickups" | "Drops" | "Fares" | "P&L" | "History";
 const errorText = (e: unknown) => e instanceof Error ? e.message : String(e);
 const indiaDate = () => new Date(Date.now() + 330 * 60_000).toISOString().slice(0, 10);
 const currency = (value: number) => "₹" + value.toLocaleString("en-IN", { maximumFractionDigits: 2 });
-const tabs: ManageTab[] = ["Bookings", "Block", "Update", "Cities", "Pickups", "Drops", "Fares", "History"];
+const tabs: ManageTab[] = ["Bookings", "Block", "Update", "Cities", "Pickups", "Drops", "Fares", "P&L", "History"];
 
 function AssignmentEdit({ trip, rows, vehicles, staff, onChange }: {
   trip: TripRow;
@@ -110,6 +112,8 @@ function Manage({ trip, close, changed }: { trip: TripRow; close: () => void; ch
   const [historyError, setHistoryError] = useState("");
   const [historyFilter, setHistoryFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [manualShare, setManualShare] = useState("");
+  const manualRef = useRef<HTMLTextAreaElement>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [reason, setReason] = useState("Operator seat block");
   const [busy, setBusy] = useState(false);
@@ -124,6 +128,7 @@ function Manage({ trip, close, changed }: { trip: TripRow; close: () => void; ch
     return () => document.removeEventListener("keydown", handle);
   }, [close]);
   useEffect(() => { setSelected([]); }, [fromSequence, toSequence, trip.id]);
+  useEffect(() => { if(manualShare) manualRef.current?.select(); }, [manualShare]);
   useEffect(() => {
     let current = true;
     setLayout(undefined); setError("");
@@ -203,6 +208,20 @@ function Manage({ trip, close, changed }: { trip: TripRow; close: () => void; ch
       });
     } else setError("Select only available seats to block, or only blocked seats to release.");
   };
+  const shareBooking = () => {
+    if(!layout || busy)return;
+    setBusy(true);setError("");setNotice("");setManualShare("");
+    void copyBookingMessage(()=>api.bookingShare(trip.id,layout.fromSequence,layout.toSequence))
+      .then(result=>{
+        if(result.status==="copied"){
+          setNotice("Live route/date booking message copied. Paste it into WhatsApp or another chat.");
+        }else{
+          setManualShare(result.share.message);
+          setNotice("Clipboard access was blocked. Select the message and press Ctrl+C.");
+        }
+      }).catch(e=>setError(errorText(e)))
+      .finally(()=>setBusy(false));
+  };
   const copy = () => {
     if (!layout || busy) return;
     setBusy(true); setNotice(""); setError("");
@@ -223,7 +242,7 @@ function Manage({ trip, close, changed }: { trip: TripRow; close: () => void; ch
         <nav className="sm-tabbar" aria-label="Schedule manage sections">
           {tabs.map((name) => <button type="button" key={name} onClick={() => setTab(name)}
             className={tab === name ? "selected" : ""} aria-current={tab === name ? "page" : undefined}>{name}</button>)}
-          <button disabled title="Trip P&L API parity not yet verified">P&amp;L</button>
+
 
         </nav>
         <div className="sm-trip-banner">
@@ -253,12 +272,27 @@ function Manage({ trip, close, changed }: { trip: TripRow; close: () => void; ch
             </div>
             <div className="sm-toolbar-actions">
               <button onClick={copy} disabled={!layout || busy} className="sm-btn-outline">Copy seat image</button>
-              <button disabled title="Public booking link requires operator URL and city-ID mapping configuration">
+              <button onClick={shareBooking} disabled={!layout || busy}
+                title="Copy the operator-configured public route/date booking search link">
                 Share booking link
               </button>
               <button onClick={refresh} disabled={busy}>↻ Refresh live seats</button>
             </div>
           </div>
+          {manualShare && <div className="sm-share-fallback" role="region"
+            aria-label="Manual booking share message">
+            <strong>Copy public booking message</strong>
+            <p>Use Ctrl+C to copy the highlighted message. The passenger website controls the WhatsApp link preview.</p>
+            <textarea ref={manualRef} readOnly aria-label="Booking message to copy" rows={3}
+              value={manualShare} onFocus={e=>e.currentTarget.select()}/>
+            <div><button type="button" onClick={()=>{
+              const promise=navigator.clipboard?.writeText(manualShare);
+              if(!promise){manualRef.current?.select();return;}
+              void promise.then(()=>setNotice("Booking message copied."))
+                .catch(()=>{manualRef.current?.select();setNotice("Copy was blocked; press Ctrl+C.");});
+            }}>Copy booking message</button>
+            <button type="button" onClick={()=>setManualShare("")}>Dismiss</button></div>
+          </div>}
           {!layout && !error && <p className="sm-muted" role="status">Loading current seat inventory…</p>}
           {layout && <div className="sm-bookings-content">
             <SeatLayoutView layout={layout} selected={selected} onSeat={onSeat} busy={busy}/>
@@ -300,6 +334,8 @@ function Manage({ trip, close, changed }: { trip: TripRow; close: () => void; ch
                 <td>{s.id}</td></tr>)}</tbody></table>
           <p className="sm-muted">Stage editing and changes to already-booked trips are not enabled without the validated API.</p>
         </section>}
+        {tab === "P&L" && <TripPnlPanel tripId={trip.id} date={trip.travelDate}
+          service={trip.service} refreshKey={reloadKey} onSaved={changed}/>}
         {tab === "History" && <section className="sm-data-card" data-testid="schedule-history">
           <div className="sm-history-toolbar">
             <div><h3>Service History</h3>

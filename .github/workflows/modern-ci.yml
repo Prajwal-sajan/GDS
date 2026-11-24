@@ -36,6 +36,16 @@ jobs:
         with: { node-version: "20", cache: npm, cache-dependency-path: modern/frontend/package-lock.json }
       - run: npm ci
       - run: npm run build
+      - name: Prove incomplete production release stays blocked
+        working-directory: .
+        run: |
+          if node modern/scripts/check-release-readiness.mjs > /tmp/gds-release-gate.log 2>&1; then
+            cat /tmp/gds-release-gate.log
+            echo "Unexpected production release approval" >&2
+            exit 1
+          fi
+          grep -q 'NOT CERTIFIED' /tmp/gds-release-gate.log
+          echo "PASS: unverified GDS modules cannot authorize a production cutover."
       - name: Verify original coach geometry, screenshot-poster model, status and privacy
         run: node --test tests/seat-layout-model.test.cjs
       - name: Install Chromium for real browser UI interaction tests

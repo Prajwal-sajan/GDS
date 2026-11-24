@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 
 /**
  * Isolated UI wiring tests against deterministic mock API responses.
@@ -31,6 +32,8 @@ async function setup(page:Page) {
   let assigned = false;
   let blockBody: unknown = null;
   let assignmentBody: unknown = null;
+  let shareCalls=0;
+  let expenseBody: unknown = null;
   await page.addInitScript(() => sessionStorage.setItem("journeyos.adminKey", "synthetic-test-key"));
   await page.route("**/api/admin/me", route=>route.fulfill({status:200,contentType:"application/json",
     body:JSON.stringify({name:"QA Operator",role:"ops",tenant:"demo",auth:"service-key",phone:null})}));
@@ -49,6 +52,37 @@ async function setup(page:Page) {
         {id:1,kind:"pickup",name:"Hyderabad Central",stopSequence:0,day:1,time:"17:30"},
         {id:2,kind:"drop",name:"Bengaluru Terminal",stopSequence:2,day:2,time:"07:55"}],
       seats})});
+  });
+  await page.route(/\/api\/admin\/trips\/101\/share-link/,route=>{
+    shareCalls++;
+    route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({
+      tripId:101,serviceNumber:"NTHB1",from:"Hyderabad",to:"Bengaluru",
+      boardingDate:"2026-11-22",linkType:"route_date_search",preselectsService:false,
+      url:"https://novembertravels.com/bus/search/?fromCity=107258&toCity=102257&journeyDate=2026-11-22",
+      message:"Hyderabad → Bengaluru on Sun, 22 Nov, 2026 — pick your seat and book: https://novembertravels.com/bus/search/?fromCity=107258&toCity=102257&journeyDate=2026-11-22"
+    })});
+  });
+  await page.route(/\/api\/admin\/reports\/trip-pnl\?/,route=>{
+    const isActual=expenseBody!==null;
+    const expense=isActual?150:200;
+    route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({
+      rows:[{tripId:101,routeId:91,date:"2026-11-22",service:"NTHB1",
+        route:"=HYPERLINK(\"https://example.invalid\")",running:true,capacity:46,seats:10,
+        occupancyPct:21.74,netSales:1200,cancellationCharges:0,
+        expense,expenseActual:isActual?150:0,expenseEstimated:isActual?0:200,
+        expenseBasis:isActual?"actual":"estimate",profit:1200-expense,
+        expenses:[{type:"running",key:"fuel",label:"Fuel",amount:expense,
+          basis:isActual?"actual":"estimate",estimate:200}]}],
+      summary:{trips:1,netSales:1200,expense,expenseActual:isActual?150:0,
+        expenseEstimated:isActual?0:200,profit:1200-expense,lossTrips:0,
+        expenseBasis:isActual?"actual":"estimate"}
+    })});
+  });
+  await page.route("**/api/admin/trips/101/expenses",route=>{
+    expenseBody=route.request().postDataJSON();
+    route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({
+      id:500,tripId:101,category:"Fuel",amount:150
+    })});
   });
   await page.route("**/api/admin/trips/101/history",route=>route.fulfill({status:200,contentType:"application/json",
     body:JSON.stringify([
@@ -87,7 +121,8 @@ async function setup(page:Page) {
     }
   });
   page.on("dialog",dialog=>void dialog.accept());
-  return {getSegment:()=>[from,to],getBlock:()=>blockBody,getAssignment:()=>assignmentBody};
+  return {getSegment:()=>[from,to],getBlock:()=>blockBody,getAssignment:()=>assignmentBody,
+    getShareCalls:()=>shareCalls,getExpense:()=>expenseBody};
 }
 test("Manage Schedules renders reference-shaped lower/upper decks, booking chart and true selected segment",async({page})=>{
   const mock=await setup(page);
@@ -139,4 +174,52 @@ test("seat action sends actual route segment; assignment editor posts selected r
   await page.getByRole("button",{name:"Update Assignment"}).click();
   await expect.poll(()=>mock.getAssignment()).not.toBeNull();
   expect(mock.getAssignment()).toMatchObject({role:"Helper",staffId:22,reason:"Replacement requested"});
+});
+
+test("P&L renders provenance, audited expense action and formula-safe CSV export",async({page})=>{
+  const mock=await setup(page);
+  await page.goto("/");
+  await page.getByRole("button",{name:"Schedules",exact:true}).click();
+  await page.getByRole("button",{name:"Manage",exact:true}).click();
+  await page.getByRole("dialog").getByRole("button",{name:"P&L",exact:true}).click();
+  const panel=page.getByTestId("schedule-pnl");
+  await expect(panel).toContainText("TRIP P&L");
+  await expect(panel).toContainText("Estimated data");
+  await expect(panel).toContainText("OTA commission is not deducted");
+  await expect(panel).toContainText("₹1,200.00");
+  const downloadPromise=page.waitForEvent("download");
+  await panel.getByRole("button",{name:"Export CSV"}).click();
+  const download=await downloadPromise;
+  expect(download.suggestedFilename()).toBe("trip-pnl-NTHB1-2026-11-22.csv");
+  const content=await readFile(await download.path(),"utf8");
+  expect(content).toContain('"' + "'=HYPERLINK(");
+  expect(content).toContain('"Total Expense","200"');
+  await panel.getByRole("button",{name:"Record Expense",exact:false}).first().click();
+  await panel.getByRole("textbox",{name:"Expense category"}).fill("Fuel");
+  await panel.getByRole("spinbutton",{name:"Expense amount"}).fill("150");
+  await panel.getByRole("textbox",{name:"Expense evidence"}).fill("INV-TEST-42");
+  await panel.getByRole("button",{name:"Record Expense",exact:true}).click();
+  await expect.poll(()=>mock.getExpense()).not.toBeNull();
+  expect(mock.getExpense()).toMatchObject({category:"Fuel",amount:150,note:"INV-TEST-42"});
+  await expect(panel).toContainText("Recorded data");
+  await expect(panel).toContainText("₹150.00");
+});
+test("Share uses authenticated route search link, clipboard fallback and exact screenshot message",async({page})=>{
+  await page.addInitScript(()=>{
+    Object.defineProperty(window,"ClipboardItem",{configurable:true,value:undefined});
+    Object.defineProperty(navigator,"clipboard",{configurable:true,
+      value:{writeText:async()=>{throw new Error("Permission denied")}}});
+  });
+  const mock=await setup(page);
+  await page.goto("/");
+  await page.getByRole("button",{name:"Schedules",exact:true}).click();
+  await page.getByRole("button",{name:"Manage",exact:true}).click();
+  await page.getByRole("button",{name:"Share booking link"}).click();
+  await expect.poll(()=>mock.getShareCalls()).toBe(1);
+  const manual=page.getByRole("region",{name:"Manual booking share message"});
+  await expect(manual).toBeVisible();
+  await expect(manual.getByRole("textbox",{name:"Booking message to copy"}))
+    .toHaveValue("Hyderabad → Bengaluru on Sun, 22 Nov, 2026 — pick your seat and book: https://novembertravels.com/bus/search/?fromCity=107258&toCity=102257&journeyDate=2026-11-22");
+  await manual.getByRole("button",{name:"Dismiss"}).click();
+  await expect(manual).toHaveCount(0);
 });

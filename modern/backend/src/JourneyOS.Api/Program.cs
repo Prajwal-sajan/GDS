@@ -44,6 +44,7 @@ builder.Services.AddScoped<RedBusNotifier>();
 builder.Services.AddScoped<LegacyImporter>();
 builder.Services.AddScoped<JourneyOS.Api.Operations.OperationsService>();
  builder.Services.AddScoped<JourneyOS.Api.Operations.RouteManagementService>();
+builder.Services.AddScoped<JourneyOS.Api.Operations.PassengerBookingShareService>();
 builder.Services.AddScoped<JourneyOS.Api.Accounts.ReconciliationService>();
 builder.Services.AddScoped<JourneyOS.Api.Crm.CrmService>();
 builder.Services.AddScoped<JourneyOS.Api.Reports.ReportsService>();
@@ -70,6 +71,7 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(Policies.IntegrationRead, p => p.RequireRole("owner", "admin", "accounts", "ops", "viewer"))
     .AddPolicy(Policies.IntegrationWrite, p => p.RequireRole("owner", "admin"))
     .AddPolicy(Policies.Operations, p => p.RequireRole("owner", "admin", "ops"))
+    .AddPolicy(Policies.BookingDetail, p => p.RequireRole("owner", "admin", "ops", "accounts"))
     .AddPolicy(Policies.Accounts, p => p.RequireRole("owner", "admin", "accounts"))
     .AddPolicy(Policies.Crm, p => p.RequireRole("owner", "admin", "ops"))
     .AddPolicy(Policies.Reports, p => p.RequireRole("owner", "admin", "accounts", "ops", "viewer"))

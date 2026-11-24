@@ -101,6 +101,9 @@ export const api = {
       new URLSearchParams([...(fromSequence === undefined ? [] : [["fromSequence", String(fromSequence)]]),
         ...(toSequence === undefined ? [] : [["toSequence", String(toSequence)]]),
         ["refresh", String(Date.now())]]).toString()),
+  bookingShare: (tripId: number, fromSequence: number, toSequence: number) =>
+    call<PassengerBookingShare>("GET", "/api/admin/trips/" + tripId + "/share-link?" +
+      new URLSearchParams({fromSequence:String(fromSequence),toSequence:String(toSequence)}).toString()),
   tripHistory: (tripId: number) =>
     call<TripHistoryEvent[]>("GET", "/api/admin/trips/" + tripId + "/history"),
   bookingChart: (tripId: number) =>
@@ -226,3 +229,23 @@ export interface FullRoute extends RouteDraft {
 }
 
 export interface TripHistoryEvent { id:number; at:string; action:string; actor:string }
+
+export interface PassengerBookingShare {
+  tripId: number; serviceNumber: string; from: string; to: string;
+  boardingDate: string; url: string; message: string;
+  linkType: "route_date_search"; preselectsService: false;
+}
+export interface TripPnlLine {
+  type: "fixed" | "running" | "other";key:string;label:string;
+  amount:number;basis:"actual"|"estimate";estimate:number|null;
+}
+export interface TripPnlRow {
+  tripId:number;routeId:number;date:string;service:string;route:string;running:boolean;
+  capacity:number;seats:number;occupancyPct:number;netSales:number;
+  cancellationCharges:number;expense:number;expenseActual:number;expenseEstimated:number;
+  expenseBasis:"actual"|"estimate"|"mixed"|"none";profit:number;expenses:TripPnlLine[];
+}
+export interface TripPnlReport { rows:TripPnlRow[]; summary:{
+  trips:number;netSales:number;expense:number;expenseActual:number;
+  expenseEstimated:number;profit:number;lossTrips:number;expenseBasis:string;
+} }
