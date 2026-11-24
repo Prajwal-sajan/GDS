@@ -128,7 +128,7 @@ public sealed class RouteManagementService(GdsDbContext db, IGdsCache cache, Tim
         await using var tx = await db.Database.BeginTransactionAsync();
         // Serialize service-number checks for concurrent requests from this
         // tenant even before a dedicated route unique-index migration.
-        await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(79141, {Tenant})");
+        await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock({Tenant})");
         var sn = draft.ServiceNumber.Trim().ToUpperInvariant();
         if (await db.Routes.AnyAsync(r => r.ServiceNumber.ToUpper() == sn && r.Id != id))
             throw new GdsException("DUPLICATE", "Service number already exists", 409);
