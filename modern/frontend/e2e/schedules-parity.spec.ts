@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 
 /**
  * Isolated UI wiring tests against deterministic mock API responses.
@@ -66,7 +67,7 @@ async function setup(page:Page) {
     const expense=isActual?150:200;
     route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({
       rows:[{tripId:101,routeId:91,date:"2026-11-22",service:"NTHB1",
-        route:"Hyderabad - Bengaluru",running:true,capacity:46,seats:10,
+        route:"=HYPERLINK(\"https://example.invalid\")",running:true,capacity:46,seats:10,
         occupancyPct:21.74,netSales:1200,cancellationCharges:0,
         expense,expenseActual:isActual?150:0,expenseEstimated:isActual?0:200,
         expenseBasis:isActual?"actual":"estimate",profit:1200-expense,
@@ -190,6 +191,9 @@ test("P&L renders provenance, audited expense action and formula-safe CSV export
   await panel.getByRole("button",{name:"Export CSV"}).click();
   const download=await downloadPromise;
   expect(download.suggestedFilename()).toBe("trip-pnl-NTHB1-2026-11-22.csv");
+  const content=await readFile(await download.path(),"utf8");
+  expect(content).toContain('"' + "'=HYPERLINK(");
+  expect(content).toContain('"Total Expense","200"');
   await panel.getByRole("button",{name:"Record Expense",exact:false}).first().click();
   await panel.getByRole("textbox",{name:"Expense category"}).fill("Fuel");
   await panel.getByRole("spinbutton",{name:"Expense amount"}).fill("150");
