@@ -84,6 +84,10 @@ public static class OperationsEndpoints
                 serviceNumber = route.ServiceNumber,
                 routeName = route.Name,
                 coachName = route.CoachTemplate?.Name ?? "Coach",
+                fixtures = route.CoachTemplate?.Fixtures
+                    .OrderBy(x => x.Deck).ThenBy(x => x.Row).ThenBy(x => x.Col)
+                    .Select(x => new { x.Kind, x.Label, x.Deck, x.Row, x.Col, x.Width, x.Length })
+                    .ToArray() ?? [],
                 fromSequence = from,
                 toSequence = to,
                 stops = ordered.Select(x => new {
