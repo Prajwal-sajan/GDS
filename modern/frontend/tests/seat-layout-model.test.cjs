@@ -105,7 +105,7 @@ test('invalid coordinates/duplicate ids and empty layouts fail safely',()=>{
  assert.throws(()=>groupDecks({...b,seats:[]}),/No valid/);
 });
 test('new .NET endpoint validates real route segments and reuses transactional inventory service',()=>{
- const cs=fs.readFileSync(path.join(__dirname,'../../../backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs'),'utf8');
+ const cs=fs.readFileSync(path.join(__dirname,'../../backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs'),'utf8');
  for(const txt of ['"/trips/{id:long}/seat-layout"','SeatStatesAsync(trip, route, from, to)',
   'a.FromSeq < to && from < a.ToSeq','"Choose an ordered pair of route cities"',
   '.RequireAuthorization(ops)','"/trips/{id:long}/booking-chart"'])assert.ok(cs.includes(txt),txt);
