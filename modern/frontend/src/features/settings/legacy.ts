@@ -1,0 +1,43 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect } from "react";
+import { api } from "../../api";
+import { toast } from "../../components/ui/feedback";
+
+// Shared runtime for the Settings screens. Legacy settings layers render HTML strings straight into the page element
+// (`el` = main[data-content]) and set its className (e.g. "lv34-container"); the ported builders do the same so the DOM
+// and the vendored legacy CSS match. React renders nothing inside main for these routes.
+export const esc = (x: unknown) => String(x ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+
+/** legacy G.get/G.put/G.post/G.del against the same paths (served by /api/admin). */
+export const G = {
+  get: <T = any>(p: string) => api.admin<T>(p),
+  put: <T = any>(p: string, b?: unknown) => api.admin<T>(p, "PUT", b ?? {}),
+  post: <T = any>(p: string, b?: unknown) => api.admin<T>(p, "POST", b ?? {}),
+  del: <T = any>(p: string, b?: unknown) => api.admin<T>(p, "DELETE", b),
+  toast: (m: string, kind?: string) => toast(m, (kind as any) || "ok"),
+};
+
+let perms: Promise<string[]> | null = null;
+let permsNow: string[] | null = null;
+/** legacy req.user.permissions; cached for the session (cleared on sign-out via resetPermissions). */
+export function permissions() {
+  return (perms ??= api.admin<{ permissions: string[] }>("/auth/permissions").then((r) => (permsNow = r.permissions)).catch(() => (permsNow = [])));
+}
+export const can = (p: string) => !permsNow || permsNow.includes(p);
+export function resetPermissions() { perms = null; permsNow = null; }
+
+/** Mounts a legacy screen into main[data-content]; restores the shell element on unmount. */
+export function useLegacyPage(mount: (el: HTMLElement, alive: () => boolean) => void | (() => void) | Promise<void>, deps: unknown[]) {
+  useEffect(() => {
+    const el = document.querySelector<HTMLElement>("main[data-content]");
+    if (!el) return;
+    const cls = el.className;
+    let on = true, cleanup: void | (() => void);
+    void permissions().then(async () => {
+      if (!on) return;
+      const r = mount(el, () => on);
+      if (typeof r === "function") cleanup = r; else await r;
+    });
+    return () => { on = false; if (typeof cleanup === "function") cleanup(); el.className = cls; el.innerHTML = ""; el.onkeydown = null; };
+  }, deps); // eslint-disable-line react-hooks/exhaustive-deps
+}

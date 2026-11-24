@@ -46,7 +46,9 @@ export const getKey = () => sessionStorage.getItem(KEY) ?? "";
 export const setKey = (k: string) => (k ? sessionStorage.setItem(KEY, k) : sessionStorage.removeItem(KEY));
 export const authHeaders = (): Record<string, string> => {
   const k = getKey();
-  return k.startsWith("jos_") ? { Authorization: `Bearer ${k}` } : { "X-Admin-Key": k };
+  // Settings → Switch User: legacy G.viewAs persisted in localStorage('viewAs') and sent as X-View-As.
+  const viewAs = k.startsWith("jos_") ? localStorage.getItem("viewAs") : null;
+  return k.startsWith("jos_") ? { Authorization: `Bearer ${k}`, ...(viewAs ? { "X-View-As": viewAs } : {}) } : { "X-Admin-Key": k };
 };
 
 export async function login(tenant: string, phone: string, password: string) {

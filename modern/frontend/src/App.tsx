@@ -77,6 +77,9 @@ export default function App() {
  * the legacy layout (tracked per route in docs/modernization/ui-parity-status.json). Routes with no React screen render an
  * explicit "not yet migrated" state — never a fake page.
  */
+import { AboutPage } from "./features/settings/AboutPage";
+import { LoyaltyProgramPage, SwitchUserPage } from "./features/settings/LoyaltySwitchPages";
+
 function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Element; redirect?: string } {
   const r = me.role as Role;
   const allowed = (roles: Role[]) => roles.includes(r);
@@ -119,6 +122,9 @@ function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Ele
     [/^dailyops$/, ALL_R, () => <ReportsPanel me={me} />],
     [/^sarathi$/, ALL_R, () => <SarathiPanel />],
     [/^(chats|calls)(\/.*)?$/, OPS_R, () => <CommsPanel />],
+    [/^settings\/about$/, [...ALL_R, "agent"], () => <AboutPage />, true],
+    [/^settings\/loyalty-program(\/.*)?$/, ["owner", "admin"], () => <LoyaltyProgramPage key={location.hash} />, true],
+    [/^settings\/switch-user$/, ALL_R, () => <SwitchUserPage />, true],
     [/^settings(\/team-access(\/.*)?)?$/, ["owner", "admin"], () => <UsersPanel me={me} />],
     [/^settings\/integrations$/, ALL_R, () => <>{integ}<RedBusPanel onUnauthorized={signOut} /></>],
     [/^settings\/integrations\/outbox$/, ALL_R, () => <>{integ}<OutboxPanel /></>],

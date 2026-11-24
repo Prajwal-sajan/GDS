@@ -466,9 +466,9 @@ public static class SettingsEndpoints
     };
     private static int Lvl(AppUser u) => Level.GetValueOrDefault(RoleOf(u));
     private static bool ActiveUser(AppUser u) => u.Status == "ACTIVE" && u.DeletedAt is null && !(RoleOf(u) == "agent" && ProfileOf(u).Mode == "Offline");
-    private static bool CanViewAs(AppUser? real, AppUser? target) => real is not null && target is not null && RoleOf(real) is "owner" or "admin" && ActiveUser(real) && ActiveUser(target) && real.Id != target.Id && Lvl(target) < Lvl(real);
+    public static bool CanViewAs(AppUser? real, AppUser? target) => real is not null && target is not null && RoleOf(real) is "owner" or "admin" && ActiveUser(real) && ActiveUser(target) && real.Id != target.Id && Lvl(target) < Lvl(real);
     private static async Task<AppUser?> RealUser(GdsDbContext db, ClaimsPrincipal p) =>
-        long.TryParse(p.FindFirstValue("uid"), out var uid) ? await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == uid) : null;
+        long.TryParse(p.FindFirstValue("real_uid") ?? p.FindFirstValue("uid"), out var uid) ? await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == uid) : null;
 
     // ======================================================== WhatsApp (Meta Embedded Signup v4)
     private sealed record MetaCfg(string AppId, string ConfigId, string Secret, byte[]? Key, bool Ready, string Graph);
@@ -502,6 +502,7 @@ public static class SettingsEndpoints
         var person = await RealUser(db, h.User);
         if (person is null || RoleOf(person) is not ("owner" or "admin")) throw Fail("An organization owner or administrator must connect WhatsApp.", 403);
         if (!a.Permissions.Contains("settings.modify")) throw Fail("Missing settings.modify permission", 403);
+        if (h.User.FindFirstValue("real_uid") is not null) throw Fail("Return to your own account before connecting WhatsApp.", 403);
         return person;
     }
     private static string B64u(byte[] b) => Convert.ToBase64String(b).TrimEnd('=').Replace('+', '-').Replace('/', '_');
@@ -874,6 +875,11 @@ public static class SettingsEndpoints
         });
 
         // ---- switch user / sessions (self-service; any signed-in user)
+        g.MapGet("/auth/permissions", async (HttpContext h, GdsDbContext db) =>
+        {
+            var a = await ActorOf(db, h.User);   // legacy req.user.permissions (drives can() in the UI)
+            return J(new JsonObject { ["id"] = a.Id, ["role"] = a.Role, ["branch_id"] = a.BranchId, ["permissions"] = new JsonArray(a.Permissions.Select(x => (JsonNode)x).ToArray()) });
+        });
         g.MapGet("/auth/switchable-users", async (HttpContext h, GdsDbContext db) =>
         {
             var real = await RealUser(db, h.User);
@@ -888,6 +894,7 @@ public static class SettingsEndpoints
         {
             var real = await RealUser(db, h.User);
             if (real is null || RoleOf(real) is not ("owner" or "admin")) throw Fail("Only owners and administrators can switch users", 403);
+            if (h.User.FindFirstValue("real_uid") is not null) throw Fail("Return to your own account before switching users", 403);
             var phone = Regex.Replace(Regex.Replace(Str(body?["phone"]).Trim(), @"^\+91[\s-]?", ""), @"[\s-]", "");
             if (!Regex.IsMatch(phone, @"^\d{10}$")) throw Fail("Enter a valid 10-digit mobile number");
             var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Phone == phone);
@@ -899,7 +906,12 @@ public static class SettingsEndpoints
         g.MapGet("/auth/switch-user/v34/status", async (HttpContext h, GdsDbContext db) =>
         {
             var real = await RealUser(db, h.User) ?? throw Fail("Authentication required", 401);
-            return J(new JsonObject { ["is_viewing_as"] = false, ["real"] = new JsonObject { ["id"] = real.Id, ["name"] = real.Name, ["role"] = RoleOf(real) }, ["target"] = null });
+            var target = long.TryParse(h.User.FindFirstValue("uid"), out var tid) && tid != real.Id ? await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == tid) : null;
+            return J(new JsonObject
+            {
+                ["is_viewing_as"] = target is not null, ["real"] = new JsonObject { ["id"] = real.Id, ["name"] = real.Name, ["role"] = RoleOf(real) },
+                ["target"] = target is null ? null : new JsonObject { ["id"] = target.Id, ["name"] = target.Name, ["role"] = RoleOf(target) },
+            });
         });
         g.MapGet("/auth/sessions", async (HttpContext h, GdsDbContext db) =>
         {

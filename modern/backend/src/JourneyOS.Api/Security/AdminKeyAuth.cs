@@ -43,6 +43,22 @@ public sealed class AdminKeyHandler(IOptionsMonitor<AuthenticationSchemeOptions>
                            where x.TokenSha256 == hash && x.RevokedAt == null && x.ExpiresAt > now && u.Status == "ACTIVE"
                            select new { u.Id, u.Name, u.Phone, u.Role, t.Code, Sid = x.Id }).FirstOrDefaultAsync();
             if (s is null) return AuthenticateResult.Fail("Invalid or expired session");
+            // Legacy auth_sessions.last_seen (throttled to 5 min) and the device's user agent for Settings → My devices.
+            var row = await db.UserSessions.IgnoreQueryFilters().FirstAsync(x => x.Id == s.Sid);
+            if (row.LastSeenAt is null || now - row.LastSeenAt > TimeSpan.FromMinutes(5) || row.UserAgent is null)
+            {
+                row.LastSeenAt = now; row.UserAgent ??= Request.Headers.UserAgent.ToString() is { Length: > 0 } ua ? (ua.Length > 300 ? ua[..300] : ua) : null;
+                await db.SaveChangesAsync();
+            }
+            // Settings → Switch User (legacy X-View-As): owners/admins act with a lower-level user's identity and permissions;
+            // real_uid keeps the signed-in person (audit name, sessions, switch status). Ineligible targets are ignored.
+            if (Request.Headers["X-View-As"].ToString() is { Length: > 0 } va && long.TryParse(va, out var vid) && vid != s.Id)
+            {
+                var users = await db.Users.IgnoreQueryFilters().Where(u => u.Id == s.Id || u.Id == vid).ToListAsync();
+                var real = users.First(u => u.Id == s.Id); var target = users.FirstOrDefault(u => u.Id == vid && u.TenantId == real.TenantId);
+                if (Settings.SettingsEndpoints.CanViewAs(real, target))
+                    return Success(s.Name, s.Code, target!.Role, [new Claim("uid", target.Id.ToString()), new Claim("real_uid", s.Id.ToString()), new Claim("phone", target.Phone), new Claim("auth", "session"), new Claim("sid", s.Sid.ToString())]);
+            }
             return Success(s.Name, s.Code, s.Role, [new Claim("uid", s.Id.ToString()), new Claim("phone", s.Phone), new Claim("auth", "session"), new Claim("sid", s.Sid.ToString())]);
         }
 
