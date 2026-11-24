@@ -179,6 +179,7 @@ JourneyOS.Api.Admin.OperationsEndpoints.MapOperations(app);
 JourneyOS.Api.Admin.RouteManagementEndpoints.MapRouteManagement(app);
 JourneyOS.Api.Admin.CoachManagementEndpoints.MapCoachManagement(app);
 JourneyOS.Api.Admin.BookingWorkspaceEndpoints.MapBookingWorkspace(app);
+JourneyOS.Api.Admin.ComplianceReadEndpoints.MapComplianceRead(app);
 JourneyOS.Api.Admin.BusinessEndpoints.MapBusiness(app);
 app.MapHub<JourneyOS.Api.Realtime.OpsHub>("/hubs/ops");
 
