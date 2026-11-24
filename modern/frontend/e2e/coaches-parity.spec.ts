@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import type { CoachDraft } from "../src/api";
+import { seatPosterSvg, type ScheduleSeatLayout } from "../src/features/schedules/seatLayoutModel";
 
 async function fixture(page: Page) {
   let saved:CoachDraft | undefined;
@@ -82,4 +83,20 @@ test("Referenced coach is immutable and can be cloned without changing assigned 
   await page.getByRole("button",{name:"Clone version"}).click();
   await expect(page.getByRole("textbox",{name:"Coach name"})).toHaveValue("Existing 2+1 Copy");
   await expect(page.getByRole("textbox",{name:"Coach name"})).toBeEnabled();
+});
+
+test("Schedule seat-copy SVG shows physical fixtures without pretending they are sellable seats", () => {
+  const layout: ScheduleSeatLayout = {
+    tripId:17, travelDate:"2026-12-10",status:"active",bookable:true,
+    serviceNumber:"QA-COACH",routeName:"Route",coachName:"Coach",fromSequence:0,toSequence:1,
+    stops:[{sequence:0,cityId:1,name:"City A",day:1,time:"10:00"},
+      {sequence:1,cityId:2,name:"City B",day:1,time:"16:00"}],
+    stages:[],seats:[{seatCode:"1L",deck:"LOWER",row:1,col:0,width:1,length:1,
+      seatType:"sleeper",state:"available",gender:null,ladiesOnly:false,malesOnly:false,fare:600}],
+    fixtures:[{kind:"toilet",label:"Cabin Toilet",deck:"LOWER",row:1,col:2,width:1,length:1}]
+  };
+  const svg=seatPosterSvg(layout);
+  expect(svg).toContain('data-fixture="toilet"');
+  expect(svg).toContain("Cabin Toilet");
+  expect(svg).toContain('data-seat="1L"');
 });
