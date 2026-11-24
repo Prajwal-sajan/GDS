@@ -20,7 +20,7 @@ function Icon({name}:{name:string}) {
     <path d={paths[name]??paths.gds}/></svg>;
 }
 /** The route/menu order is read from original public/js/main.js TOP + SUB. */
-const originalOrder=["schedules","routes","crm","fleet","ledger","staff","reports","sarathi",
+const originalOrder=["schedules","bookings","routes","dailyops","crm","fleet","ledger","staff","reports","sarathi",
   "dispatch","fares","recon","outbox","redbus","users","comms"];
 export function ModernShell({ modules, active, role, user, onNavigate, signOut, children }:{
   modules:Module[];active:string;role:string;user:string;
