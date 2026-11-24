@@ -11,6 +11,7 @@ const paths:Record<string,string>={
  fleet:"M3 6h18v12H3zM3 14h18M7 18v1.5M17 18v1.5",
  coaches:"M4 4h16v16H4zM7 7h10v10H7zM10 7v10m4-10v10M7 12h10",
  bookings:"M4 3h16v18l-4-2-4 2-4-2-4 2V3zm3 6h10M7 13h10",
+ dailyops:"M3 12h3l3-8 5 16 3-8h4",
  staff:"M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
  ledger:"M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
  reports:"M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
@@ -22,7 +23,7 @@ function Icon({name}:{name:string}) {
     <path d={paths[name]??paths.gds}/></svg>;
 }
 /** The route/menu order is read from original public/js/main.js TOP + SUB. */
-const originalOrder=["schedules","routes","bookings","crm","fleet","coaches","ledger","staff","reports","sarathi",
+const originalOrder=["schedules","routes","bookings","dailyops","crm","fleet","coaches","ledger","staff","reports","sarathi",
   "dispatch","fares","recon","outbox","redbus","users","comms"];
 export function ModernShell({ modules, active, role, user, onNavigate, signOut, children }:{
   modules:Module[];active:string;role:string;user:string;
