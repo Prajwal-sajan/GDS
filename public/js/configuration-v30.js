@@ -115,6 +115,11 @@ function websitePage(v){
    textField('whatsapp_number','WHATSAPP NUMBER',v.whatsapp_number,'whatsapp')+
    textField('business_hours','BUSINESS HOURS',v.business_hours,'clock')
   ),'phone')+
+  sectionCard('Passenger booking links',
+   grid(textField('booking_search_url','BOOKING SEARCH URL (HTTPS)',v.booking_search_url||'','website',
+    'https://novembertravels.com/bus/search/','autocomplete="url"'))+
+   '<p class="cfg30-description">Used by Schedules → Manage → Bookings → Seat Layout → Share. The GDS appends fromCity, toCity and journeyDate using this route’s city IDs. Configure the actual operator booking website and confirm it uses the same city IDs; the link opens route/date search, not a guaranteed single-bus deep link.</p>',
+   'website')+
   sectionCard('Footer',grid(textField('copyright_line','COPYRIGHT LINE',v.copyright_line,'file')),'file')+
   sectionCard('Policy Details', '<p class="cfg30-description">Operator-specific values used in Terms of Carriage, Refund, and Privacy pages. Empty fields are omitted from the policy.</p>'+
    grid(numberField('boarding_window_minutes','BOARDING WINDOW (MINUTES BEFORE DEPARTURE)',v.boarding_window_minutes,'MIN',1440)+

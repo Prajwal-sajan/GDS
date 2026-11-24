@@ -11,7 +11,7 @@ const plain=x=>!!x&&typeof x==='object'&&!Array.isArray(x);
 const store=()=>db.meta('config_v30')||{};
 const base={
  business:{operator_name:'',support_email:'',gst_receivable:false,gst_number:'',gst_registration_name:''},
- website:{tagline:'',company_legal_name:'',address_lines:'',email:'',helpline:'',whatsapp_number:'',business_hours:'',copyright_line:'',
+ website:{tagline:'',company_legal_name:'',address_lines:'',email:'',helpline:'',whatsapp_number:'',business_hours:'',copyright_line:'',booking_search_url:'',
   boarding_window_minutes:30,refund_processing_days:7,carry_on_kg:7,check_in_kg:15,
   baggage_liability_inr:2000,child_free_age:5,unaccompanied_minor_age:12,
   jurisdiction_city:'',jurisdiction_state:'',grievance_officer_name:'',grievance_designation:''},
@@ -76,6 +76,11 @@ const rules={
   whatsapp_number:v=>v?phone(v):'',
   business_hours:v=>string(v,'business hours',150),
   copyright_line:v=>string(v,'copyright line',220),
+  booking_search_url:v=>{
+   if(v==='')return '';
+   if(typeof v!=='string')fail('Invalid passenger booking search URL');
+   return require('./schedule-booking-share-v50').validateBase(v).toString();
+  },
   boarding_window_minutes:v=>number(v,'boarding window',1440),
   refund_processing_days:v=>number(v,'refund days',365),
   carry_on_kg:v=>number(v,'carry-on baggage',250),
