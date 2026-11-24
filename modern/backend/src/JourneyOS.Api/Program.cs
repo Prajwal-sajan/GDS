@@ -41,6 +41,10 @@ builder.Services.AddScoped<RedBusQueryService>();
 builder.Services.AddScoped<OutboxWriter>();
 builder.Services.AddScoped<RedBusNotifier>();
 builder.Services.AddScoped<LegacyImporter>();
+builder.Services.AddScoped<JourneyOS.Api.Operations.OperationsService>();
+builder.Services.AddScoped<JourneyOS.Api.Accounts.ReconciliationService>();
+builder.Services.AddSingleton<JourneyOS.Api.Realtime.ITripEvents, JourneyOS.Api.Realtime.SignalRTripEvents>();
+builder.Services.AddSignalR();
 builder.Services.AddHttpClient<RedBusCallbackClient>(c => c.Timeout = TimeSpan.FromSeconds(cfg.GetValue("Outbox:TimeoutSeconds", 15)));
 builder.Services.AddSingleton<OutboxDispatcher>();
 builder.Services.AddSingleton<HoldExpirySweeper>();
@@ -55,7 +59,8 @@ builder.Services.AddAuthentication(AdminKeyHandler.Scheme)
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy(Policies.IntegrationRead, p => p.RequireRole("owner", "admin", "accounts", "ops", "viewer"))
     .AddPolicy(Policies.IntegrationWrite, p => p.RequireRole("owner", "admin"))
-    .AddPolicy(Policies.Operations, p => p.RequireRole("owner", "admin", "ops"));
+    .AddPolicy(Policies.Operations, p => p.RequireRole("owner", "admin", "ops"))
+    .AddPolicy(Policies.Accounts, p => p.RequireRole("owner", "admin", "accounts"));
 
 builder.Services.AddRateLimiter(o =>
 {
@@ -92,11 +97,17 @@ if (cfg.GetValue<bool>("Database:MigrateOnStartup"))
 app.UseExceptionHandler(e => e.Run(async ctx =>
 {
     var ex = ctx.Features.Get<IExceptionHandlerFeature>()?.Error;
+    static bool StoreDown(Exception? e)
+    {
+        for (; e is not null; e = e.InnerException)
+            if (e is Npgsql.NpgsqlException or System.Net.Sockets.SocketException or TimeoutException) return true;
+        return false;
+    }
     var (status, code, msg) = ex switch
     {
         GdsException g => (g.HttpStatus, g.Code, g.Message),
         BadHttpRequestException b => (400, "BAD_REQUEST", b.Message),
-        Npgsql.NpgsqlException or System.Net.Sockets.SocketException or TimeoutException => (503, "STORE_UNAVAILABLE", "Booking store temporarily unavailable; no change was committed"),
+        _ when StoreDown(ex) => (503, "STORE_UNAVAILABLE", "Booking store temporarily unavailable; no change was committed"),
         _ => (500, "INTERNAL", "Unexpected error"),
     };
     if (status >= 500) ctx.RequestServices.GetRequiredService<ILogger<Program>>().LogError(ex, "Request failed");
@@ -134,6 +145,8 @@ app.MapGet("/health/ready", async (GdsDbContext db, IGdsCache cache) =>
 });
 app.MapRedBus(redbusPrefix).RequireRateLimiting("redbus");
 app.MapAdmin();
+JourneyOS.Api.Admin.OperationsEndpoints.MapOperations(app);
+app.MapHub<JourneyOS.Api.Realtime.OpsHub>("/hubs/ops");
 
 app.Run();
 

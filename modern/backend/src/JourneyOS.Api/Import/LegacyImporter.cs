@@ -136,6 +136,37 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
         }
         await db.SaveChangesAsync();
 
+        // Vehicles & staff
+        var existingVehicles = await db.Vehicles.Select(v => v.Id).ToHashSetAsync();
+        foreach (var v in root.GetProperty("vehicles").EnumerateArray())
+        {
+            var id = v.GetProperty("id").GetInt64();
+            if (existingVehicles.Contains(id)) continue;
+            db.Vehicles.Add(new Vehicle
+            {
+                Id = id, TenantId = tenant.Id, RegistrationNumber = Str(v, "registration_number")!, CoachTemplateId = v.TryGetProperty("coach_template_id", out var ct) && ct.ValueKind == JsonValueKind.Number ? ct.GetInt64() : null,
+                Status = Str(v, "status") ?? "active", ModelName = Str(v, "model_name"), ManufactureYear = Int(v, "manufacture_year"), OwnershipType = Str(v, "ownership_type"),
+                PhoneNumber = Str(v, "phone_number"), GpsEnabled = v.TryGetProperty("gps_enabled", out var g) && g.ValueKind == JsonValueKind.True,
+                InsuranceExpiry = Date(v, "insurance_expiry"), PermitExpiry = Date(v, "permit_expiry"), FitnessExpiry = Date(v, "fitness_expiry"), PucExpiry = Date(v, "puc_expiry"),
+            });
+        }
+        var existingStaff = await db.Staff.Select(v => v.Id).ToHashSetAsync();
+        foreach (var s in root.GetProperty("staff").EnumerateArray())
+        {
+            var id = s.GetProperty("id").GetInt64();
+            if (existingStaff.Contains(id)) continue;
+            db.Staff.Add(new Staff
+            {
+                Id = id, TenantId = tenant.Id, Name = Str(s, "name") ?? "", Phone = Str(s, "phone") ?? "", Role = Str(s, "role") ?? "driver", Status = Str(s, "status") ?? "active",
+                Designation = Str(s, "designation"), LicenseNumber = Str(s, "license_number"), LicenseExpiry = Date(s, "license_expiry"),
+                SalaryType = Str(s, "salary_type"), SalaryAmount = Dec(s, "salary_amount"), BataPerTrip = Dec(s, "bata_per_trip"),
+            });
+        }
+        await db.SaveChangesAsync();
+        var vehicleIds = await db.Vehicles.Select(v => v.Id).ToHashSetAsync();
+        var staffIds = await db.Staff.Select(v => v.Id).ToHashSetAsync();
+        var pendingAssignments = new List<TripAssignment>();
+
         // Trips + live inventory
         var routes = await db.Routes.Include(r => r.Stops).Include(r => r.Stages).Include(r => r.CoachTemplate!).ThenInclude(c => c.Seats).ToDictionaryAsync(r => r.Id);
         var existingTrips = await db.Trips.Select(t => t.Id).ToHashSetAsync();
@@ -155,6 +186,20 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
                 Bookable = active && !(s.TryGetProperty("manually_disabled", out var md) && md.GetBoolean()) };
             db.Trips.Add(trip);
             newTrips.Add(id);
+            if (s.TryGetProperty("vehicle_id", out var vid) && vid.ValueKind == JsonValueKind.Number && vehicleIds.Contains(vid.GetInt64()))
+                pendingAssignments.Add(new TripAssignment { TenantId = tenant.Id, TripId = id, Kind = "vehicle", VehicleId = vid.GetInt64(), Role = "vehicle", AssignedAt = now });
+            if (s.TryGetProperty("crew", out var crew))
+            {
+                var n = new Dictionary<string, int>();
+                foreach (var c in crew.EnumerateArray())
+                {
+                    var sid = c.GetProperty("staff_id").GetInt64();
+                    if (!staffIds.Contains(sid)) continue;
+                    var role = Str(c, "role") ?? "Crew";
+                    n[role] = n.GetValueOrDefault(role) + 1;
+                    pendingAssignments.Add(new TripAssignment { TenantId = tenant.Id, TripId = id, Kind = "staff", StaffId = sid, Role = n[role] == 1 ? role : $"{role} {n[role]}", AssignedAt = now });
+                }
+            }
             var last = route.Stops.Max(x => x.Sequence);
             var blocked = routeSeatBlocks.GetValueOrDefault(routeId) ?? [];
             if (s.TryGetProperty("seat_blocks", out var sbs))
@@ -170,13 +215,16 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
         // seat_allocations → trips FK is SQL-only, so EF cannot order these inserts: save trips first.
         await db.SaveChangesAsync();
         db.SeatAllocations.AddRange(pendingBlocks);
+        db.TripAssignments.AddRange(pendingAssignments);
         await db.SaveChangesAsync();
 
         var existingPnrs = await db.Bookings.Select(b => b.Pnr).ToHashSetAsync();
         foreach (var b in root.GetProperty("bookings").EnumerateArray())
         {
             var tripId = b.GetProperty("schedule_id").GetInt64();
-            if (!newTrips.Contains(tripId) || Str(b, "status") != "confirmed") continue;
+            var legacyStatus = Str(b, "status");
+            if (!newTrips.Contains(tripId) || legacyStatus is not ("confirmed" or "cancelled")) continue;
+            var cancelled = legacyStatus == "cancelled";
             var pnr = Str(b, "pnr")!;
             if (existingPnrs.Contains(pnr)) continue;
             var route = routes[b.GetProperty("route_id").GetInt64()];
@@ -189,7 +237,7 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
             var contact = b.GetProperty("contact");
             var booking = new Booking
             {
-                TenantId = tenant.Id, Pnr = pnr, TripId = tripId, Channel = Str(b, "channel") ?? Str(b, "source") ?? "legacy", Status = "CONFIRMED",
+                TenantId = tenant.Id, Pnr = pnr, TripId = tripId, Channel = Str(b, "channel") ?? Str(b, "source") ?? "legacy", Status = cancelled ? "CANCELLED" : "CONFIRMED",
                 BoardingStageId = bp.Id, DroppingStageId = dp.Id, FromSeq = bp.StopSequence, ToSeq = dp.StopSequence,
                 ContactMobile = Str(contact, "phone"), ContactEmail = Str(contact, "email"), TotalFare = Dec(fare, "total") ?? 0,
                 CancellationPolicy = Inventory.CancellationPolicy.FromRefundSlabs(await db.RefundSlabs.Where(x => x.RouteId == route.Id).ToListAsync()),
@@ -198,7 +246,7 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
             var first = true;
             foreach (var p in b.GetProperty("passengers").EnumerateArray())
             {
-                if (Str(p, "status") == "cancelled") continue;
+                if (Str(p, "status") == "cancelled" && !cancelled) continue;
                 var seat = route.CoachTemplate!.Seats.FirstOrDefault(x => x.Code == Str(p, "seat"));
                 if (seat is null) continue;
                 booking.Passengers.Add(new BookingPassenger
@@ -206,6 +254,7 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
                     CoachSeatId = seat.Id, SeatCode = seat.Code, Name = Str(p, "name") ?? "", Age = Int(p, "age") ?? 0, Gender = Str(p, "gender") ?? "",
                     Fare = Dec(p, "fare") ?? 0, BaseFare = Dec(p, "fare") ?? 0, IsPrimary = first, Mobile = first ? booking.ContactMobile : null,
                     BoardingStatus = Str(p, "status") switch { "dropped" => "Boarded", "no_show" => "No-Show", _ => "Yet-To-Board" },
+                    Status = cancelled ? "CANCELLED" : "CONFIRMED",
                 });
                 first = false;
             }
@@ -215,7 +264,20 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
             {
                 db.Bookings.Add(booking);
                 await db.SaveChangesAsync();
-                foreach (var p in booking.Passengers)
+                db.BookingFinances.Add(new BookingFinance
+                {
+                    BookingId = booking.Id, NetFare = Dec(fare, "net"), Gst = Dec(fare, "gst"),
+                    OtaCommission = Dec(fare, "ota_commission") ?? Dec(fare, "commission"), OtaCommissionGst = Dec(fare, "ota_commission_gst") ?? Dec(fare, "gst_on_commission"),
+                    OperatorOffer = Dec(fare, "operator_offer"), OtaTakeHome = Dec(fare, "ota_take_home"),
+                });
+                var pay = Str(b, "payment");
+                db.Payments.Add(new Payment
+                {
+                    TenantId = tenant.Id, BookingId = booking.Id, Amount = booking.TotalFare, Method = Str(b, "payment_method") ?? booking.Channel,
+                    Status = pay switch { "paid" => "PAID", "pending" => "PENDING", _ => booking.Channel is "redbus" or "abhibus" or "paytm" ? "RECEIVABLE" : "PENDING" },
+                    Reference = "legacy", CreatedAt = booking.DateOfIssue,
+                });
+                foreach (var p in booking.Passengers.Where(_ => !cancelled))
                     db.SeatAllocations.Add(new SeatAllocation { TenantId = tenant.Id, TripId = tripId, CoachSeatId = p.CoachSeatId, SeatCode = p.SeatCode, FromSeq = booking.FromSeq, ToSeq = booking.ToSeq,
                         Kind = AllocationKind.Booked, Gender = p.Gender, BookingPassengerId = p.Id, CreatedAt = now });
                 await db.SaveChangesAsync();
@@ -235,6 +297,7 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
     }
 
     private static string? Str(JsonElement e, string p) => e.TryGetProperty(p, out var v) && v.ValueKind != JsonValueKind.Null ? v.ToString() : null;
+    private static DateOnly? Date(JsonElement e, string p) => Str(e, p) is { Length: >= 10 } s && DateOnly.TryParse(s[..10], out var d) ? d : null;
     private static int? Int(JsonElement e, string p) => e.TryGetProperty(p, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt32() : null;
     private static decimal? Dec(JsonElement e, string p) => e.TryGetProperty(p, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDecimal() : null;
 }

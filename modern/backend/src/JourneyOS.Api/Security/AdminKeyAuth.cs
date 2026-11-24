@@ -25,6 +25,13 @@ public sealed class AdminKeyHandler(IOptionsMonitor<AuthenticationSchemeOptions>
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         var key = Request.Headers["X-Admin-Key"].ToString();
+        // Browsers cannot set custom headers on WebSocket upgrades; SignalR sends the key as a bearer header
+        // (negotiate) or access_token query (socket). Accepted for /hubs only.
+        if (string.IsNullOrEmpty(key) && Request.Path.StartsWithSegments("/hubs"))
+        {
+            var auth = Request.Headers.Authorization.ToString();
+            key = auth.StartsWith("Bearer ", StringComparison.Ordinal) ? auth[7..] : Request.Query["access_token"].ToString();
+        }
         if (string.IsNullOrEmpty(key)) return Task.FromResult(AuthenticateResult.NoResult());
         var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(key)));
         var entries = cfg.GetSection("Admin:Keys").Get<AdminKeyEntry[]>() ?? [];
@@ -45,4 +52,5 @@ public static class Policies
     public const string IntegrationRead = "integration.read";
     public const string IntegrationWrite = "integration.write";
     public const string Operations = "operations";
+    public const string Accounts = "accounts";
 }

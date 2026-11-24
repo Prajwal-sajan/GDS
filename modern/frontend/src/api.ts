@@ -67,4 +67,47 @@ export const api = {
   resync: (from: string, to: string) => call<{ sourceDestinations: number; searchEvents: number }>("POST", `${rb}/resync`, { from, to }),
   trips: (date: string) => call<TripRow[]>("GET", `/api/admin/trips?date=${date}`),
   cancelTrip: (id: number) => call<{ cancelledBookings: number }>("POST", `/api/admin/trips/${id}/cancel`),
+  // operations
+  vehicles: () => call<Vehicle[]>("GET", "/api/admin/vehicles"),
+  saveVehicle: (v: Partial<Vehicle>, id?: number) => call<Vehicle>(id ? "PUT" : "POST", `/api/admin/vehicles${id ? `/${id}` : ""}`, { gpsEnabled: false, ...v }),
+  staff: () => call<Staff[]>("GET", "/api/admin/staff"),
+  saveStaff: (s: Partial<Staff>, id?: number) => call<Staff>(id ? "PUT" : "POST", `/api/admin/staff${id ? `/${id}` : ""}`, s),
+  assignments: (tripId: number) => call<Assignment[]>("GET", `/api/admin/trips/${tripId}/assignments`),
+  assign: (tripId: number, body: { role: string; vehicleId?: number; staffId?: number; reason?: string }) =>
+    call<Assignment>("POST", `/api/admin/trips/${tripId}/assignments`, body),
+  seats: (tripId: number) => call<SeatRow[]>("GET", `/api/admin/trips/${tripId}/seats`),
+  block: (tripId: number, seats: string[], reason: string) => call<{ blocked: string[] }>("POST", `/api/admin/trips/${tripId}/blocks`, { seats, reason }),
+  unblock: (tripId: number, seat: string) => call<{ released: number }>("DELETE", `/api/admin/trips/${tripId}/blocks/${encodeURIComponent(seat)}`),
+  routes: () => call<RouteRow[]>("GET", "/api/admin/routes"),
+  saveFares: (routeId: number, fares: Fare[]) => call<{ updated: number }>("PUT", `/api/admin/routes/${routeId}/fares`, fares),
+  counterBook: (body: unknown) => call<CounterResult>("POST", "/api/admin/bookings/counter", body),
+  invoices: () => call<InvoiceRow[]>("GET", "/api/admin/reconciliation/invoices"),
+  uploadInvoice: (body: unknown) => call<{ id: number; duplicate: boolean }>("POST", "/api/admin/reconciliation/invoices", body),
+  invoice: (id: number) => call<{ id: number; invoiceNumber: string; status: string; warningsJson: string | null; totals: Record<string, unknown> }>("GET", `/api/admin/reconciliation/invoices/${id}`),
+  invoiceLines: (id: number, status?: string) => call<InvoiceLine[]>("GET", `/api/admin/reconciliation/invoices/${id}/lines${status ? `?status=${status}` : ""}`),
+  recheck: (id: number) => call<unknown>("POST", `/api/admin/reconciliation/invoices/${id}/recheck`),
+  resolve: (id: number, lineId: number, action: string, note: string) => call<unknown>("POST", `/api/admin/reconciliation/invoices/${id}/resolve`, { lineId, action, note }),
+  exportInvoice: async (id: number, name: string) => {
+    const res = await fetch(`/api/admin/reconciliation/invoices/${id}/export`, { headers: { "X-Admin-Key": getKey() } });
+    if (!res.ok) throw new ApiError(res.status, `HTTP ${res.status}`);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(await res.blob()); a.download = `reconciliation-${name}.csv`; a.click();
+    URL.revokeObjectURL(a.href);
+  },
 };
+
+export interface Vehicle { id: number; registrationNumber: string; coachTemplateId: number | null; status: string; modelName: string | null; gpsEnabled: boolean;
+  insuranceExpiry: string | null; permitExpiry: string | null; fitnessExpiry: string | null; pucExpiry: string | null }
+export interface Staff { id: number; name: string; phone: string; role: string; status: string; licenseNumber: string | null; licenseExpiry: string | null }
+export interface Assignment { id: number; tripId: number; kind: string; vehicleId: number | null; staffId: number | null; role: string; isActive: boolean;
+  assignedAt: string; replacedAt: string | null; replacedReason: string | null }
+export interface SeatRow { seatCode: string; deck: string; row: number; col: number; seatType: string; occupied: boolean; state: string; gender: string | null }
+export interface Fare { fromSequence: number; toSequence: number; seater: number; sleeperLower: number; sleeperUpper: number }
+export interface RouteRow { id: number; name: string; serviceNumber: string; status: string; departureTime: string; fares: Fare[];
+  stages: { id: number; kind: string; name: string; stopSequence: number; time: string }[] }
+export interface CounterResult { pnr: string; status: string; totalFare: number; channel: string; payments: { amount: number; method: string; status: string }[] }
+export interface InvoiceRow { id: number; invoiceNumber: string; fileName: string; periodStart: string; periodEnd: string; status: string; uploadedAt: string;
+  uploadedBy: string; lines: number; outstanding: number }
+export interface InvoiceLine { id: number; pnr: string; section: string; status: string; differences: string[]; why: string; fare: number | null;
+  expectedFare: number | null; takeHome: number | null; expectedTakeHome: number | null; delta: number | null; doj: string | null; expectedDoj: string | null;
+  resolutionAction: string | null; resolutionNote: string | null }

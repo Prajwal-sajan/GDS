@@ -10,8 +10,10 @@ $env:ASPNETCORE_ENVIRONMENT = "Development"
 dotnet run --project src/JourneyOS.Api -- import-legacy ../../data/db.json demo 2026-11-24 DEMOTRV   # idempotent
 pwsh ../scripts/restart-api.ps1                   # API on http://localhost:5080 (logs: modern/api.log)
 pwsh ../scripts/redbus-smoke.ps1                  # end-to-end RedBus flow
+pwsh ../scripts/ops-smoke.ps1                     # crew replacement, seat block, counter booking, reconciliation
 dotnet test tests/JourneyOS.Tests                 # Testcontainers (needs Docker)
-cd ../frontend; npm install; npm run dev          # SPA on http://localhost:5173 (proxies /api, /redbus)
+cd ../frontend; npm install; npm run dev          # SPA on http://localhost:5173 (proxies /api, /redbus, /hubs)
+npx playwright test                               # e2e against the running API + dev server
 ```
 Dev admin key: `dev-owner-key` (only its SHA-256 is in `appsettings.Development.json`). Never reuse in other environments.
 
@@ -38,5 +40,11 @@ Dev admin key: `dev-owner-key` (only its SHA-256 is in `appsettings.Development.
 **Suspected double allocation** — impossible while the exclusion constraint exists. Verify: `\d seat_allocations` shows `ex_seat_allocations_no_overlap`. Never drop it to "fix" an import.
 
 **Stuck holds** — `HoldExpirySweeper` runs every 30 s; reads also expire lazily per trip. Inspect: `SELECT status, count(*) FROM seat_holds GROUP BY 1;`.
+
+**Realtime not updating** — the Dispatch badge shows `offline`/`reconnecting`. Data is still correct (refresh reloads from the API). SignalR is in-process; with more than one API node, add the Redis backplane before relying on live updates.
+
+**Reconciliation shows everything `needs_review`** — expected for bookings without captured OTA commission/take-home evidence (all legacy-imported rows). Do not back-fill estimates; record evidence from RedBus settlement data and run *Recheck*.
+
+**Reconciliation upload rejected** — `DUPLICATE_INVOICE` (same number, different content): confirm which file is authoritative with accounts before deleting anything. `OPERATOR_MISMATCH`: statement belongs to another operator code.
 
 **Rollback** — the legacy Node app remains authoritative for every route not marked migrated. Disabling the modern RedBus channel = remove inbound routing at the edge and set provider `OutboundEnabled=false`. Database migration rollback: `dotnet dotnet-ef database update 0` (dev only; destroys data).

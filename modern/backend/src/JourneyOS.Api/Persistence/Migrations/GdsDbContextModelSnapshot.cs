@@ -177,6 +177,59 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.ToTable("bookings");
                 });
 
+            modelBuilder.Entity("JourneyOS.Api.Persistence.BookingFinance", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("BookingId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("booking_id");
+
+                    b.Property<decimal?>("Gst")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("gst");
+
+                    b.Property<decimal?>("NetFare")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("net_fare");
+
+                    b.Property<decimal?>("OperatorOffer")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("operator_offer");
+
+                    b.Property<decimal?>("OtaCommission")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("ota_commission");
+
+                    b.Property<decimal?>("OtaCommissionGst")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("ota_commission_gst");
+
+                    b.Property<decimal?>("OtaTakeHome")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("ota_take_home");
+
+                    b.HasKey("Id")
+                        .HasName("pk_booking_finances");
+
+                    b.HasIndex("BookingId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_booking_finances_booking_id");
+
+                    b.ToTable("booking_finances");
+                });
+
             modelBuilder.Entity("JourneyOS.Api.Persistence.BookingPassenger", b =>
                 {
                     b.Property<long>("Id")
@@ -623,6 +676,236 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.ToTable("ota_inventories");
                 });
 
+            modelBuilder.Entity("JourneyOS.Api.Persistence.OtaInvoice", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("file_name");
+
+                    b.Property<string>("InvoiceNumber")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("invoice_number");
+
+                    b.Property<string>("OperatorCode")
+                        .HasColumnType("text")
+                        .HasColumnName("operator_code");
+
+                    b.Property<DateOnly>("PeriodEnd")
+                        .HasColumnType("date")
+                        .HasColumnName("period_end");
+
+                    b.Property<DateOnly>("PeriodStart")
+                        .HasColumnType("date")
+                        .HasColumnName("period_start");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("provider");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("sha256");
+
+                    b.Property<decimal?>("StatedAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("stated_amount");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<decimal>("Tolerance")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("tolerance");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("uploaded_at");
+
+                    b.Property<string>("UploadedBy")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("uploaded_by");
+
+                    b.Property<string>("WarningsJson")
+                        .HasColumnType("text")
+                        .HasColumnName("warnings_json");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ota_invoices");
+
+                    b.HasIndex("TenantId", "Provider", "InvoiceNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_ota_invoices_tenant_id_provider_invoice_number");
+
+                    b.HasIndex("TenantId", "Provider", "Sha256")
+                        .IsUnique()
+                        .HasDatabaseName("ix_ota_invoices_tenant_id_provider_sha256");
+
+                    b.ToTable("ota_invoices");
+                });
+
+            modelBuilder.Entity("JourneyOS.Api.Persistence.OtaInvoiceLine", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("BookingId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("booking_id");
+
+                    b.Property<string>("BookingStatus")
+                        .HasColumnType("text")
+                        .HasColumnName("booking_status");
+
+                    b.Property<decimal?>("CancellationCharge")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("cancellation_charge");
+
+                    b.Property<decimal?>("Commission")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("commission");
+
+                    b.Property<decimal?>("CommissionTax")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("commission_tax");
+
+                    b.Property<decimal?>("Delta")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("delta");
+
+                    b.PrimitiveCollection<string[]>("Differences")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("differences");
+
+                    b.Property<DateOnly?>("Doj")
+                        .HasColumnType("date")
+                        .HasColumnName("doj");
+
+                    b.Property<DateOnly?>("ExpectedDoj")
+                        .HasColumnType("date")
+                        .HasColumnName("expected_doj");
+
+                    b.Property<decimal?>("ExpectedFare")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("expected_fare");
+
+                    b.Property<decimal?>("ExpectedTakeHome")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("expected_take_home");
+
+                    b.Property<decimal?>("ExpectedTax")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("expected_tax");
+
+                    b.Property<decimal?>("Fare")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("fare");
+
+                    b.Property<long>("InvoiceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("invoice_id");
+
+                    b.Property<string>("LineKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("line_key");
+
+                    b.Property<decimal?>("OperatorOffer")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("operator_offer");
+
+                    b.Property<string>("Pnr")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("pnr");
+
+                    b.Property<string>("ResolutionAction")
+                        .HasColumnType("text")
+                        .HasColumnName("resolution_action");
+
+                    b.Property<string>("ResolutionNote")
+                        .HasColumnType("text")
+                        .HasColumnName("resolution_note");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at");
+
+                    b.Property<string>("ResolvedBy")
+                        .HasColumnType("text")
+                        .HasColumnName("resolved_by");
+
+                    b.Property<string>("Section")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("section");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<decimal?>("TakeHome")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("take_home");
+
+                    b.Property<decimal?>("Tax")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("tax");
+
+                    b.Property<string>("Why")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("why");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ota_invoice_lines");
+
+                    b.HasIndex("Pnr")
+                        .HasDatabaseName("ix_ota_invoice_lines_pnr");
+
+                    b.HasIndex("InvoiceId", "LineKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_ota_invoice_lines_invoice_id_line_key");
+
+                    b.ToTable("ota_invoice_lines");
+                });
+
             modelBuilder.Entity("JourneyOS.Api.Persistence.OtaProviderConfig", b =>
                 {
                     b.Property<long>("Id")
@@ -783,6 +1066,55 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasDatabaseName("ix_outbox_messages_status_next_attempt_at");
 
                     b.ToTable("outbox_messages", (string)null);
+                });
+
+            modelBuilder.Entity("JourneyOS.Api.Persistence.Payment", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<long>("BookingId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("booking_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("method");
+
+                    b.Property<string>("Reference")
+                        .HasColumnType("text")
+                        .HasColumnName("reference");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_payments");
+
+                    b.HasIndex("BookingId")
+                        .HasDatabaseName("ix_payments_booking_id");
+
+                    b.ToTable("payments");
                 });
 
             modelBuilder.Entity("JourneyOS.Api.Persistence.Refund", b =>
@@ -1290,6 +1622,71 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.ToTable("seat_holds");
                 });
 
+            modelBuilder.Entity("JourneyOS.Api.Persistence.Staff", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<decimal?>("BataPerTrip")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("bata_per_trip");
+
+                    b.Property<string>("Designation")
+                        .HasColumnType("text")
+                        .HasColumnName("designation");
+
+                    b.Property<DateOnly?>("LicenseExpiry")
+                        .HasColumnType("date")
+                        .HasColumnName("license_expiry");
+
+                    b.Property<string>("LicenseNumber")
+                        .HasColumnType("text")
+                        .HasColumnName("license_number");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("phone");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("role");
+
+                    b.Property<decimal?>("SalaryAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("salary_amount");
+
+                    b.Property<string>("SalaryType")
+                        .HasColumnType("text")
+                        .HasColumnName("salary_type");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_staff");
+
+                    b.HasIndex("TenantId", "Phone")
+                        .HasDatabaseName("ix_staff_tenant_id_phone");
+
+                    b.ToTable("staff");
+                });
+
             modelBuilder.Entity("JourneyOS.Api.Persistence.Tenant", b =>
                 {
                     b.Property<long>("Id")
@@ -1373,6 +1770,141 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.ToTable("trips");
                 });
 
+            modelBuilder.Entity("JourneyOS.Api.Persistence.TripAssignment", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("assigned_at");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("kind");
+
+                    b.Property<DateTime?>("ReplacedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("replaced_at");
+
+                    b.Property<string>("ReplacedReason")
+                        .HasColumnType("text")
+                        .HasColumnName("replaced_reason");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("role");
+
+                    b.Property<long?>("StaffId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("staff_id");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<long>("TripId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("trip_id");
+
+                    b.Property<long?>("VehicleId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("vehicle_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_trip_assignments");
+
+                    b.HasIndex("TripId", "Role")
+                        .IsUnique()
+                        .HasDatabaseName("ix_trip_assignments_trip_id_role")
+                        .HasFilter("is_active");
+
+                    b.ToTable("trip_assignments", t =>
+                        {
+                            t.HasCheckConstraint("ck_trip_assignments_kind", "(kind = 'vehicle' AND vehicle_id IS NOT NULL) OR (kind = 'staff' AND staff_id IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("JourneyOS.Api.Persistence.Vehicle", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<long?>("CoachTemplateId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("coach_template_id");
+
+                    b.Property<DateOnly?>("FitnessExpiry")
+                        .HasColumnType("date")
+                        .HasColumnName("fitness_expiry");
+
+                    b.Property<bool>("GpsEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("gps_enabled");
+
+                    b.Property<DateOnly?>("InsuranceExpiry")
+                        .HasColumnType("date")
+                        .HasColumnName("insurance_expiry");
+
+                    b.Property<int?>("ManufactureYear")
+                        .HasColumnType("integer")
+                        .HasColumnName("manufacture_year");
+
+                    b.Property<string>("ModelName")
+                        .HasColumnType("text")
+                        .HasColumnName("model_name");
+
+                    b.Property<string>("OwnershipType")
+                        .HasColumnType("text")
+                        .HasColumnName("ownership_type");
+
+                    b.Property<DateOnly?>("PermitExpiry")
+                        .HasColumnType("date")
+                        .HasColumnName("permit_expiry");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("text")
+                        .HasColumnName("phone_number");
+
+                    b.Property<DateOnly?>("PucExpiry")
+                        .HasColumnType("date")
+                        .HasColumnName("puc_expiry");
+
+                    b.Property<string>("RegistrationNumber")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("registration_number");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_vehicles");
+
+                    b.HasIndex("TenantId", "RegistrationNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_vehicles_tenant_id_registration_number");
+
+                    b.ToTable("vehicles");
+                });
+
             modelBuilder.Entity("JourneyOS.Api.Persistence.Booking", b =>
                 {
                     b.HasOne("JourneyOS.Api.Persistence.Trip", "Trip")
@@ -1413,6 +1945,16 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_hold_passengers_seat_holds_hold_id");
+                });
+
+            modelBuilder.Entity("JourneyOS.Api.Persistence.OtaInvoiceLine", b =>
+                {
+                    b.HasOne("JourneyOS.Api.Persistence.OtaInvoice", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_ota_invoice_lines_ota_invoices_invoice_id");
                 });
 
             modelBuilder.Entity("JourneyOS.Api.Persistence.RefundSlab", b =>
@@ -1506,6 +2048,11 @@ namespace JourneyOS.Api.Persistence.Migrations
             modelBuilder.Entity("JourneyOS.Api.Persistence.CoachTemplate", b =>
                 {
                     b.Navigation("Seats");
+                });
+
+            modelBuilder.Entity("JourneyOS.Api.Persistence.OtaInvoice", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("JourneyOS.Api.Persistence.Route", b =>

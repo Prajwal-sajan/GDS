@@ -176,7 +176,7 @@ public sealed class RedBusQueryService(GdsDbContext db, InventoryService invento
             p.BoardingStatusAt is { } at ? TimeZoneInfo.ConvertTimeFromUtc(at, zone).ToString("yyyy-MM-dd HH:mm:ss") : null)).ToList();
     }
 
-    private async Task<OtaInventory> EnsureInventoryAsync(long tripId, int from, int to)
+    public async Task<OtaInventory> EnsureInventoryAsync(long tripId, int from, int to)
     {
         await db.Database.ExecuteSqlInterpolatedAsync($@"
 INSERT INTO ota_inventories (tenant_id, trip_id, from_seq, to_seq, created_at)

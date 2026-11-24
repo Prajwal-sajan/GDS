@@ -40,10 +40,34 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
     public DbSet<OutboxMessage> Outbox => Set<OutboxMessage>();
     public DbSet<OutboxAttempt> OutboxAttempts => Set<OutboxAttempt>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<Vehicle> Vehicles => Set<Vehicle>();
+    public DbSet<Staff> Staff => Set<Staff>();
+    public DbSet<TripAssignment> TripAssignments => Set<TripAssignment>();
+    public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<BookingFinance> BookingFinances => Set<BookingFinance>();
+    public DbSet<OtaInvoice> OtaInvoices => Set<OtaInvoice>();
+    public DbSet<OtaInvoiceLine> OtaInvoiceLines => Set<OtaInvoiceLine>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
         b.HasPostgresExtension("btree_gist");
+
+        b.Entity<Vehicle>(e => { e.Property(x => x.Id).ValueGeneratedNever(); e.HasIndex(x => new { x.TenantId, x.RegistrationNumber }).IsUnique(); });
+        b.Entity<Staff>(e => { e.Property(x => x.Id).ValueGeneratedNever(); e.HasIndex(x => new { x.TenantId, x.Phone }); });
+        b.Entity<TripAssignment>(e =>
+        {
+            e.HasIndex(x => new { x.TripId, x.Role }).IsUnique().HasFilter("is_active");
+            e.ToTable(t => t.HasCheckConstraint("ck_trip_assignments_kind", "(kind = 'vehicle' AND vehicle_id IS NOT NULL) OR (kind = 'staff' AND staff_id IS NOT NULL)"));
+        });
+        b.Entity<Payment>(e => e.HasIndex(x => x.BookingId));
+        b.Entity<BookingFinance>(e => e.HasIndex(x => x.BookingId).IsUnique());
+        b.Entity<OtaInvoice>(e =>
+        {
+            e.HasIndex(x => new { x.TenantId, x.Provider, x.Sha256 }).IsUnique();
+            e.HasIndex(x => new { x.TenantId, x.Provider, x.InvoiceNumber }).IsUnique();
+            e.HasMany(x => x.Lines).WithOne().HasForeignKey(l => l.InvoiceId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<OtaInvoiceLine>(e => { e.HasIndex(x => new { x.InvoiceId, x.LineKey }).IsUnique(); e.HasIndex(x => x.Pnr); });
 
         b.Entity<Tenant>(e => { e.HasIndex(x => x.Code).IsUnique(); e.Property(x => x.GstPercent).HasPrecision(5, 2); });
 

@@ -1,15 +1,21 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, getKey, setKey, type Attempt, type OutboxRow, type RedBusStatus, type TripRow } from "./api";
 
-type Tab = "redbus" | "outbox" | "trips";
+import { DispatchPanel, FaresPanel, FleetPanel, ReconciliationPanel, StaffPanel } from "./Operations";
+
+type Tab = "redbus" | "outbox" | "trips" | "dispatch" | "fleet" | "staff" | "fares" | "recon";
+const TABS: [Tab, string][] = [["redbus", "RedBus"], ["outbox", "Outbox"], ["trips", "Trips"], ["dispatch", "Dispatch"], ["fleet", "Fleet"],
+  ["staff", "Staff"], ["fares", "Fares"], ["recon", "Reconciliation"]];
 
 function useLoad<T>(fn: () => Promise<T>, deps: unknown[]) {
   const [data, setData] = useState<T>();
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
+  const seq = useRef(0);
   const reload = useCallback(async () => {
+    const mine = ++seq.current;
     setLoading(true); setError(undefined);
-    try { setData(await fn()); } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setLoading(false); }
+    try { const d = await fn(); if (mine === seq.current) setData(d); } catch (e) { if (mine === seq.current) setError(e instanceof Error ? e.message : String(e)); } finally { if (mine === seq.current) setLoading(false); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
   useEffect(() => { void reload(); }, [reload]);
@@ -25,12 +31,10 @@ export default function App() {
   return (
     <div className="shell">
       <header>
-        <strong>JourneyOS</strong> <span className="muted">Integrations</span>
+        <strong>JourneyOS</strong> <span className="muted">Operations</span>
         <nav>
-          {(["redbus", "outbox", "trips"] as Tab[]).map((t) => (
-            <button key={t} className={tab === t ? "active" : ""} onClick={() => setTab(t)}>
-              {t === "redbus" ? "RedBus" : t === "outbox" ? "Outbox" : "Trips"}
-            </button>
+          {TABS.map(([t, label]) => (
+            <button key={t} className={tab === t ? "active" : ""} onClick={() => setTab(t)}>{label}</button>
           ))}
         </nav>
         <button className="link" onClick={() => { setKey(""); setKeyState(""); }}>Sign out</button>
@@ -39,6 +43,11 @@ export default function App() {
         {tab === "redbus" && <RedBusPanel onUnauthorized={() => { setKey(""); setKeyState(""); }} />}
         {tab === "outbox" && <OutboxPanel />}
         {tab === "trips" && <TripsPanel />}
+        {tab === "dispatch" && <DispatchPanel />}
+        {tab === "fleet" && <FleetPanel />}
+        {tab === "staff" && <StaffPanel />}
+        {tab === "fares" && <FaresPanel />}
+        {tab === "recon" && <ReconciliationPanel />}
       </main>
     </div>
   );

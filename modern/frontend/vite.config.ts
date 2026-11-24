@@ -7,6 +7,6 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    proxy: { "/api": api, "/redbus": api, "/health": api },
+    proxy: { "/api": api, "/redbus": api, "/health": api, "/hubs": { target: api, ws: true } },
   },
 });

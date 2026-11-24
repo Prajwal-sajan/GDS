@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using JourneyOS.Api.Caching;
 using JourneyOS.Api.Outbox;
 using JourneyOS.Api.Persistence;
+using JourneyOS.Api.Realtime;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
@@ -28,6 +29,8 @@ public sealed record HoldInput(long InventoryId, long BoardingPointId, long Drop
 
 public sealed record CancelResult(Booking Booking, decimal Charge, decimal Refund, DateTime At);
 
+public sealed record PaymentInput(string Method, string Status, string? Reference);
+
 /// <summary>
 /// Authoritative seat-inventory engine. Every mutation runs inside a PostgreSQL transaction that
 /// (1) locks the trip row to serialise gender/adjacency decisions, (2) relies on the
@@ -35,7 +38,7 @@ public sealed record CancelResult(Booking Booking, decimal Charge, decimal Refun
 /// (3) writes outbox events atomically, and (4) bumps cache generations only after commit.
 /// </summary>
 public sealed class InventoryService(GdsDbContext db, IGdsCache cache, RedBusNotifier notifier, TimeProvider clock,
-    Microsoft.Extensions.Options.IOptions<InventoryOptions> options, ILogger<InventoryService> log)
+    Microsoft.Extensions.Options.IOptions<InventoryOptions> options, ILogger<InventoryService> log, ITripEvents events)
 {
     private DateTime UtcNow => clock.GetUtcNow().UtcDateTime;
 
@@ -166,7 +169,7 @@ public sealed class InventoryService(GdsDbContext db, IGdsCache cache, RedBusNot
             });
         await SaveGuardedAsync();
         await notifier.ServiceChangedAsync(trip, hold.FromSeq, hold.ToSeq);
-        Audit("redbus", "HOLD", "seat_hold", hold.BlockKey, new { hold.TripId, seats = hold.Passengers.Select(p => p.SeatCode), hold.TotalFare });
+        Audit(input.Channel, "HOLD", "seat_hold", hold.BlockKey, new { hold.TripId, seats = hold.Passengers.Select(p => p.SeatCode), hold.TotalFare });
         await db.SaveChangesAsync();
         await tx.CommitAsync();
         await InvalidateAsync(trip.Id);
@@ -176,7 +179,7 @@ public sealed class InventoryService(GdsDbContext db, IGdsCache cache, RedBusNot
     // ---------------- confirmation ----------------
 
     /// <summary>Idempotent: re-confirming a confirmed blockKey with the same fare returns the same booking.</summary>
-    public async Task<Booking> ConfirmAsync(string blockKey, decimal fare)
+    public async Task<Booking> ConfirmAsync(string blockKey, decimal fare, PaymentInput? payment = null)
     {
         if (string.IsNullOrWhiteSpace(blockKey)) throw new GdsException("BLOCK_KEY", "Blockkey is required");
         await using var tx = await db.Database.BeginTransactionAsync();
@@ -215,6 +218,15 @@ public sealed class InventoryService(GdsDbContext db, IGdsCache cache, RedBusNot
         hold.Status = HoldStatus.Confirmed;
         hold.ClosedAt = now;
         await db.SaveChangesAsync();
+        var isOta = booking.Channel is "redbus";
+        db.Payments.Add(new Payment
+        {
+            TenantId = db.CurrentTenantId, BookingId = booking.Id, Amount = booking.TotalFare, CreatedAt = now,
+            Method = payment?.Method ?? (isOta ? "ota_receivable" : "cash"),
+            Status = payment?.Status ?? (isOta ? "RECEIVABLE" : "PAID"), Reference = payment?.Reference,
+        });
+        // Captured evidence only: OTA commission/offer are unknown at booking time and stay null.
+        db.BookingFinances.Add(new BookingFinance { BookingId = booking.Id, NetFare = booking.Passengers.Sum(p => p.BaseFare), Gst = booking.Passengers.Sum(p => p.Gst) });
 
         var allocs = await db.SeatAllocations.Where(a => a.HoldId == hold.Id && a.IsActive).ToListAsync();
         if (allocs.Count != booking.Passengers.Count) throw new GdsException("HOLD_INCONSISTENT", "Held seats are no longer allocated", 409);
@@ -223,7 +235,7 @@ public sealed class InventoryService(GdsDbContext db, IGdsCache cache, RedBusNot
             a.Kind = AllocationKind.Booked;
             a.BookingPassengerId = booking.Passengers.First(p => p.CoachSeatId == a.CoachSeatId).Id;
         }
-        Audit("redbus", "CONFIRM", "booking", booking.Pnr, new { blockKey, booking.TotalFare });
+        Audit(booking.Channel, "CONFIRM", "booking", booking.Pnr, new { blockKey, booking.TotalFare });
         await db.SaveChangesAsync();
         await tx.CommitAsync();
         await InvalidateAsync(trip.Id);
@@ -545,8 +557,13 @@ WHERE hold_id IN (SELECT id FROM expired) AND is_active");
             DataJson = System.Text.Json.JsonSerializer.Serialize(data), At = UtcNow,
         });
 
-    private async Task InvalidateAsync(long tripId) =>
+    private async Task InvalidateAsync(long tripId)
+    {
         await cache.BumpAsync(CacheKeys.TripScope(db.CurrentTenantId, tripId), CacheKeys.SearchScope(db.CurrentTenantId));
+        await events.TripChangedAsync(db.CurrentTenantId, tripId);
+    }
+
+    public Task InvalidateTripAsync(long tripId) => InvalidateAsync(tripId);
 
     private static string NewBlockKey() => "BK" + Convert.ToHexString(RandomNumberGenerator.GetBytes(12));
 

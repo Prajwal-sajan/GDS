@@ -20,6 +20,21 @@ $Mapped = [ordered]@{
   '^/bookings/:pnr/cancel$'   = 'PARTIAL|Inventory CancelAsync (exposed to RedBus via /redbus/cancelticket); counter/agent channel UI not yet ported'
   '^/schedules/:id/seat-layout$' = 'PARTIAL|/redbus/seatlayout (OTA view); operator layout UI not yet ported'
   '^/schedules/:id/update-v51/sync-ota$' = 'PARTIAL|POST /api/admin/integrations/redbus/resync (outbox SEARCH + NEW_CITY_VSD)'
+  '^/schedules/:id/update-v51/assignment$' = 'PARTIAL|POST /api/admin/trips/{id}/assignments — bus change (same coach layout), driver/crew replacement with conflict + licence checks, audit; legacy SMS crew notification not yet ported'
+  '^/schedules/:id/blocks$'   = 'PARTIAL|POST /api/admin/trips/{id}/blocks + DELETE .../blocks/{seat} — exclusion-constraint guarded, RedBus UPDATE_SERVICE; legacy per-quota labels not yet ported'
+  '^/schedules/:id/fares$'    = 'PARTIAL|PUT /api/admin/routes/{id}/fares (route-level matrix; holds keep quote); per-schedule fare override + auto-pricing not yet ported'
+  '^/vehicles$'               = 'PARTIAL|GET/POST /api/admin/vehicles — registration uniqueness, compliance expiry fields; GPS/DMS fields not yet ported'
+  '^/vehicles/:id$'           = 'PARTIAL|PUT /api/admin/vehicles/{id}; delete-with-upcoming-trip guard not yet ported'
+  '^/staff$'                  = 'PARTIAL|GET/POST /api/admin/staff; Aadhaar/PAN/bank fields + phone-duplicate check not yet ported'
+  '^/staff/:id$'              = 'PARTIAL|PUT /api/admin/staff/{id} (activate/deactivate)'
+  '^/bookings$'               = 'PARTIAL|POST /api/admin/bookings/counter — counter/agent booking via same hold+confirm path, Payment PAID/RECEIVABLE; offers, miles, notifications not yet ported'
+  '^/bookings/:pnr$'          = 'PARTIAL|GET /api/admin/bookings/{pnr} with payments + finance evidence (read); PUT edit not yet ported'
+  '^/reconciliation/v43/invoices$' = 'PARTIAL|GET/POST /api/admin/reconciliation/invoices — CSV ingestion, SHA-256 + invoice-number dedupe; PDF payment-advice parser NOT yet ported'
+  '^/reconciliation/v43/invoices/:id$' = 'PARTIAL|GET /api/admin/reconciliation/invoices/{id} (totals); DELETE not yet ported'
+  '^/reconciliation/v43/invoices/:id/lines$' = 'PARTIAL|GET .../lines?status='
+  '^/reconciliation/v43/invoices/:id/export.csv$' = 'PARTIAL|GET .../export — same headers, BOM, formula-injection escaping'
+  '^/reconciliation/v43/invoices/:id/recheck$' = 'PARTIAL|POST .../recheck'
+  '^/reconciliation/v43/invoices/:id/resolve$' = 'PARTIAL|POST .../resolve (accept_ota / investigating / dispute-with-reason / clear)'
 }
 $out = [System.Text.StringBuilder]::new()
 [void]$out.AppendLine("# Legacy → modern API parity matrix (generated)")

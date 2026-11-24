@@ -40,3 +40,15 @@ pre { background: #f5f7fa; padding: 10px; font-size: 12px; overflow: auto; }
 .login { max-width: 360px; margin: 12vh auto; background: #fff; padding: 28px; border-radius: 10px; border: 1px solid #e2e7ee; display: grid; gap: 14px; }
 .login label { display: flex; flex-direction: column; gap: 6px; }
 .login input { margin-left: 0; }
+
+.seatmap { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; max-width: 640px; margin: 8px 0; }
+.seat { padding: 8px 4px; border: 1px solid #c8ced6; border-radius: 6px; background: #fff; font-size: 12px; cursor: pointer; }
+.seat.s-booked { background: #e1e5ea; color: #77808b; cursor: not-allowed; }
+.seat.s-held { background: #fff4d6; cursor: not-allowed; }
+.seat.s-blocked { background: #fde2e2; border-color: #e08a8a; }
+.seat.sel { outline: 2px solid #1f6feb; background: #dbe9ff; }
+.banner.warn { background: #fff4d6; }
+tr.selected { background: #eef4ff; }
+.r-matched { background: #dff3e4; } .r-mismatched { background: #fde2e2; } .r-needs_review { background: #fff4d6; }
+.r-unmatched_ota, .r-unmatched_gds { background: #ece2fd; }
+td.danger { color: #b42318; font-weight: 600; }
