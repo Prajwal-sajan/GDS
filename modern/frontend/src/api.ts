@@ -1,4 +1,5 @@
 import type { ScheduleSeatLayout } from "./features/schedules/seatLayoutModel";
+import type { CoachDraft, FullCoach, CoachListItem } from "./features/coaches/coachModel";
 // Typed client for the JourneyOS admin API. The admin key is kept in sessionStorage only.
 export type OutboxStatus = "Pending" | "Delivering" | "Acknowledged" | "Failed" | "Blocked" | "Superseded";
 
@@ -118,6 +119,10 @@ export const api = {
   routes: () => call<RouteRow[]>("GET", "/api/admin/routes"),
   cities: () => call<CityOption[]>("GET", "/api/admin/cities"),
   coaches: () => call<CoachOption[]>("GET", "/api/admin/coaches"),
+  coachInventory: () => call<CoachListItem[]>("GET", "/api/admin/coaches/detailed"),
+  coachFull: (id: number) => call<FullCoach>("GET", "/api/admin/coaches/" + id + "/full"),
+  saveCoach: (draft: CoachDraft, id?: number) => call<{id:number}>(id ? "PUT" : "POST",
+    "/api/admin/coaches" + (id ? "/" + id : ""), draft),
   routeFull: (id: number) => call<FullRoute>("GET", "/api/admin/routes/" + id + "/full"),
   saveRoute: (draft: RouteDraft, id?: number) =>
     call<{id:number}>(id ? "PUT" : "POST", "/api/admin/routes" + (id ? "/" + id : ""), draft),
