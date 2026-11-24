@@ -32,6 +32,14 @@ function dateLabel(day){
  const w=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
  return w[d.getUTCDay()]+', '+String(d.getUTCDate()).padStart(2,'0')+' '+m[d.getUTCMonth()]+', '+d.getUTCFullYear();
 }
+function boardingDate(travelDate,cityDay){
+ dateLabel(travelDate); // Strict validation, independent of local machine timezone.
+ const day=Number(cityDay??1);
+ if(!Number.isInteger(day)||day<1||day>15)throw httpError(409,'Invalid boarding day on route');
+ const date=new Date(String(travelDate)+'T12:00:00Z');
+ date.setUTCDate(date.getUTCDate()+day-1);
+ return date.toISOString().slice(0,10);
+}
 function createShare({schedule,route,fromCityId,toCityId,bookingBase}){
  if(!schedule||!route)throw httpError(404,'Schedule or route not found');
  if(schedule.status!=='active'||route.status!=='active'||schedule.trip_status==='cancelled')
@@ -41,17 +49,18 @@ function createShare({schedule,route,fromCityId,toCityId,bookingBase}){
  const from=String(fromCityId??cities[0].city_id),to=String(toCityId??cities[cities.length-1].city_id);
  const i=cities.findIndex(x=>String(x.city_id)===from),j=cities.findIndex(x=>String(x.city_id)===to);
  if(i<0||j<0||j<=i)throw httpError(400,'Select a valid From/To city pair along this route');
+ const journeyDate=boardingDate(schedule.travel_date,cities[i].day);
  const url=validateBase(bookingBase);
  url.searchParams.set('fromCity',String(cities[i].city_id));
  url.searchParams.set('toCity',String(cities[j].city_id));
- url.searchParams.set('journeyDate',String(schedule.travel_date));
+ url.searchParams.set('journeyDate',journeyDate);
  const nameFrom=D.cityName(cities[i].city_id),nameTo=D.cityName(cities[j].city_id);
  if(!nameFrom||!nameTo)throw httpError(409,'Missing city name for booking link');
  const booking_url=url.toString();
  return {
-  message:nameFrom+' → '+nameTo+' on '+dateLabel(schedule.travel_date)+
+  message:nameFrom+' → '+nameTo+' on '+dateLabel(journeyDate)+
    ' — pick your seat and book: '+booking_url,
-  booking_url,origin:nameFrom,destination:nameTo,journey_date:String(schedule.travel_date),
+  booking_url,origin:nameFrom,destination:nameTo,journey_date:journeyDate,service_travel_date:String(schedule.travel_date),
   from_city_id:String(cities[i].city_id),to_city_id:String(cities[j].city_id),
   service_number:String(route.service_number||''),link_type:'route_date_search',preselects_service:false,
   note:'Opens the operator booking website for the selected route and date. Select the desired service; availability is determined on the booking website.'
@@ -75,3 +84,4 @@ module.exports=r;
 module.exports.createShare=createShare;
 module.exports.validateBase=validateBase;
 module.exports.dateLabel=dateLabel;
+module.exports.boardingDate=boardingDate;
