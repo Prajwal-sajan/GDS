@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { activate, api, ApiError, getKey, login, logout, setKey, type Attempt, type Me, type OutboxRow, type RedBusStatus, type TripRow } from "./api";
 
-import { DispatchPanel, FaresPanel, StaffPanel } from "./Operations";
+import { DispatchPanel, FaresPanel } from "./Operations";
+import { StaffWorkspacePanel } from "./features/staff/StaffWorkspacePanel";
 import { VehiclesPanel } from "./features/vehicles/VehiclesPanel";
 import { OtaInvoiceVerifier } from "./features/accounts/OtaInvoiceVerifier";
 import { DailyOpsPanel } from "./features/dailyops/DailyOpsPanel";
@@ -65,7 +66,7 @@ export default function App() {
         {tab === "dailyops" && <DailyOpsPanel />}
         {tab === "dispatch" && <DispatchPanel />}
         {tab === "fleet" && <VehiclesPanel />}
-        {tab === "staff" && <StaffPanel />}
+        {tab === "staff" && <StaffWorkspacePanel />}
         {tab === "fares" && <FaresPanel />}
         {tab === "recon" && <OtaInvoiceVerifier />}
         {tab === "crm" && <CrmPanel me={me} />}
