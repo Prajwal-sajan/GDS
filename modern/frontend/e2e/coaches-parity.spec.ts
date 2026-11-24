@@ -50,7 +50,7 @@ test("46-seat 2+1 coach: tabs, real lower/upper geometry, editable alias, add co
   await dialog.getByRole("navigation",{name:"Coach editor tabs"}).getByRole("button",{name:"Amenities"}).click();
   await dialog.getByRole("checkbox",{name:"Charging Points"}).check();
   await dialog.getByRole("navigation",{name:"Coach editor tabs"}).getByRole("button",{name:"Coach Type"}).click();
-  await dialog.getByRole("textbox",{name:"Coach name"}).fill("Intercity 2+1 Coach");
+  await dialog.getByRole("textbox",{name:"Coach name",exact:true}).fill("Intercity 2+1 Coach");
   await dialog.getByRole("button",{name:"Create Coach"}).click();
   await expect.poll(()=>mock.count()).toBe(1);
   expect(mock.saved()).toMatchObject({name:"Intercity 2+1 Coach",
@@ -81,7 +81,7 @@ test("44+4 A/C Seater 2+2 coach shows side exit, toilet and reserved numbering, 
   expect(payload.fixtures).toHaveLength(4);
   await page.getByRole("button",{name:"Edit coach A/C Seater (2+2)"}).click();
   const edit=page.getByRole("dialog",{name:"Edit Coach"});
-  await edit.getByRole("textbox",{name:"Display name 1"}).fill("Front Aisle");
+  await edit.getByRole("textbox",{name:"Display name 1",exact:true}).fill("Front Aisle");
   await edit.getByRole("button",{name:"Update Coach"}).click();
   await expect.poll(()=>mock.count()).toBe(2);
   expect((mock.saved() as any).seats.find((x:any)=>x.code==="1").displayName).toBe("Front Aisle");
