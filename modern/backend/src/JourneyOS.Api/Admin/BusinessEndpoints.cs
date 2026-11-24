@@ -83,7 +83,7 @@ public static class BusinessEndpoints
         var rp = g.MapGroup("/reports").RequireAuthorization(Policies.Reports);
         rp.MapGet("/analytics", async (string? from, string? to, string? channel, ReportsService s) =>
         { var (f, t) = Range(from, to, await s.TodayAsync()); return Results.Ok(await s.AnalyticsAsync(f, t, channel)); });
-        rp.MapGet("/daily-ops", async (string? date, ReportsService s) => Results.Ok(await s.DailyOpsAsync(date is null ? await s.TodayAsync() : DateOnly.Parse(date))));
+        rp.MapGet("/daily-ops", async (string? date, ReportsService s) => Results.Ok(await s.DailyOpsAsync(date is null ? await s.TodayAsync() : DateOnly.Parse(date)))).RequireAuthorization(Policies.Operations);
         rp.MapGet("/cancellations", async (string? from, string? to, ReportsService s) => { var (f, t) = Range(from, to, await s.TodayAsync()); return Results.Ok(await s.CancellationsReportAsync(f, t)); });
         rp.MapGet("/no-shows", async (string? from, string? to, ReportsService s) => { var (f, t) = Range(from, to, await s.TodayAsync()); return Results.Ok(await s.NoShowsAsync(f, t)); });
         rp.MapGet("/frequent-travellers", async (string? from, string? to, int? minTrips, ReportsService s) =>
