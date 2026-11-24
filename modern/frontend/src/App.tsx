@@ -8,14 +8,15 @@ import { RoutesPanel } from "./features/routes/RoutesPanel";
 import { ModernShell } from "./navigation/ModernShell";
 import { BookingsPanel } from "./features/bookings/BookingsPanel";
 import { DailyOpsPanel } from "./features/dailyops/DailyOpsPanel";
+import { CallsPanel } from "./features/calls/CallsPanel";
 
-type Tab = "redbus" | "outbox" | "trips" | "bookings" | "dailyops" | "schedules" | "routes" | "dispatch" | "fleet" | "staff" | "fares" | "recon" | "crm" | "comms" | "reports" | "ledger" | "sarathi" | "users";
+type Tab = "redbus" | "outbox" | "trips" | "bookings" | "dailyops" | "calls" | "schedules" | "routes" | "dispatch" | "fleet" | "staff" | "fares" | "recon" | "crm" | "comms" | "reports" | "ledger" | "sarathi" | "users";
 const ALL = ["owner", "admin", "accounts", "ops", "viewer"];
 const OPS = ["owner", "admin", "ops"];
 const ACC = ["owner", "admin", "accounts"];
 // Mirrors the API authorization policies; the API remains the enforcement point.
 const TABS: [Tab, string, string[]][] = [["redbus", "RedBus", ALL], ["outbox", "Outbox", ALL], ["trips", "Trips", ALL], ["bookings", "Tickets", OPS], ["dailyops", "Daily Ops", OPS], ["schedules", "Schedules", OPS], ["routes", "Routes", OPS], ["dispatch", "Dispatch", OPS], ["fleet", "Fleet", OPS],
-  ["staff", "Staff", OPS], ["fares", "Fares", OPS], ["recon", "Reconciliation", ACC], ["crm", "CRM", ALL], ["comms", "Chats & calls", OPS], ["reports", "Reports", ALL],
+  ["staff", "Staff", OPS], ["fares", "Fares", OPS], ["recon", "Reconciliation", ACC], ["crm", "CRM", ALL], ["comms", "Chats", OPS], ["calls", "Calls", OPS], ["reports", "Reports", ALL],
   ["ledger", "Ledger", [...ACC, "agent"]], ["sarathi", "Sarathi", ALL], ["users", "Users", ["owner", "admin"]]];
 
 function useLoad<T>(fn: () => Promise<T>, deps: unknown[]) {
@@ -67,6 +68,7 @@ export default function App() {
         {tab === "recon" && <ReconciliationPanel />}
         {tab === "crm" && <CrmPanel me={me} />}
         {tab === "comms" && <CommsPanel />}
+        {tab === "calls" && <CallsPanel onOpenBooking={(pnr) => { setTicketPnr(pnr); setTab("bookings"); }} />}
         {tab === "reports" && <ReportsPanel me={me} />}
         {tab === "ledger" && <LedgerPanel me={me} />}
         {tab === "sarathi" && <SarathiPanel />}
