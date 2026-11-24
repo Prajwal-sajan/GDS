@@ -495,6 +495,201 @@
     "diffRatio": 0
   },
   {
+    "id": "staff-advances",
+    "region": "head",
+    "legacy": [
+      1296,
+      167
+    ],
+    "react": [
+      1296,
+      167
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-advances",
+    "region": "kpis",
+    "legacy": [
+      1296,
+      75
+    ],
+    "react": [
+      1296,
+      75
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-advances",
+    "region": "row-0",
+    "legacy": [
+      1294,
+      61
+    ],
+    "react": [
+      1294,
+      61
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-advances",
+    "region": "row-1",
+    "legacy": [
+      1294,
+      60
+    ],
+    "react": [
+      1294,
+      60
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-advances",
+    "region": "row-2",
+    "legacy": [
+      1294,
+      60
+    ],
+    "react": [
+      1294,
+      60
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-advances",
+    "region": "thead",
+    "legacy": [
+      1294,
+      54
+    ],
+    "react": [
+      1294,
+      54
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-advances",
+    "region": "toolbar",
+    "legacy": [
+      1296,
+      61
+    ],
+    "react": [
+      1296,
+      61
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-attendance",
+    "region": "head",
+    "legacy": [
+      1296,
+      167
+    ],
+    "react": [
+      1296,
+      167
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-attendance",
+    "region": "row-0",
+    "legacy": [
+      1294,
+      73
+    ],
+    "react": [
+      1294,
+      73
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-attendance",
+    "region": "row-1",
+    "legacy": [
+      1294,
+      72
+    ],
+    "react": [
+      1294,
+      72
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-attendance",
+    "region": "row-2",
+    "legacy": [
+      1294,
+      72
+    ],
+    "react": [
+      1294,
+      72
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-attendance",
+    "region": "thead",
+    "legacy": [
+      1294,
+      54
+    ],
+    "react": [
+      1294,
+      54
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-attendance",
+    "region": "toolbar",
+    "legacy": [
+      1296,
+      82
+    ],
+    "react": [
+      1296,
+      82
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
     "id": "staff-list",
     "region": "filters",
     "legacy": [
@@ -609,6 +804,186 @@
     "react": [
       1296,
       52
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-payouts",
+    "region": "head",
+    "legacy": [
+      1296,
+      167
+    ],
+    "react": [
+      1296,
+      167
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-payouts",
+    "region": "kpis",
+    "legacy": [
+      1296,
+      75
+    ],
+    "react": [
+      1296,
+      75
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-payouts",
+    "region": "row-0",
+    "legacy": [
+      1294,
+      57
+    ],
+    "react": [
+      1294,
+      57
+    ],
+    "sizeMatch": true,
+    "diffPixels": 21,
+    "diffRatio": 0.0003
+  },
+  {
+    "id": "staff-payouts",
+    "region": "row-1",
+    "legacy": [
+      1294,
+      56
+    ],
+    "react": [
+      1294,
+      56
+    ],
+    "sizeMatch": true,
+    "diffPixels": 21,
+    "diffRatio": 0.0003
+  },
+  {
+    "id": "staff-payouts",
+    "region": "row-2",
+    "legacy": [
+      1294,
+      56
+    ],
+    "react": [
+      1294,
+      56
+    ],
+    "sizeMatch": true,
+    "diffPixels": 21,
+    "diffRatio": 0.0003
+  },
+  {
+    "id": "staff-payouts",
+    "region": "thead",
+    "legacy": [
+      1294,
+      54
+    ],
+    "react": [
+      1294,
+      54
+    ],
+    "sizeMatch": true,
+    "diffPixels": 8,
+    "diffRatio": 0.0001
+  },
+  {
+    "id": "staff-payouts",
+    "region": "toolbar",
+    "legacy": [
+      1296,
+      84
+    ],
+    "react": [
+      1296,
+      84
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-reimbursements",
+    "region": "head",
+    "legacy": [
+      1296,
+      167
+    ],
+    "react": [
+      1296,
+      167
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-reimbursements",
+    "region": "kpis",
+    "legacy": [
+      1296,
+      75
+    ],
+    "react": [
+      1296,
+      75
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-reimbursements",
+    "region": "row-0",
+    "legacy": [
+      1294,
+      61
+    ],
+    "react": [
+      1294,
+      61
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-reimbursements",
+    "region": "thead",
+    "legacy": [
+      1294,
+      54
+    ],
+    "react": [
+      1294,
+      54
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-reimbursements",
+    "region": "toolbar",
+    "legacy": [
+      1296,
+      61
+    ],
+    "react": [
+      1296,
+      61
     ],
     "sizeMatch": true,
     "diffPixels": 0,

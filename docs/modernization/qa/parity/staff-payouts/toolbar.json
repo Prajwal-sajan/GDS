@@ -1,0 +1,15 @@
+{
+  "id": "staff-payouts",
+  "region": "toolbar",
+  "legacy": [
+    1296,
+    84
+  ],
+  "react": [
+    1296,
+    84
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

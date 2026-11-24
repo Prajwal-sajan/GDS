@@ -1,0 +1,15 @@
+{
+  "id": "staff-payouts",
+  "region": "kpis",
+  "legacy": [
+    1296,
+    75
+  ],
+  "react": [
+    1296,
+    75
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

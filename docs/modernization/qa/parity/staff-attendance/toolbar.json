@@ -1,0 +1,15 @@
+{
+  "id": "staff-attendance",
+  "region": "toolbar",
+  "legacy": [
+    1296,
+    82
+  ],
+  "react": [
+    1296,
+    82
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

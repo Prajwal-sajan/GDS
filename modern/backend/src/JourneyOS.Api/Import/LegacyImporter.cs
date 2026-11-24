@@ -447,6 +447,49 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
                     TenantId = tenantId, Owner = $"legacy-user:{L(s, "user_id")}", Title = Str(s, "title") ?? "",
                     MessagesJson = s.TryGetProperty("messages", out var ms) ? ms.GetRawText() : "[]", CreatedAt = Ts(Str(s, "created_at")), UpdatedAt = Ts(Str(s, "created_at")),
                 });
+        // Staff payroll (legacy fleet → attendance / advances / reimbursements / payouts). Rows of unknown staff are skipped.
+        var staffIds = await db.Staff.Select(s => s.Id).ToHashSetAsync();
+        var tripIds = await db.Trips.Select(t => t.Id).ToHashSetAsync();
+        if (!await db.StaffAttendance.AnyAsync())
+            foreach (var a in Col("attendance").OrderBy(x => L(x, "id")))
+                if (L(a, "staff_id") is { } sid && staffIds.Contains(sid) && Date(a, "date") is { } d)
+                    db.StaffAttendance.Add(new StaffAttendance
+                    {
+                        TenantId = tenantId, StaffId = sid, Date = d, Status = Str(a, "status") ?? "present",
+                        TripId = L(a, "schedule_id") is { } t && tripIds.Contains(t) ? t : null,
+                        Source = Str(a, "source") ?? "manual", State = Str(a, "state") == "approved" ? "approved" : "draft", Amount = Dec(a, "amount") ?? 0,
+                    });
+        if (!await db.StaffAdvances.AnyAsync())
+            foreach (var a in Col("advances").OrderBy(x => L(x, "id")))
+                if (L(a, "staff_id") is { } sid && staffIds.Contains(sid) && Dec(a, "amount") is > 0 and var amt)
+                    db.StaffAdvances.Add(new StaffAdvance
+                    {
+                        TenantId = tenantId, StaffId = sid, AdvanceType = Str(a, "advance_type") ?? "salary", Amount = amt,
+                        DateIssued = Date(a, "date_issued") ?? DateOnly.FromDateTime(DateTime.UtcNow), Reason = Str(a, "reason"),
+                        PaymentMode = Str(a, "payment_mode") ?? "cash", RecoveryMethod = Str(a, "recovery_method") ?? "one_time",
+                        NumInstallments = Int(a, "num_installments"), InterestRate = Dec(a, "interest_rate"),
+                        AmountRecovered = Math.Min(amt, Dec(a, "amount_recovered") ?? 0), Status = Str(a, "status") ?? "disbursed",
+                    });
+        if (!await db.StaffReimbursements.AnyAsync())
+            foreach (var x in Col("reimbursements").OrderBy(x => L(x, "id")))
+                if (L(x, "staff_id") is { } sid && staffIds.Contains(sid))
+                    db.StaffReimbursements.Add(new StaffReimbursement
+                    {
+                        TenantId = tenantId, StaffId = sid, Category = Str(x, "category") ?? "Other", Amount = Dec(x, "amount") ?? 0,
+                        Date = Date(x, "date") ?? DateOnly.FromDateTime(DateTime.UtcNow), Description = Str(x, "description") ?? "",
+                        Receipt = Str(x, "receipt"), Status = Str(x, "status") ?? "pending", By = Str(x, "by"),
+                    });
+        if (!await db.StaffPayouts.AnyAsync())
+            foreach (var p in Col("payouts").OrderBy(x => L(x, "id")))
+                if (L(p, "staff_id") is { } sid && staffIds.Contains(sid) && Date(p, "period_start") is { } ps && Date(p, "period_end") is { } pe)
+                    db.StaffPayouts.Add(new StaffPayout
+                    {
+                        TenantId = tenantId, PayoutNo = Str(p, "payout_no") ?? $"PAY-LEGACY-{L(p, "id")}", StaffId = sid, PeriodStart = ps, PeriodEnd = pe,
+                        Days = Int(p, "days") ?? 0, Gross = Dec(p, "gross") ?? 0, Deductions = Dec(p, "deductions") ?? 0,
+                        AdvancesRecovered = Dec(p, "advances_recovered") ?? 0, Reimbursements = Dec(p, "reimbursements"), Net = Dec(p, "net") ?? 0,
+                        Status = Str(p, "status") ?? "draft", ApprovedBy = Str(p, "approved_by"), PaidAt = Date(p, "paid_at"),
+                        PaymentMode = Str(p, "payment_mode"), Reference = Str(p, "reference"),
+                    });
         await db.SaveChangesAsync();
     }
 

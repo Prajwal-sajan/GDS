@@ -1,0 +1,15 @@
+{
+  "id": "staff-payouts",
+  "region": "row-2",
+  "legacy": [
+    1294,
+    56
+  ],
+  "react": [
+    1294,
+    56
+  ],
+  "sizeMatch": true,
+  "diffPixels": 21,
+  "diffRatio": 0.0003
+}

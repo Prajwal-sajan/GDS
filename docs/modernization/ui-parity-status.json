@@ -70,8 +70,44 @@
         "Editor Bank/Ledger/Documents tabs: no .NET endpoints — explicit not-persisted state",
         "Legacy DELETE /staff/:id deactivates; React performs the same via PUT status=inactive",
         "Rows created only by the modern e2e suite are excluded from the visual comparison (not present in legacy data)",
-        "Attendance/Advances/Reimbursements/Payouts subpages (V016-V019) not ported"
+        "Editor Ledger tab still shows not-persisted state although GET /api/admin/payroll/staff/{id}/ledger now exists"
       ]
+    },
+    "V016": {
+      "status": "VISUAL_PASS",
+      "react": "src/features/staff/PayrollPages.tsx (AttendancePage)",
+      "evidence": [
+        "e2e/parity/staff-payroll.parity.spec.ts — identical DOM skeleton + innerText of .sp-workspace-head and [data-body] grid (dates x staff, P/A/L cells, draft/approved), head/toolbar/thead/rows <= 0.01 pixel diff",
+        "Backend: StaffAttendance (migration StaffPayroll, importer), /api/admin/payroll/attendance (+generate from trip crew, approve, manual, edit) — all audited; BusinessTests.Payroll_* 48/48"
+      ],
+      "gaps": ["Cell edit / manual entry use the legacy G.prompt markup with native selects"]
+    },
+    "V017": {
+      "status": "VISUAL_PASS",
+      "react": "src/features/staff/PayrollPages.tsx (AdvancesPage)",
+      "evidence": [
+        "staff-payroll.parity.spec.ts — skeleton + text + KPIs/toolbar/thead/rows <= 0.01 pixel diff; create → recover → delete round-trip through PostgreSQL",
+        "Backend: StaffAdvance, /api/admin/payroll/advances (create, recover, delete), audited"
+      ],
+      "gaps": []
+    },
+    "V018": {
+      "status": "VISUAL_PASS",
+      "react": "src/features/staff/PayrollPages.tsx (ReimbursementsPage)",
+      "evidence": [
+        "staff-payroll.parity.spec.ts — skeleton + text + pixels; create → approve → delete round-trip through PostgreSQL",
+        "Backend: StaffReimbursement, /api/admin/payroll/reimbursements (create, approve/reject/pay, delete), audited"
+      ],
+      "gaps": []
+    },
+    "V019": {
+      "status": "VISUAL_PASS",
+      "react": "src/features/staff/PayrollPages.tsx (PayoutsPage + GenerateModal)",
+      "evidence": [
+        "staff-payroll.parity.spec.ts — skeleton + text + KPIs/pills/thead/rows <= 0.01 pixel diff",
+        "Backend: StaffPayout, /api/admin/payroll/payouts (summary, preview, generate with advance deduction + reimbursement roll-in, approve, pay, adjust, delete; paid payouts immutable) — BusinessTests covers generate/approve/pay"
+      ],
+      "gaps": []
     },
     "V015": {
       "status": "IMPLEMENTED_UNVERIFIED",

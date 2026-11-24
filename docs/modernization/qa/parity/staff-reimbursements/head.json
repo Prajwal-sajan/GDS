@@ -1,0 +1,15 @@
+{
+  "id": "staff-reimbursements",
+  "region": "head",
+  "legacy": [
+    1296,
+    167
+  ],
+  "react": [
+    1296,
+    167
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

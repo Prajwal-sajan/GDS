@@ -1,0 +1,15 @@
+{
+  "id": "staff-attendance",
+  "region": "row-1",
+  "legacy": [
+    1294,
+    72
+  ],
+  "react": [
+    1294,
+    72
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

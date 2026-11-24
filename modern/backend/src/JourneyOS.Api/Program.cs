@@ -43,6 +43,7 @@ builder.Services.AddScoped<OutboxWriter>();
 builder.Services.AddScoped<RedBusNotifier>();
 builder.Services.AddScoped<LegacyImporter>();
 builder.Services.AddScoped<JourneyOS.Api.Operations.OperationsService>();
+builder.Services.AddScoped<JourneyOS.Api.Admin.PayrollService>();
 builder.Services.AddScoped<JourneyOS.Api.Accounts.ReconciliationService>();
 builder.Services.AddScoped<JourneyOS.Api.Crm.CrmService>();
 builder.Services.AddScoped<JourneyOS.Api.Reports.ReportsService>();
@@ -176,6 +177,7 @@ JourneyOS.Api.Admin.BusinessEndpoints.MapBusiness(app);
 JourneyOS.Api.Admin.ScheduleEndpoints.MapSchedules(app);
 JourneyOS.Api.Admin.RouteEndpoints.MapRouteList(app);
 JourneyOS.Api.Admin.FleetEndpoints.MapFleetLists(app);
+JourneyOS.Api.Admin.PayrollEndpoints.MapPayroll(app);
 app.MapHub<JourneyOS.Api.Realtime.OpsHub>("/hubs/ops");
 
 app.Run();

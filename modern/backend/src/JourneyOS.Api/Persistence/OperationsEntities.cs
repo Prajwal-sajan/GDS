@@ -43,6 +43,72 @@ public sealed class Staff : ITenantOwned
     public DateOnly? JoiningDate { get; set; }
 }
 
+// ---------- Staff payroll (legacy attendance / advances / reimbursements / payouts) ----------
+public sealed class StaffAttendance : ITenantOwned
+{
+    public long Id { get; set; }
+    public long TenantId { get; set; }
+    public long StaffId { get; set; }
+    public DateOnly Date { get; set; }
+    public string Status { get; set; } = "present";     // present / absent / leave
+    public long? TripId { get; set; }
+    public string Source { get; set; } = "manual";      // auto / manual / manual_edited
+    public string State { get; set; } = "draft";        // draft / approved
+    public decimal Amount { get; set; }
+}
+
+public sealed class StaffAdvance : ITenantOwned
+{
+    public long Id { get; set; }
+    public long TenantId { get; set; }
+    public long StaffId { get; set; }
+    public string AdvanceType { get; set; } = "salary";
+    public decimal Amount { get; set; }
+    public DateOnly DateIssued { get; set; }
+    public string? Reason { get; set; }
+    public string PaymentMode { get; set; } = "cash";
+    public string RecoveryMethod { get; set; } = "one_time";
+    public int? NumInstallments { get; set; }
+    public decimal? InterestRate { get; set; }
+    public decimal AmountRecovered { get; set; }
+    public string Status { get; set; } = "disbursed";   // disbursed / recovered
+}
+
+public sealed class StaffReimbursement : ITenantOwned
+{
+    public long Id { get; set; }
+    public long TenantId { get; set; }
+    public long StaffId { get; set; }
+    public string Category { get; set; } = "Other";
+    public decimal Amount { get; set; }
+    public DateOnly Date { get; set; }
+    public string Description { get; set; } = "";
+    public string? Receipt { get; set; }
+    public string Status { get; set; } = "pending";     // pending / approved / rejected / in_payout / paid
+    public string? By { get; set; }
+}
+
+public sealed class StaffPayout : ITenantOwned
+{
+    public long Id { get; set; }
+    public long TenantId { get; set; }
+    public string PayoutNo { get; set; } = "";
+    public long StaffId { get; set; }
+    public DateOnly PeriodStart { get; set; }
+    public DateOnly PeriodEnd { get; set; }
+    public int Days { get; set; }
+    public decimal Gross { get; set; }
+    public decimal Deductions { get; set; }
+    public decimal AdvancesRecovered { get; set; }
+    public decimal? Reimbursements { get; set; }        // null on legacy payouts created before reimbursements existed
+    public decimal Net { get; set; }
+    public string Status { get; set; } = "draft";       // draft / approved / paid
+    public string? ApprovedBy { get; set; }
+    public DateOnly? PaidAt { get; set; }
+    public string? PaymentMode { get; set; }
+    public string? Reference { get; set; }
+}
+
 /// <summary>Vehicle and crew assigned to a trip. One active row per (trip, role slot).</summary>
 public sealed class TripAssignment : ITenantOwned
 {

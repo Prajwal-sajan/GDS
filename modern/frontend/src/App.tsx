@@ -10,6 +10,7 @@ import { SchedulesPage } from "./features/schedules/SchedulesPage";
 import { RoutesPage } from "./features/routes/RoutesPage";
 import { RouteEditorPage } from "./features/routes/RouteEditorPage";
 import { StaffPage } from "./features/staff/StaffPage";
+import { AdvancesPage, AttendancePage, PayoutsPage, ReimbursementsPage } from "./features/staff/PayrollPages";
 import { CoachesPage, VehiclesPage } from "./features/fleet/VehiclesPage";
 import { useHashRoute } from "./navigation/useHashRoute";
 import type { Role } from "./navigation/nav";
@@ -95,6 +96,10 @@ function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Ele
     [/^fleet(\/vehicles)?$/, OPS_R, () => <VehiclesPage me={me} />, true],
     [/^fleet\/coaches$/, OPS_R, () => <CoachesPage me={me} />, true],
     [/^fleet\/staff$/, OPS_R, () => <StaffPage me={me} />, true],
+    [/^fleet\/attendance$/, OPS_R, () => <AttendancePage key={location.hash} me={me} />, true],
+    [/^fleet\/advances$/, OPS_R, () => <AdvancesPage me={me} />, true],
+    [/^fleet\/reimbursements$/, OPS_R, () => <ReimbursementsPage me={me} />, true],
+    [/^fleet\/payouts$/, OPS_R, () => <PayoutsPage key={location.hash} me={me} />, true],
     [/^accounts\/reconciliation$/, ACC_R, () => <>{acct}<ReconciliationPanel /></>],
     [/^accounts\/transactions$/, [...ACC_R, "agent"], () => <>{acct}<LedgerPanel me={me} /></>],
     [/^accounts$/, [...ALL_R, "agent"], () => <>{acct}{r === "agent" ? <LedgerPanel me={me} /> : <ReportsPanel me={me} />}</>],

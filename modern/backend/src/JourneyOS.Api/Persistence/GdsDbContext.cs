@@ -60,6 +60,10 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
     public DbSet<UserSession> UserSessions => Set<UserSession>();
     public DbSet<Branch> Branches => Set<Branch>();
     public DbSet<SarathiConversation> SarathiConversations => Set<SarathiConversation>();
+    public DbSet<StaffAttendance> StaffAttendance => Set<StaffAttendance>();
+    public DbSet<StaffAdvance> StaffAdvances => Set<StaffAdvance>();
+    public DbSet<StaffReimbursement> StaffReimbursements => Set<StaffReimbursement>();
+    public DbSet<StaffPayout> StaffPayouts => Set<StaffPayout>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -99,6 +103,10 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
         b.Entity<AppUser>(e => { e.ToTable("app_users"); e.HasIndex(x => new { x.TenantId, x.Phone }).IsUnique(); e.Property(x => x.CommissionPct).HasPrecision(5, 2); });
         b.Entity<UserSession>(e => { e.HasIndex(x => x.TokenSha256).IsUnique(); e.HasIndex(x => x.UserId); });
         b.Entity<Branch>(e => e.Property(x => x.Id).ValueGeneratedNever());
+        b.Entity<StaffAttendance>(e => e.HasIndex(x => new { x.TenantId, x.StaffId, x.Date }).IsUnique());
+        b.Entity<StaffAdvance>(e => { e.HasIndex(x => x.StaffId); e.ToTable(t => t.HasCheckConstraint("ck_staff_advances_amount", "amount > 0 AND amount_recovered >= 0 AND amount_recovered <= amount")); });
+        b.Entity<StaffReimbursement>(e => { e.HasIndex(x => x.StaffId); e.ToTable(t => t.HasCheckConstraint("ck_staff_reimbursements_amount", "amount >= 0")); });
+        b.Entity<StaffPayout>(e => { e.HasIndex(x => new { x.TenantId, x.PayoutNo }).IsUnique(); e.HasIndex(x => x.StaffId); });
         b.Entity<SarathiConversation>(e => { e.Property(x => x.MessagesJson).HasColumnType("jsonb"); e.HasIndex(x => new { x.TenantId, x.Owner }); });
         b.Entity<Vehicle>(e => { e.Property(x => x.PositionJson).HasColumnType("jsonb"); e.Property(x => x.HealthJson).HasColumnType("jsonb"); });
         b.Entity<CoachTemplate>(e => e.Property(x => x.AmenitiesJson).HasColumnType("jsonb"));

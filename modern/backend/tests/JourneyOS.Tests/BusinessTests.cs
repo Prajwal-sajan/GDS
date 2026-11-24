@@ -203,6 +203,64 @@ public sealed class BusinessTests(GdsFixture fx)
     }
 
     [Fact]
+    public async Task Payroll_imports_legacy_and_payout_deducts_advances_and_rolls_in_reimbursements()
+    {
+        Assert.Equal(516, await fx.Sql(db => db.StaffAttendance.CountAsync(a => a.Source == "auto")));
+        Assert.True(await fx.Sql(db => db.StaffPayouts.CountAsync(p => p.PayoutNo.StartsWith("PAY-2026-11"))) >= 18);
+
+        var (_, phone) = await CreateUser("viewer");
+        Assert.Equal(HttpStatusCode.Forbidden, (await (await Login(phone)).GetAsync("/api/admin/payroll/advances")).StatusCode);
+
+        // per-trip staff with no attendance in a far-future window: one manual day, approved, then payout
+        var staff = await fx.Sql(db => db.Staff.Where(s => s.Status == "active" && s.SalaryType != "monthly"
+            && !db.StaffAdvances.Any(a => a.StaffId == s.Id && a.Status == "disbursed") && !db.StaffReimbursements.Any(r => r.StaffId == s.Id && (r.Status == "approved" || r.Status == "in_payout")))
+            .OrderBy(s => s.Id).FirstAsync());
+        var day = new DateOnly(2030, 1, 15);
+        var (sa, att) = await Admin.Post("/api/admin/payroll/attendance", new { staffId = staff.Id, date = day, status = "present", amount = 1200 });
+        Assert.True(sa == HttpStatusCode.OK, att?.ToJsonString());
+        var attId = (long)att!["id"]!;
+        Assert.Equal(HttpStatusCode.Conflict, (await Admin.PostAsJsonAsync("/api/admin/payroll/attendance", new { staffId = staff.Id, date = day, amount = 1 })).StatusCode);
+        var (_, ap) = await Admin.Post("/api/admin/payroll/attendance/approve", new { ids = new[] { attId } });
+        Assert.Equal(1, (int)ap!["approved"]!);
+
+        var (_, adv) = await Admin.Post("/api/admin/payroll/advances", new { staffId = staff.Id, amount = 500 });
+        var advId = (long)adv!["id"]!;
+        var (_, rb) = await Admin.Post("/api/admin/payroll/reimbursements", new { staffId = staff.Id, amount = 300, category = "Tolls" });
+        var rbId = (long)rb!["id"]!;
+        await Admin.Post($"/api/admin/payroll/reimbursements/{rbId}/approve", new { });
+
+        var (sg, gen) = await Admin.Post("/api/admin/payroll/payouts/generate", new { from = day, to = day, staffIds = new[] { staff.Id }, deductAdvances = true });
+        Assert.True(sg == HttpStatusCode.OK, gen?.ToJsonString());
+        var p = gen!["payouts"]![0]!;
+        var pid = (long)p["id"]!;
+        try
+        {
+            Assert.Equal(1200m, (decimal)p["gross"]!);
+            Assert.Equal(500m, (decimal)p["advances_recovered"]!);
+            Assert.Equal(300m, (decimal)p["reimbursements"]!);
+            Assert.Equal(1000m, (decimal)p["net"]!);
+            Assert.Equal("recovered", await fx.Sql(db => db.StaffAdvances.Where(a => a.Id == advId).Select(a => a.Status).FirstAsync()));
+            Assert.Equal("in_payout", await fx.Sql(db => db.StaffReimbursements.Where(r => r.Id == rbId).Select(r => r.Status).FirstAsync()));
+            Assert.Equal(HttpStatusCode.OK, (await Admin.PostAsJsonAsync($"/api/admin/payroll/payouts/{pid}/pay", new { paymentMode = "upi" })).StatusCode);
+            Assert.Equal("paid", await fx.Sql(db => db.StaffReimbursements.Where(r => r.Id == rbId).Select(r => r.Status).FirstAsync()));
+            Assert.Equal(HttpStatusCode.Conflict, (await Admin.DeleteAsync($"/api/admin/payroll/payouts/{pid}")).StatusCode);
+            Assert.True(await fx.Sql(db => db.AuditLogs.AnyAsync(a => a.Action == "PAYOUT_PAY" && a.EntityId == pid.ToString())));
+            var ledger = await Admin.GetJson($"/api/admin/payroll/staff/{staff.Id}/ledger");
+            Assert.Equal((decimal)ledger["total_credits"]! - (decimal)ledger["total_debits"]!, (decimal)ledger["balance"]!);
+        }
+        finally
+        {
+            await fx.Sql(async db =>
+            {
+                await db.StaffPayouts.Where(x => x.Id == pid).ExecuteDeleteAsync();
+                await db.StaffAttendance.Where(x => x.Id == attId).ExecuteDeleteAsync();
+                await db.StaffReimbursements.Where(x => x.Id == rbId).ExecuteDeleteAsync();
+                return await db.StaffAdvances.Where(x => x.Id == advId).ExecuteDeleteAsync();
+            });
+        }
+    }
+
+    [Fact]
     public async Task Route_list_reflects_postgres_and_status_switch_gates_sales()
     {
         var list = (await Admin.GetJson("/api/admin/route-list"))["routes"]!.AsArray();

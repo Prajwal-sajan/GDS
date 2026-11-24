@@ -76,6 +76,7 @@ async function call<T>(method: string, url: string, body?: unknown): Promise<T> 
 }
 
 const rb = "/api/admin/integrations/redbus";
+const pr = "/api/admin/payroll";
 export const api = {
   status: () => call<RedBusStatus>("GET", `${rb}/status`),
   outbox: (status?: string) => call<OutboxRow[]>("GET", `${rb}/outbox${status ? `?status=${status}` : ""}`),
@@ -105,6 +106,29 @@ export const api = {
   setVehicleStatus: (id: number, status: string) => call<{ status: string }>("PUT", `/api/admin/vehicles/${id}/status`, { status }),
   coachList: () => call<{ coaches: CoachListRow[] }>("GET", "/api/admin/coach-list"),
   setCoachStatus: (id: number, status: string) => call<{ status: string }>("PUT", `/api/admin/coaches/${id}/status`, { status }),
+  // staff payroll
+  attendance: (from: string, to: string) => call<AttendanceGrid>("GET", `${pr}/attendance?from=${from}&to=${to}`),
+  generateAttendance: (from: string, to: string) => call<{ generated: number }>("POST", `${pr}/attendance/generate`, { from, to }),
+  approveAttendance: (b: { ids?: number[]; from?: string; to?: string }) => call<{ approved: number }>("POST", `${pr}/attendance/approve`, b),
+  createAttendance: (b: { staffId: number; date: string; status?: string; amount?: number }) => call<unknown>("POST", `${pr}/attendance`, b),
+  updateAttendance: (id: number, b: { status?: string; amount?: number; state?: string }) => call<unknown>("PUT", `${pr}/attendance/${id}`, b),
+  payouts: (status?: string) => call<{ payouts: PayoutRow[] }>("GET", `${pr}/payouts${status ? `?status=${status}` : ""}`),
+  payoutSummary: () => call<PayoutSummary>("GET", `${pr}/payouts/summary`),
+  payoutPreview: (from: string, to: string) => call<{ rows: { staff_id: number; name: string; role: string; days: number; gross: number; advances_outstanding: number; reimbursements: number; prev_balance: number; net: number }[] }>("GET", `${pr}/payouts/preview?from=${from}&to=${to}`),
+  generatePayouts: (b: { from: string; to: string; staffIds: number[]; deductAdvances: boolean }) => call<{ created: number; payouts: PayoutRow[] }>("POST", `${pr}/payouts/generate`, b),
+  approvePayout: (id: number) => call<unknown>("POST", `${pr}/payouts/${id}/approve`),
+  payPayout: (id: number, b: { paymentMode?: string; reference?: string | null }) => call<unknown>("POST", `${pr}/payouts/${id}/pay`, b),
+  adjustPayout: (id: number, b: { gross?: number; deductions?: number }) => call<unknown>("PUT", `${pr}/payouts/${id}`, b),
+  deletePayout: (id: number) => call<unknown>("DELETE", `${pr}/payouts/${id}`),
+  staffLedger: (id: number) => call<unknown>("GET", `${pr}/staff/${id}/ledger`),
+  advances: () => call<{ advances: AdvanceRow[]; summary: { total_outstanding: number; total_disbursed_this_month: number; overdue_count: number } }>("GET", `${pr}/advances`),
+  createAdvance: (b: { staffId: number; amount: number; advanceType?: string; paymentMode?: string; recoveryMethod?: string; numInstallments?: number; dateIssued?: string; reason?: string }) => call<{ id: number }>("POST", `${pr}/advances`, b),
+  recoverAdvance: (id: number, amount: number) => call<unknown>("POST", `${pr}/advances/${id}/recover`, { amount }),
+  deleteAdvance: (id: number) => call<unknown>("DELETE", `${pr}/advances/${id}`),
+  reimbursements: () => call<{ reimbursements: ReimbursementRow[]; summary: { total_pending: number; pending_count: number } }>("GET", `${pr}/reimbursements`),
+  createReimbursement: (b: { staffId: number; amount: number; category?: string; date?: string; description?: string }) => call<{ id: number }>("POST", `${pr}/reimbursements`, b),
+  reimbursementAction: (id: number, action: "approve" | "reject" | "pay") => call<unknown>("POST", `${pr}/reimbursements/${id}/${action}`),
+  deleteReimbursement: (id: number) => call<unknown>("DELETE", `${pr}/reimbursements/${id}`),
   routeDetail: (id: number) => call<RouteDetail>("GET", `/api/admin/route-detail/${id}`),
   saveExpenseTemplate: (id: number, items: { type: string; key: string | null; label: string; perTrip: number }[]) =>
     call<unknown>("PUT", `/api/admin/routes/${id}/expense-template`, items),
@@ -187,6 +211,12 @@ export interface VehicleHealth { status?: string; odometer_km?: number; engine_h
 export interface VehicleListRow { id: number; registrationNumber: string; coachTemplateId: number | null; coach: string | null; status: string; vehicleRole: string | null;
   gpsEnabled: boolean; modelName: string | null; odometerReading: number | null; position: Telemetry | null; health: VehicleHealth | null; docAlerts: number }
 export interface CoachListRow { id: number; name: string; busType: string; pattern: string; status: string; amenities: string[]; seater: number; sleeper: number; capacity: number }
+export interface AttendanceCell { id: number; status: string; state: string; amount: number; service: string | null }
+export interface AttendanceGrid { from: string; to: string; dates: string[]; staff: { staff_id: number; name: string | null; role: string | null; phone: string | null; days: Record<string, AttendanceCell>; present: number; amount: number; draft: number }[] }
+export interface PayoutRow { id: number; payout_no: string; staff_id: number; period_start: string; period_end: string; days: number; gross: number; deductions: number; advances_recovered: number; reimbursements: number | null; net: number; status: string; approved_by: string | null; paid_at: string | null; payment_mode: string | null; reference: string | null; staff_name: string | null; staff_role: string | null }
+export interface PayoutSummary { total_paid_this_month: number; total_pending_approval: number; total_approved_unpaid: number; payouts_count_this_month: number }
+export interface AdvanceRow { id: number; staff_id: number; advance_type: string; amount: number; date_issued: string; reason: string | null; payment_mode: string; recovery_method: string; amount_recovered: number; status: string; balance: number; staff_name: string | null; staff_role: string | null }
+export interface ReimbursementRow { id: number; staff_id: number; category: string; amount: number; date: string; description: string; receipt: string | null; status: string; by: string | null; staff_name: string | null }
 export interface Staff { id: number; name: string; phone: string; role: string; status: string; licenseNumber: string | null; licenseExpiry: string | null;
   designation?: string | null; salaryType?: string | null; salaryAmount?: number | null; bataPerTrip?: number | null;
   email?: string | null; bloodGroup?: string | null; joiningDate?: string | null }

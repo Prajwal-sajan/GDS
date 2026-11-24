@@ -40,6 +40,7 @@ const P: Record<string, string> = {
 const I = ({ n, s = 20 }: { n: string; s?: number }) => (
   <svg className="sp-icon" width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: P[n] ?? P.user }} />
 );
+export const StaffIcon = I;
 const ROLES: [string, string][] = [["driver", "Driver"], ["helper", "Helper / Attendant"], ["conductor", "Conductor"], ["cleaner", "Cleaner"], ["pickup_driver", "Pickup Driver"], ["manager", "Manager"], ["office", "Office Staff"]];
 const NAV: [string, string, string][] = [["staff", "Staff", "users"], ["attendance", "Attendance", "calendar"], ["advances", "Advances", "wallet"], ["reimbursements", "Reimbursements", "receipt"], ["payouts", "Payouts", "cash"]];
 const TABS: [string, string, string][] = [["personal", "Personal Info", "user"], ["payables", "Payables", "wallet"], ["bank", "Bank Details", "bank"], ["ledger", "Ledger", "book"], ["docs", "Documents", "file"]];
