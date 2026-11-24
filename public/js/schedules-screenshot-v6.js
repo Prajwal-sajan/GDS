@@ -187,7 +187,38 @@ async function schedules(root){
    }
    return;
   }
-  if('sxShare' in d){popup('Share schedule',`<p>Copy the link to this schedule:</p><input readonly value="${E(location.href)}" style="width:100%">`);return}
+  if('sxShare' in d){
+   if(!window.ScheduleBookingShareV50){G.toast('Booking link sharing is unavailable','bad');return}
+   if(b.disabled)return;
+   b.disabled=true;b.setAttribute('aria-busy','true');
+   const label=b.querySelector('span');if(label)label.textContent='Sharing…';
+   try{
+    // Share exactly the route segment currently displayed in Seat Layout,
+    // not the entire route or the internal GDS URL.
+    const path='/schedules/'+sd()+'/booking-share?'+G.qs({
+     from_city_id:S.cityFrom,to_city_id:S.cityTo
+    });
+    const result=await ScheduleBookingShareV50.copy(()=>G.get(path));
+    if(result.copied){
+     G.toast('Booking link copied. Paste into WhatsApp or any chat.','ok');
+    }else{
+     const dialog=popup('Share booking link',ScheduleBookingShareV50.fallbackMarkup(result.message));
+     const field=dialog.el.querySelector('[data-sx50-message]');
+     if(field){field.focus();field.select()}
+     dialog.el.querySelector('[data-sx50-copy]')?.addEventListener('click',async()=>{
+      const copied=await ScheduleBookingShareV50.copyDirect(result.message,{selectedElement:field});
+      if(copied){G.toast('Booking link copied.','ok');dialog.close()}
+      else{field?.focus();field?.select();G.toast('Use Ctrl+C to copy the selected booking message.','warn')}
+     });
+     G.toast('Clipboard permission is blocked. The booking message is selected for manual copy.','warn');
+    }
+   }catch(error){
+    G.toast('Could not share booking link: '+(error?.message||'unknown error'),'bad');
+   }finally{
+    if(b.isConnected){b.disabled=false;b.removeAttribute('aria-busy');if(label)label.textContent='Share'}
+   }
+   return;
+  }
   if('sxPrint' in d){window.print();return}
   if('sxBookSelected' in d){if(!can('bookings.create'))return G.toast('You do not have booking permission','bad');G.toast('The existing booking console will open. Choose seats there to confirm inventory and prevent double-booking.','ok');G.bookingConsole(S.detail.id,()=>hydrate().then(redraw));return}
   if('sxLocation' in d){locationModal();return}
