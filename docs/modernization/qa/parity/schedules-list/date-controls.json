@@ -1,0 +1,15 @@
+{
+  "id": "schedules-list",
+  "region": "date-controls",
+  "legacy": [
+    1296,
+    58
+  ],
+  "react": [
+    1296,
+    58
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

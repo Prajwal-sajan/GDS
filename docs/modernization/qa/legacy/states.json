@@ -1,0 +1,416 @@
+{
+ "capturedAt": "2026-11-24T08:09:25.050Z",
+ "states": [
+  {
+   "id": "S0001",
+   "view": "V001",
+   "hash": "#/trips",
+   "trigger": "Drop",
+   "kind": "inline",
+   "title": "",
+   "screenshot": "screens/V001_S0001.png",
+   "api": [],
+   "elements": []
+  },
+  {
+   "id": "S0002",
+   "view": "V001",
+   "hash": "#/trips",
+   "trigger": "Timings",
+   "kind": "inline",
+   "title": "",
+   "screenshot": "screens/V001_S0002.png",
+   "api": [],
+   "elements": []
+  },
+  {
+   "id": "S0003",
+   "view": "V001",
+   "hash": "#/trips",
+   "trigger": "Docs",
+   "kind": "inline",
+   "title": "",
+   "screenshot": "screens/V001_S0003.png",
+   "api": [],
+   "elements": []
+  },
+  {
+   "id": "S0004",
+   "view": "V002",
+   "hash": "#/gds/schedules",
+   "trigger": "Pickups",
+   "kind": "overlay",
+   "title": "HB1 Rajahamsa\n\nHyderabad → Bengaluru • Tue, 24 Nov",
+   "screenshot": "screens/V002_S0004.png",
+   "api": [
+    "GET /api/schedules/:id",
+    "GET /api/trips/:id",
+    "GET /api/schedules/:id/booking-history",
+    "GET /api/schedules/:id/seat-layout",
+    "GET /api/schedules/:id/manage-bookings/v48"
+   ],
+   "elements": [
+    {
+     "tag": "button",
+     "type": "",
+     "label": ""
+    },
+    {
+     "tag": "button",
+     "type": "",
+     "label": "Bookings"
+    },
+    {
+     "tag": "button",
+     "type": "",
+     "label": "Block"
+    },
+    {
+     "tag": "button",
+     "type": "",
+     "label": "Update"
+    },
+    {
+     "tag": "button",
+     "type": "",
+     "label": "Cities"
+    },
+    {
+     "tag": "button",
+     "type": "",
+     "label": "Pickups"
+    },
+    {
+     "tag": "button",
+     "type": "",
+     "label": "Drops"
+    },
+    {
+     "tag": "button",
+     "type": "",
+     "label": "Fares"
+    },
+    {
+     "tag": "button",
+     "type": "",
+     "label": "P&L"
+    },
+    {
+     "tag": "button",
+     "type": "",
+     "label": "History"
+    },
+    {
+     "tag": "button",
+     "type": "button",
+     "label": "Edit"
+    },
+    {
+     "tag": "button",
+     "type": "",
+     "label": "Hyderabad 14"
+    },
+    {
+     "tag": "button",
+     "type": "",
+     "label": "Kurnool 1"
+    },
+    {
+     "tag": "button",
+     "type": "",
+     "label": "Ananthapur 1"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "9000000001"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "17.349097, 78.54837"
+    },
+    {
+     "tag": "button",
+     "type": "button",
+     "label": "Edit"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "9000000001"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "17.368442, 78.526358"
+    },
+    {
+     "tag": "button",
+     "type": "button",
+     "label": "Edit"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "9000000001"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "17.37708, 78.494621"
+    },
+    {
+     "tag": "button",
+     "type": "button",
+     "label": "Edit"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "9000000001"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "17.443589, 78.486062"
+    },
+    {
+     "tag": "button",
+     "type": "button",
+     "label": "Edit"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "9000000001"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "17.430803, 78.448791"
+    },
+    {
+     "tag": "button",
+     "type": "button",
+     "label": "Edit"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "9000000001"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "17.485122, 78.411455"
+    },
+    {
+     "tag": "button",
+     "type": "button",
+     "label": "Edit"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "9000000001"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "17.490719, 78.407219"
+    },
+    {
+     "tag": "button",
+     "type": "button",
+     "label": "Edit"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "9000000001"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "17.4957, 78.3969"
+    },
+    {
+     "tag": "button",
+     "type": "button",
+     "label": "Edit"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "9000000001"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "17.496235, 78.36553"
+    },
+    {
+     "tag": "button",
+     "type": "button",
+     "label": "Edit"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "9000000001"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "17.455935, 78.364434"
+    },
+    {
+     "tag": "button",
+     "type": "button",
+     "label": "Edit"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "9000000001"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "17.436838, 78.362802"
+    },
+    {
+     "tag": "button",
+     "type": "button",
+     "label": "Edit"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "9000000001"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "17.3313, 78.4277"
+    },
+    {
+     "tag": "button",
+     "type": "button",
+     "label": "Edit"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "9000000001"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "17.247656, 78.373588"
+    },
+    {
+     "tag": "button",
+     "type": "button",
+     "label": "Edit"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "9000000001"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "17.006121, 78.194688"
+    },
+    {
+     "tag": "button",
+     "type": "button",
+     "label": "Edit"
+    },
+    {
+     "tag": "button",
+     "type": "button",
+     "label": "Close"
+    },
+    {
+     "tag": "button",
+     "type": "button",
+     "label": "Save changes"
+    }
+   ]
+  },
+  {
+   "id": "S0005",
+   "view": "V003",
+   "hash": "#/gds/routes",
+   "trigger": "Bus halts",
+   "kind": "overlay",
+   "title": "Bus halts\nPickup and drop points against where the bus really halted, per route.",
+   "screenshot": "screens/V003_S0005.png",
+   "api": [
+    "GET /api/routes/halts-overview"
+   ],
+   "elements": [
+    {
+     "tag": "button",
+     "type": "",
+     "label": "Close"
+    },
+    {
+     "tag": "select",
+     "type": "",
+     "label": "Halt evidence lookback",
+     "options": [
+      "7 days",
+      "15 days",
+      "30 days"
+     ]
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "Open route"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "Open route"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "Open route"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "Open route"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "Open route"
+    },
+    {
+     "tag": "a",
+     "type": "",
+     "label": "Open route"
+    }
+   ]
+  },
+  {
+   "id": "S0006",
+   "view": "V005",
+   "hash": "#/fleet/vehicles",
+   "trigger": "Fleet Map",
+   "kind": "inline",
+   "title": "",
+   "screenshot": "screens/V005_S0006.png",
+   "api": [],
+   "elements": []
+  }
+ ]
+}

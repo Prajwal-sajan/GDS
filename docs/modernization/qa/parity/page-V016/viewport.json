@@ -1,0 +1,15 @@
+{
+  "id": "page-V016",
+  "region": "viewport",
+  "legacy": [
+    1440,
+    900
+  ],
+  "react": [
+    1440,
+    900
+  ],
+  "sizeMatch": true,
+  "diffPixels": 31319,
+  "diffRatio": 0.0242
+}

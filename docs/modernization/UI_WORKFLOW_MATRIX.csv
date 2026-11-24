@@ -1,0 +1,300 @@
+workflow_id,legacy_method,legacy_path,legacy_source,called_by_ui (views/states),dotnet_equivalent,dotnet_source,status
+W001,GET,/about/build,server/api/about-v32.js:5,,,,NOT_STARTED
+W002,GET,/accounts/sales-facets,server/api/accounts.js:16,V008 V020,,,NOT_STARTED
+W003,GET,/accounts/analytics,server/api/accounts.js:27,V008 V020,,,NOT_STARTED
+W004,GET,/accounts/transactions,server/api/accounts.js:28,V021,,,NOT_STARTED
+W005,GET,/accounts/receivables,server/api/accounts.js:29,V022,,,NOT_STARTED
+W006,GET,/accounts/ledger,server/api/accounts.js:30,,GET /api/admin/accounts/ledger,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:128,IMPLEMENTED_UNVERIFIED
+W007,POST,/accounts/ledger,server/api/accounts.js:31,,POST /api/admin/accounts/ledger,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:129,IMPLEMENTED_UNVERIFIED
+W008,DELETE,/accounts/ledger/:id,server/api/accounts.js:32,,,,NOT_STARTED
+W009,GET,/accounts/channels,server/api/accounts.js:33,V026,,,NOT_STARTED
+W010,PUT,/accounts/channels/agents,server/api/accounts.js:35,,,,NOT_STARTED
+W011,GET,/accounts/reports,server/api/accounts.js:51,,,,NOT_STARTED
+W012,GET,/accounts/reports/:key,server/api/accounts.js:52,,,,NOT_STARTED
+W013,GET,/accounts/documents,server/api/accounts.js:60,V024,,,NOT_STARTED
+W014,POST,/accounts/documents/pay,server/api/accounts.js:61,,,,NOT_STARTED
+W015,GET,/reconciliation/config,server/api/accounts.js:64,V025 V026,,,NOT_STARTED
+W016,PUT,/reconciliation/config,server/api/accounts.js:65,,,,NOT_STARTED
+W017,GET,/reconciliation/settlements,server/api/accounts.js:66,V025,,,NOT_STARTED
+W018,POST,/reconciliation/settlements,server/api/accounts.js:67,,,,NOT_STARTED
+W019,GET,/reconciliation/settlements/:id,server/api/accounts.js:85,,,,NOT_STARTED
+W020,POST,/reconciliation/settlements/:id/resolve,server/api/accounts.js:86,,,,NOT_STARTED
+W021,GET,/coupons,server/api/accounts.js:89,V027,,,NOT_STARTED
+W022,GET,/coupons/available,server/api/accounts.js:90,,,,NOT_STARTED
+W023,POST,/coupons,server/api/accounts.js:91,,,,NOT_STARTED
+W024,PUT,/coupons/:id,server/api/accounts.js:92,,,,NOT_STARTED
+W025,GET,/bookings/live-events-v39,server/api/booking-live-v39.js:36,,,,NOT_STARTED
+W026,GET,/bookings/:pnr/ticket/v41,server/api/booking-ticket-v41.js:17,,,,NOT_STARTED
+W027,GET,/bookings/:pnr/ticket/v41.pdf,server/api/booking-ticket-v41.js:21,,,,NOT_STARTED
+W028,GET,/bookings/:pnr/stops,server/api/booking-workspace-v38.js:51,,,,NOT_STARTED
+W029,GET,/bookings/:pnr/history,server/api/booking-workspace-v38.js:57,,,,NOT_STARTED
+W030,GET,/bookings/:pnr/shift-options,server/api/booking-workspace-v38.js:104,,,,NOT_STARTED
+W031,GET,/bookings/:pnr/shift-seats,server/api/booking-workspace-v38.js:120,,,,NOT_STARTED
+W032,GET,/branding-assets/default.svg,server/api/branding-public-v17.js:17,,,,NOT_STARTED
+W033,GET,/branding-assets/:asset,server/api/branding-public-v17.js:21,,,,NOT_STARTED
+W034,GET,/manifest.webmanifest,server/api/branding-public-v17.js:31,,,,NOT_STARTED
+W035,GET,/trips/:sid/passengers/:pnr/communications,server/api/communication-history-v35.js:96,,,,NOT_STARTED
+W036,GET,/settings/config-v30/seat-display,server/api/configuration-v30.js:151,,,,NOT_STARTED
+W037,GET,/settings/config-v30/office-hold,server/api/configuration-v30.js:154,,,,NOT_STARTED
+W038,GET,/settings/config-v30,server/api/configuration-v30.js:161,,,,NOT_STARTED
+W039,PUT,/settings/config-v30/:section,server/api/configuration-v30.js:173,,,,NOT_STARTED
+W040,POST,/settings/config-v30/dials,server/api/configuration-v30.js:174,,,,NOT_STARTED
+W041,PUT,/settings/config-v30/dials/:id,server/api/configuration-v30.js:182,,,,NOT_STARTED
+W042,DELETE,/settings/config-v30/dials/:id,server/api/configuration-v30.js:192,,,,NOT_STARTED
+W043,POST,/settings/config-v30/subscriptions,server/api/configuration-v30.js:227,,,,NOT_STARTED
+W044,PUT,/settings/config-v30/subscriptions/:id,server/api/configuration-v30.js:231,,,,NOT_STARTED
+W045,DELETE,/settings/config-v30/subscriptions/:id,server/api/configuration-v30.js:241,,,,NOT_STARTED
+W046,POST,/settings/config-v30/subscriptions/:id/test,server/api/configuration-v30.js:246,,,,NOT_STARTED
+W047,GET,/settings/config-v30/delivery-log/:pnr,server/api/configuration-v30.js:250,,,,NOT_STARTED
+W048,GET,/accounts/reports/fleet-operations/options,server/api/fleet-operations-v20.js:11,V033,,,NOT_STARTED
+W049,GET,/accounts/reports/fleet-operations.pdf,server/api/fleet-operations-v20.js:14,,,,NOT_STARTED
+W050,GET,/accounts/reports/fleet-operations,server/api/fleet-operations-v20.js:23,V033,,,NOT_STARTED
+W051,GET,/accounts/invoices-v24,server/api/invoices-v24.js:11,,,,NOT_STARTED
+W052,GET,/accounts/invoices-v24/reconcile/:month,server/api/invoices-v24.js:12,,,,NOT_STARTED
+W053,GET,/accounts/invoices-v24/current,server/api/invoices-v24.js:16,,,,NOT_STARTED
+W054,GET,/accounts/invoices-v24/bundle/:month,server/api/invoices-v24.js:22,,,,NOT_STARTED
+W055,GET,/accounts/invoices-v24/documents/:key/pdf,server/api/invoices-v24.js:28,,,,NOT_STARTED
+W056,GET,/accounts/invoices-v24/documents/:key,server/api/invoices-v24.js:34,,,,NOT_STARTED
+W057,POST,/accounts/invoices-v24/documents,server/api/invoices-v24.js:39,,,,NOT_STARTED
+W058,PUT,/accounts/invoices-v24/documents/:key/snapshot,server/api/invoices-v24.js:40,,,,NOT_STARTED
+W059,POST,/accounts/invoices-v24/documents/:key/pdf,server/api/invoices-v24.js:41,,,,NOT_STARTED
+W060,POST,/accounts/invoices-v24/payments,server/api/invoices-v24.js:42,,,,NOT_STARTED
+W061,GET,/trips/:sid/loyalty-upgrades/:pnr/:seat,server/api/loyalty-upgrades-v39.js:129,,,,NOT_STARTED
+W062,POST,/trips/:sid/loyalty-upgrades/:pnr/:seat/offer,server/api/loyalty-upgrades-v39.js:136,,,,NOT_STARTED
+W063,POST,/trips/:sid/loyalty-upgrades/:pnr/:seat/accept,server/api/loyalty-upgrades-v39.js:140,,,,NOT_STARTED
+W064,POST,/trips/:sid/loyalty-upgrades/:pnr/:seat/decline,server/api/loyalty-upgrades-v39.js:145,,,,NOT_STARTED
+W065,GET,/settings/loyalty-v34,server/api/loyalty-v34.js:9,,,,NOT_STARTED
+W066,PUT,/settings/loyalty-v34/:section,server/api/loyalty-v34.js:12,,,,NOT_STARTED
+W067,GET,/cities,server/api/master.js:16,V003 V015,,,NOT_STARTED
+W068,POST,/cities,server/api/master.js:17,,,,NOT_STARTED
+W069,GET,/city-pairs,server/api/master.js:18,,,,NOT_STARTED
+W070,GET,/routes,server/api/master.js:32,V003 V008,GET /api/admin/routes,modern/backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs:34,IMPLEMENTED_UNVERIFIED
+W071,GET,/routes/:id,server/api/master.js:33,V015,,,NOT_STARTED
+W072,POST,/routes,server/api/master.js:34,,,,NOT_STARTED
+W073,PUT,/routes/:id,server/api/master.js:79,,,,NOT_STARTED
+W074,GET,/routes/:id/validate,server/api/master.js:117,,,,NOT_STARTED
+W075,POST,/routes/:id/shift-time,server/api/master.js:125,,,,NOT_STARTED
+W076,POST,/routes/:id/stops/import,server/api/master.js:132,,,,NOT_STARTED
+W077,GET,/routes/:id/history,server/api/master.js:140,,,,NOT_STARTED
+W078,GET,/routes/:id/halts,server/api/master.js:141,,,,NOT_STARTED
+W079,POST,/routes/:id/delete-otp,server/api/master.js:149,,,,NOT_STARTED
+W080,DELETE,/routes/:id,server/api/master.js:150,,,,NOT_STARTED
+W081,POST,/routes/:id/restore,server/api/master.js:156,,,,NOT_STARTED
+W082,POST,/routes/:id/duplicate,server/api/master.js:157,,,,NOT_STARTED
+W083,GET,/coaches,server/api/master.js:160,V003 V005 V006 V015,,,NOT_STARTED
+W084,GET,/coaches/:id,server/api/master.js:161,,,,NOT_STARTED
+W085,POST,/coaches,server/api/master.js:162,,,,NOT_STARTED
+W086,PUT,/coaches/:id,server/api/master.js:175,,,,NOT_STARTED
+W087,DELETE,/coaches/:id,server/api/master.js:198,,,,NOT_STARTED
+W088,GET,/vehicles,server/api/master.js:206,V005 V015,GET /api/admin/vehicles,modern/backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs:19,IMPLEMENTED_UNVERIFIED
+W089,GET,/vehicles/positions,server/api/master.js:207,,,,NOT_STARTED
+W090,GET,/vehicles/:id,server/api/master.js:218,,,,NOT_STARTED
+W091,GET,/vehicles/:id/live,server/api/master.js:219,,,,NOT_STARTED
+W092,POST,/vehicles,server/api/master.js:225,,POST /api/admin/vehicles,modern/backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs:20,IMPLEMENTED_UNVERIFIED
+W093,PUT,/vehicles/:id,server/api/master.js:226,,PUT /api/admin/vehicles/{id:long},modern/backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs:21,IMPLEMENTED_UNVERIFIED
+W094,DELETE,/vehicles/:id,server/api/master.js:227,,,,NOT_STARTED
+W095,GET,/documents/:id/file,server/api/master.js:230,,,,NOT_STARTED
+W096,GET,/documents/:owner_type/:owner_id,server/api/master.js:245,,,,NOT_STARTED
+W097,POST,/documents/:owner_type/:owner_id,server/api/master.js:254,,,,NOT_STARTED
+W098,PUT,/documents/:id,server/api/master.js:255,,,,NOT_STARTED
+W099,DELETE,/documents/:id,server/api/master.js:256,,,,NOT_STARTED
+W100,GET,/staff,server/api/master.js:260,V007 V013 V015,GET /api/admin/staff,modern/backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs:24,IMPLEMENTED_UNVERIFIED
+W101,GET,/staff/:id,server/api/master.js:261,,,,NOT_STARTED
+W102,POST,/staff,server/api/master.js:262,,POST /api/admin/staff,modern/backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs:25,IMPLEMENTED_UNVERIFIED
+W103,PUT,/staff/:id,server/api/master.js:263,,PUT /api/admin/staff/{id:long},modern/backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs:26,IMPLEMENTED_UNVERIFIED
+W104,DELETE,/staff/:id,server/api/master.js:264,,,,NOT_STARTED
+W105,POST,/staff/match,server/api/master.js:265,,,,NOT_STARTED
+W106,GET,/attendance,server/api/master.js:268,V016,,,NOT_STARTED
+W107,POST,/attendance/generate,server/api/master.js:269,,,,NOT_STARTED
+W108,PUT,/attendance/:id,server/api/master.js:270,,,,NOT_STARTED
+W109,POST,/attendance,server/api/master.js:271,,,,NOT_STARTED
+W110,POST,/attendance/approve,server/api/master.js:272,,,,NOT_STARTED
+W111,GET,/payouts,server/api/master.js:276,V019,,,NOT_STARTED
+W112,GET,/payouts/summary,server/api/master.js:277,V019,,,NOT_STARTED
+W113,GET,/payouts/preview,server/api/master.js:278,,,,NOT_STARTED
+W114,POST,/payouts/generate,server/api/master.js:279,,,,NOT_STARTED
+W115,POST,/payouts/:id/approve,server/api/master.js:280,,,,NOT_STARTED
+W116,POST,/payouts/:id/pay,server/api/master.js:281,,,,NOT_STARTED
+W117,PUT,/payouts/:id,server/api/master.js:282,,,,NOT_STARTED
+W118,DELETE,/payouts/:id,server/api/master.js:283,,,,NOT_STARTED
+W119,GET,/staff/:id/ledger,server/api/master.js:284,,,,NOT_STARTED
+W120,GET,/advances,server/api/master.js:287,V017,,,NOT_STARTED
+W121,POST,/advances,server/api/master.js:288,,,,NOT_STARTED
+W122,POST,/advances/:id/recover,server/api/master.js:289,,,,NOT_STARTED
+W123,DELETE,/advances/:id,server/api/master.js:290,,,,NOT_STARTED
+W124,GET,/reimbursements,server/api/master.js:291,V018,,,NOT_STARTED
+W125,POST,/reimbursements,server/api/master.js:292,,,,NOT_STARTED
+W126,POST,/reimbursements/:id/:action,server/api/master.js:293,,,,NOT_STARTED
+W127,DELETE,/reimbursements/:id,server/api/master.js:294,,,,NOT_STARTED
+W128,GET,/auth/me,server/api/misc.js:22,,GET /api/admin/me,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:54,IMPLEMENTED_UNVERIFIED
+W129,POST,/auth/step-up,server/api/misc.js:23,,,,NOT_STARTED
+W130,GET,/auth/switchable-users,server/api/misc.js:24,,,,NOT_STARTED
+W131,GET,/alerts,server/api/misc.js:27,,,,NOT_STARTED
+W132,GET,/crm/customers,server/api/misc.js:30,,,,NOT_STARTED
+W133,GET,/crm/customers/:phone,server/api/misc.js:37,,GET /api/admin/crm/customers/{phone},modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:59,IMPLEMENTED_UNVERIFIED
+W134,POST,/crm/customers/:phone/notes,server/api/misc.js:42,,POST /api/admin/crm/customers/{phone}/notes,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:64,IMPLEMENTED_UNVERIFIED
+W135,GET,/crm/passenger-search,server/api/misc.js:60,,GET /api/admin/crm/passenger-search,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:58,IMPLEMENTED_UNVERIFIED
+W136,GET,/crm/booking/:pnr,server/api/misc.js:95,,,,NOT_STARTED
+W137,GET,/chats,server/api/misc.js:140,V009 V011,GET /api/admin/chats,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:65,IMPLEMENTED_UNVERIFIED
+W138,GET,/chats/:cid,server/api/misc.js:146,,GET /api/admin/chats/{id},modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:66,IMPLEMENTED_UNVERIFIED
+W139,POST,/chats/:cid,server/api/misc.js:147,,POST /api/admin/chats/{id},modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:67,IMPLEMENTED_UNVERIFIED
+W140,POST,/chats/:cid/block,server/api/misc.js:148,,POST /api/admin/chats/{id}/block,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:72,IMPLEMENTED_UNVERIFIED
+W141,GET,/calls,server/api/misc.js:151,V009 V012,GET /api/admin/calls,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:73,IMPLEMENTED_UNVERIFIED
+W142,POST,/calls,server/api/misc.js:154,,POST /api/admin/calls,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:74,IMPLEMENTED_UNVERIFIED
+W143,PUT,/calls/:id,server/api/misc.js:163,,PUT /api/admin/calls/{id:long},modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:76,IMPLEMENTED_UNVERIFIED
+W144,GET,/speed-dials,server/api/misc.js:171,,,,NOT_STARTED
+W145,POST,/speed-dials,server/api/misc.js:172,,,,NOT_STARTED
+W146,DELETE,/speed-dials/:id,server/api/misc.js:173,,,,NOT_STARTED
+W147,GET,/daily-ops,server/api/misc.js:176,V009,,,NOT_STARTED
+W148,GET,/ratings,server/api/misc.js:177,V009,GET /api/admin/ratings,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:77,IMPLEMENTED_UNVERIFIED
+W149,POST,/ratings/:id/reply,server/api/misc.js:178,,POST /api/admin/ratings/{id:long}/reply,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:78,IMPLEMENTED_UNVERIFIED
+W150,PUT,/ratings/:id/follow-up,server/api/misc.js:179,,PUT /api/admin/ratings/{id:long}/follow-up,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:80,IMPLEMENTED_UNVERIFIED
+W151,GET,/sarathi/suggestions,server/api/misc.js:206,V010,GET /api/admin/sarathi/suggestions,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:160,IMPLEMENTED_UNVERIFIED
+W152,GET,/sarathi/conversations,server/api/misc.js:207,V010,GET /api/admin/sarathi/conversations,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:161,IMPLEMENTED_UNVERIFIED
+W153,POST,/sarathi/ask,server/api/misc.js:208,,POST /api/admin/sarathi/ask,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:167,IMPLEMENTED_UNVERIFIED
+W154,GET,/settings,server/api/misc.js:218,,,,NOT_STARTED
+W155,PUT,/settings/:key,server/api/misc.js:220,,,,NOT_STARTED
+W156,POST,/branches,server/api/misc.js:230,,,,NOT_STARTED
+W157,DELETE,/branches/:id,server/api/misc.js:231,,,,NOT_STARTED
+W158,GET,/iam/users,server/api/misc.js:234,V013,GET /api/admin/iam/users,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:184,IMPLEMENTED_UNVERIFIED
+W159,POST,/iam/users,server/api/misc.js:235,,POST /api/admin/iam/users,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:187,IMPLEMENTED_UNVERIFIED
+W160,PUT,/iam/users/:id,server/api/misc.js:236,,PUT /api/admin/iam/users/{id:long},modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:188,IMPLEMENTED_UNVERIFIED
+W161,GET,/iam/roles,server/api/misc.js:237,V013,GET /api/admin/iam/roles,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:175,IMPLEMENTED_UNVERIFIED
+W162,PUT,/iam/roles/:key,server/api/misc.js:238,,,,NOT_STARTED
+W163,DELETE,/iam/roles/:key,server/api/misc.js:239,,,,NOT_STARTED
+W164,GET,/notifications/subscriptions,server/api/misc.js:242,,,,NOT_STARTED
+W165,POST,/notifications/subscriptions,server/api/misc.js:243,,,,NOT_STARTED
+W166,PUT,/notifications/subscriptions/:id,server/api/misc.js:244,,,,NOT_STARTED
+W167,DELETE,/notifications/subscriptions/:id,server/api/misc.js:245,,,,NOT_STARTED
+W168,GET,/history,server/api/misc.js:248,,,,NOT_STARTED
+W169,GET,/trips,server/api/ops.js:43,V001 V009 V014,GET /api/admin/trips,modern/backend/src/JourneyOS.Api/Admin/AdminEndpoints.cs:115,IMPLEMENTED_UNVERIFIED
+W170,GET,/trips/:sid,server/api/ops.js:56,V001 V009 V014 V002/S0004,,,NOT_STARTED
+W171,PATCH,/trips/:sid/passengers/:pnr/:seat,server/api/ops.js:73,,,,NOT_STARTED
+W172,POST,/trips/:sid/stop-event,server/api/ops.js:87,,,,NOT_STARTED
+W173,POST,/trips/:sid/status,server/api/ops.js:96,,,,NOT_STARTED
+W174,POST,/trips/:sid/delay,server/api/ops.js:115,,,,NOT_STARTED
+W175,POST,/trips/:sid/notify,server/api/ops.js:173,,,,NOT_STARTED
+W176,POST,/trips/:sid/cancel,server/api/ops.js:186,,POST /api/admin/trips/{id:long}/cancel,modern/backend/src/JourneyOS.Api/Admin/AdminEndpoints.cs:130,IMPLEMENTED_UNVERIFIED
+W177,GET,/schedules,server/api/ops.js:196,V002,,,NOT_STARTED
+W178,GET,/schedules/deleted,server/api/ops.js:206,,,,NOT_STARTED
+W179,POST,/schedules/restore,server/api/ops.js:207,,,,NOT_STARTED
+W180,GET,/schedules/:id,server/api/ops.js:209,V002/S0004,,,NOT_STARTED
+W181,GET,/schedules/:id/seat-layout,server/api/ops.js:215,V002/S0004,GET /api/admin/trips/{id:long}/seats,modern/backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs:45,IMPLEMENTED_UNVERIFIED
+W182,PUT,/schedules/:id,server/api/ops.js:221,,,,NOT_STARTED
+W183,POST,/schedules/:id/toggle,server/api/ops.js:255,,,,NOT_STARTED
+W184,DELETE,/schedules/:id,server/api/ops.js:263,,,,NOT_STARTED
+W185,GET,/schedules/:id/fares,server/api/ops.js:271,,,,NOT_STARTED
+W186,PUT,/schedules/:id/fares,server/api/ops.js:272,,,,NOT_STARTED
+W187,POST,/schedules/:id/apply-recommendation,server/api/ops.js:289,,,,NOT_STARTED
+W188,POST,/schedules/:id/blocks,server/api/ops.js:291,,POST /api/admin/trips/{id:long}/blocks,modern/backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs:41,IMPLEMENTED_UNVERIFIED
+W189,GET,/schedules/:id/pnl,server/api/ops.js:302,,,,NOT_STARTED
+W190,POST,/schedules/:id/expenses,server/api/ops.js:303,,,,NOT_STARTED
+W191,GET,/schedules/:id/history,server/api/ops.js:320,,,,NOT_STARTED
+W192,GET,/schedules/:id/booking-history,server/api/ops.js:321,V002/S0004,,,NOT_STARTED
+W193,GET,/payment-options,server/api/ops.js:324,,,,NOT_STARTED
+W194,POST,/bookings,server/api/ops.js:325,,POST /api/admin/bookings/counter,modern/backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs:60,IMPLEMENTED_UNVERIFIED
+W195,POST,/bookings/quote,server/api/ops.js:332,,,,NOT_STARTED
+W196,GET,/bookings/search,server/api/ops.js:339,,,,NOT_STARTED
+W197,GET,/bookings/:pnr,server/api/ops.js:345,,GET /api/admin/bookings/{pnr},modern/backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs:66,IMPLEMENTED_UNVERIFIED
+W198,GET,/bookings/:pnr/refund-quote,server/api/ops.js:351,,,,NOT_STARTED
+W199,POST,/bookings/:pnr/cancel,server/api/ops.js:352,,,,NOT_STARTED
+W200,POST,/bookings/:pnr/shift,server/api/ops.js:358,,POST /api/admin/bookings/{pnr}/shift,modern/backend/src/JourneyOS.Api/Admin/AdminEndpoints.cs:134,IMPLEMENTED_UNVERIFIED
+W201,POST,/bookings/:pnr/confirm-payment,server/api/ops.js:362,,,,NOT_STARTED
+W202,POST,/bookings/:pnr/release,server/api/ops.js:363,,,,NOT_STARTED
+W203,POST,/bookings/:pnr/mark-paid,server/api/ops.js:364,,,,NOT_STARTED
+W204,POST,/bookings/:pnr/comments,server/api/ops.js:365,,,,NOT_STARTED
+W205,PUT,/bookings/:pnr,server/api/ops.js:377,,,,NOT_STARTED
+W206,GET,/ota-ratings/settings,server/api/ota-ratings-settings-v44.js:69,V009,,,NOT_STARTED
+W207,PUT,/ota-ratings/settings/:provider,server/api/ota-ratings-settings-v44.js:78,,,,NOT_STARTED
+W208,POST,/ota-ratings/refresh/:provider,server/api/ota-ratings-settings-v44.js:103,,,,NOT_STARTED
+W209,GET,/reconciliation/v43/invoices,server/api/ota-reconciliation-v43.js:40,V025,GET /api/admin/reconciliation/invoices,modern/backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs:77,IMPLEMENTED_UNVERIFIED
+W210,POST,/reconciliation/v43/invoices,server/api/ota-reconciliation-v43.js:43,,POST /api/admin/reconciliation/invoices,modern/backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs:80,IMPLEMENTED_UNVERIFIED
+W211,GET,/reconciliation/v43/invoices/:id,server/api/ota-reconciliation-v43.js:80,,GET /api/admin/reconciliation/invoices/{id:long},modern/backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs:85,IMPLEMENTED_UNVERIFIED
+W212,GET,/reconciliation/v43/invoices/:id/lines,server/api/ota-reconciliation-v43.js:81,,GET /api/admin/reconciliation/invoices/{id:long}/lines,modern/backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs:90,IMPLEMENTED_UNVERIFIED
+W213,GET,/reconciliation/v43/invoices/:id/export.csv,server/api/ota-reconciliation-v43.js:94,,GET /api/admin/reconciliation/invoices/{id:long}/export,modern/backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs:97,IMPLEMENTED_UNVERIFIED
+W214,GET,/reconciliation/v43/invoices/:id/original.pdf,server/api/ota-reconciliation-v43.js:102,,,,NOT_STARTED
+W215,POST,/reconciliation/v43/invoices/:id/recheck,server/api/ota-reconciliation-v43.js:108,,POST /api/admin/reconciliation/invoices/{id:long}/recheck,modern/backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs:104,IMPLEMENTED_UNVERIFIED
+W216,POST,/reconciliation/v43/invoices/:id/resolve,server/api/ota-reconciliation-v43.js:111,,POST /api/admin/reconciliation/invoices/{id:long}/resolve,modern/backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs:112,IMPLEMENTED_UNVERIFIED
+W217,DELETE,/reconciliation/v43/invoices/:id,server/api/ota-reconciliation-v43.js:125,,,,NOT_STARTED
+W218,GET,/schedules/:id/pickup-chart/v40/options,server/api/pickup-chart-v40.js:36,,,,NOT_STARTED
+W219,GET,/schedules/:id/pickup-chart/v40/data,server/api/pickup-chart-v40.js:49,,,,NOT_STARTED
+W220,GET,/schedules/:id/pickup-chart/v40.pdf,server/api/pickup-chart-v40.js:58,,,,NOT_STARTED
+W221,POST,/schedules/:id/pickup-chart/v40/preview,server/api/pickup-chart-v40.js:73,,,,NOT_STARTED
+W222,POST,/schedules/:id/pickup-chart/v40/commit,server/api/pickup-chart-v40.js:92,,,,NOT_STARTED
+W223,PUT,/schedules/:id/pnl-expenses,server/api/pnl-v18.js:19,,,,NOT_STARTED
+W224,GET,/accounts/reports/v21/options,server/api/report-suite-v21.js:22,V034 V035 V036 V037 V038 V041 V042 V045,,,NOT_STARTED
+W225,GET,/accounts/reports/,server/api/report-suite-v21.js:24,,,,NOT_STARTED
+W226,GET,/accounts/reports/,server/api/report-suite-v21.js:31,,,,NOT_STARTED
+W227,GET,/schedules/:id/booking-share,server/api/schedule-booking-share-v50.js:69,,,,NOT_STARTED
+W228,GET,/schedules/month-insights,server/api/schedule-insights-v36.js:51,,,,NOT_STARTED
+W229,GET,/routes/halts-overview,server/api/schedule-insights-v36.js:164,V003/S0005,,,NOT_STARTED
+W230,GET,/routes/:id/halt-evidence,server/api/schedule-insights-v36.js:181,,,,NOT_STARTED
+W231,GET,/schedules/:id/manage-bookings/v48,server/api/schedule-manage-v48.js:67,V002/S0004,,,NOT_STARTED
+W232,GET,/schedules/:id/update-v51,server/api/schedule-update-v51.js:131,,,,NOT_STARTED
+W233,PUT,/schedules/:id/update-v51/assignment,server/api/schedule-update-v51.js:134,,POST /api/admin/trips/{id:long}/assignments,modern/backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs:31,IMPLEMENTED_UNVERIFIED
+W234,PUT,/schedules/:id/update-v51/sync,server/api/schedule-update-v51.js:164,,,,NOT_STARTED
+W235,POST,/schedules/:id/update-v51/sync-ota,server/api/schedule-update-v51.js:187,,,,NOT_STARTED
+W236,GET,/settings/branding,server/api/settings-complete.js:33,,,,NOT_STARTED
+W237,PUT,/settings/branding,server/api/settings-complete.js:34,,,,NOT_STARTED
+W238,POST,/settings/branding/assets/:asset,server/api/settings-complete.js:49,,,,NOT_STARTED
+W239,DELETE,/settings/branding/assets/:asset,server/api/settings-complete.js:68,,,,NOT_STARTED
+W240,GET,/settings/whatsapp,server/api/settings-complete.js:77,,,,NOT_STARTED
+W241,PUT,/settings/whatsapp,server/api/settings-complete.js:78,,,,NOT_STARTED
+W242,GET,/settings/configuration,server/api/settings-complete.js:85,,,,NOT_STARTED
+W243,PUT,/settings/configuration,server/api/settings-complete.js:86,,,,NOT_STARTED
+W244,PUT,/branches/:id,server/api/settings-complete.js:92,,,,NOT_STARTED
+W245,DELETE,/branches/:id,server/api/settings-complete.js:97,,,,NOT_STARTED
+W246,GET,/branches,server/api/settings-complete.js:104,V013,GET /api/admin/iam/branches,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:195,IMPLEMENTED_UNVERIFIED
+W247,GET,/iam/groups,server/api/settings-complete.js:106,,,,NOT_STARTED
+W248,POST,/iam/groups,server/api/settings-complete.js:107,,,,NOT_STARTED
+W249,PUT,/iam/groups/:id,server/api/settings-complete.js:113,,,,NOT_STARTED
+W250,DELETE,/iam/groups/:id,server/api/settings-complete.js:118,,,,NOT_STARTED
+W251,GET,/iam/access-evaluate/:id,server/api/settings-complete.js:119,,,,NOT_STARTED
+W252,DELETE,/iam/users/:id,server/api/settings-complete.js:124,,,,NOT_STARTED
+W253,GET,/auth/sessions,server/api/settings-complete.js:132,,,,NOT_STARTED
+W254,DELETE,/auth/sessions/:id,server/api/settings-complete.js:136,,,,NOT_STARTED
+W255,POST,/auth/logout,server/api/settings-complete.js:141,,POST /api/auth/logout,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:46,IMPLEMENTED_UNVERIFIED
+W256,GET,/iam/users,server/api/settings-v16-iam-bridge.js:51,V013,GET /api/admin/iam/users,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:184,IMPLEMENTED_UNVERIFIED
+W257,POST,/iam/users,server/api/settings-v16-iam-bridge.js:52,,POST /api/admin/iam/users,modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:187,IMPLEMENTED_UNVERIFIED
+W258,PUT,/iam/users/:id,server/api/settings-v16-iam-bridge.js:53,,PUT /api/admin/iam/users/{id:long},modern/backend/src/JourneyOS.Api/Admin/BusinessEndpoints.cs:188,IMPLEMENTED_UNVERIFIED
+W259,PUT,/iam/roles/:key,server/api/settings-v16-iam-bridge.js:67,,,,NOT_STARTED
+W260,POST,/auth/switch-user/v34/resolve,server/api/switch-user-v34.js:4,,,,NOT_STARTED
+W261,GET,/auth/switch-user/v34/status,server/api/switch-user-v34.js:16,,,,NOT_STARTED
+W262,GET,/team-access/v26,server/api/team-access-v26.js:179,V028 V029 V030 V031 V032 V046 V047 V048 V049,,,NOT_STARTED
+W263,POST,/team-access/v26/users,server/api/team-access-v26.js:198,,,,NOT_STARTED
+W264,PUT,/team-access/v26/users/:id,server/api/team-access-v26.js:208,,,,NOT_STARTED
+W265,DELETE,/team-access/v26/users/:id,server/api/team-access-v26.js:226,,,,NOT_STARTED
+W266,POST,/team-access/v26/branches,server/api/team-access-v26.js:240,,,,NOT_STARTED
+W267,PUT,/team-access/v26/branches/:id,server/api/team-access-v26.js:246,,,,NOT_STARTED
+W268,DELETE,/team-access/v26/branches/:id,server/api/team-access-v26.js:254,,,,NOT_STARTED
+W269,PUT,/team-access/v26/roles/batch,server/api/team-access-v26.js:285,,,,NOT_STARTED
+W270,POST,/team-access/v26/roles,server/api/team-access-v26.js:358,,,,NOT_STARTED
+W271,DELETE,/team-access/v26/roles/:key,server/api/team-access-v26.js:376,,,,NOT_STARTED
+W272,GET,/team-access/v26/evaluate/:id,server/api/team-access-v26.js:383,,,,NOT_STARTED
+W273,GET,/team-access/v28/catalog,server/api/team-access-v28.js:80,,,,NOT_STARTED
+W274,GET,/team-access/v28/groups,server/api/team-access-v28.js:84,V048 V049,,,NOT_STARTED
+W275,POST,/team-access/v28/groups,server/api/team-access-v28.js:90,,,,NOT_STARTED
+W276,PUT,/team-access/v28/groups/:id,server/api/team-access-v28.js:98,,,,NOT_STARTED
+W277,DELETE,/team-access/v28/groups/:id,server/api/team-access-v28.js:114,,,,NOT_STARTED
+W278,GET,/team-access/v28/rules,server/api/team-access-v28.js:122,V049,,,NOT_STARTED
+W279,POST,/team-access/v28/rules,server/api/team-access-v28.js:126,,,,NOT_STARTED
+W280,PUT,/team-access/v28/rules/:id,server/api/team-access-v28.js:137,,,,NOT_STARTED
+W281,DELETE,/team-access/v28/rules/:id,server/api/team-access-v28.js:152,,,,NOT_STARTED
+W282,POST,/team-access/v28/test,server/api/team-access-v28.js:161,,,,NOT_STARTED
+W283,GET,/vehicles/:id/detail-v19,server/api/vehicle-details-v19.js:56,,,,NOT_STARTED
+W284,PUT,/vehicles/:id/detail-v19,server/api/vehicle-details-v19.js:66,,,,NOT_STARTED
+W285,POST,/vehicles/:id/documents-v19,server/api/vehicle-details-v19.js:108,,,,NOT_STARTED
+W286,PUT,/vehicles/:id/documents-v19/:docId,server/api/vehicle-details-v19.js:125,,,,NOT_STARTED
+W287,POST,/vehicles/:id/documents-v19/:docId/archive,server/api/vehicle-details-v19.js:137,,,,NOT_STARTED
+W288,DELETE,/vehicles/:id/documents-v19/:docId,server/api/vehicle-details-v19.js:144,,,,NOT_STARTED
+W289,GET,/vehicles/:id/documents-v19/:docId/file,server/api/vehicle-details-v19.js:158,,,,NOT_STARTED
+W290,POST,/vehicles/:id/maintenance-v19,server/api/vehicle-details-v19.js:185,,,,NOT_STARTED
+W291,PUT,/vehicles/:id/maintenance-v19/:recordId,server/api/vehicle-details-v19.js:191,,,,NOT_STARTED
+W292,POST,/vehicles/:id/maintenance-v19/:recordId/archive,server/api/vehicle-details-v19.js:199,,,,NOT_STARTED
+W293,GET,/vehicles/:id/maintenance-v19/:recordId/file,server/api/vehicle-details-v19.js:206,,,,NOT_STARTED
+W294,GET,/settings/whatsapp/onboarding,server/api/whatsapp-v33.js:100,,,,NOT_STARTED
+W295,POST,/settings/whatsapp/onboarding/start,server/api/whatsapp-v33.js:108,,,,NOT_STARTED
+W296,POST,/settings/whatsapp/onboarding/finish,server/api/whatsapp-v33.js:117,,,,NOT_STARTED
+W297,POST,/settings/whatsapp/onboarding/register,server/api/whatsapp-v33.js:153,,,,NOT_STARTED
+W298,POST,/settings/whatsapp/onboarding/disconnect,server/api/whatsapp-v33.js:168,,,,NOT_STARTED
+W299,GET,*,server/index.js:92,,,,NOT_STARTED

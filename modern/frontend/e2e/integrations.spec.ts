@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { open } from "./nav";
 
 const KEY = process.env.JOURNEYOS_ADMIN_KEY ?? "dev-owner-key";
 
@@ -16,6 +17,7 @@ test("rejects an invalid admin key", async ({ page }) => {
 
 test("RedBus status is honest about verification and outbound state", async ({ page }) => {
   await signIn(page);
+  await open(page, "integrations");
   await expect(page.getByTestId("verification")).toContainText("Not RedBus-certified");
   await expect(page.getByTestId("outbound")).toHaveText(/Enabled|Disabled/);
   await expect(page.getByText("Published inventories")).toBeVisible();
@@ -23,7 +25,7 @@ test("RedBus status is honest about verification and outbound state", async ({ p
 
 test("outbox list filters and opens message details", async ({ page }) => {
   await signIn(page);
-  await page.getByRole("button", { name: "Outbox" }).click();
+  await open(page, "outbox");
   await page.getByLabel("Status filter").selectOption("Pending");
   await expect(page.locator("tbody tr").first()).toBeVisible();
   const details = page.getByRole("button", { name: "Details" }).first();
@@ -37,7 +39,7 @@ test("outbox list filters and opens message details", async ({ page }) => {
 
 test("trips view lists services for a date", async ({ page }) => {
   await signIn(page);
-  await page.getByRole("button", { name: "Trips" }).click();
+  await open(page, "trips");
   const d = new Date(Date.now() + 5.5 * 3600_000 + 86_400_000).toISOString().slice(0, 10);
   await page.getByLabel("Travel date").fill(d);
   await expect(page.locator("tbody tr").first()).toBeVisible();

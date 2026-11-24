@@ -1,0 +1,15 @@
+{
+  "id": "shell-language-menu",
+  "region": "menu",
+  "legacy": [
+    252,
+    691
+  ],
+  "react": [
+    252,
+    691
+  ],
+  "sizeMatch": true,
+  "diffPixels": 14,
+  "diffRatio": 0.0001
+}

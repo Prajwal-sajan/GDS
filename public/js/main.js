@@ -77,7 +77,7 @@
       close();if(value!=='English')G.toast(`${value} selected · other screen translations are not yet available`);
     });
     if(sp)$$('[data-settings-link]',sp).forEach(a=>a.onclick=()=>close());
-    if(sp)$('[data-switch-user]',sp).forEach(a=>a.onclick=e=>{e.preventDefault();close();location.hash='#/settings/switch-user';});
+    if(sp)$$('[data-switch-user]',sp).forEach(a=>a.onclick=e=>{e.preventDefault();close();location.hash='#/settings/switch-user';});
     if(sp)$$('[data-settings-logout]',sp).forEach(a=>a.onclick=async e=>{
       e.preventDefault();await G.post('/auth/logout').catch(()=>{});
       localStorage.removeItem('token');localStorage.removeItem('viewAs');G.viewAs='';G.user=null;location.hash='#/login';loginScreen();

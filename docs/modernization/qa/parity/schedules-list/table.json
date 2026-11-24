@@ -1,0 +1,15 @@
+{
+  "id": "schedules-list",
+  "region": "table",
+  "legacy": [
+    1296,
+    679
+  ],
+  "react": [
+    1296,
+    679
+  ],
+  "sizeMatch": true,
+  "diffPixels": 1564,
+  "diffRatio": 0.0018
+}

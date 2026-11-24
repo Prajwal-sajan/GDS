@@ -1,0 +1,56 @@
+/* WhatsApp setup v33: screenshot-specific, no generic settings cards.
+   Existing global top bar and settings dropdown are reused unchanged. */
+.wa33-route{font-family:Poppins,Inter,system-ui,sans-serif;color:#1d3456;width:100%;min-height:calc(100vh - 145px)}
+.wa33-page{background:#fff;min-height:calc(100vh - 145px);box-sizing:border-box;padding:32px 24px 80px}
+.wa33-container{max-width:1020px;margin:0 auto}
+.wa33-head{display:flex;align-items:center;gap:16px;margin:0 0 27px}
+.wa33-icon{width:55px;height:55px;min-width:55px;border-radius:20px;background:#009d72;color:white;display:grid;place-items:center}
+.wa33-icon svg{width:29px;height:29px}
+.wa33-head h1{font-size:23px;line-height:1.25;font-weight:720;margin:0 0 2px;color:#0e1930;letter-spacing:-.4px}
+.wa33-head p{font-size:17px;font-weight:400;color:#627a9e;margin:0;line-height:1.45}
+.wa33-steps{margin:0 0 18px;padding-left:27px;font-size:17px;line-height:2.18;color:#203858;font-weight:400}
+.wa33-steps li{padding-left:0;white-space:normal}
+.wa33-steps li::marker{color:#1f3659}
+.wa33-caution{font-size:17px;line-height:1.65;color:#627a9f;margin:12px 0 19px;max-width:1000px}
+.wa33-button{display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:61px;min-width:255px;border-radius:14px;padding:13px 23px;
+ border:0;background:#009c70;color:white;font-size:17px;font-weight:680;font-family:inherit;cursor:pointer;box-shadow:none;line-height:1.3}
+.wa33-button:hover:not(:disabled){background:#008a64}
+.wa33-button:focus-visible,.wa33-text-button:focus-visible{outline:3px solid #7cdbb6;outline-offset:3px}
+.wa33-button:disabled{opacity:.6;cursor:not-allowed}
+.wa33-button svg{height:24px;width:24px}
+.wa33-status{margin:17px 0 0;font-size:13px;color:#405a7c;border:1px solid #dce6f1;background:#f6faff;border-radius:11px;
+ padding:12px 14px;max-width:720px;line-height:1.65}
+.wa33-status[hidden]{display:none}
+.wa33-status[data-tone=ok]{border-color:#c3e9dc;color:#116644;background:#f4fffa}
+.wa33-status[data-tone=warn]{border-color:#f1d7a0;color:#8a611b;background:#fffaf0}
+.wa33-status[data-tone=error]{border-color:#f1c6c6;color:#9a4242;background:#fff6f6}
+.wa33-connection{max-width:725px;border:1px solid #dde6ed;border-radius:19px;padding:23px;background:#fff;box-shadow:0 8px 24px #1c59830b}
+.wa33-banner{border:1px solid #ffe6b7;border-radius:12px;background:#fffbf1;padding:16px 17px;display:flex;flex-direction:column;gap:5px;margin-bottom:19px;color:#93640b}
+.wa33-banner.connected{background:#f1fff8;border-color:#bdebd2;color:#18714d}
+.wa33-banner b{font-size:18px}
+.wa33-banner span{font-size:13px;line-height:1.55}
+.wa33-detail{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #edf2f6;gap:20px;padding:13px 0}
+.wa33-detail span{font-size:14px;color:#7689a3}
+.wa33-detail strong{font-size:14px;color:#223550;font-weight:650;overflow-wrap:anywhere;text-align:right}
+.wa33-connection form{display:flex;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-top:20px}
+.wa33-connection form label{display:block;width:100%;font-size:14px;font-weight:650;color:#354b69}
+.wa33-connection form input{font:inherit;font-size:16px;letter-spacing:.06em;border:1px solid #cfdbed;border-radius:12px;height:55px;padding:0 14px;
+ max-width:240px;box-sizing:border-box}
+.wa33-connection form .wa33-button{min-height:55px;min-width:195px;font-size:14px}
+.wa33-text-button{border:0;background:transparent;color:#3661e3;cursor:pointer;padding:10px 0;font-weight:600;font-size:13px;margin-top:10px}
+.wa33-text-button.danger{color:#bd3c3c}
+.wa33-error{max-width:760px;margin:40px auto;background:#fff8f7;color:#a64235;padding:20px;border:1px solid #f2c6be;border-radius:12px}
+.wa33-error button{margin-left:10px;padding:7px 11px;background:white;color:#2c58db;border:1px solid #cbd6ed;border-radius:9px;cursor:pointer}
+@media(max-width:720px){
+ .wa33-page{padding:25px 17px 55px}
+ .wa33-head{gap:13px;align-items:flex-start;margin-bottom:22px}
+ .wa33-icon{height:49px;width:49px;min-width:49px;border-radius:16px}
+ .wa33-head h1{font-size:21px}
+ .wa33-head p{font-size:14px;line-height:1.6}
+ .wa33-steps{font-size:15px;line-height:1.8;padding-left:24px}
+ .wa33-steps li{margin-bottom:8px}
+ .wa33-caution{font-size:14px}
+ .wa33-button{width:100%;font-size:16px}
+ .wa33-detail{align-items:flex-start;flex-direction:column;gap:3px}
+ .wa33-detail strong{text-align:left}
+}

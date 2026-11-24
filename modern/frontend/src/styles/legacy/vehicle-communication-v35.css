@@ -1,0 +1,143 @@
+/* v35 screenshot parity: Vehicles > Coaches berth dropdown and PNR Communication History.
+ * Both modules retain the operator's current responsive design tokens. */
+
+/* Coaches — All berths custom selector (not a native browser select) */
+.vp-scope .vp-coach-controls{overflow:visible}
+.vp-scope .vp-berth-filter{display:block;position:relative;z-index:23;flex:0 0 auto;min-width:180px}
+.vp-scope .vp-berth-toggle{height:51px;width:100%;background:#fff;border:1px solid #cbd8e9;border-radius:13px;
+ padding:0 12px;display:flex;align-items:center;gap:9px;box-shadow:0 2px 3px #1e31431a;
+ color:#273a56;cursor:pointer;font:650 14px Poppins,Inter,Arial,sans-serif;white-space:nowrap}
+.vp-scope .vp-berth-toggle .vp-berth-icon{background:linear-gradient(120deg,#7f31ec,#b547ff);border-radius:10px;
+ height:31px;width:31px;flex-shrink:0;display:grid;place-items:center;color:white;box-shadow:0 2px 6px #9254d153}
+.vp-scope .vp-berth-toggle .vp-berth-icon svg{height:21px;width:21px}
+.vp-scope .vp-berth-toggle .vp-berth-caret{margin-left:auto;color:#415674;width:16px;height:16px;transition:transform .12s}
+.vp-scope .vp-berth-toggle[aria-expanded=true] .vp-berth-caret{transform:rotate(180deg)}
+.vp-scope .vp-berth-toggle:focus-visible,.vp-scope .vp-berth-option:focus-visible{outline:3px solid #859aff;outline-offset:2px}
+.vp-scope .vp-berth-menu{position:absolute;top:calc(100% + 7px);left:0;width:316px;max-width:min(316px,95vw);
+ background:white;border:1px solid #dce5f0;border-radius:19px;padding:6px;box-shadow:0 10px 23px #132c4552;
+ display:flex;flex-direction:column;gap:3px;z-index:60}
+.vp-scope .vp-berth-menu[hidden]{display:none}
+.vp-scope .vp-berth-option{border:0;background:#fff;color:#34465f;display:grid;grid-template-columns:27px 1fr auto 23px;
+ align-items:center;text-align:left;gap:8px;min-height:53px;border-radius:12px;padding:8px 14px;font:500 16px Poppins,Inter,Arial,sans-serif;cursor:pointer}
+.vp-scope .vp-berth-option:hover{background:#f0f7ff}
+.vp-scope .vp-berth-option[aria-selected=true]{background:#dcf4ff;color:#2064f1}
+.vp-scope .vp-berth-option .vp-berth-optico{display:flex;align-items:center;justify-content:center;color:#a56cf7}
+.vp-scope .vp-berth-option[data-coach-berth=seater] .vp-berth-optico{color:#f9800b}
+.vp-scope .vp-berth-option[data-coach-berth=sleeper] .vp-berth-optico{color:#a32ffd}
+.vp-scope .vp-berth-option svg{height:21px;width:21px}
+.vp-scope .vp-berth-option .vp-berth-number{color:#90a5c2;font-size:13px}
+.vp-scope .vp-berth-option[aria-selected=true] .vp-berth-number{color:#2971e8}
+.vp-scope .vp-berth-option .vp-berth-checked{color:#2865f3;visibility:hidden}
+.vp-scope .vp-berth-option[aria-selected=true] .vp-berth-checked{visibility:visible}
+.vp-scope .vp-berth-option .vp-berth-checked svg{width:20px;height:20px}
+@media(min-width:1250px){.vp-scope .vp-coach-controls .vp-search{flex:2 1 230px;min-width:180px}.vp-scope .vp-berth-filter{min-width:182px}}
+@media(max-width:1120px){.vp-scope .vp-coach-controls{flex-wrap:wrap;gap:10px}.vp-scope .vp-coach-controls .vp-showing{margin-left:0}.vp-scope .vp-berth-filter{min-width:166px}}
+@media(max-width:560px){.vp-scope .vp-coach-controls{flex-direction:column;align-items:stretch}.vp-scope .vp-coach-controls .vp-search,
+ .vp-scope .vp-coach-controls .vp-select,.vp-scope .vp-berth-filter{width:100%;max-width:none;box-sizing:border-box}
+ .vp-scope .vp-coach-controls .vp-view-switch{width:max-content}
+ .vp-scope .vp-berth-menu{width:100%;max-width:100%;box-sizing:border-box}}
+
+/* Trip → Passenger PNR → Communication History */
+.ch35-overlay.ov{padding:24px 4vw!important;background:rgba(0,0,0,.9)!important;
+ z-index:2000;display:flex;align-items:center;justify-content:center}
+.ch35-overlay .md{display:flex;flex-direction:column;max-width:1600px;width:min(92vw,1600px)!important;
+ height:min(84vh,790px);max-height:calc(100dvh - 54px)!important;padding:0;overflow:hidden;
+ background:white;border-radius:15px;box-shadow:0 18px 40px #00000052;color:#202f45}
+.ch35-overlay .md>.hd{flex:0 0 auto;background:white;border:0;border-bottom:1px solid #e5e9f0;box-sizing:border-box;
+ min-height:138px;display:flex;align-items:flex-start;justify-content:space-between;padding:32px 33px 22px}
+.ch35-overlay .md>.hd h2{margin:0;font-size:26px;font-weight:500;line-height:1.4;color:#081b32;flex:1}
+.ch35-overlay .ch35-title{display:flex;flex-direction:column;gap:8px}
+.ch35-overlay .ch35-title strong{font-weight:600;font-size:25px;line-height:1.3}
+.ch35-overlay .ch35-title small{font-size:17px;font-weight:400;line-height:1.35;color:#314761}
+.ch35-overlay .md>.hd [data-x]{height:39px;width:39px;border:0;background:transparent;color:#939eaf;
+ margin-top:10px;padding:8px;border-radius:11px;display:grid;place-items:center;cursor:pointer}
+.ch35-overlay .md>.hd [data-x]:hover{background:#f5f7fa;color:#354a65}
+.ch35-overlay .md>.hd [data-x] svg{height:30px;width:30px;stroke-width:1.8}
+.ch35-overlay .md>.bd{flex:1 1 auto;display:flex;flex-direction:column;overflow:hidden;padding:0;min-height:0;max-height:none}
+.ch35-overlay .ch35-tabs{flex:0 0 auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:1px solid #e5e9ef}
+.ch35-overlay .ch35-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+ background:white;color:#203149;border:0;border-bottom:3px solid transparent;min-height:85px;cursor:pointer;
+ font:500 16px Poppins,Inter,Arial,sans-serif;transition:background .1s}
+.ch35-overlay .ch35-tab svg{height:22px;width:22px;margin-bottom:2px}
+.ch35-overlay .ch35-tab[data-ch35-tab=calls] svg{color:#24374d}
+.ch35-overlay .ch35-tab[data-ch35-tab=whatsapp] svg{color:#04aa52}
+.ch35-overlay .ch35-tab[data-ch35-tab=sms] svg{color:#ff3d13}
+.ch35-overlay .ch35-tab .ch35-tab-spacer{height:21px;display:block}
+.ch35-overlay .ch35-tab.active{background:#dff6ff;color:#2263f0;border-bottom-color:#306cfa}
+.ch35-overlay .ch35-tab:hover:not(.active):not(:disabled){background:#f7faff}
+.ch35-overlay .ch35-tab:disabled{opacity:.48;cursor:not-allowed}
+.ch35-overlay .ch35-tab:focus-visible,.ch35-overlay button:focus-visible{outline:3px solid #7299f7;outline-offset:-3px}
+.ch35-overlay .ch35-scroll{flex:1 1 auto;overflow:auto;min-height:0;position:relative;padding:31px 32px 26px;scrollbar-gutter:stable}
+.ch35-overlay .ch35-results{min-width:0}
+.ch35-overlay .ch35-table{width:100%;border-collapse:collapse;table-layout:fixed;text-align:left;min-width:1050px}
+.ch35-overlay .ch35-table thead{position:sticky;top:0;z-index:2}
+.ch35-overlay .ch35-table thead tr{background:#f8f9fb}
+.ch35-overlay .ch35-table th{background:#f8f9fb;color:#778091;text-transform:uppercase;
+ font:650 14px Poppins,Inter,Arial,sans-serif;letter-spacing:.045em;white-space:normal;
+ padding:16px 11px;line-height:1.4}
+.ch35-overlay .ch35-table td{font:400 15px Poppins,Inter,Arial,sans-serif;line-height:1.5;
+ border-bottom:1px solid #e1e6ed;color:#2b3545;padding:15px 11px;vertical-align:middle;
+ overflow-wrap:anywhere;word-break:normal}
+.ch35-overlay .ch35-table th:nth-child(1){width:12%}
+.ch35-overlay .ch35-table th:nth-child(2){width:10%}
+.ch35-overlay .ch35-table th:nth-child(3){width:15%}
+.ch35-overlay .ch35-table th:nth-child(4){width:18%}
+.ch35-overlay .ch35-table th:nth-child(5){width:12%}
+.ch35-overlay .ch35-table th:nth-child(6){width:9%}
+.ch35-overlay .ch35-table th:nth-child(7){width:8%}
+.ch35-overlay .ch35-table th:nth-child(8){width:16%}
+.ch35-overlay .ch35-table tbody tr{background:#fff}
+.ch35-overlay .ch35-table tbody tr:nth-child(3n+1){background:#f8fffb}
+.ch35-overlay .ch35-table tbody tr:nth-child(3n+2){background:#f9fafc}
+.ch35-overlay .ch35-nowrap{white-space:nowrap}
+.ch35-overlay .ch35-type,.ch35-overlay .ch35-direction{display:inline-flex;align-items:center;gap:9px;white-space:nowrap;font-weight:700}
+.ch35-overlay .ch35-type svg,.ch35-overlay .ch35-direction svg{height:21px;width:21px;flex:0 0 auto}
+.ch35-overlay .ch35-type.ch35-whatsapp{color:#008f46}
+.ch35-overlay .ch35-type.ch35-calls{color:#435a7a}
+.ch35-overlay .ch35-type.ch35-sms{color:#f24917}
+.ch35-overlay .ch35-direction.outgoing{color:#00a44c}
+.ch35-overlay .ch35-direction.incoming{color:#2366ef}
+.ch35-overlay .ch35-message-type{color:#2361e8;font-weight:650}
+.ch35-overlay .ch35-table td small{display:block;margin-top:2px;color:#8e9aad;font-size:12px;overflow-wrap:anywhere}
+.ch35-overlay .ch35-status{padding:5px 11px;border-radius:18px;display:inline-flex;align-items:center;
+ font-size:14px;font-weight:600;white-space:nowrap;line-height:1.5}
+.ch35-overlay .ch35-status.ch35-read,.ch35-overlay .ch35-status.ch35-received{background:#dcffeb;color:#047344}
+.ch35-overlay .ch35-status.ch35-sent,.ch35-overlay .ch35-status.ch35-delivered{background:#d7ebff;color:#2157bb}
+.ch35-overlay .ch35-status.ch35-failed{background:#ffe4e8;color:#c32644}
+.ch35-overlay .ch35-status.ch35-neutral{background:#f0f2f7;color:#64748b}
+.ch35-overlay .ch35-additional{white-space:normal;max-height:6em}
+.ch35-overlay .ch35-empty,.ch35-overlay .ch35-loading{padding:70px 15px;min-height:220px;
+ display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;
+ color:#64748b;font-size:16px;text-align:center}
+.ch35-overlay .ch35-empty svg{height:30px;width:30px;color:#16aa65}
+.ch35-overlay .ch35-empty p{margin:0}
+.ch35-overlay .ch35-empty.error svg{color:#ce5340}
+.ch35-overlay .ch35-empty button{border:1px solid #b7cbff;border-radius:11px;background:white;color:#275feb;padding:8px 20px;cursor:pointer}
+.ch35-overlay .ch35-page-actions{padding:20px;display:flex;justify-content:center}
+.ch35-overlay .ch35-page-actions[hidden]{display:none}
+.ch35-overlay .ch35-page-actions button{border:1px solid #b7cbff;color:#2765ec;background:#f6faff;border-radius:10px;
+ padding:11px 22px;cursor:pointer;font-weight:650}
+.ch35-overlay .ch35-page-actions button:disabled{opacity:.45;cursor:progress}
+@media(max-width:900px){
+ .ch35-overlay.ov{padding:8px!important}
+ .ch35-overlay .md{width:calc(100vw - 16px)!important;max-height:calc(100dvh - 20px)!important;height:92dvh}
+ .ch35-overlay .md>.hd{min-height:105px;padding:21px 20px 15px}
+ .ch35-overlay .ch35-title strong{font-size:21px}
+ .ch35-overlay .ch35-title small{font-size:14px}
+ .ch35-overlay .ch35-tab{min-height:66px;font-size:13px}
+ .ch35-overlay .ch35-tab svg{height:18px;width:18px}
+ .ch35-overlay .ch35-scroll{padding:16px 11px}
+ .ch35-overlay .ch35-table td,.ch35-overlay .ch35-table th{font-size:12px;padding:12px 9px}
+}
+@media(prefers-reduced-motion:reduce){.vp-scope .vp-berth-toggle .vp-berth-caret{transition:none}}
+
+/* Keep the floating berth menu above the coach table (original toolbar clipped it). */
+.vp-scope .vp-toolbar-card.vp-coaches-tools{overflow:visible;z-index:5}
+.vp-scope .vp-coaches-tools .vp-controls{position:relative;z-index:4}
+.tp13-root .tp13-booking-shortcut{margin-left:5px;display:inline-flex;vertical-align:middle;align-items:center;
+ justify-content:center;background:transparent;color:#6e84a9;border:0;padding:0 3px;cursor:pointer}
+.tp13-root .tp13-booking-shortcut svg{height:14px;width:14px}
+.tp13-root .tp13-booking-shortcut:hover{color:#2763ee}
+.tp13-root .tp13-booking-shortcut:focus-visible{outline:2px solid #2763ee;border-radius:4px}
+
+.ch35-overlay .ch35-type.ch35-app,.ch35-overlay .ch35-type.ch35-email,.ch35-overlay .ch35-type.ch35-other{color:#64748b}

@@ -127,10 +127,10 @@ export function StaffPanel() {
 }
 
 // ---------------------------------------------------------------- Dispatch (assignments, seat blocks, counter booking)
-export function DispatchPanel() {
-  const [date, setDate] = useState(today());
+export function DispatchPanel({ initial }: { initial?: { date: string; tripId: number } } = {}) {
+  const [date, setDate] = useState(initial?.date ?? today());
   const trips = useAsync<TripRow[]>(() => api.trips(date), [date]);
-  const [tripId, setTripId] = useState<number>();
+  const [tripId, setTripId] = useState<number | undefined>(initial?.tripId);
   const trip = trips.data?.find((t) => t.id === tripId);
   const vehicles = useAsync(api.vehicles, []);
   const staff = useAsync(api.staff, []);

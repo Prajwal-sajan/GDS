@@ -1,0 +1,15 @@
+{
+  "id": "shell-settings-menu",
+  "region": "menu",
+  "legacy": [
+    454,
+    703
+  ],
+  "react": [
+    454,
+    703
+  ],
+  "sizeMatch": true,
+  "diffPixels": 9622,
+  "diffRatio": 0.0301
+}

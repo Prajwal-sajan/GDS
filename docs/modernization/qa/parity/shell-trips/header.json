@@ -1,0 +1,15 @@
+{
+  "id": "shell-trips",
+  "region": "header",
+  "legacy": [
+    1440,
+    83
+  ],
+  "react": [
+    1440,
+    83
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

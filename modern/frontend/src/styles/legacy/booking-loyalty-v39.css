@@ -1,0 +1,76 @@
+/* v39 screenshot parity — global in-trip booking notice + animated loyalty upgrade badge */
+.b39-notice-stack{position:fixed;top:16px;right:35px;z-index:10000;width:min(640px,calc(100vw - 26px));
+ display:flex;flex-direction:column;align-items:stretch;gap:12px;pointer-events:none;font-family:Inter,Poppins,'Segoe UI',sans-serif}
+.b39-card{pointer-events:auto;position:relative;min-height:166px;
+ display:grid;grid-template-columns:42px minmax(0,1fr) 30px;align-items:start;gap:15px;
+ padding:19px 21px 19px 15px;background:#fff;border:1px solid #c0d9ff;
+ border-left:7px solid #2676ff;border-radius:21px;
+ box-shadow:0 15px 34px #4565a330;color:#15233a;
+ overflow:hidden;animation:b39-pop-in .25s ease-out both}
+.b39-icon{height:42px;width:42px;display:grid;place-items:center;
+ background:#dfecff;color:#2369f4;border-radius:50%;margin-top:0}
+.b39-copy{min-width:0}
+.b39-title{font-size:19px;font-weight:560;letter-spacing:.01em;line-height:1.4;
+ margin:3px 0 1px;overflow-wrap:anywhere;color:#17243c}
+.b39-line{font-size:18px;line-height:1.43;color:#18263f}
+.b39-pnr{border:0;background:none;display:inline;color:inherit;padding:0;cursor:pointer;font-size:inherit}
+.b39-pnr:hover{text-decoration:underline;color:#2362ef}
+.b39-dismiss{display:grid;place-items:center;width:29px;height:29px;padding:3px;
+ color:#8aa2c4;border:0;background:transparent;cursor:pointer}
+.b39-dismiss:focus-visible,.b39-pnr:focus-visible{outline:3px solid #8fb6ff;outline-offset:3px}
+.b39-progress-rail{position:absolute;bottom:0;left:0;width:100%;height:6px;
+ background:#e8effa;overflow:hidden}
+.b39-progress-fill{height:100%;display:block;background:linear-gradient(90deg,#63aeff,#2f68ea);
+ width:100%;transition:width .13s linear}
+.b39-exit{animation:b39-pop-out .22s ease-in forwards}
+@keyframes b39-pop-in{0%{opacity:0;transform:translateY(-13px) scale(.985)}100%{opacity:1;transform:none}}
+@keyframes b39-pop-out{to{opacity:0;transform:translateY(-12px)}}
+@media(max-width:680px){.b39-notice-stack{top:10px;right:8px;left:8px;width:auto}
+ .b39-card{grid-template-columns:34px minmax(0,1fr) 24px;gap:9px;padding:12px 11px;border-radius:17px}
+ .b39-icon{width:34px;height:34px}
+ .b39-title{font-size:15px}.b39-line{font-size:14px}}
+
+/* Screenshot: pill is adjacent to "Seats: 21", never replaces the original seat. */
+.tp13-root .lv39-upgrade-badge{display:inline-flex;align-items:center;justify-content:center;
+ gap:5px;vertical-align:middle;margin:0 0 0 7px;padding:5px 10px;
+ border-radius:18px;font-size:11px;font-weight:760;white-space:nowrap;
+ background:linear-gradient(105deg,#ffbf53,#ffd38c);color:#fff;
+ border:1px solid #ffe0a4;box-shadow:0 2px 8px #ffb84d45;
+ line-height:1.2;letter-spacing:.01em}
+.tp13-root .lv39-upgrade-badge svg{width:14px;height:14px;flex:none}
+.tp13-root .lv39-upgrade-badge.offered{animation:lv39-upgrade-pulse 1.15s ease-in-out infinite}
+.tp13-root .lv39-upgrade-badge.applied{background:linear-gradient(100deg,#02ab64,#64ce8b);border-color:#68d7a0;box-shadow:0 2px 8px #24ac7b25}
+.tp13-root .lv39-upgrade-badge.declined,.tp13-root .lv39-upgrade-badge.expired{background:#eef2f8;color:#76849b;border-color:#dce3ec;box-shadow:none;animation:none}
+@keyframes lv39-upgrade-pulse{0%,100%{filter:brightness(1);box-shadow:0 0 0 0 #ffae4680}
+ 50%{filter:brightness(1.07);box-shadow:0 0 0 5px #ffcb7840}}
+.tp13-root .lv39-offer-control{border:1px solid #f9d399;border-radius:10px;
+ background:#fffaf2;color:#d6851b;padding:7px 8px;display:inline-flex;gap:4px;
+ align-items:center;font-size:11px;font-weight:680;white-space:nowrap}
+.tp13-root .lv39-offer-control svg{width:15px;height:15px}
+.tp13-root .lv39-offer-control:hover{background:#fff0d4}
+.tp13-root .lv39-upgrade-badge:focus-visible,.tp13-root .lv39-offer-control:focus-visible{
+ outline:3px solid #2768ef;outline-offset:2px}
+.lv39-upgrade-modal .md{width:min(670px,94vw)}
+.lv39-upgrade-modal .md .bd{max-height:70vh;overflow-y:auto;padding:18px}
+.lv39-upgrade-details{border:1px solid #dbe6f7;border-radius:14px;padding:13px 16px;
+ margin:0 0 14px;background:linear-gradient(120deg,#fff,#f5f8ff);
+ display:grid;gap:6px;font-size:14px;color:#486080}
+.lv39-upgrade-details strong{color:#213c65}
+.lv39-upgrade-state{border:1px solid #f9d49a;background:#fff7e9;color:#af690a;
+ border-radius:12px;padding:12px;display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:14px}
+.lv39-upgrade-state.applied{color:#057c43;background:#edfcf4;border-color:#bdeed2}
+.lv39-upgrade-target{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:9px;
+ margin:15px 0}
+.lv39-upgrade-target label{display:flex;align-items:center;gap:7px;
+ padding:12px;border:1px solid #d9e4f7;border-radius:12px;background:#f7faff;color:#1c3e77;cursor:pointer}
+.lv39-upgrade-target label:has(input:checked){border-color:#2266ef;background:#eaf1ff}
+.lv39-upgrade-target input{accent-color:#285eec}
+.lv39-upgrade-actions{display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap;margin-top:18px}
+.lv39-upgrade-actions button{border:1px solid #d5e0ef;border-radius:11px;padding:10px 16px;
+ background:#fff;color:#2253b8;font-weight:650;cursor:pointer}
+.lv39-upgrade-actions button.primary{background:#2863ee;color:white;border-color:#2863ee}
+.lv39-upgrade-actions button.danger{background:#fff5f5;color:#d64141;border-color:#f7caca}
+.lv39-upgrade-note{font-size:12px;line-height:1.45;color:#8292aa}
+@media(prefers-reduced-motion:reduce){.tp13-root .lv39-upgrade-badge.offered,
+ .b39-card,.b39-exit{animation:none!important}
+ .b39-progress-fill{transition:none!important}}

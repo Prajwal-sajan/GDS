@@ -131,6 +131,43 @@ public sealed class BusinessTests(GdsFixture fx)
     }
 
     [Fact]
+    public async Task Schedule_list_reports_real_inventory_and_toggle_is_persisted_audited_and_role_checked()
+    {
+        var trip = await fx.Sql(db => db.Trips.Where(t => t.Status == "active" && t.Bookable).OrderByDescending(t => t.TravelDate).FirstAsync());
+        var d = trip.TravelDate.ToString("yyyy-MM-dd");
+        async Task<JsonNode> Row() => (await Admin.GetJson($"/api/admin/schedules?from={d}&to={d}"))["schedules"]!.AsArray().First(x => (long)x!["id"]! == trip.Id)!;
+
+        var row = await Row();
+        var booked = await fx.Sql(db => db.SeatAllocations.Where(a => a.TripId == trip.Id && a.IsActive && a.Kind == AllocationKind.Booked).Select(a => a.CoachSeatId).Distinct().CountAsync());
+        Assert.Equal(booked, (int)row["booked"]!);
+        Assert.True((int)row["capacity"]! > 0);
+        Assert.Equal((int)row["capacity"]! - (int)row["booked"]! - (int)row["held"]! - (int)row["blocked"]!, (int)row["free"]!);
+        Assert.NotNull(row["origin"]); Assert.NotNull(row["destination"]); Assert.NotNull(row["mainFare"]);
+
+        // a range that is too wide is rejected, not silently truncated
+        Assert.Equal(HttpStatusCode.BadRequest, (await Admin.GetAsync("/api/admin/schedules?from=2026-01-01&to=2026-06-01")).StatusCode);
+
+        // viewers may read the list but not switch a schedule off
+        var (_, phone) = await CreateUser("viewer");
+        var viewer = await Login(phone);
+        Assert.Equal(HttpStatusCode.OK, (await viewer.GetAsync($"/api/admin/schedules?from={d}&to={d}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await viewer.PostAsJsonAsync($"/api/admin/schedules/{trip.Id}/toggle", new { active = false })).StatusCode);
+
+        var (s, off) = await Admin.Post($"/api/admin/schedules/{trip.Id}/toggle", new { active = false });
+        Assert.Equal(HttpStatusCode.OK, s);
+        Assert.False((bool)off!["bookable"]!);
+        Assert.False(await fx.Sql(db => db.Trips.Where(t => t.Id == trip.Id).Select(t => t.Bookable).FirstAsync()));
+        Assert.False((bool)(await Row())["bookable"]!);
+        Assert.Equal(booked, (int)(await Row())["booked"]!); // existing bookings are untouched
+        Assert.True(await fx.Sql(db => db.AuditLogs.AnyAsync(a => a.Action == "SCHEDULE_DISABLED" && a.EntityId == trip.Id.ToString())));
+
+        var (_, on) = await Admin.Post($"/api/admin/schedules/{trip.Id}/toggle", new { active = true });
+        Assert.True((bool)on!["bookable"]!);
+        Assert.True(await fx.Sql(db => db.Trips.Where(t => t.Id == trip.Id).Select(t => t.Bookable).FirstAsync()));
+        Assert.Equal(HttpStatusCode.NotFound, (await Admin.PostAsJsonAsync("/api/admin/schedules/999/toggle", new { active = true })).StatusCode);
+    }
+
+    [Fact]
     public async Task Legacy_route_expense_templates_are_imported_and_editable()
     {
         var routeId = await fx.Sql(db => db.Routes.OrderBy(r => r.Id).Select(r => r.Id).FirstAsync());

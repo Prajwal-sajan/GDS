@@ -98,6 +98,8 @@ export const api = {
   block: (tripId: number, seats: string[], reason: string) => call<{ blocked: string[] }>("POST", `/api/admin/trips/${tripId}/blocks`, { seats, reason }),
   unblock: (tripId: number, seat: string) => call<{ released: number }>("DELETE", `/api/admin/trips/${tripId}/blocks/${encodeURIComponent(seat)}`),
   routes: () => call<RouteRow[]>("GET", "/api/admin/routes"),
+  schedules: (from: string, to: string) => call<{ schedules: ScheduleRow[] }>("GET", `/api/admin/schedules?from=${from}&to=${to}`),
+  toggleSchedule: (id: number, active: boolean) => call<{ bookable: boolean }>("POST", `/api/admin/schedules/${id}/toggle`, { active }),
   saveFares: (routeId: number, fares: Fare[]) => call<{ updated: number }>("PUT", `/api/admin/routes/${routeId}/fares`, fares),
   counterBook: (body: unknown) => call<CounterResult>("POST", "/api/admin/bookings/counter", body),
   invoices: () => call<InvoiceRow[]>("GET", "/api/admin/reconciliation/invoices"),
@@ -146,6 +148,12 @@ export const api = {
   audit: () => call<{ id: number; actor: string; action: string; entity: string; entityId: string; at: string }[]>("GET", "/api/admin/iam/audit"),
 };
 
+export interface ScheduleRow {
+  id: number; routeId: number; travelDate: string; serviceNumber: string; serviceName: string; coach: string | null; origin: string | null; destination: string | null;
+  departureTime: string; arrivalTime: string | null; arrivalDayOffset: number; mainFare: { seater: number; sleeperLower: number; sleeperUpper: number } | null;
+  status: string; bookable: boolean; capacity: number; booked: number; held: number; blocked: number; free: number; occupancyPct: number;
+  sale: number | null; netSales: number | null; expense: number | null; profit: number | null; expenseBasis: string | null;
+}
 export interface Me { name: string; role: string; tenant: string; auth: string; phone: string | null }
 export interface BookingView { pnr: string; status: string; channel: string; travelDate: string; service: string; amount: number; from: string | null; to: string | null;
   contact: string | null; passengers: { seatCode: string; name: string; status: string; boardingStatus: string }[] }

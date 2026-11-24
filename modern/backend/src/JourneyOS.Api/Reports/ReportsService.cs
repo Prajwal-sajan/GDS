@@ -215,6 +215,28 @@ public sealed class ReportsService(GdsDbContext db, TimeProvider clock)
             expenseBasis = Basis(costs.Values) } };
     }
 
+    public sealed record TripMoney(int Seats, decimal Net, decimal Gross, decimal Expense, decimal Profit, string Basis);
+
+    /// <summary>Per-trip sale / expense / profit for the schedule list — same arithmetic as <see cref="TripPnlAsync"/>.</summary>
+    public async Task<Dictionary<long, TripMoney>> TripMoneyAsync(DateOnly from, DateOnly to)
+    {
+        ValidateRange(from, to);
+        var tenant = await TenantAsync();
+        var bks = await BookingsAsync(from, to);
+        var trips = await TripsAsync(from, to);
+        var cxl = await CancellationsAsync(bks);
+        var costs = await CostsAsync(trips);
+        var gstDiv = 1 + tenant.GstPercent / 100m;
+        return trips.ToDictionary(t => t.Key, t =>
+        {
+            var live = bks.Where(b => b.TripId == t.Key && Live(b)).ToList();
+            var net = live.Sum(b => LivePax(b).Sum(p => p.BaseFare));
+            var charges = cxl.Where(x => x.B.TripId == t.Key).Sum(x => x.C.Charge) / gstDiv;
+            var c = costs[t.Key];
+            return new TripMoney(live.Sum(b => LivePax(b).Count()), R2(net), R2(net * gstDiv), c.Total, R2(net + charges - c.Total), c.Basis);
+        });
+    }
+
     // ---------------- daily ops ----------------
     public async Task<object> DailyOpsAsync(DateOnly date)
     {

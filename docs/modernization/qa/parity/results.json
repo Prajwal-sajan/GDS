@@ -1,0 +1,182 @@
+[
+  {
+    "id": "schedules-list",
+    "region": "date-controls",
+    "legacy": [
+      1296,
+      58
+    ],
+    "react": [
+      1296,
+      58
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "schedules-list",
+    "region": "table",
+    "legacy": [
+      1296,
+      679
+    ],
+    "react": [
+      1296,
+      679
+    ],
+    "sizeMatch": true,
+    "diffPixels": 1564,
+    "diffRatio": 0.0018
+  },
+  {
+    "id": "schedules-list",
+    "region": "table-head",
+    "legacy": [
+      1296,
+      50
+    ],
+    "react": [
+      1296,
+      50
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "shell-accounts",
+    "region": "header",
+    "legacy": [
+      1440,
+      83
+    ],
+    "react": [
+      1440,
+      83
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "shell-accounts",
+    "region": "subnav",
+    "legacy": [
+      1296,
+      58
+    ],
+    "react": [
+      1296,
+      58
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "shell-fleet-vehicles",
+    "region": "header",
+    "legacy": [
+      1440,
+      83
+    ],
+    "react": [
+      1440,
+      83
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "shell-fleet-vehicles",
+    "region": "subnav",
+    "legacy": [
+      1296,
+      58
+    ],
+    "react": [
+      1296,
+      58
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "shell-gds-schedules",
+    "region": "header",
+    "legacy": [
+      1440,
+      83
+    ],
+    "react": [
+      1440,
+      83
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "shell-gds-schedules",
+    "region": "subnav",
+    "legacy": [
+      1296,
+      58
+    ],
+    "react": [
+      1296,
+      58
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "shell-language-menu",
+    "region": "menu",
+    "legacy": [
+      252,
+      691
+    ],
+    "react": [
+      252,
+      691
+    ],
+    "sizeMatch": true,
+    "diffPixels": 14,
+    "diffRatio": 0.0001
+  },
+  {
+    "id": "shell-settings-menu",
+    "region": "menu",
+    "legacy": [
+      454,
+      703
+    ],
+    "react": [
+      454,
+      703
+    ],
+    "sizeMatch": true,
+    "diffPixels": 9622,
+    "diffRatio": 0.0301
+  },
+  {
+    "id": "shell-trips",
+    "region": "header",
+    "legacy": [
+      1440,
+      83
+    ],
+    "react": [
+      1440,
+      83
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  }
+]

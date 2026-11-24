@@ -1,17 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { activate, api, ApiError, getKey, login, logout, setKey, type Attempt, type Me, type OutboxRow, type RedBusStatus, type TripRow } from "./api";
 
-import { DispatchPanel, FaresPanel, FleetPanel, ReconciliationPanel, StaffPanel } from "./Operations";
+import { FaresPanel, FleetPanel, ReconciliationPanel, StaffPanel } from "./Operations";
 import { CommsPanel, CrmPanel, LedgerPanel, ReportsPanel, SarathiPanel, UsersPanel } from "./Business";
 
-type Tab = "redbus" | "outbox" | "trips" | "dispatch" | "fleet" | "staff" | "fares" | "recon" | "crm" | "comms" | "reports" | "ledger" | "sarathi" | "users";
-const ALL = ["owner", "admin", "accounts", "ops", "viewer"];
-const OPS = ["owner", "admin", "ops"];
-const ACC = ["owner", "admin", "accounts"];
-// Mirrors the API authorization policies; the API remains the enforcement point.
-const TABS: [Tab, string, string[]][] = [["redbus", "RedBus", ALL], ["outbox", "Outbox", ALL], ["trips", "Trips", ALL], ["dispatch", "Dispatch", OPS], ["fleet", "Fleet", OPS],
-  ["staff", "Staff", OPS], ["fares", "Fares", OPS], ["recon", "Reconciliation", ACC], ["crm", "CRM", ALL], ["comms", "Chats & calls", OPS], ["reports", "Reports", ALL],
-  ["ledger", "Ledger", [...ACC, "agent"]], ["sarathi", "Sarathi", ALL], ["users", "Users", ["owner", "admin"]]];
+import { AppShell } from "./layouts/AppShell";
+import { FeedbackHost } from "./components/ui/feedback";
+import { SchedulesPage } from "./features/schedules/SchedulesPage";
+import { useHashRoute } from "./navigation/useHashRoute";
+import type { Role } from "./navigation/nav";
 
 function useLoad<T>(fn: () => Promise<T>, deps: unknown[]) {
   const [data, setData] = useState<T>();
@@ -32,45 +29,87 @@ const today = () => new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0,
 
 export default function App() {
   const [key, setKeyState] = useState(getKey());
-  const [tab, setTab] = useState<Tab>();
   const [me, setMe] = useState<Me>();
-  const signOut = useCallback(() => { void logout(); setKey(""); setKeyState(""); setMe(undefined); setTab(undefined); }, []);
+  const [meError, setMeError] = useState<string>();
+  const [meTry, setMeTry] = useState(0);
+  const { seg } = useHashRoute();
+  const signOut = useCallback(() => { void logout(); setKey(""); setKeyState(""); setMe(undefined); setMeError(undefined); window.location.hash = ""; }, []);
   useEffect(() => {
     if (!key) return;
-    api.me().then((m) => { setMe(m); setTab((t) => t ?? (TABS.find(([, , r]) => r.includes(m.role))?.[0])); })
-      .catch((e) => { if (e instanceof ApiError && e.status === 401) signOut(); });
-  }, [key, signOut]);
-  if (!key) return <Login onLogin={(k) => { setKey(k); setKeyState(k); }} />;
+    setMeError(undefined);
+    let stale = false;
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 10_000);
+    Promise.race([api.me(), new Promise<never>((_, rej) => ctl.signal.addEventListener("abort", () => rej(new Error("Server did not respond within 10s (is the API on :5080 running?)"))))])
+      .then((m) => { if (!stale) setMe(m); })
+      .catch((e) => {
+        if (stale) return;
+        if (e instanceof ApiError && (e.status === 401 || e.status === 403)) { signOut(); return; }
+        setMeError(e instanceof Error ? e.message : String(e));
+      })
+      .finally(() => clearTimeout(timer));
+    return () => { stale = true; clearTimeout(timer); ctl.abort(); };
+  }, [key, signOut, meTry]);
+  if (!key) return <div className="interim"><Login onLogin={(k) => { setKey(k); setKeyState(k); }} /></div>;
+  if (meError) return (
+    <div className="interim"><div className="login"><h2>Cannot reach JourneyOS</h2><p className="err">{meError}</p>
+      <button onClick={() => setMeTry((n) => n + 1)}>Retry</button> <button onClick={signOut}>Sign out</button></div></div>
+  );
   if (!me) return <p>Loading…</p>;
-  const tabs = TABS.filter(([, , roles]) => roles.includes(me.role));
+  const view = resolveView(seg, me, signOut);
+  if (view.redirect) { window.location.replace(`#${view.redirect.replace(/^#/, "")}`); return null; }
+  return <><AppShell me={me} seg={seg} onSignOut={signOut}>{view.el}</AppShell><FeedbackHost /></>;
+}
+
+/**
+ * Legacy URL → screen. Screens marked `interim` are the pre-parity modern panels: functional against the .NET API but NOT yet
+ * the legacy layout (tracked per route in docs/modernization/ui-parity-status.json). Routes with no React screen render an
+ * explicit "not yet migrated" state — never a fake page.
+ */
+function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Element; redirect?: string } {
+  const r = me.role as Role;
+  const allowed = (roles: Role[]) => roles.includes(r);
+  const OPS_R: Role[] = ["owner", "admin", "ops"];
+  const ACC_R: Role[] = ["owner", "admin", "accounts"];
+  const ALL_R: Role[] = ["owner", "admin", "ops", "accounts", "viewer"];
+  const path = seg.join("/");
+  if (!path) return { redirect: r === "agent" ? "#/accounts" : "#/trips" };
+  // Interim in-page links (NOT the legacy Accounts/Settings tab strips, which are not migrated yet).
+  const strip = (label: string, items: [string, string, Role[]][]) => (
+    <nav className="row" aria-label={label}>
+      {items.filter(([, , roles]) => allowed(roles)).map(([href, text]) => <a key={href} href={href} aria-current={`#/${path}` === href ? "page" : undefined}>{text}</a>)}
+    </nav>
+  );
+  const acct = strip("Accounts sections", [["#/accounts", "Reports", ALL_R], ["#/accounts/transactions", "Ledger", [...ACC_R, "agent"]], ["#/accounts/reconciliation", "Reconciliation", ACC_R]]);
+  const integ = strip("Integration sections", [["#/settings/integrations", "RedBus", ALL_R], ["#/settings/integrations/outbox", "Outbox", ALL_R]]);
+  const table: [RegExp, Role[], () => JSX.Element, true?][] = [
+    [/^trips$/, ALL_R, () => <TripsPanel />],
+    [/^gds(\/schedules)?$/, ALL_R, () => <SchedulesPage me={me} />, true],
+    [/^gds\/routes$/, ALL_R, () => <FaresPanel />],
+    [/^crm(\/.*)?$/, ALL_R, () => <CrmPanel me={me} />],
+    [/^fleet(\/vehicles)?$/, OPS_R, () => <FleetPanel />],
+    [/^fleet\/staff$/, OPS_R, () => <StaffPanel />],
+    [/^accounts\/reconciliation$/, ACC_R, () => <>{acct}<ReconciliationPanel /></>],
+    [/^accounts\/transactions$/, [...ACC_R, "agent"], () => <>{acct}<LedgerPanel me={me} /></>],
+    [/^accounts$/, [...ALL_R, "agent"], () => <>{acct}{r === "agent" ? <LedgerPanel me={me} /> : <ReportsPanel me={me} />}</>],
+    [/^accounts\/(analytics|reports(\/.*)?)$/, ALL_R, () => <>{acct}<ReportsPanel me={me} /></>],
+    [/^dailyops$/, ALL_R, () => <ReportsPanel me={me} />],
+    [/^sarathi$/, ALL_R, () => <SarathiPanel />],
+    [/^(chats|calls)(\/.*)?$/, OPS_R, () => <CommsPanel />],
+    [/^settings(\/team-access(\/.*)?)?$/, ["owner", "admin"], () => <UsersPanel me={me} />],
+    [/^settings\/integrations$/, ALL_R, () => <>{integ}<RedBusPanel onUnauthorized={signOut} /></>],
+    [/^settings\/integrations\/outbox$/, ALL_R, () => <>{integ}<OutboxPanel /></>],
+  ];
+  const hit = table.find(([re]) => re.test(path));
+  if (!hit) return { el: <NotMigrated path={path} /> };
+  if (!allowed(hit[1])) return { el: <div className="empty" role="alert">You don’t have access to this screen. Ask your administrator.</div> };
+  return { el: hit[3] ? hit[2]() : <div className="interim" data-interim={path}>{hit[2]()}</div> };
+}
+
+function NotMigrated({ path }: { path: string }) {
   return (
-    <div className="shell">
-      <header>
-        <strong>JourneyOS</strong> <span className="muted">Operations</span>
-        <nav>
-          {tabs.map(([t, label]) => (
-            <button key={t} className={tab === t ? "active" : ""} onClick={() => setTab(t)}>{label}</button>
-          ))}
-        </nav>
-        <span className="muted" data-testid="whoami">{me.name} · {me.role}</span>
-        <button className="link" onClick={signOut}>Sign out</button>
-      </header>
-      <main>
-        {tab === "redbus" && <RedBusPanel onUnauthorized={signOut} />}
-        {tab === "outbox" && <OutboxPanel />}
-        {tab === "trips" && <TripsPanel />}
-        {tab === "dispatch" && <DispatchPanel />}
-        {tab === "fleet" && <FleetPanel />}
-        {tab === "staff" && <StaffPanel />}
-        {tab === "fares" && <FaresPanel />}
-        {tab === "recon" && <ReconciliationPanel />}
-        {tab === "crm" && <CrmPanel me={me} />}
-        {tab === "comms" && <CommsPanel />}
-        {tab === "reports" && <ReportsPanel me={me} />}
-        {tab === "ledger" && <LedgerPanel me={me} />}
-        {tab === "sarathi" && <SarathiPanel />}
-        {tab === "users" && <UsersPanel me={me} />}
-      </main>
+    <div className="empty" role="status" data-testid="not-migrated">
+      <b>#/{path}</b> has not been migrated to the React app yet. The legacy screen remains the reference; see docs/modernization/UI_MIGRATION_GAPS.md.
     </div>
   );
 }

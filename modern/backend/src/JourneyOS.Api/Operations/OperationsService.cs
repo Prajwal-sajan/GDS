@@ -176,6 +176,24 @@ public sealed class OperationsService(GdsDbContext db, InventoryService inventor
         return i.Seats;
     }
 
+    /// <summary>Legacy "Disable / Activate schedule" switch: opens or closes sales for one departure. Existing bookings are untouched.</summary>
+    public async Task<bool> SetBookableAsync(long tripId, bool active, string actor)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync();
+        var trip = await db.Trips.FromSqlInterpolated($"SELECT * FROM trips WHERE id = {tripId} AND tenant_id = {T} FOR UPDATE").IgnoreQueryFilters().FirstOrDefaultAsync()
+                   ?? throw new GdsException("SERVICE_NOT_FOUND", "Service not found", 404);
+        if (trip.Status != "active") throw new GdsException("SERVICE_NOT_ACTIVE", $"This schedule is {trip.Status} and cannot be switched on or off", 409);
+        if (trip.Bookable == active) { await tx.CommitAsync(); return trip.Bookable; }
+        trip.Bookable = active;
+        var route = await inventory.LoadRouteAsync(trip.RouteId);
+        await notifier.ServiceChangedAsync(trip, route.Stops.Min(s => s.Sequence), route.Stops.Max(s => s.Sequence));
+        Audit(actor, active ? "SCHEDULE_ENABLED" : "SCHEDULE_DISABLED", "trip", tripId.ToString(), new { active });
+        await db.SaveChangesAsync();
+        await tx.CommitAsync();
+        await inventory.InvalidateTripAsync(tripId);
+        return trip.Bookable;
+    }
+
     public async Task<int> UnblockSeatAsync(long tripId, string seat, string actor)
     {
         await using var tx = await db.Database.BeginTransactionAsync();

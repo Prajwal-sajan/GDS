@@ -173,6 +173,7 @@ app.MapRedBus(redbusPrefix).RequireRateLimiting("redbus");
 app.MapAdmin();
 JourneyOS.Api.Admin.OperationsEndpoints.MapOperations(app);
 JourneyOS.Api.Admin.BusinessEndpoints.MapBusiness(app);
+JourneyOS.Api.Admin.ScheduleEndpoints.MapSchedules(app);
 app.MapHub<JourneyOS.Api.Realtime.OpsHub>("/hubs/ops");
 
 app.Run();

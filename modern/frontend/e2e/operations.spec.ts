@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { open } from "./nav";
 
 const KEY = process.env.JOURNEYOS_ADMIN_KEY ?? "dev-owner-key";
 const day = (offset: number) => new Date(Date.now() + 5.5 * 3600_000 + offset * 86_400_000).toISOString().slice(0, 10);
@@ -12,21 +13,21 @@ async function signIn(page: Page) {
 
 test("fleet and staff lists render imported legacy data", async ({ page }) => {
   await signIn(page);
-  await page.getByRole("button", { name: "Fleet", exact: true }).click();
+  await open(page, "vehicles");
   await expect(page.locator("tbody tr").first()).toBeVisible();
-  await page.getByRole("button", { name: "Staff", exact: true }).click();
+  await open(page, "staff");
   await expect(page.locator("tbody tr").first()).toBeVisible();
 });
 
 test("dispatch: realtime connects, seat block then release round-trips", async ({ page }) => {
   await signIn(page);
-  await page.getByRole("button", { name: "Dispatch" }).click();
+  await open(page, "schedules");
   const d = day(5);
-  await page.getByLabel("Dispatch date").fill(d);
-  const service = page.getByLabel("Service");
-  // trip ids embed yyMMdd; wait until the list reflects the chosen date
-  await expect(service.locator(`option[value*="1000${d.slice(2).replaceAll("-", "")}"]`).first()).toBeAttached();
-  await service.selectOption({ index: 1 });
+  await page.locator(`[data-sx-date="${d}"]`).click();
+  // Manage opens the schedule workspace on that exact departure (trip ids embed yyMMdd).
+  const row = page.locator(`.sx-main-table tbody tr[data-sx-row^="1000${d.slice(2).replaceAll("-", "")}"]`).first();
+  await row.getByRole("button", { name: "Manage" }).click();
+  await expect(page.getByTestId("schedule-workspace")).toBeVisible();
   await expect(page.getByTestId("seatmap")).toBeVisible();
   await expect(page.getByTestId("live")).toHaveText("live", { timeout: 10_000 });
   const free = page.locator(".seat.s-free").first();
@@ -44,7 +45,7 @@ test("dispatch: realtime connects, seat block then release round-trips", async (
 
 test("reconciliation: upload CSV, see missing-in-GDS row, dispute requires reason", async ({ page }) => {
   await signIn(page);
-  await page.getByRole("button", { name: "Reconciliation" }).click();
+  await open(page, "reconciliation");
   const n = `E2E-${Date.now()}`;
   await page.getByLabel("Invoice number").fill(n);
   await page.getByLabel("Period start").fill(day(1));

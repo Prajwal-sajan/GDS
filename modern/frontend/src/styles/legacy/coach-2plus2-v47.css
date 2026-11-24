@@ -1,0 +1,35 @@
+/* Screenshot continuation v47: Vehicles > A/C Seater (2+2) only.
+   Inherits the verified v46 modal/tabs/footer/table styling and changes ONLY
+   the 5-column single-deck seat geometry and four reference fixtures. */
+.vp-overlay-coach.cv47-target .cv47-editor .cv46-summary{background:#ddf5ff;border-color:#b7dcff;min-height:182px}
+.vp-overlay-coach.cv47-target .cv47-editor .cv46-diagram{min-height:450px;background:#fafbfe;border:2px solid #cdd4de;border-radius:15px;padding:22px 24px 24px;overflow:auto}
+.vp-overlay-coach.cv47-target .cv47-decks{display:flex;justify-content:center;min-width:max-content;padding:0 10px 6px}
+.vp-overlay-coach.cv47-target .cv47-deck{border:2.5px solid #96a6bc;border-radius:34px;box-sizing:border-box;background:linear-gradient(155deg,#fbfcff,#edf2fa);width:324px;min-width:324px;padding:16px 13px 29px;position:relative;box-shadow:0 4px 8px #213b5b29}
+.vp-overlay-coach.cv47-target .cv47-deck>header{height:80px;display:flex;align-items:center;justify-content:space-between;padding:5px 5px 17px;margin-bottom:17px;color:#45576f;font-size:13px;font-weight:750;border-bottom:1px dashed #cbd4e1}
+.vp-overlay-coach.cv47-target .cv47-wheel{width:46px;height:46px;border:3px solid #123773;border-radius:50%;background:radial-gradient(#3a8cfa,#003574);box-shadow:0 0 0 2px #c3d2e9,0 4px 8px #11386b7b;display:grid;place-items:center}
+.vp-overlay-coach.cv47-target .cv47-grid{display:grid;grid-template-columns:repeat(var(--cv47-cols),50px);grid-template-rows:repeat(var(--cv47-rows),45px);gap:5px;justify-content:center;align-content:start}
+.vp-overlay-coach.cv47-target .cv47-seat{border:2px dashed #76a7ff;background:#fff;border-radius:6px;box-shadow:none;padding:3px;min-width:0;min-height:0;cursor:pointer}
+.vp-overlay-coach.cv47-target .cv47-seat .cv46-cushion{border:0!important;background:transparent;box-shadow:none}
+.vp-overlay-coach.cv47-target .cv47-seat .cv46-cushion b{font-size:14px;font-weight:810;min-width:28px;line-height:1.14;padding:2px 7px;border-radius:4px;background:#e9ebf0;color:#18243a}
+.vp-overlay-coach.cv47-target .cv47-seat .cv46-cushion i{height:5px;bottom:0;left:21%;width:58%;background:linear-gradient(#d7dce3,#b9c2ce);border-radius:3px}
+.vp-overlay-coach.cv47-target .cv47-fixture{display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;overflow:visible}
+.vp-overlay-coach.cv47-target .cv47-fixture.cv47-exit{color:#f22429;transform:translateX(10px)}
+.vp-overlay-coach.cv47-target .cv47-fixture.cv47-toilet{background:linear-gradient(#fff,#f4f7fc);color:#71819b;border:1.7px solid #becadd;border-radius:6px;box-shadow:inset 0 1px #fff}
+.vp-overlay-coach.cv47-target .cv47-fixture.cv47-roof{color:#f22429}
+.vp-overlay-coach.cv47-target .cv47-door{position:absolute;left:calc(50% - 21px);bottom:0;width:42px;height:8px;border-radius:4px 4px 0 0;background:#ef262a}
+.vp-overlay-coach.cv47-target .cv47-editor .cv46-config-head{border-top:1px solid #d9dce4;padding-top:20px;margin-top:12px}
+.vp-overlay-coach.cv47-target .cv47-editor .cv46-tip{margin-top:16px}
+.vp-overlay-coach.cv47-target .cv47-horizontal{background:#e2f5ff;color:#0766a3}
+.vp-overlay-coach.cv47-target .cv47-editor .cv46-kind.wash_room{background:#e0e8f1;color:#455b77}
+.vp-overlay-coach.cv47-target .cv47-editor .cv46-kind.ee_exit,
+.vp-overlay-coach.cv47-target .cv47-editor .cv46-kind.roof_exit,
+.vp-overlay-coach.cv47-target .cv47-editor .cv46-kind.back_exit{background:#ffe0e2;color:#b71928}
+.vp-overlay-coach.cv47-target .cv47-editor .cv46-seat-table td{height:66px}
+.vp-overlay-coach.cv47-target .cv47-editor .cv46-seat-table input.cv46-name{font-size:17px}
+@media(max-width:900px){
+ .vp-overlay-coach.cv47-target .cv47-decks{justify-content:flex-start}
+ .vp-overlay-coach.cv47-target .cv47-editor .cv46-diagram{padding:14px}
+}
+@media(max-width:600px){
+ .vp-overlay-coach.cv47-target .cv47-deck{width:324px;min-width:324px}
+}

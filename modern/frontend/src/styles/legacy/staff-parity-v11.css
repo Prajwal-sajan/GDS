@@ -1,0 +1,82 @@
+/* Staff v11 — visual metrics measured from seven SaveTrip staff reference screenshots.
+   Inter (system fallback) / Poppins, 1px cool borders, #2865ef controls, #633df4 violet.
+   Scoped to .sp-* to avoid changing Routes, Accounts, Schedules and Vehicles. */
+.sp-root,.sp-native-page,.sp-overlay{font-family:Inter,Poppins,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#17263f;font-size:15px}
+.sp-root *, .sp-native-page *, .sp-overlay *{box-sizing:border-box}
+.sp-icon{flex-shrink:0;vertical-align:middle}
+.sp-staff-top{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:8px 0 26px}
+.sp-subnav{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.sp-subpill{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:12px 20px;min-height:50px;border-radius:26px;border:1px solid #e2e6ed;background:#fff;text-decoration:none;color:#273956;font-size:16px;font-weight:500;white-space:nowrap;transition:transform .12s,box-shadow .12s}
+.sp-subpill:hover{border-color:#c4d2ff;box-shadow:0 4px 10px #3146b713;transform:translateY(-1px)}
+.sp-subpill .sp-icon{color:#6659ef}
+.sp-subpill[href$="attendance"] .sp-icon{color:#00bf8b}
+.sp-subpill[href$="advances"] .sp-icon{color:#fb9600}
+.sp-subpill[href$="reimbursements"] .sp-icon{color:#943eff}
+.sp-subpill[href$="payouts"] .sp-icon{color:#00b7a0}
+.sp-subpill.active{color:white;background:linear-gradient(105deg,#2a68ee,#6256f0);border-color:transparent;box-shadow:0 5px 13px #3e65e71c;font-weight:600}
+.sp-subpill.active .sp-icon{color:white}
+.sp-btn{border-radius:13px;min-height:42px;border:1px solid #d5e1ff;padding:11px 17px;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#fff;color:#2d5ced;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}
+.sp-btn:hover{box-shadow:0 4px 12px #304ace17}.sp-btn.primary{color:white;border:0;background:linear-gradient(105deg,#2365f3,#5940f7);box-shadow:0 7px 14px #274edf1c;padding:12px 20px}
+.sp-btn.danger{color:#ec3257;border-color:#ffccd4;background:#fff9fa}.sp-btn.text{border:0;background:transparent;color:#60718e;box-shadow:none}.sp-btn.softgreen{background:#e9faf2;color:#00996e;border:0}.sp-btn.softred{background:#fff0f2;color:#f12658;border:0}.sp-btn:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+.sp-filter-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 17px;border:1px solid #e1e6ee;background:#fafbfd;border-radius:20px;margin-bottom:24px;min-height:90px}
+.sp-search{display:flex;align-items:center;gap:11px;height:54px;border:1px solid #d7dee9;border-radius:14px;background:white;padding:0 16px;min-width:280px;flex:0 1 454px;color:#97a8c0}
+.sp-search:focus-within{outline:2px solid #c3d6ff}.sp-search input{border:0;background:transparent;outline:0;font:inherit;width:100%;min-width:0;color:#21344f}
+.sp-search input::placeholder{color:#9bacbf}
+.sp-filter{height:54px;min-width:208px;display:flex;align-items:center}.sp-filter select{border:1px solid #d4dcf9;box-shadow:0 3px 4px #283f6c0d;border-radius:14px;height:54px;width:100%;padding:0 16px;font:inherit;font-weight:500;color:#172948;background:white;cursor:pointer}
+.sp-result-count{margin-left:auto;white-space:nowrap;color:#263854;font-size:16px}
+.sp-bulk{display:flex;gap:9px;align-items:center;margin:-6px 0 14px;color:#3659dc}.sp-bulk[hidden]{display:none}
+.sp-table-shell{overflow:auto;border:1px solid #e3e9f3;border-radius:21px;background:white}
+.sp-staff-table,.sp-ledger-table{width:100%;border-collapse:collapse;min-width:900px}
+.sp-staff-table thead,.sp-ledger-table thead{background:#f0f2ff}
+.sp-staff-table th,.sp-ledger-table th{font-size:14px;font-weight:700;color:#4233e8;letter-spacing:.025em;text-align:left;padding:20px 13px;border-bottom:2px solid #bfcbff;line-height:1.5;vertical-align:middle}
+.sp-staff-table th .sp-icon{color:#6573ff;margin-right:7px}
+.sp-staff-table th:nth-child(1),.sp-staff-table td:nth-child(1){width:70px;text-align:center}
+.sp-staff-table th:nth-child(2){min-width:210px}.sp-staff-table th:nth-child(3){min-width:190px}.sp-staff-table th:nth-child(4){min-width:135px}.sp-staff-table th:nth-child(7){min-width:135px}.sp-staff-table th:nth-child(8){min-width:140px}
+.sp-staff-table tbody tr:nth-child(even){background:#fafbfd}
+.sp-staff-table tbody tr{border-bottom:1px solid #edf1f6;transition:background .12s}.sp-staff-table tbody tr:hover{background:#f4f7ff}
+.sp-staff-table td{padding:16px 13px;font-size:16px;vertical-align:middle;color:#20314b}
+.sp-staff-table input[type=checkbox]{width:16px;height:16px;accent-color:#2a70f7;cursor:pointer}
+.sp-person{display:flex;align-items:center;gap:16px;white-space:nowrap}.sp-person strong{font-size:17px;font-weight:600;color:#0e1b36}
+.sp-avatar{background:#d6ecff;border-radius:50%;height:52px;width:52px;color:#2454bd;display:grid;place-items:center;font-size:17px;font-weight:700;flex-shrink:0}.sp-avatar.helper{background:#fff0ba;color:#9e5400}
+.sp-role{display:inline-flex;gap:9px;align-items:center;white-space:nowrap;padding:6px 11px;border-radius:15px;color:#034ac6;font-size:13px;background:#d7ebff;font-weight:600}.sp-role i{width:8px;height:8px;background:#3b83ff;border-radius:50%}.sp-role.helper{color:#ad5100;background:#fff0bc}.sp-role.helper i{background:#f7a500}
+.sp-muted{color:#a0b0c3!important}.sp-status{display:inline-flex;align-items:center;width:51px;height:28px;padding:4px;border:0;border-radius:50px;background:#cfd4dd;cursor:pointer;vertical-align:middle;margin-right:8px;transition:background .15s}.sp-status i{display:block;width:21px;height:21px;background:white;border-radius:50%;box-shadow:0 1px 3px #39475b44;transition:transform .15s}.sp-status.on{background:#00c66e}.sp-status.on i{transform:translateX(23px)}.sp-status-label{color:#68798c;font-size:14px}.sp-status.on+.sp-status-label{color:#008e59;font-weight:600}.sp-row-actions{display:flex;justify-content:flex-end;gap:7px}.sp-action{display:grid;place-items:center;border:0;background:transparent;color:#6a778c;padding:7px;border-radius:9px;cursor:pointer}.sp-action:hover{background:#edf3ff}.sp-action.edit{color:#2266f5}.sp-action.delete{color:#f21e43}.sp-sort{color:#3566ff;background:none;border:0;cursor:pointer;font:inherit}
+.sp-empty{text-align:center!important;color:#8190a6!important;padding:32px!important;font-weight:400!important}
+/* Editor modal: screenshot 161806 / 161834 / 161917 / 161937 / 161955 / 162017 */
+.sp-overlay{position:fixed;z-index:5500;inset:0;display:grid;place-items:center;background:rgba(12,16,23,.81);padding:20px;overflow:hidden}
+.sp-dialog{display:flex;flex-direction:column;background:white;width:min(950px,96vw);max-height:calc(100dvh - 50px);min-height:min(760px,calc(100dvh - 50px));border-radius:16px;box-shadow:0 30px 80px #07102655;overflow:hidden;isolation:isolate}
+.sp-dialog-head{height:124px;min-height:124px;display:flex;align-items:center;gap:20px;padding:28px 35px;background:linear-gradient(110deg,#3063f2 0%,#4f38f4 45%,#8128ff 100%);color:white}
+.sp-dialog-icon{height:68px;width:68px;border-radius:22px;background:#ffffff25;display:grid;place-items:center;border:1px solid #ffffff4a;box-shadow:inset 0 1px 6px #ffffff18}
+.sp-dialog-head h2{font-size:23px;font-weight:700;margin:0 0 3px;color:#fff}.sp-dialog-head small{font-size:16px;color:#dce3ff}
+.sp-close{height:55px;width:55px;display:grid;place-items:center;margin-left:auto;border-radius:50%;border:1px solid #ffffff45;background:#ffffff25;color:white;cursor:pointer}
+.sp-modal-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;padding:30px 36px 0;background:white;border-bottom:1px solid #eef1f6}
+.sp-modal-tabs button{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 5px;white-space:nowrap;color:#607189;font-size:16px;background:transparent;border:0;border-bottom:3px solid transparent;cursor:pointer;font-family:inherit}
+.sp-modal-tabs button.active{color:#2466f2;font-weight:600;border-bottom-color:#286bf4}
+.sp-dialog-scroll{overflow-y:auto;overscroll-behavior:contain;flex:1;padding:34px 36px 24px;scrollbar-width:thin;scrollbar-color:#929292 transparent}
+.sp-modal-footer{min-height:78px;display:flex;align-items:center;justify-content:flex-end;gap:14px;border-top:1px solid #eff2f7;padding:14px 34px;background:white}
+.sp-form-card{background:#fff;border-radius:23px;box-shadow:0 2px 3px #253c6515;border:1px solid #e3e8ef;margin-bottom:24px;overflow:hidden}
+.sp-form-card>header{padding:16px 22px;display:flex;align-items:center;gap:15px;min-height:87px;border-bottom:1px solid #ecf0f5}
+.sp-form-card>header h3{font-size:17px;font-weight:600;color:#17253c;margin:0}.sp-card-icon{height:57px;width:57px;display:grid;place-items:center;color:#4a43ff;background:#e3e8ff;border-radius:20px}
+.sp-form-card>header .sp-btn{margin-left:auto}.sp-form-card:has(.sp-add-rule) .sp-card-icon{background:#ddfbef;color:#00a17a}.sp-form-card:has([data-rule-add=deduction]) .sp-card-icon{background:#ffe0e6;color:#ed245d}
+.sp-card-main{padding:28px 23px 24px}.sp-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 22px}.sp-field{display:flex;flex-direction:column;gap:8px;min-width:0}.sp-field.wide{grid-column:1/-1}.sp-field>span:first-child{font-size:16px;color:#101010;font-weight:500}.sp-req{color:#fb335d}.sp-field .sp-input{display:flex;align-items:center;position:relative;background:#f8fafc;border:1px solid #d9e0e8;box-shadow:0 2px 4px #13263f13;border-radius:18px;min-height:58px;padding:0 15px;color:#9aa8be}.sp-field:has(select) .sp-input,.sp-field:has(input[type=date]) .sp-input{background:white;border-color:#cfdbff}.sp-field .sp-input:focus-within{outline:2px solid #c8dbff}.sp-field input,.sp-field select{width:100%;min-width:0;height:56px;flex:1;border:0;outline:0;background:transparent;font:inherit;font-size:16px;color:#263954;padding-left:11px}
+.sp-field input::placeholder{color:#94a7c2}.sp-field input[type=date]{min-width:100px}.sp-field select{cursor:pointer;appearance:auto;color:#1d3252}.sp-field small{color:#7b8da5}
+.sp-pay-label{font-size:14px;color:#606f87;margin:0 0 12px}.sp-pay-cards{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:24px}.sp-pay-cards button{border:1px solid #dce2ed;border-radius:22px;background:white;min-height:137px;padding:21px;text-align:left;color:#42506a;font-size:18px;font-weight:500;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer}.sp-pay-cards button.chosen{border:2px solid #476eff;background:#f6f8ff}.sp-pay-icon{height:54px;width:54px;border-radius:19px;background:#eef0ff;color:#5047f9;display:grid;place-items:center}.sp-note{display:block;color:#71839d;line-height:1.6;font-size:13px;margin:10px 5px 18px}
+.sp-add-rule{border:1px dashed #dce3ed;border-radius:20px;background:#fafbfd;color:#9cabc1;width:100%;height:62px;font-size:16px;font-family:inherit;font-weight:600;display:flex;align-items:center;gap:10px;justify-content:center;cursor:pointer}.sp-rule{border-bottom:1px solid #e8ecf3;display:flex;align-items:center;justify-content:space-between;padding:12px 5px}.sp-rule span{display:flex;flex-direction:column;gap:3px}.sp-rule small{color:#73849c}
+.sp-bank-fields .sp-card-main{padding:26px 24px}.sp-bank-fields{border-radius:18px}.sp-doc-hint{color:#77869e;margin:0 0 18px;font-size:14px}.sp-document-list{display:flex;flex-direction:column;gap:17px}.sp-document{display:flex;align-items:center;gap:17px;padding:17px 20px;background:white;border:1px solid #e4e8ee;border-radius:18px;min-height:92px;box-shadow:0 2px 3px #26395716}.sp-document-icon{height:55px;width:55px;display:grid;place-items:center;border-radius:16px}.sp-document-icon.orange{background:#fff7ec;color:#ff6f0c}.sp-document-icon.cyan{background:#dff5ff;color:#1762f2}.sp-document-icon.blue{background:#edf1ff;color:#5945ff}.sp-document-icon.green{background:#e9fff3;color:#00ac84}.sp-doc-name{display:flex;flex-direction:column;gap:3px;min-width:0}.sp-doc-name strong{font-size:17px}.sp-doc-name small{font-size:14px;color:#75849c}.sp-doc-actions{margin-left:auto;display:flex;gap:8px}.sp-doc-actions .sp-btn{padding:10px 16px;min-height:43px}
+.sp-ledger .sp-kpis{margin-bottom:18px}.sp-ledger-table{min-width:780px}.sp-ledger-table td{padding:16px 12px;border-bottom:1px solid #e8eff4}.sp-ledger-table thead th{font-size:13px}.sp-green{color:#00a36f}.sp-red{color:#e32955}
+.sp-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.sp-kpi{border:1px solid #d9e2f5;border-radius:16px;background:white;min-height:82px;padding:13px;display:flex;gap:12px;align-items:center}.sp-kpi-icon{background:#e7edff;color:#285df6;border-radius:13px;padding:11px}.sp-kpi.green .sp-kpi-icon{color:#009d6e;background:#e3faf0}.sp-kpi.orange .sp-kpi-icon{color:#ff8400;background:#fff0e1}.sp-kpi strong{font-size:19px;color:#1957eb;display:block}.sp-kpi small{font-size:12px;color:#8e9bb1}
+/* Native ledger / attendance / reimbursement / advance / payout operation compatibility */
+.sp-native-page{width:100%}.sp-workspace-head{padding:6px 0 16px}.sp-context{display:flex;gap:13px;align-items:center;margin:24px 0 9px}.sp-context-icon{height:53px;width:53px;border-radius:17px;background:linear-gradient(120deg,#3060ef,#8044f8);color:white;display:grid;place-items:center;box-shadow:0 6px 13px #5b56e533}.sp-context h2{font-size:23px;margin:0;font-weight:700;color:#4732cf}.sp-context p{color:#8797b0;margin:3px 0;font-size:13px}
+.sp-native-content>.row{padding:16px;border:1px solid #e5e9f3;border-radius:18px;background:#fff;gap:10px}.sp-native-content>.row .btn.p,.sp-native-content .btn.p{background:linear-gradient(115deg,#2a69ee,#6544f5);border:0;color:#fff;border-radius:12px}.sp-native-content input,.sp-native-content select{border:1px solid #d8e0ff;border-radius:12px;padding:10px;color:#1d365c;background:white}.sp-native-content .kpi{border:1px solid #e0e7f9;border-radius:17px;background:#fff}.sp-native-content .kpi .v{color:#3160f3}.sp-native-content .tw{background:white;border:1px solid #e2e8f3;border-radius:18px;overflow:auto}.sp-native-content .t{min-width:950px}.sp-native-content .t th{background:#f1f3ff;color:#4333e4;border-bottom:2px solid #d0d8ff;padding:17px;font-weight:700;font-size:12px}.sp-native-content .t td{padding:15px 14px;border-bottom:1px solid #edf1f6}.sp-native-content .pills{gap:5px}.sp-native-content .pills a{border-radius:14px;padding:9px 14px}.sp-native-content .pills .on{background:linear-gradient(110deg,#2865ec,#6447f5);color:white}
+@media(max-width:1100px){.sp-filter-bar .sp-search{flex:1 1 330px}.sp-dialog{width:min(950px,98vw)}}
+@media(max-width:760px){.sp-staff-top{flex-wrap:wrap}.sp-subnav{gap:6px}.sp-subpill{padding:10px;font-size:13px;min-height:41px}.sp-filter{flex:1;min-width:145px}.sp-filter-bar .sp-search{flex-basis:100%}.sp-dialog{max-height:96dvh;min-height:0}.sp-overlay{padding:7px}.sp-dialog-head{padding:16px;height:88px;min-height:88px}.sp-dialog-icon{width:49px;height:49px}.sp-dialog-head h2{font-size:18px}.sp-modal-tabs{display:flex;overflow-x:auto;padding:8px 12px 0}.sp-modal-tabs button{min-width:120px;font-size:13px}.sp-dialog-scroll{padding:14px}.sp-fields{grid-template-columns:1fr;gap:14px}.sp-field.wide{grid-column:auto}.sp-pay-cards{gap:8px}.sp-pay-cards button{min-height:110px;font-size:14px;padding:12px}.sp-form-card>header{min-height:67px;padding:12px}.sp-card-main{padding:13px}.sp-dialog .sp-btn{font-size:13px}.sp-document{padding:10px;gap:8px}.sp-doc-name strong{font-size:13px}.sp-doc-name small{font-size:11px}.sp-document-icon{height:42px;width:42px}.sp-kpis{grid-template-columns:1fr}.sp-modal-footer{padding:12px;min-height:68px}}
+@media(prefers-reduced-motion:reduce){.sp-root *,.sp-overlay *{transition:none!important}}
+
+/* v11.1 standard dropdowns + bank alignment */
+.sp-filter{position:relative}
+.sp-filter .ui-dd-btn{height:54px;width:100%;border:1px solid #d4dcf9;border-radius:14px;background:#fff;padding:0 16px;box-shadow:0 3px 4px #283f6c0d;font-size:14px;font-weight:600;color:#172948}
+.sp-filter .ui-dd-btn:hover{border-color:var(--brand,#5f55ff)}
+.sp-bank-fields .sp-fields{grid-template-columns:repeat(2,minmax(0,1fr));align-items:end}
+.sp-bank-fields .sp-field.wide{grid-column:auto}
+.sp-bank-fields .sp-field>span:first-child{min-height:22px;display:flex;align-items:center}
+.sp-bank-fields .sp-input{height:58px}
+.sp-action svg{display:block;margin:auto}
