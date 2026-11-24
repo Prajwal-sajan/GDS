@@ -193,10 +193,10 @@ public static class OperationsEndpoints
             return Results.Ok(new {
                 b.Pnr, b.Status, b.Channel, b.TotalFare, b.TripId,
                 passengers = b.Passengers.Select(p => new { p.SeatCode, p.Name, p.Status }),
-                payments = pay.Select(p => new { p.Method, p.Amount, p.Status, p.CreatedAt,
+                payments = pay.Select(p => new { p.Id, p.BookingId, p.Method, p.Amount, p.Status, p.CreatedAt,
                     reference = accounting ? p.Reference : null }),
                 finance = fin is null ? null : new {
-                    fin.NetFare, fin.Gst, fin.OtaCommission, fin.OtaCommissionGst,
+                    fin.Id, fin.BookingId, fin.NetFare, fin.Gst, fin.OtaCommission, fin.OtaCommissionGst,
                     fin.OperatorOffer, fin.OtaTakeHome
                 }
             });
