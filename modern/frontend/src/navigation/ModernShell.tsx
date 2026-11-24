@@ -10,6 +10,7 @@ const paths:Record<string,string>={
  routes:"M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7",
  crm:"M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z",
  fleet:"M3 6h18v12H3zM3 14h18M7 18v1.5M17 18v1.5",
+ coaches:"M4 3h16v18H4zM8 7h3v4H8zM13 7h3v4h-3zM8 14h3v4H8zM13 14h3v4h-3z",
  staff:"M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
  ledger:"M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
  reports:"M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
@@ -21,7 +22,7 @@ function Icon({name}:{name:string}) {
     <path d={paths[name]??paths.gds}/></svg>;
 }
 /** The route/menu order is read from original public/js/main.js TOP + SUB. */
-const originalOrder=["schedules","bookings","routes","dailyops","crm","fleet","ledger","staff","reports","sarathi",
+const originalOrder=["schedules","bookings","routes","dailyops","crm","fleet","coaches","ledger","staff","reports","sarathi",
   "dispatch","fares","recon","outbox","redbus","users","comms"];
 export function ModernShell({ modules, active, role, user, onNavigate, signOut, children }:{
   modules:Module[];active:string;role:string;user:string;
