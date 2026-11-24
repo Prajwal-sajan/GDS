@@ -82,6 +82,35 @@ public sealed class ScheduleManageTests(GdsFixture fixture)
     }
 
     [Fact]
+    public async Task Recorded_trip_expense_is_reflected_once_in_actuals_and_PnL()
+    {
+        var idDate = await fixture.Sql(async db => await db.Trips.AsNoTracking()
+            .Where(t => t.Status == "active").OrderBy(t => t.TravelDate)
+            .Select(t => new { t.Id, t.TravelDate }).FirstAsync());
+        var date=idDate.TravelDate.ToString("yyyy-MM-dd");
+        var endpoint=$"/api/admin/reports/trip-pnl?from={date}&to={date}";
+        using var admin=fixture.Factory.Admin();
+        var before=await admin.GetJson(endpoint);
+        var original=before["rows"]!.AsArray().First(x => (long)x!["tripId"]! == idDate.Id)!;
+        var originalExpense=(decimal)original["expense"]!;
+        var originalActual=(decimal)original["expenseActual"]!;
+        var originalProfit=(decimal)original["profit"]!;
+        var marker="QA financial acceptance "+Guid.NewGuid().ToString("N")[..8];
+        var (status,_) = await admin.Post($"/api/admin/trips/{idDate.Id}/expenses",
+            new {category=marker,amount=37.50m,note="synthetic acceptance receipt"});
+        Assert.Equal(HttpStatusCode.OK,status);
+        var after=await admin.GetJson(endpoint);
+        var updated=after["rows"]!.AsArray().First(x => (long)x!["tripId"]! == idDate.Id)!;
+        Assert.Equal(originalExpense+37.50m,(decimal)updated["expense"]!);
+        Assert.Equal(originalActual+37.50m,(decimal)updated["expenseActual"]!);
+        Assert.Equal(originalProfit-37.50m,(decimal)updated["profit"]!);
+        Assert.Contains(updated["expenses"]!.AsArray(),x =>
+            (string)x!["label"]! == marker && (string)x["basis"]! == "actual");
+        Assert.True(await fixture.Sql(db => db.AuditLogs.AnyAsync(a =>
+            a.Action=="EXPENSE_ADD" && a.Entity=="trip" && a.EntityId==idDate.Id.ToString())));
+    }
+
+    [Fact]
     public async Task Booking_chart_returns_pnr_and_seat_status_without_private_contacts()
     {
         var tripId = await fixture.Sql(async db =>
