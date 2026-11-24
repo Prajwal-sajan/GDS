@@ -1,0 +1,112 @@
+/* Native React booking/PNR workspace — adapted from legacy v38/v41 screenshot audits. */
+.bw-page{color:#1b2c48;min-width:0}
+.bw-page-heading{display:flex;justify-content:space-between;gap:18px;align-items:center;flex-wrap:wrap;margin-bottom:19px}
+.bw-page-heading small{font-size:11px;color:#5d62ef;letter-spacing:.1em;font-weight:850}
+.bw-page-heading h1{font-size:30px;margin:2px 0 5px}
+.bw-page-heading p{margin:0;color:#7c8ca4;font-size:13px}
+.bw-page-heading>span{border-radius:25px;background:#eef5ff;color:#355ecf;font-size:12px;font-weight:800;padding:10px 15px}
+.bw-searchbar{display:flex;gap:13px;align-items:end;flex-wrap:wrap;border-radius:18px;border:1px solid #dee6f8;background:white;padding:17px 21px;margin-bottom:17px;box-shadow:0 4px 14px #213f7a0c}
+.bw-searchbar label,.bw-edit-grid label{display:flex;flex-direction:column;gap:8px;font-size:12px;font-weight:850;color:#5b708c}
+.bw-searchbar input,.bw-edit-grid input,.bw-edit-grid select,.bw-edit-grid textarea{border:1px solid #cbd9f2;border-radius:11px;color:#1c385d;background:white;min-height:42px;padding:9px 12px;font-size:13px}
+.bw-searchbar button,.bw-list-row button{border-radius:12px;padding:10px 15px;border:1px solid #bfd0f6;color:#3f58d9;background:white;font-weight:800}
+.bw-searchbar>span{margin-left:auto;font-size:12px;color:#8492a7}
+.bw-list{display:grid;gap:10px}
+.bw-list-row{background:#fff;border:1px solid #dce6f8;border-radius:17px;padding:17px 20px;display:grid;grid-template-columns:minmax(160px,1fr) minmax(160px,2fr) minmax(105px,1fr) minmax(130px,1fr) auto;align-items:center;gap:15px}
+.bw-list-row>div{display:flex;flex-direction:column;gap:7px;font-size:13px;min-width:0;overflow-wrap:anywhere}
+.bw-list-row small{color:#7588a2;font-size:11px}
+.bw-list-row strong{font-size:17px}
+.bw-empty{padding:45px;text-align:center;background:#fff;border:1px dashed #ced8e8;border-radius:16px;color:#7486a1}
+.bw-muted{color:#8191a6;font-size:13px;line-height:1.6}
+.bw-alert,.bw-notice{border:1px solid #ffbac6;background:#fff0f2;color:#a62240;border-radius:12px;padding:12px 16px;margin:12px 0;font-size:13px}
+.bw-notice{background:#edfff6;border-color:#b2e7cb;color:#0c784e}
+.bw-status{display:inline-flex;align-items:center;max-width:max-content;border-radius:20px;padding:4px 10px;background:#e6edff;color:#3753bd;font-size:10px;font-weight:850;text-transform:uppercase}
+.bw-confirmed{background:#daf8e8;color:#09835c}
+.bw-cancelled{background:#ffebee;color:#b52a42}
+.bw-partially-cancelled{background:#fff2d8;color:#ad7215}
+.bw-overlay{position:fixed;inset:0;z-index:2250;background:#16203fa3;display:flex;align-items:center;justify-content:center;padding:18px}
+.bw-modal{background:#fff;border:1px solid #dfe6fa;border-radius:24px;overflow:hidden;display:flex;flex-direction:column;width:min(1480px,96vw);max-height:96vh;box-shadow:0 18px 85px #07122775}
+.bw-modal-header{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:19px 25px;background:linear-gradient(105deg,#315cf2,#865af9);color:#fff;flex-shrink:0}
+.bw-modal-header h2{margin:0 0 5px;color:#fff;font-size:24px}
+.bw-modal-header h2 span{font-size:17px;color:#e1e8ff}
+.bw-modal-header p{margin:0;color:#e0e6ff;font-size:13px}
+.bw-modal-header button,.bw-modal-footer button{border:1px solid #ffffff84;border-radius:22px;padding:10px 17px;background:#ffffff1c;color:#fff;font-weight:800}
+.bw-actions{display:flex;gap:8px;overflow-x:auto;padding:13px 16px;border-bottom:1px solid #e5eaf9;background:#fff;flex-shrink:0}
+.bw-actions>button{flex:0 0 auto;border:1px solid #d5e2fa;background:#fff;color:#315be1;border-radius:12px;padding:10px 13px;font-size:12px;font-weight:800;white-space:nowrap}
+.bw-actions>button.active{background:linear-gradient(95deg,#3463f5,#8257f6);color:white;border-color:transparent}
+.bw-actions>button:disabled{opacity:.45;cursor:not-allowed}
+.bw-modal-body{padding:20px 24px;overflow:auto;flex:1;min-height:0}
+.bw-modal-footer{padding:12px 23px;border-top:1px solid #e8edf7;display:flex;justify-content:flex-end;background:white;flex-shrink:0}
+.bw-modal-footer button{background:#2953cf;border:0}
+.bw-ticket{border:1px solid #e1e6ef;background:white;border-radius:20px;overflow:hidden;box-shadow:0 6px 20px #2639660c}
+.bw-ticket-orange{background:linear-gradient(110deg,#fb8b22,#f56b21);padding:23px 28px;display:flex;justify-content:space-between;align-items:center;gap:16px;color:white}
+.bw-ticket-orange span{font-size:11px;font-weight:850;letter-spacing:.09em}
+.bw-ticket-orange h2{font-size:23px;margin:8px 0;color:white}
+.bw-ticket-orange p{font-size:13px;margin:0;color:#fff1dc}
+.bw-ticket-badge{border:1px solid #ffffff83;border-radius:17px;padding:14px 20px;background:#ffffff27;display:flex;flex-direction:column;gap:5px;min-width:145px}
+.bw-ticket-badge small{font-size:11px;color:#fff2dd}
+.bw-ticket-badge b{font-size:17px;overflow-wrap:anywhere}
+.bw-ticket-meta{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;background:#fff9f3;border-bottom:1px solid #f8e9d6;padding:18px 23px}
+.bw-ticket-meta>div{display:flex;flex-direction:column;gap:7px;min-width:0}
+.bw-ticket-meta small,.bw-stops small{font-size:10px;color:#7f91a7;letter-spacing:.07em;font-weight:850}
+.bw-ticket-meta b{font-size:13px;overflow-wrap:anywhere}
+.bw-stops{display:grid;grid-template-columns:1fr 1fr;gap:15px;padding:20px 23px}
+.bw-stops section{border:1px solid #dfe9fb;background:linear-gradient(130deg,#eef9ff,#fff);border-radius:17px;padding:18px}
+.bw-stops h3{font-size:20px;margin:7px 0;color:#1d3a68}
+.bw-stops p{font-size:13px;color:#7285a2;margin:6px 0}
+.bw-ticket-section{padding:15px 23px 18px;border-top:1px solid #e9edf5}
+.bw-ticket-section h3{font-size:18px;margin:5px 0 15px}
+.bw-ticket-section p{font-size:12px;color:#7587a2;line-height:1.7}
+.bw-table-scroll{overflow:auto}
+.bw-table-scroll table{border-collapse:collapse;width:100%;min-width:850px}
+.bw-table-scroll th,.bw-table-scroll td{border-bottom:1px solid #e8edf7;padding:12px 14px;text-align:left;font-size:12px}
+.bw-table-scroll th{background:#f4f7ff;color:#5a7298;font-weight:850}
+.bw-table-scroll select{min-width:125px;border:1px solid #d6e1f3;background:white;border-radius:9px;padding:8px}
+.bw-totals{display:flex;justify-content:flex-end;align-items:center;gap:18px;padding:17px 5px}
+.bw-totals span{font-size:13px;color:#7184a3}
+.bw-totals strong{font-size:25px;color:#2647ad}
+.bw-pending-refund{padding:14px;border:1px solid #f0d59d;background:#fff7e8;border-radius:13px}
+.bw-ticket-foot{border-top:1px solid #e1e7f1;background:#f8fbff;padding:18px 23px;color:#6e809b}
+.bw-ticket-foot b{font-size:13px}
+.bw-ticket-foot p{font-size:11px;line-height:1.65;margin:8px 0 0}
+.bw-edit-card{border:1px solid #dce8fa;border-radius:21px;background:linear-gradient(130deg,#eefaff,#fff);padding:24px;min-height:260px}
+.bw-edit-card h3{margin:0 0 8px;font-size:22px}
+.bw-edit-card>p{font-size:13px;color:#69809f;line-height:1.7;max-width:950px}
+.bw-edit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:18px;margin:23px 0}
+.bw-edit-grid label textarea{resize:vertical;min-height:80px}
+.bw-form-footer{display:flex;align-items:center;justify-content:flex-end;gap:13px;padding:19px 0 0;margin-top:17px;border-top:1px solid #e0e8f7}
+.bw-form-footer button{border:1px solid #cbdafa;color:#3058d6;border-radius:12px;padding:11px 20px;background:white;font-weight:850}
+.bw-form-footer button:last-child{border:0;color:white;background:linear-gradient(100deg,#355eff,#8659f8)}
+.bw-form-footer button:disabled{opacity:.45;cursor:not-allowed}
+.bw-form-footer .bw-danger-button{background:linear-gradient(95deg,#e44556,#a92336)!important}
+.bw-timeline{list-style:none;border-left:3px solid #d6e1ff;padding-left:23px;margin:22px 0}
+.bw-timeline li{display:flex;gap:18px;align-items:flex-start;margin:12px 0;padding:15px;background:#fff;border:1px solid #dae5fb;border-radius:15px;position:relative}
+.bw-timeline li:before{position:absolute;content:"";left:-31px;top:17px;width:14px;height:14px;background:#5268ec;border:3px solid #fff;border-radius:100%;box-shadow:0 0 0 2px #cbd7ff}
+.bw-timeline time{color:#5c6f90;font-size:12px;white-space:nowrap;min-width:175px}
+.bw-timeline li>div{display:flex;flex-direction:column;gap:6px}
+.bw-timeline li small{color:#8b9ab2}
+.bw-edit-card>textarea{border:1px solid #cbd9f0;border-radius:13px;min-height:130px;width:100%;padding:13px;background:white;color:#253d64}
+.bw-shift-content{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(265px,.8fr);gap:17px;align-items:start}
+.bw-shift-content h4{font-size:17px;margin:0 0 13px}
+.bw-shift-row{display:flex;flex-direction:column;gap:10px;padding:11px 13px;margin:10px 0;border:1px solid #d9e4fa;border-radius:13px;background:#fff;color:#354f71;font-size:13px}
+.bw-shift-row select{border:1px solid #cbd9ef;border-radius:9px;padding:11px;background:white}
+.bw-cancel-seats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:11px;margin:18px 0}
+.bw-cancel-seats label{display:flex;align-items:center;gap:11px;padding:13px 16px;background:#fff;border:1px solid #dce4f4;border-radius:13px;color:#42587c;font-size:13px}
+.bw-cancel-seats input{width:19px;height:19px}
+.bw-refund-quote{padding:18px;background:#fff7ee;border:1px solid #f2d4ad;border-radius:16px}
+.bw-refund-quote h4{margin:0 0 10px;color:#b16e24}
+.bw-refund-quote>div{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #f5e5d4}
+.bw-refund-quote p{font-size:11px;color:#877358}
+@media(max-width:1100px){.bw-ticket-meta{grid-template-columns:repeat(3,minmax(0,1fr))}.bw-shift-content{grid-template-columns:1fr}.bw-list-row{grid-template-columns:1fr 1fr 1fr}.bw-list-row>button{grid-column:2/4}}
+@media(max-width:720px){.bw-overlay{padding:0}.bw-modal{width:100vw;height:100dvh;max-height:none;border-radius:0}
+ .bw-modal-body{padding:13px}.bw-modal-header{padding:15px}.bw-modal-header h2{font-size:19px}
+ .bw-searchbar{padding:13px}.bw-list-row{grid-template-columns:1fr 1fr;padding:13px}
+ .bw-list-row>button{grid-column:1/-1}.bw-ticket-orange{flex-direction:column;align-items:stretch}
+ .bw-ticket-meta{grid-template-columns:1fr 1fr}.bw-stops{grid-template-columns:1fr}
+ .bw-ticket-section{padding:13px}.bw-edit-card{padding:15px}.bw-edit-grid{grid-template-columns:1fr}
+ .bw-timeline li{flex-direction:column;gap:6px}.bw-timeline time{min-width:0}}
+@media print{body *{visibility:hidden!important}
+ .bw-ticket,.bw-ticket *{visibility:visible!important}
+ .bw-ticket{position:absolute!important;left:0;top:0;width:100%;border:0;box-shadow:none}
+ .bw-ticket .bw-no-print{display:none!important}
+ .bw-ticket-orange{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ .bw-overlay,.bw-modal,.bw-modal-body{overflow:visible!important;box-shadow:none!important;border:0!important;background:transparent!important}}
