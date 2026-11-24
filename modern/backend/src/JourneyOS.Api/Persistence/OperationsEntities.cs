@@ -17,6 +17,11 @@ public sealed class Vehicle : ITenantOwned
     public DateOnly? PermitExpiry { get; set; }
     public DateOnly? FitnessExpiry { get; set; }
     public DateOnly? PucExpiry { get; set; }
+    public string? VehicleRole { get; set; }                // main / pickup_van / spare
+    public int? OdometerReading { get; set; }
+    /// <summary>Last reported telemetry as received (legacy <c>position</c> / <c>health</c> objects), jsonb. Null = never reported.</summary>
+    public string? PositionJson { get; set; }
+    public string? HealthJson { get; set; }
 }
 
 public sealed class Staff : ITenantOwned

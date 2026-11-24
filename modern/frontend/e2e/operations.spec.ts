@@ -14,9 +14,11 @@ async function signIn(page: Page) {
 test("fleet and staff lists render imported legacy data", async ({ page }) => {
   await signIn(page);
   await open(page, "vehicles");
-  await expect(page.locator("tbody tr").first()).toBeVisible();
+  await expect(page.locator(".vp37-vehicle-card").first()).toBeVisible();
+  await page.locator('.vp-areas a[href="#/fleet/coaches"]').click();
+  await expect(page.locator(".vp37-coach-card").first()).toBeVisible();
   await open(page, "staff");
-  await expect(page.locator("tbody tr").first()).toBeVisible();
+  await expect(page.locator("[data-staff-rows] tr").first()).toBeVisible();
 });
 
 test("dispatch: realtime connects, seat block then release round-trips", async ({ page }) => {

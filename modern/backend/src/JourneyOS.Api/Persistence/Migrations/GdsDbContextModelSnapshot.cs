@@ -829,6 +829,11 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
+                    b.Property<string>("AmenitiesJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("amenities_json");
+
                     b.Property<string>("BusType")
                         .IsRequired()
                         .HasColumnType("text")
@@ -847,6 +852,11 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("pattern");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
 
                     b.Property<long>("TenantId")
                         .HasColumnType("bigint")
@@ -2710,6 +2720,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("gps_enabled");
 
+                    b.Property<string>("HealthJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("health_json");
+
                     b.Property<DateOnly?>("InsuranceExpiry")
                         .HasColumnType("date")
                         .HasColumnName("insurance_expiry");
@@ -2722,6 +2736,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("model_name");
 
+                    b.Property<int?>("OdometerReading")
+                        .HasColumnType("integer")
+                        .HasColumnName("odometer_reading");
+
                     b.Property<string>("OwnershipType")
                         .HasColumnType("text")
                         .HasColumnName("ownership_type");
@@ -2733,6 +2751,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.Property<string>("PhoneNumber")
                         .HasColumnType("text")
                         .HasColumnName("phone_number");
+
+                    b.Property<string>("PositionJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("position_json");
 
                     b.Property<DateOnly?>("PucExpiry")
                         .HasColumnType("date")
@@ -2751,6 +2773,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.Property<long>("TenantId")
                         .HasColumnType("bigint")
                         .HasColumnName("tenant_id");
+
+                    b.Property<string>("VehicleRole")
+                        .HasColumnType("text")
+                        .HasColumnName("vehicle_role");
 
                     b.HasKey("Id")
                         .HasName("pk_vehicles");

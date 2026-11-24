@@ -168,6 +168,41 @@ public sealed class BusinessTests(GdsFixture fx)
     }
 
     [Fact]
+    public async Task Fleet_lists_reflect_postgres_and_status_switches_are_audited()
+    {
+        var vehicles = (await Admin.GetJson("/api/admin/vehicle-list"))["vehicles"]!.AsArray();
+        Assert.Equal(await fx.Sql(db => db.Vehicles.CountAsync()), vehicles.Count);
+        var coaches = (await Admin.GetJson("/api/admin/coach-list"))["coaches"]!.AsArray();
+        Assert.Equal(await fx.Sql(db => db.CoachTemplates.CountAsync()), coaches.Count);
+        var coach = await fx.Sql(db => db.CoachTemplates.Include(c => c.Seats).OrderBy(c => c.Id).FirstAsync());
+        var crow = coaches.First(x => (long)x!["id"]! == coach.Id)!;
+        Assert.Equal(coach.Seats.Count, (int)crow["capacity"]!);
+        Assert.Equal(coach.Seats.Count, (int)crow["seater"]! + (int)crow["sleeper"]!);
+
+        var (_, phone) = await CreateUser("viewer");
+        var viewer = await Login(phone);
+        Assert.Equal(HttpStatusCode.Forbidden, (await viewer.GetAsync("/api/admin/vehicle-list")).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await Admin.PutAsJsonAsync($"/api/admin/coaches/{coach.Id}/status", new { status = "deleted" })).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await Admin.PutAsJsonAsync("/api/admin/vehicles/999999/status", new { status = "inactive" })).StatusCode);
+
+        var vid = (long)vehicles[0]!["id"]!; var before = (string)vehicles[0]!["status"]!;
+        var flip = before == "active" ? "inactive" : "active";
+        try
+        {
+            Assert.Equal(HttpStatusCode.OK, (await Admin.PutAsJsonAsync($"/api/admin/vehicles/{vid}/status", new { status = flip })).StatusCode);
+            Assert.Equal(flip, await fx.Sql(db => db.Vehicles.Where(v => v.Id == vid).Select(v => v.Status).FirstAsync()));
+            Assert.True(await fx.Sql(db => db.AuditLogs.AnyAsync(a => a.Action == "VEHICLE_STATUS" && a.EntityId == vid.ToString())));
+            Assert.Equal(HttpStatusCode.OK, (await Admin.PutAsJsonAsync($"/api/admin/coaches/{coach.Id}/status", new { status = "inactive" })).StatusCode);
+            Assert.Equal("inactive", await fx.Sql(db => db.CoachTemplates.Where(c => c.Id == coach.Id).Select(c => c.Status).FirstAsync()));
+        }
+        finally
+        {
+            await Admin.PutAsJsonAsync($"/api/admin/vehicles/{vid}/status", new { status = before });
+            await Admin.PutAsJsonAsync($"/api/admin/coaches/{coach.Id}/status", new { status = coach.Status });
+        }
+    }
+
+    [Fact]
     public async Task Route_list_reflects_postgres_and_status_switch_gates_sales()
     {
         var list = (await Admin.GetJson("/api/admin/route-list"))["routes"]!.AsArray();

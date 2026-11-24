@@ -101,6 +101,10 @@ export const api = {
   schedules: (from: string, to: string) => call<{ schedules: ScheduleRow[] }>("GET", `/api/admin/schedules?from=${from}&to=${to}`),
   toggleSchedule: (id: number, active: boolean) => call<{ bookable: boolean }>("POST", `/api/admin/schedules/${id}/toggle`, { active }),
   routeList: () => call<{ routes: RouteListRow[] }>("GET", "/api/admin/route-list"),
+  vehicleList: () => call<{ vehicles: VehicleListRow[] }>("GET", "/api/admin/vehicle-list"),
+  setVehicleStatus: (id: number, status: string) => call<{ status: string }>("PUT", `/api/admin/vehicles/${id}/status`, { status }),
+  coachList: () => call<{ coaches: CoachListRow[] }>("GET", "/api/admin/coach-list"),
+  setCoachStatus: (id: number, status: string) => call<{ status: string }>("PUT", `/api/admin/coaches/${id}/status`, { status }),
   routeDetail: (id: number) => call<RouteDetail>("GET", `/api/admin/route-detail/${id}`),
   saveExpenseTemplate: (id: number, items: { type: string; key: string | null; label: string; perTrip: number }[]) =>
     call<unknown>("PUT", `/api/admin/routes/${id}/expense-template`, items),
@@ -176,7 +180,13 @@ export interface UserRow { id: number; phone: string; name: string; email: strin
   creditLimit: number | null; hasPassword: boolean; invitePendingUntil: string | null; lastLoginAt: string | null; locked: boolean }
 
 export interface Vehicle { id: number; registrationNumber: string; coachTemplateId: number | null; status: string; modelName: string | null; gpsEnabled: boolean;
-  insuranceExpiry: string | null; permitExpiry: string | null; fitnessExpiry: string | null; pucExpiry: string | null }
+  insuranceExpiry: string | null; permitExpiry: string | null; fitnessExpiry: string | null; pucExpiry: string | null;
+  ownershipType?: string | null; phoneNumber?: string | null; manufactureYear?: number | null; vehicleRole?: string | null }
+export interface Telemetry { lat?: number | null; lng?: number | null; speed?: number | null; state?: string; ts?: number | string; state_since?: number | string }
+export interface VehicleHealth { status?: string; odometer_km?: number; engine_hours?: number; def_inhibit?: boolean; alerts?: { message: string; status: string; reading?: number; unit?: string }[]; fuel?: { fuel_l?: number; remaining_l?: number; adblue_l?: number } }
+export interface VehicleListRow { id: number; registrationNumber: string; coachTemplateId: number | null; coach: string | null; status: string; vehicleRole: string | null;
+  gpsEnabled: boolean; modelName: string | null; odometerReading: number | null; position: Telemetry | null; health: VehicleHealth | null; docAlerts: number }
+export interface CoachListRow { id: number; name: string; busType: string; pattern: string; status: string; amenities: string[]; seater: number; sleeper: number; capacity: number }
 export interface Staff { id: number; name: string; phone: string; role: string; status: string; licenseNumber: string | null; licenseExpiry: string | null;
   designation?: string | null; salaryType?: string | null; salaryAmount?: number | null; bataPerTrip?: number | null;
   email?: string | null; bloodGroup?: string | null; joiningDate?: string | null }

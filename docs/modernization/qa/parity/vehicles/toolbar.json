@@ -1,0 +1,15 @@
+{
+  "id": "vehicles",
+  "region": "toolbar",
+  "legacy": [
+    1296,
+    181
+  ],
+  "react": [
+    1296,
+    181
+  ],
+  "sizeMatch": true,
+  "diffPixels": 54,
+  "diffRatio": 0.0002
+}

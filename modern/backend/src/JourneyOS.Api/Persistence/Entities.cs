@@ -36,6 +36,8 @@ public sealed class CoachTemplate : ITenantOwned
     public string BusType { get; set; } = "";
     public string Pattern { get; set; } = "";      // 2+1 / 2+2
     public bool IsAc { get; set; }
+    public string Status { get; set; } = "active";
+    public string AmenitiesJson { get; set; } = "[]";   // jsonb string[]
     public List<CoachSeat> Seats { get; set; } = [];
 }
 

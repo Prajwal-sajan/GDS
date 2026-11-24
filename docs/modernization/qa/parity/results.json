@@ -1,5 +1,95 @@
 [
   {
+    "id": "coaches",
+    "region": "card-0",
+    "legacy": [
+      422,
+      282
+    ],
+    "react": [
+      422,
+      282
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "coaches",
+    "region": "card-1",
+    "legacy": [
+      422,
+      282
+    ],
+    "react": [
+      422,
+      282
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "coaches",
+    "region": "card-2",
+    "legacy": [
+      422,
+      282
+    ],
+    "react": [
+      422,
+      282
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "coaches",
+    "region": "card-3",
+    "legacy": [
+      422,
+      282
+    ],
+    "react": [
+      422,
+      282
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "coaches",
+    "region": "tabs",
+    "legacy": [
+      1296,
+      44
+    ],
+    "react": [
+      1296,
+      44
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "coaches",
+    "region": "toolbar",
+    "legacy": [
+      1296,
+      182
+    ],
+    "react": [
+      1296,
+      182
+    ],
+    "sizeMatch": true,
+    "diffPixels": 65,
+    "diffRatio": 0.0003
+  },
+  {
     "id": "route-editor-edit",
     "region": "header",
     "legacy": [
@@ -523,5 +613,140 @@
     "sizeMatch": true,
     "diffPixels": 0,
     "diffRatio": 0
+  },
+  {
+    "id": "vehicles",
+    "region": "card-0",
+    "legacy": [
+      422,
+      535
+    ],
+    "react": [
+      422,
+      535
+    ],
+    "sizeMatch": true,
+    "diffPixels": 7,
+    "diffRatio": 0
+  },
+  {
+    "id": "vehicles",
+    "region": "card-1",
+    "legacy": [
+      422,
+      535
+    ],
+    "react": [
+      422,
+      535
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "vehicles",
+    "region": "card-2",
+    "legacy": [
+      422,
+      535
+    ],
+    "react": [
+      422,
+      535
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "vehicles",
+    "region": "card-3",
+    "legacy": [
+      422,
+      534
+    ],
+    "react": [
+      422,
+      534
+    ],
+    "sizeMatch": true,
+    "diffPixels": 7,
+    "diffRatio": 0
+  },
+  {
+    "id": "vehicles",
+    "region": "card-4",
+    "legacy": [
+      422,
+      534
+    ],
+    "react": [
+      422,
+      534
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "vehicles",
+    "region": "card-5",
+    "legacy": [
+      422,
+      534
+    ],
+    "react": [
+      422,
+      534
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "vehicles",
+    "region": "card-6",
+    "legacy": [
+      422,
+      504
+    ],
+    "react": [
+      422,
+      504
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "vehicles",
+    "region": "tabs",
+    "legacy": [
+      1296,
+      44
+    ],
+    "react": [
+      1296,
+      44
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "vehicles",
+    "region": "toolbar",
+    "legacy": [
+      1296,
+      181
+    ],
+    "react": [
+      1296,
+      181
+    ],
+    "sizeMatch": true,
+    "diffPixels": 54,
+    "diffRatio": 0.0002
   }
 ]

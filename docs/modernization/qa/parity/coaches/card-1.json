@@ -1,0 +1,15 @@
+{
+  "id": "coaches",
+  "region": "card-1",
+  "legacy": [
+    422,
+    282
+  ],
+  "react": [
+    422,
+    282
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

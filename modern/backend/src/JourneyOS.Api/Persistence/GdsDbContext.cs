@@ -100,6 +100,8 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
         b.Entity<UserSession>(e => { e.HasIndex(x => x.TokenSha256).IsUnique(); e.HasIndex(x => x.UserId); });
         b.Entity<Branch>(e => e.Property(x => x.Id).ValueGeneratedNever());
         b.Entity<SarathiConversation>(e => { e.Property(x => x.MessagesJson).HasColumnType("jsonb"); e.HasIndex(x => new { x.TenantId, x.Owner }); });
+        b.Entity<Vehicle>(e => { e.Property(x => x.PositionJson).HasColumnType("jsonb"); e.Property(x => x.HealthJson).HasColumnType("jsonb"); });
+        b.Entity<CoachTemplate>(e => e.Property(x => x.AmenitiesJson).HasColumnType("jsonb"));
 
         b.Entity<Tenant>(e => { e.HasIndex(x => x.Code).IsUnique(); e.Property(x => x.GstPercent).HasPrecision(5, 2); });
 

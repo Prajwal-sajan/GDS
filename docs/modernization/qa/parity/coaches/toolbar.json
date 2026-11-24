@@ -1,0 +1,15 @@
+{
+  "id": "coaches",
+  "region": "toolbar",
+  "legacy": [
+    1296,
+    182
+  ],
+  "react": [
+    1296,
+    182
+  ],
+  "sizeMatch": true,
+  "diffPixels": 65,
+  "diffRatio": 0.0003
+}

@@ -33,6 +33,31 @@
         "Row links (view/edit/pickups/drops/fares) open the route editor V015, which is not ported yet (interim fare editor shown)"
       ]
     },
+    "V005": {
+      "status": "VISUAL_PASS",
+      "react": "src/features/fleet/VehiclesPage.tsx (VehiclesPage)",
+      "evidence": [
+        "e2e/parity/fleet.parity.spec.ts — default grid: all 7 vehicle cards pixel diff 0, tabs 0, toolbar 0.0002; identical card text; DOM skeleton of tabs/metrics/controls/actions/cards compared",
+        "Active switch persists via PUT /api/admin/vehicles/{id}/status and restores (e2e + BusinessTests.Fleet_lists_reflect_postgres_and_status_switches_are_audited); doc alerts computed from compliance documents like legacy master.js"
+      ],
+      "gaps": [
+        "Telemetry is the last imported report (vehicles.position_json/health_json); no live GPS/ECU feed in the modern stack",
+        "Fleet Map and Delete vehicle: no .NET equivalent — aria-disabled with explanation",
+        "View/Health/Alerts/Location open simplified modals (legacy VehicleDetailV19 workspace not ported); Add/Edit use a simplified form (make, chassis, documents not stored)",
+        "Duplicate uses a browser prompt for the new registration instead of the legacy G.prompt dialog"
+      ]
+    },
+    "V006": {
+      "status": "VISUAL_PASS",
+      "react": "src/features/fleet/VehiclesPage.tsx (CoachesPage)",
+      "evidence": [
+        "e2e/parity/fleet.parity.spec.ts — all 4 coach cards pixel diff 0, tabs 0, toolbar 0.0003; identical card text; list layout thead skeleton + row text identical",
+        "Coach active switch persists via PUT /api/admin/coaches/{id}/status (migration FleetLegacyTelemetry adds coach status + amenities, backfilled by importer)"
+      ],
+      "gaps": [
+        "Add/View/Edit/Duplicate/Delete coach and the seat-layout designer: no .NET coach CRUD endpoints — aria-disabled with explanation"
+      ]
+    },
     "V007": {
       "status": "VISUAL_PASS",
       "react": "src/features/staff/StaffPage.tsx",

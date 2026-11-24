@@ -9,7 +9,7 @@ using Npgsql;
 namespace JourneyOS.Api.Operations;
 
 public sealed record VehicleInput(string RegistrationNumber, long? CoachTemplateId, string? Status, string? ModelName, int? ManufactureYear,
-    string? OwnershipType, string? PhoneNumber, bool GpsEnabled, DateOnly? InsuranceExpiry, DateOnly? PermitExpiry, DateOnly? FitnessExpiry, DateOnly? PucExpiry);
+    string? OwnershipType, string? PhoneNumber, bool GpsEnabled, DateOnly? InsuranceExpiry, DateOnly? PermitExpiry, DateOnly? FitnessExpiry, DateOnly? PucExpiry, string? VehicleRole = null);
 public sealed record StaffInput(string Name, string Phone, string Role, string? Status, string? Designation, string? LicenseNumber, DateOnly? LicenseExpiry,
     string? SalaryType, decimal? SalaryAmount, decimal? BataPerTrip, string? Email = null, string? BloodGroup = null, DateOnly? JoiningDate = null);
 public sealed record AssignInput(string Role, long? VehicleId, long? StaffId, string? Reason);
@@ -37,7 +37,7 @@ public sealed class OperationsService(GdsDbContext db, InventoryService inventor
     public async Task<Vehicle> SaveVehicleAsync(long? id, VehicleInput i, string actor)
     {
         if (string.IsNullOrWhiteSpace(i.RegistrationNumber)) throw new GdsException("VALIDATION", "Registration number is required");
-        if (i.Status is not (null or "active" or "maintenance" or "retired")) throw new GdsException("VALIDATION", "Invalid vehicle status");
+        if (i.Status is not (null or "active" or "inactive" or "maintenance" or "retired")) throw new GdsException("VALIDATION", "Invalid vehicle status");
         if (i.CoachTemplateId is { } ct && !await db.CoachTemplates.AnyAsync(c => c.Id == ct)) throw new GdsException("VALIDATION", "Unknown coach template");
         var reg = i.RegistrationNumber.Trim().ToUpperInvariant();
         if (await db.Vehicles.AnyAsync(v => v.RegistrationNumber == reg && v.Id != id)) throw new GdsException("DUPLICATE", "Registration number already exists", 409);
@@ -47,9 +47,36 @@ public sealed class OperationsService(GdsDbContext db, InventoryService inventor
         v.RegistrationNumber = reg; v.CoachTemplateId = i.CoachTemplateId; v.Status = i.Status ?? v.Status; v.ModelName = i.ModelName; v.ManufactureYear = i.ManufactureYear;
         v.OwnershipType = i.OwnershipType; v.PhoneNumber = i.PhoneNumber; v.GpsEnabled = i.GpsEnabled;
         v.InsuranceExpiry = i.InsuranceExpiry; v.PermitExpiry = i.PermitExpiry; v.FitnessExpiry = i.FitnessExpiry; v.PucExpiry = i.PucExpiry;
+        if (i.VehicleRole is not null)
+        {
+            if (i.VehicleRole is not ("main" or "pickup_van" or "spare")) throw new GdsException("VALIDATION", "Invalid vehicle role");
+            v.VehicleRole = i.VehicleRole;
+        }
         Audit(actor, id is null ? "VEHICLE_CREATE" : "VEHICLE_UPDATE", "vehicle", v.Id.ToString(), i);
         await db.SaveChangesAsync();
         return v;
+    }
+
+    /// <summary>Legacy fleet on/off switch (<c>PUT /vehicles/:id {status}</c>).</summary>
+    public async Task<string> SetVehicleStatusAsync(long id, string status, string actor)
+    {
+        if (status is not ("active" or "inactive" or "maintenance")) throw new GdsException("VALIDATION", "Status must be active, inactive or maintenance");
+        var v = await db.Vehicles.FirstOrDefaultAsync(x => x.Id == id) ?? throw new GdsException("NOT_FOUND", "Vehicle not found", 404);
+        Audit(actor, "VEHICLE_STATUS", "vehicle", id.ToString(), new { from = v.Status, to = status });
+        v.Status = status;
+        await db.SaveChangesAsync();
+        return status;
+    }
+
+    /// <summary>Legacy coach on/off switch (<c>PUT /coaches/:id {status}</c>).</summary>
+    public async Task<string> SetCoachStatusAsync(long id, string status, string actor)
+    {
+        if (status is not ("active" or "inactive")) throw new GdsException("VALIDATION", "Status must be active or inactive");
+        var c = await db.CoachTemplates.FirstOrDefaultAsync(x => x.Id == id) ?? throw new GdsException("NOT_FOUND", "Coach not found", 404);
+        Audit(actor, "COACH_STATUS", "coach", id.ToString(), new { from = c.Status, to = status });
+        c.Status = status;
+        await db.SaveChangesAsync();
+        return status;
     }
 
     // ---------------- staff ----------------

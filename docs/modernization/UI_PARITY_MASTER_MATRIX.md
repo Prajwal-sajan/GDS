@@ -3,7 +3,7 @@
 > **Generated** by `node modern/scripts/ui-inventory.mjs` from the captured legacy UI (`docs/modernization/qa/legacy/`), the legacy Node routes,
 > the ASP.NET Core endpoints and `docs/modernization/ui-parity-status.json`. Do not edit by hand — change the status file and regenerate.
 
-Legacy capture: 2026-11-24T08:10:39.217Z · http://localhost:3000 · 1440x900. Views: **49**, captured interaction states: **6**, inventoried elements: **3343**, legacy API endpoints: **299**, .NET endpoints: **93**.
+Legacy capture: 2026-11-24T08:10:39.217Z · http://localhost:3000 · 1440x900. Views: **49**, captured interaction states: **6**, inventoried elements: **3343**, legacy API endpoints: **299**, .NET endpoints: **97**.
 
 ## Totals (reproducible from this inventory)
 

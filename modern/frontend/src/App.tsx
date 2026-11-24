@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { activate, api, ApiError, getKey, login, logout, setKey, type Attempt, type Me, type OutboxRow, type RedBusStatus, type TripRow } from "./api";
 
-import { FleetPanel, ReconciliationPanel } from "./Operations";
+import { ReconciliationPanel } from "./Operations";
 import { CommsPanel, CrmPanel, LedgerPanel, ReportsPanel, SarathiPanel, UsersPanel } from "./Business";
 
 import { AppShell } from "./layouts/AppShell";
@@ -10,6 +10,7 @@ import { SchedulesPage } from "./features/schedules/SchedulesPage";
 import { RoutesPage } from "./features/routes/RoutesPage";
 import { RouteEditorPage } from "./features/routes/RouteEditorPage";
 import { StaffPage } from "./features/staff/StaffPage";
+import { CoachesPage, VehiclesPage } from "./features/fleet/VehiclesPage";
 import { useHashRoute } from "./navigation/useHashRoute";
 import type { Role } from "./navigation/nav";
 
@@ -91,7 +92,8 @@ function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Ele
     [/^gds\/routes$/, ALL_R, () => <RoutesPage me={me} />, true],
     [/^gds\/routes\/\d+$/, ALL_R, () => <RouteEditorPage key={path} me={me} id={Number(seg[2])} />, true],
     [/^crm(\/.*)?$/, ALL_R, () => <CrmPanel me={me} />],
-    [/^fleet(\/vehicles)?$/, OPS_R, () => <FleetPanel />],
+    [/^fleet(\/vehicles)?$/, OPS_R, () => <VehiclesPage me={me} />, true],
+    [/^fleet\/coaches$/, OPS_R, () => <CoachesPage me={me} />, true],
     [/^fleet\/staff$/, OPS_R, () => <StaffPage me={me} />, true],
     [/^accounts\/reconciliation$/, ACC_R, () => <>{acct}<ReconciliationPanel /></>],
     [/^accounts\/transactions$/, [...ACC_R, "agent"], () => <>{acct}<LedgerPanel me={me} /></>],

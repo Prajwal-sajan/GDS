@@ -47,13 +47,18 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
         foreach (var c in root.GetProperty("coaches").EnumerateArray())
         {
             var id = c.GetProperty("id").GetInt64();
-            if (existingCoaches.Contains(id)) continue;
+            if (existingCoaches.Contains(id))
+            {
+                if (await db.CoachTemplates.FirstOrDefaultAsync(x => x.Id == id) is { } ex) ApplyCoach(ex, c);
+                continue;
+            }
             var busType = Str(c, "bus_type") ?? "";
             var t = new CoachTemplate
             {
                 Id = id, TenantId = tenant.Id, Name = Str(c, "name") ?? "", BusType = busType, Pattern = Str(c, "pattern") ?? "",
                 IsAc = busType.Contains("A/C", StringComparison.OrdinalIgnoreCase) && !busType.Contains("Non", StringComparison.OrdinalIgnoreCase),
             };
+            ApplyCoach(t, c);
             foreach (var deck in c.GetProperty("layout").GetProperty("decks").EnumerateArray())
             {
                 var deckName = Str(deck, "deck") ?? "LOWER";
@@ -152,14 +157,20 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
         foreach (var v in root.GetProperty("vehicles").EnumerateArray())
         {
             var id = v.GetProperty("id").GetInt64();
-            if (existingVehicles.Contains(id)) continue;
-            db.Vehicles.Add(new Vehicle
+            if (existingVehicles.Contains(id))
+            {
+                if (await db.Vehicles.FirstOrDefaultAsync(x => x.Id == id) is { } ex) ApplyVehicle(ex, v);
+                continue;
+            }
+            var nv = new Vehicle
             {
                 Id = id, TenantId = tenant.Id, RegistrationNumber = Str(v, "registration_number")!, CoachTemplateId = v.TryGetProperty("coach_template_id", out var ct) && ct.ValueKind == JsonValueKind.Number ? ct.GetInt64() : null,
                 Status = Str(v, "status") ?? "active", ModelName = Str(v, "model_name"), ManufactureYear = Int(v, "manufacture_year"), OwnershipType = Str(v, "ownership_type"),
                 PhoneNumber = Str(v, "phone_number"), GpsEnabled = v.TryGetProperty("gps_enabled", out var g) && g.ValueKind == JsonValueKind.True,
                 InsuranceExpiry = Date(v, "insurance_expiry"), PermitExpiry = Date(v, "permit_expiry"), FitnessExpiry = Date(v, "fitness_expiry"), PucExpiry = Date(v, "puc_expiry"),
-            });
+            };
+            ApplyVehicle(nv, v);
+            db.Vehicles.Add(nv);
         }
         var existingStaff = await db.Staff.Select(v => v.Id).ToHashSetAsync();
         foreach (var s in root.GetProperty("staff").EnumerateArray())
@@ -440,6 +451,20 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
     }
 
     private static string? Str(JsonElement e, string p) => e.TryGetProperty(p, out var v) && v.ValueKind != JsonValueKind.Null ? v.ToString() : null;
+
+    private static void ApplyCoach(CoachTemplate t, JsonElement c)
+    {
+        t.Status = Str(c, "status") ?? "active";
+        t.AmenitiesJson = c.TryGetProperty("amenities", out var a) && a.ValueKind == JsonValueKind.Array ? a.GetRawText() : "[]";
+    }
+
+    private static void ApplyVehicle(Vehicle x, JsonElement v)
+    {
+        x.VehicleRole = Str(v, "vehicle_role");
+        x.OdometerReading = Int(v, "odometer_reading");
+        x.PositionJson = v.TryGetProperty("position", out var p) && p.ValueKind == JsonValueKind.Object ? p.GetRawText() : null;
+        x.HealthJson = v.TryGetProperty("health", out var h) && h.ValueKind == JsonValueKind.Object ? h.GetRawText() : null;
+    }
 
     private static void ApplyMetro(RouteStage stage, JsonElement s)
     {

@@ -1,0 +1,15 @@
+{
+  "id": "vehicles",
+  "region": "card-2",
+  "legacy": [
+    422,
+    535
+  ],
+  "react": [
+    422,
+    535
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}
