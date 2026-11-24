@@ -1,0 +1,118 @@
+/* RedBus OTA Invoice Verifier. Native React recreation of screenshot audit v43. */
+.ov-root{color:#1c2e4c;min-width:0}
+.ov-root button,.ov-modal button{font-family:inherit}
+.ov-page-header{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:22px}
+.ov-page-header>div:first-child>small{color:#5b61fb;letter-spacing:.1em;font-size:11px;font-weight:850}
+.ov-page-header h1{font-size:29px;margin:5px 0}
+.ov-page-header p{margin:0;font-size:13px;color:#7588a1}
+.ov-actions-top{display:flex;align-items:center;gap:14px}
+.ov-live-pill{border-radius:19px;color:#0e9a64;background:#d7f8e8;font-weight:900;font-size:11px;padding:8px 12px}
+.ov-primary{border:0;color:#fff;background:linear-gradient(100deg,#3161f4,#8255f4);padding:12px 17px;border-radius:13px;font-weight:800;box-shadow:0 4px 13px #3858bf26}
+.ov-primary:hover{filter:brightness(1.05)}
+.ov-primary:disabled{opacity:.55}
+.ov-secondary{border:1px solid #cbd8f5;color:#405de5;background:white;padding:11px 15px;border-radius:12px;font-weight:750}
+.ov-alert,.ov-notice{background:#fff0f2;border:1px solid #ffbac5;color:#a92c45;border-radius:12px;padding:12px 16px;font-size:13px}
+.ov-notice{background:#effef7;border-color:#b6e9ce;color:#147653}
+.ov-muted{font-size:12px;color:#8190a8;line-height:1.55}
+.ov-ledger,.ov-workspace{border:1px solid #dce7f9;border-radius:22px;background:#fff;box-shadow:0 6px 25px #29447a0d;padding:22px}
+.ov-section-title{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px}
+.ov-section-title h2{font-size:22px;margin:0}
+.ov-section-title button{border:1px solid #d2ddf5;background:white;color:#4760c5;border-radius:10px;padding:9px 13px}
+.ov-ledger-list{display:grid;gap:14px}
+.ov-ledger-card{display:flex;gap:17px;align-items:center;flex-wrap:wrap;border:1px solid #dbe5fa;background:linear-gradient(110deg,#f5faff,#fff);border-radius:19px;padding:20px}
+.ov-redbus{font-size:20px;color:#f23942;font-weight:900;border:1px solid #ffd6d8;background:#fff3f4;border-radius:12px;padding:12px 15px}
+.ov-ledger-title{flex:2 1 220px;min-width:0}
+.ov-ledger-title h3{font-size:19px;margin:0 0 6px}
+.ov-ledger-title p{font-size:13px;color:#647b9c;margin:0 0 6px}
+.ov-ledger-title small{color:#91a0b4;font-size:11px;overflow-wrap:anywhere}
+.ov-ledger-metric{display:flex;flex-direction:column;gap:5px;text-align:center;min-width:93px}
+.ov-ledger-metric strong{font-size:22px}
+.ov-ledger-metric small{font-size:11px;color:#7b8daa}
+.ov-status{border-radius:15px;font-size:10px;font-weight:900;padding:7px 10px;white-space:nowrap;background:#f3eacb;color:#9b6c18;text-transform:uppercase}
+.ov-matched{background:#d7f9e5;color:#078453}
+.ov-mismatched{background:#ffe6e9;color:#b72941}
+.ov-needs_review{background:#fff2cb;color:#996717}
+.ov-unmatched_gds,.ov-unmatched_ota{background:#fff0d9;color:#aa5916}
+.ov-workspace-head{display:flex;gap:15px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #e4eafa;padding-bottom:17px}
+.ov-workspace-head>div{flex:1;min-width:190px}
+.ov-workspace-head h2{font-size:21px;margin:0 0 4px}
+.ov-workspace-head p{font-size:12px;color:#778aa5;margin:0}
+.ov-tabs{display:flex;gap:8px;flex-wrap:wrap;padding:17px 0 24px}
+.ov-tabs button{border-radius:12px;border:1px solid #d6e2fa;background:white;color:#4461d9;padding:11px 17px;font-size:13px;font-weight:800}
+.ov-tabs button.active{color:#fff;border-color:transparent;background:linear-gradient(95deg,#315bf6,#8157fa)}
+.ov-warning{border:1px solid #f5d79f;border-radius:15px;background:#fff9e9;color:#8e6624;padding:15px 17px;margin:12px 0 18px;font-size:12px}
+.ov-warning strong{font-size:13px}
+.ov-warning p{line-height:1.6;margin:7px 0 0}
+.ov-payout-hero{padding:26px 32px;background:linear-gradient(105deg,#224ed6,#6e55ea);color:white;border-radius:22px;display:flex;justify-content:space-between;align-items:center;gap:30px;margin-bottom:18px}
+.ov-payout-hero>div:first-child>small{font-size:11px;letter-spacing:.07em;font-weight:850;color:#dae6ff}
+.ov-payout-hero strong{font-size:38px;display:block;margin:13px 0}
+.ov-payout-hero p{font-size:12px;color:#e0e8ff;margin:0}
+.ov-ring{width:135px;height:135px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ov-ring>div{background:#3654ce;border-radius:100%;width:110px;height:110px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px}
+.ov-ring b{font-size:26px}.ov-ring small{font-size:10px;color:#dbe4ff}
+.ov-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:19px}
+.ov-metric{display:flex;flex-direction:column;gap:9px;border:1px solid #dbe6fc;background:linear-gradient(130deg,#f4faff,#fff);border-radius:16px;padding:16px}
+.ov-metric small{font-size:12px;color:#6b80a0;font-weight:800}
+.ov-metric strong{font-size:22px;color:#192e52;overflow-wrap:anywhere}
+.ov-metric span{font-size:11px;color:#90a0b6}
+.ov-workspace-columns{display:grid;grid-template-columns:1fr 1fr;gap:17px}
+.ov-panel{border:1px solid #dce7f9;background:#fff;border-radius:18px;padding:21px;min-width:0}
+.ov-panel h3{font-size:19px;margin:0 0 12px}
+.ov-panel>p{color:#7588a4;line-height:1.65;font-size:13px}
+.ov-summary-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #edf1f8;color:#56708f;font-size:13px}
+.ov-summary-row strong{color:#1f3e6c}
+.ov-panel>.ov-primary,.ov-panel>.ov-secondary{margin-top:17px}
+.ov-breakdown-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}
+.ov-tickets-toolbar{display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:15px;border-radius:16px;border:1px solid #e2eafa;background:#f8fbff;margin-bottom:15px}
+.ov-tickets-toolbar>div:first-child{flex:1;min-width:180px}
+.ov-tickets-toolbar h3{font-size:18px;margin:0 0 4px}
+.ov-tickets-toolbar p{color:#8697b0;font-size:12px;margin:0}
+.ov-tickets-toolbar label{display:flex;flex-direction:column;gap:6px;color:#5c7194;font-size:12px;font-weight:800}
+.ov-tickets-toolbar input,.ov-tickets-toolbar select,.ov-modal input,.ov-modal select,.ov-modal textarea{padding:10px 12px;border-radius:11px;color:#233e63;background:white;border:1px solid #ccd9f0;font-size:13px}
+.ov-tickets-toolbar input{min-width:215px}
+.ov-segmented{display:flex;gap:2px;border:1px solid #d7e2f8;border-radius:12px;padding:3px;background:white}
+.ov-segmented button{border:0;background:transparent;color:#5267a6;padding:10px 15px;border-radius:9px;font-weight:750}
+.ov-segmented button.selected{background:#3259eb;color:#fff}
+.ov-table-scroll{overflow:auto;max-height:700px;border:1px solid #e0e8f7;border-radius:15px}
+.ov-compare{border-collapse:collapse;min-width:1600px;width:100%;font-size:12px}
+.ov-compare th{background:#eff4ff;color:#566c91;font-size:11px;font-weight:850;position:sticky;top:0;z-index:1;text-align:left}
+.ov-compare th,.ov-compare td{padding:13px;border-bottom:1px solid #edf1f8;vertical-align:top}
+.ov-compare tbody tr:hover{background:#f7faff}
+.ov-wrap{min-width:210px;max-width:300px;white-space:normal}
+.ov-link{border:0;background:transparent;color:#235bd5;text-decoration:underline;font-size:13px;font-weight:850;cursor:pointer}
+.ov-line-actions{display:flex;gap:5px;flex-wrap:wrap;min-width:180px}
+.ov-line-actions button{border:1px solid #d3def5;color:#3462d3;background:#fff;padding:7px 9px;border-radius:8px;font-size:11px;font-weight:750}
+.ov-line-actions button.ov-dispute{color:#b52c43;border-color:#ffcad0}
+.ov-ticket-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.ov-ticket-card{border:1px solid #dbe6f8;background:linear-gradient(135deg,#f8fcff,#fff);border-radius:17px;padding:18px}
+.ov-ticket-card>header{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}
+.ov-ticket-card>p{font-size:12px;color:#667e9e;line-height:1.6}
+.ov-pnr-values{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.ov-pnr-values>div{display:flex;flex-direction:column;gap:5px}
+.ov-pnr-values small{color:#7e8eaa;font-size:11px}
+.ov-pnr-values b{font-size:14px}
+.ov-difference-tags{display:flex;gap:5px;flex-wrap:wrap;margin:12px 0}
+.ov-difference-tags span{font-size:11px;background:#fff0e8;border:1px solid #f5d2bb;color:#af6a36;border-radius:10px;padding:5px 8px}
+.ov-empty{text-align:center;color:#7c90ad;padding:40px;border:1px dashed #d0ddf0;border-radius:15px;background:#fff}
+.ov-modal-overlay{position:fixed;inset:0;z-index:2400;background:#121e3d98;display:flex;align-items:center;justify-content:center;padding:16px}
+.ov-modal{background:#fff;border-radius:21px;width:min(650px,95vw);max-height:95vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 70px #101b3d74}
+.ov-modal>header{background:linear-gradient(100deg,#345df1,#8056f9);color:#fff;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ov-modal>header h2{margin:0;color:white;font-size:21px}
+.ov-modal>header button{border:1px solid #ffffff8a;background:#ffffff20;color:#fff;width:35px;height:35px;border-radius:50%}
+.ov-modal form{padding:22px;overflow:auto;display:grid;gap:15px}
+.ov-modal form>p{color:#7386a0;font-size:13px;line-height:1.6;margin:0}
+.ov-modal form label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:800;color:#56708e}
+.ov-form-pair{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.ov-modal form footer{display:flex;justify-content:flex-end;gap:12px;padding-top:11px}
+.ov-modal form footer>button:first-child{border:1px solid #ccdafa;border-radius:12px;color:#3154bb;background:#fff;padding:11px 15px}
+.ov-review-evidence{border-radius:14px;border:1px solid #f0d7b0;background:#fff9ec;color:#926026;padding:16px;font-size:13px}
+.ov-review-evidence p{font-size:12px}
+@media(max-width:1000px){.ov-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .ov-breakdown-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .ov-workspace-columns{grid-template-columns:1fr}}
+@media(max-width:750px){.ov-root{padding:0}.ov-page-header h1{font-size:23px}
+ .ov-ledger,.ov-workspace{padding:13px}.ov-ledger-card{padding:14px}
+ .ov-payout-hero{padding:19px;flex-wrap:wrap}.ov-payout-hero strong{font-size:30px}
+ .ov-stats,.ov-breakdown-grid,.ov-ticket-grid{grid-template-columns:1fr}
+ .ov-workspace-head{flex-wrap:wrap}.ov-modal form{padding:15px}
+ .ov-form-pair{grid-template-columns:1fr}}
