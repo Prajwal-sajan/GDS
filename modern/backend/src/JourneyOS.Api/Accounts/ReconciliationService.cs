@@ -7,8 +7,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace JourneyOS.Api.Accounts;
 
-public sealed record InvoiceUpload(string FileName, string InvoiceNumber, string? OperatorCode, DateOnly PeriodStart, DateOnly PeriodEnd,
-    decimal? StatedAmount, string Csv, decimal? Tolerance);
+public sealed record InvoiceUpload(string FileName, string? InvoiceNumber, string? OperatorCode, DateOnly? PeriodStart, DateOnly? PeriodEnd,
+    decimal? StatedAmount, string? Csv, decimal? Tolerance, string? PdfBase64 = null);
 public sealed record ResolveInput(long LineId, string Action, string? Note);
 
 /// <summary>
@@ -26,29 +26,58 @@ public sealed class ReconciliationService(GdsDbContext db, TimeProvider clock)
 
     public async Task<(OtaInvoice Invoice, bool Duplicate)> UploadAsync(InvoiceUpload u, string actor)
     {
-        if (string.IsNullOrWhiteSpace(u.InvoiceNumber)) throw new GdsException("VALIDATION", "Invoice number is required");
-        if (u.PeriodEnd < u.PeriodStart) throw new GdsException("VALIDATION", "Billing period is invalid");
-        if (string.IsNullOrWhiteSpace(u.Csv) || u.Csv.Length > 10_000_000) throw new GdsException("VALIDATION", "CSV content is required (max 10 MB)");
-        var sha = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(u.Csv)));
+        byte[] content;
+        List<OtaInvoiceLine> lines; List<string> warnings;
+        string number; string? opCode = u.OperatorCode; DateOnly ps, pe; decimal? stated = u.StatedAmount;
+        if (!string.IsNullOrEmpty(u.PdfBase64))
+        {
+            if (u.PdfBase64.Length > 28_000_000) throw new GdsException("FILE_TOO_LARGE", "PDF exceeds 20 MB", 413);
+            try { content = Convert.FromBase64String(u.PdfBase64); } catch (FormatException) { throw new GdsException("VALIDATION", "pdfBase64 is not valid base64"); }
+            List<string> pages;
+            try { pages = PaymentAdviceParser.ExtractPages(content); }
+            catch (GdsException) { throw; }
+            catch (Exception) { throw new GdsException("PDF_UNREADABLE", "The PDF could not be read (corrupt, encrypted or unsupported)"); }
+            var advice = PaymentAdviceParser.Parse(pages);
+            number = advice.InvoiceNumber; opCode = advice.OperatorCode; stated = advice.StatedAmount;
+            ps = advice.PeriodStart ?? u.PeriodStart ?? throw new GdsException("VALIDATION", "Billing period not found in PDF; supply periodStart/periodEnd");
+            pe = advice.PeriodEnd ?? u.PeriodEnd ?? throw new GdsException("VALIDATION", "Billing period not found in PDF; supply periodStart/periodEnd");
+            lines = advice.Lines; warnings = advice.Warnings;
+            if (lines.Count > 15000) throw new GdsException("TOO_MANY_ROWS", "Invoice contains too many PNR rows", 413);
+        }
+        else
+        {
+            if (string.IsNullOrWhiteSpace(u.InvoiceNumber)) throw new GdsException("VALIDATION", "Invoice number is required");
+            if (u.PeriodStart is null || u.PeriodEnd is null) throw new GdsException("VALIDATION", "Billing period is required");
+            if (string.IsNullOrWhiteSpace(u.Csv) || u.Csv.Length > 10_000_000) throw new GdsException("VALIDATION", "CSV or PDF content is required (CSV max 10 MB)");
+            number = u.InvoiceNumber.Trim(); ps = u.PeriodStart.Value; pe = u.PeriodEnd.Value;
+            content = Encoding.UTF8.GetBytes(u.Csv);
+            (lines, warnings) = ParseCsv(u.Csv);
+            if (lines.Count == 0) throw new GdsException("NO_ROWS", "No PNR rows found");
+            if (lines.Count > 15000) throw new GdsException("TOO_MANY_ROWS", "Invoice contains too many PNR rows", 413);
+        }
+        if (pe < ps) throw new GdsException("VALIDATION", "Billing period is invalid");
+        var sha = Convert.ToHexString(SHA256.HashData(content));
         var dup = await db.OtaInvoices.FirstOrDefaultAsync(x => x.Provider == "REDBUS" && x.Sha256 == sha);
         if (dup is not null) return (dup, true);
-        if (await db.OtaInvoices.AnyAsync(x => x.Provider == "REDBUS" && x.InvoiceNumber == u.InvoiceNumber))
+        if (await db.OtaInvoices.AnyAsync(x => x.Provider == "REDBUS" && x.InvoiceNumber == number))
             throw new GdsException("DUPLICATE_INVOICE", "This invoice number already exists with different content", 409);
 
-        var (lines, warnings) = ParseCsv(u.Csv);
-        if (lines.Count == 0) throw new GdsException("NO_ROWS", "No PNR rows found");
-        if (lines.Count > 15000) throw new GdsException("TOO_MANY_ROWS", "Invoice contains too many PNR rows", 413);
         var inv = new OtaInvoice
         {
-            TenantId = db.CurrentTenantId, InvoiceNumber = u.InvoiceNumber.Trim(), OperatorCode = u.OperatorCode, FileName = Path.GetFileName(u.FileName ?? "invoice.csv"),
-            Sha256 = sha, PeriodStart = u.PeriodStart, PeriodEnd = u.PeriodEnd, StatedAmount = u.StatedAmount, Tolerance = u.Tolerance ?? 1m,
+            TenantId = db.CurrentTenantId, InvoiceNumber = number, OperatorCode = opCode, FileName = Path.GetFileName(u.FileName ?? "invoice"),
+            Sha256 = sha, PeriodStart = ps, PeriodEnd = pe, StatedAmount = stated, Tolerance = u.Tolerance ?? 1m,
             UploadedBy = actor, UploadedAt = clock.GetUtcNow().UtcDateTime, Lines = lines,
             WarningsJson = warnings.Count > 0 ? System.Text.Json.JsonSerializer.Serialize(warnings) : null,
             Status = warnings.Count > 0 ? "review_required" : "parsed",
         };
         var provider = await db.OtaProviders.AsNoTracking().FirstOrDefaultAsync(p => p.Provider == "REDBUS");
-        if (provider is not null && !string.IsNullOrEmpty(u.OperatorCode) && !string.Equals(provider.OperatorCode, u.OperatorCode, StringComparison.OrdinalIgnoreCase))
-            throw new GdsException("OPERATOR_MISMATCH", "Invoice operator code does not match this GDS tenant", 409);
+        if (provider is not null && !string.IsNullOrEmpty(opCode) && !string.Equals(provider.OperatorCode, opCode, StringComparison.OrdinalIgnoreCase))
+        {
+            // The payment advice carries RedBus's numeric operator id; mapping it to our operator code is open (ambiguity A-16).
+            if (string.IsNullOrEmpty(u.PdfBase64)) throw new GdsException("OPERATOR_MISMATCH", "Invoice operator code does not match this GDS tenant", 409);
+            warnings.Add($"PDF operator code {opCode} differs from configured code {provider.OperatorCode}; confirm this statement belongs to this operator");
+            inv.WarningsJson = System.Text.Json.JsonSerializer.Serialize(warnings); inv.Status = "review_required";
+        }
         db.OtaInvoices.Add(inv);
         await CompareAsync(inv);
         db.AuditLogs.Add(new AuditLog { TenantId = db.CurrentTenantId, Actor = actor, Action = "INVOICE_UPLOAD", Entity = "ota_invoice", EntityId = inv.InvoiceNumber, At = clock.GetUtcNow().UtcDateTime,

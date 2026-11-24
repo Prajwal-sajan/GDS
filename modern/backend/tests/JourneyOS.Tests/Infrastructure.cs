@@ -30,7 +30,8 @@ public sealed class MockRedBusHandler : HttpMessageHandler
     }
 }
 
-public sealed class GdsFactory(string pg, string redis, Dictionary<string, string?>? extra = null, string environment = "Testing")
+public sealed class GdsFactory(string pg, string redis, Dictionary<string, string?>? extra = null, string environment = "Testing",
+    Action<IServiceCollection>? services = null)
     : WebApplicationFactory<Program>
 {
     public MockRedBusHandler RedBus { get; } = new();
@@ -59,6 +60,7 @@ public sealed class GdsFactory(string pg, string redis, Dictionary<string, strin
             c.AddInMemoryCollection(settings);
         });
         builder.ConfigureServices(s => s.AddHttpClient<JourneyOS.Api.Outbox.RedBusCallbackClient>().ConfigurePrimaryHttpMessageHandler(() => RedBus));
+        if (services is not null) builder.ConfigureServices(services);
     }
 
     public HttpClient Admin(string key = OwnerKey)

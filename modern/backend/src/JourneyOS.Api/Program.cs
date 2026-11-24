@@ -18,7 +18,8 @@ var cfg = builder.Configuration;
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());
-builder.Services.AddDbContext<GdsDbContext>(o => o.UseNpgsql(cfg.GetConnectionString("Postgres")));
+builder.Services.AddDbContext<GdsDbContext>((sp, o) => o.UseNpgsql(cfg.GetConnectionString("Postgres"))
+    .AddInterceptors(sp.GetServices<Microsoft.EntityFrameworkCore.Diagnostics.IInterceptor>())); // test/diagnostic hook
 
 // Redis is optional at runtime: the app starts and serves correct (uncached) data when it is down.
 builder.Services.AddSingleton(sp =>
@@ -44,7 +45,11 @@ builder.Services.AddScoped<LegacyImporter>();
 builder.Services.AddScoped<JourneyOS.Api.Operations.OperationsService>();
 builder.Services.AddScoped<JourneyOS.Api.Accounts.ReconciliationService>();
 builder.Services.AddSingleton<JourneyOS.Api.Realtime.ITripEvents, JourneyOS.Api.Realtime.SignalRTripEvents>();
-builder.Services.AddSignalR();
+var signalR = builder.Services.AddSignalR();
+// Multi-node: fan realtime events out through Redis. Off by default (single node); events are refetch hints only,
+// so a Redis outage degrades to "no live push" — never to wrong data.
+if (cfg.GetValue<bool>("Realtime:RedisBackplane") && cfg.GetConnectionString("Redis") is { Length: > 0 } rcs)
+    signalR.AddStackExchangeRedis(rcs, o => { o.Configuration.ChannelPrefix = RedisChannel.Literal("journeyos-rt"); o.Configuration.AbortOnConnectFail = false; });
 builder.Services.AddHttpClient<RedBusCallbackClient>(c => c.Timeout = TimeSpan.FromSeconds(cfg.GetValue("Outbox:TimeoutSeconds", 15)));
 builder.Services.AddSingleton<OutboxDispatcher>();
 builder.Services.AddSingleton<HoldExpirySweeper>();
