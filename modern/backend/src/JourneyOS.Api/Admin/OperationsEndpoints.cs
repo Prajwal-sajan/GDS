@@ -174,14 +174,33 @@ public static class OperationsEndpoints
             var pay = await db.Payments.AsNoTracking().Where(p => p.BookingId == b.Id).ToListAsync();
             return Results.Ok(new { b.Pnr, b.Status, b.TotalFare, b.Channel, payments = pay.Select(p => new { p.Amount, p.Method, p.Status }) });
         }).RequireAuthorization(ops);
-        g.MapGet("/bookings/{pnr}", async (string pnr, GdsDbContext db) =>
+        // Booking detail is never a general integration-read or viewer resource:
+        // it contains passenger names and payment evidence. Hide payment
+        // references and commission finance from non-accounting roles, and
+        // do not cache PNR responses in shared workstations/proxies.
+        g.MapGet("/bookings/{pnr}", async (string pnr, GdsDbContext db, HttpContext h) =>
         {
-            var b = await db.Bookings.AsNoTracking().Include(x => x.Passengers).FirstOrDefaultAsync(x => x.Pnr == pnr);
+            h.Response.Headers.CacheControl = "private, no-store";
+            var b = await db.Bookings.AsNoTracking().Include(x => x.Passengers)
+                .FirstOrDefaultAsync(x => x.Pnr == pnr);
             if (b is null) return Results.NotFound();
-            var pay = await db.Payments.AsNoTracking().Where(p => p.BookingId == b.Id).ToListAsync();
-            var fin = await db.BookingFinances.AsNoTracking().FirstOrDefaultAsync(f => f.BookingId == b.Id);
-            return Results.Ok(new { b.Pnr, b.Status, b.Channel, b.TotalFare, b.TripId, passengers = b.Passengers.Select(p => new { p.SeatCode, p.Name, p.Status }), payments = pay, finance = fin });
-        }).RequireAuthorization(Policies.IntegrationRead);
+            var role = h.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+            var accounting = role is "owner" or "admin" or "accounts";
+            var pay = await db.Payments.AsNoTracking().Where(p => p.BookingId == b.Id)
+                .OrderBy(p => p.CreatedAt).ToListAsync();
+            var fin = accounting ? await db.BookingFinances.AsNoTracking()
+                .FirstOrDefaultAsync(f => f.BookingId == b.Id) : null;
+            return Results.Ok(new {
+                b.Pnr, b.Status, b.Channel, b.TotalFare, b.TripId,
+                passengers = b.Passengers.Select(p => new { p.SeatCode, p.Name, p.Status }),
+                payments = pay.Select(p => new { p.Method, p.Amount, p.Status, p.CreatedAt,
+                    reference = accounting ? p.Reference : null }),
+                finance = fin is null ? null : new {
+                    fin.NetFare, fin.Gst, fin.OtaCommission, fin.OtaCommissionGst,
+                    fin.OperatorOffer, fin.OtaTakeHome
+                }
+            });
+        }).RequireAuthorization(Policies.BookingDetail);
 
         // reconciliation
         var rc = g.MapGroup("/reconciliation/invoices").RequireAuthorization(Policies.Accounts);
