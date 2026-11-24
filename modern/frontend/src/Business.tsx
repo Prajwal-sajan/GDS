@@ -137,7 +137,7 @@ export function ReportsPanel({ me }: { me: Me }) {
   return (
     <section>
       <div className="row">
-        <label>Report<select value={name} onChange={(e) => setName(e.target.value)} aria-label="Report">{REPORTS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+        <label>Report<select value={name} onChange={(e) => setName(e.target.value)} aria-label="Report">{REPORTS.filter(([k]) => k !== "daily-ops" || ["owner", "admin", "ops"].includes(me.role)).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
         {name !== "daily-ops" && <label>From<input type="date" value={range.from} onChange={(e) => setRange({ ...range, from: e.target.value })} aria-label="From" /></label>}
         <label>{name === "daily-ops" ? "Date" : "To"}<input type="date" value={range.to} onChange={(e) => setRange({ ...range, to: e.target.value })} aria-label="To" /></label>
       </div>
