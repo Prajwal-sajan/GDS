@@ -53,6 +53,7 @@ public sealed class GdsFactory(string pg, string redis, Dictionary<string, strin
                 ["Database:MigrateOnStartup"] = "true",
                 ["RedBus:TenantCode"] = "demo",
                 ["RedBus:RatePerMinute"] = "100000",
+                ["Auth:LoginPerMinute"] = "100000",
                 ["Admin:Keys:0:Name"] = "test-owner", ["Admin:Keys:0:KeySha256"] = Sha(OwnerKey), ["Admin:Keys:0:TenantCode"] = "demo", ["Admin:Keys:0:Role"] = "owner",
                 ["Admin:Keys:1:Name"] = "other-owner", ["Admin:Keys:1:KeySha256"] = Sha(OtherTenantKey), ["Admin:Keys:1:TenantCode"] = "other", ["Admin:Keys:1:Role"] = "owner",
             };

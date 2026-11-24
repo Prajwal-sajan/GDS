@@ -136,7 +136,7 @@ public sealed class OperationsTests(GdsFixture fx)
         });
         var (sc, cb) = await Admin.Post("/api/admin/bookings/counter", new
         {
-            tripId, boardingPointId = bp, droppingPointId = dp, paymentMethod = "agent_credit", paymentReference = "AGT-1", channel = "agent",
+            tripId, boardingPointId = bp, droppingPointId = dp, paymentMethod = "agent_credit", paymentReference = "AGT-1", channel = "agent", agentPhone = "9444444441",
             passengers = new[] { new { seat = (string)f.Seats[0]!["name"]!, name = "Counter Pax", age = 40, gender = "F", mobile = "9000000001", email = (string?)null, primary = true } },
         });
         Assert.True(sc == HttpStatusCode.OK, cb?.ToJsonString());

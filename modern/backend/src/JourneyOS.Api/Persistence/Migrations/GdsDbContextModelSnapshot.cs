@@ -23,6 +23,87 @@ namespace JourneyOS.Api.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "btree_gist");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("JourneyOS.Api.Persistence.AppUser", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal?>("CommissionPct")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("commission_pct");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<decimal?>("CreditLimit")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("credit_limit");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("text")
+                        .HasColumnName("email");
+
+                    b.Property<int>("FailedLogins")
+                        .HasColumnType("integer")
+                        .HasColumnName("failed_logins");
+
+                    b.Property<DateTime?>("LastLoginAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_login_at");
+
+                    b.Property<string>("LegacyRole")
+                        .HasColumnType("text")
+                        .HasColumnName("legacy_role");
+
+                    b.Property<DateTime?>("LockedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_until");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("text")
+                        .HasColumnName("password_hash");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("phone");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("role");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_app_users");
+
+                    b.HasIndex("TenantId", "Phone")
+                        .IsUnique()
+                        .HasDatabaseName("ix_app_users_tenant_id_phone");
+
+                    b.ToTable("app_users", (string)null);
+                });
+
             modelBuilder.Entity("JourneyOS.Api.Persistence.AuditLog", b =>
                 {
                     b.Property<long>("Id")
@@ -82,9 +163,17 @@ namespace JourneyOS.Api.Persistence.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<string>("AgentPhone")
+                        .HasColumnType("text")
+                        .HasColumnName("agent_phone");
+
                     b.Property<long>("BoardingStageId")
                         .HasColumnType("bigint")
                         .HasColumnName("boarding_stage_id");
+
+                    b.Property<string>("BookedBy")
+                        .HasColumnType("text")
+                        .HasColumnName("booked_by");
 
                     b.Property<string>("CancellationPolicy")
                         .IsRequired()
@@ -350,6 +439,113 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.ToTable("booking_passengers");
                 });
 
+            modelBuilder.Entity("JourneyOS.Api.Persistence.Branch", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Address")
+                        .HasColumnType("text")
+                        .HasColumnName("address");
+
+                    b.Property<long?>("CityId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("city_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Phone")
+                        .HasColumnType("text")
+                        .HasColumnName("phone");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_branches");
+
+                    b.ToTable("branches");
+                });
+
+            modelBuilder.Entity("JourneyOS.Api.Persistence.CallLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Agent")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("agent");
+
+                    b.Property<string>("Direction")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("direction");
+
+                    b.Property<int>("DurationS")
+                        .HasColumnType("integer")
+                        .HasColumnName("duration_s");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text")
+                        .HasColumnName("notes");
+
+                    b.Property<string>("PassengerName")
+                        .HasColumnType("text")
+                        .HasColumnName("passenger_name");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("phone");
+
+                    b.Property<string>("Pnr")
+                        .HasColumnType("text")
+                        .HasColumnName("pnr");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<long?>("TripId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("trip_id");
+
+                    b.Property<DateTime>("Ts")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ts");
+
+                    b.HasKey("Id")
+                        .HasName("pk_call_logs");
+
+                    b.HasIndex("TenantId", "Phone")
+                        .HasDatabaseName("ix_call_logs_tenant_id_phone");
+
+                    b.HasIndex("TenantId", "Ts")
+                        .HasDatabaseName("ix_call_logs_tenant_id_ts");
+
+                    b.ToTable("call_logs");
+                });
+
             modelBuilder.Entity("JourneyOS.Api.Persistence.Cancellation", b =>
                 {
                     b.Property<long>("Id")
@@ -399,6 +595,115 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasName("pk_cancellations");
 
                     b.ToTable("cancellations");
+                });
+
+            modelBuilder.Entity("JourneyOS.Api.Persistence.ChatBlock", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("At")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("at");
+
+                    b.Property<string>("By")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("by");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("phone");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_chat_blocks");
+
+                    b.HasIndex("TenantId", "Phone")
+                        .IsUnique()
+                        .HasDatabaseName("ix_chat_blocks_tenant_id_phone");
+
+                    b.ToTable("chat_blocks");
+                });
+
+            modelBuilder.Entity("JourneyOS.Api.Persistence.ChatMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("By")
+                        .HasColumnType("text")
+                        .HasColumnName("by");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("channel");
+
+                    b.Property<string>("ConversationId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("conversation_id");
+
+                    b.Property<string>("DeliveryStatus")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("delivery_status");
+
+                    b.Property<string>("Direction")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("direction");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("phone");
+
+                    b.Property<bool>("Read")
+                        .HasColumnType("boolean")
+                        .HasColumnName("read");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text");
+
+                    b.Property<DateTime>("Ts")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ts");
+
+                    b.HasKey("Id")
+                        .HasName("pk_chat_messages");
+
+                    b.HasIndex("TenantId", "ConversationId")
+                        .HasDatabaseName("ix_chat_messages_tenant_id_conversation_id");
+
+                    b.HasIndex("TenantId", "Phone")
+                        .HasDatabaseName("ix_chat_messages_tenant_id_phone");
+
+                    b.ToTable("chat_messages");
                 });
 
             modelBuilder.Entity("JourneyOS.Api.Persistence.City", b =>
@@ -545,6 +850,150 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.ToTable("coach_templates");
                 });
 
+            modelBuilder.Entity("JourneyOS.Api.Persistence.ComplianceDocument", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Category")
+                        .HasColumnType("text")
+                        .HasColumnName("category");
+
+                    b.Property<string>("DocumentName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("document_name");
+
+                    b.Property<string>("DocumentType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("document_type");
+
+                    b.Property<DateOnly?>("ExpiryDate")
+                        .HasColumnType("date")
+                        .HasColumnName("expiry_date");
+
+                    b.Property<long>("OwnerId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("owner_id");
+
+                    b.Property<string>("OwnerType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("owner_type");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("VerificationStatus")
+                        .HasColumnType("text")
+                        .HasColumnName("verification_status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_compliance_documents");
+
+                    b.HasIndex("TenantId", "ExpiryDate")
+                        .HasDatabaseName("ix_compliance_documents_tenant_id_expiry_date");
+
+                    b.ToTable("compliance_documents");
+                });
+
+            modelBuilder.Entity("JourneyOS.Api.Persistence.CrmNote", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("At")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("at");
+
+                    b.Property<string>("By")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("by");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("phone");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text");
+
+                    b.HasKey("Id")
+                        .HasName("pk_crm_notes");
+
+                    b.HasIndex("TenantId", "Phone")
+                        .HasDatabaseName("ix_crm_notes_tenant_id_phone");
+
+                    b.ToTable("crm_notes");
+                });
+
+            modelBuilder.Entity("JourneyOS.Api.Persistence.Customer", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("text")
+                        .HasColumnName("email");
+
+                    b.Property<int>("Miles")
+                        .HasColumnType("integer")
+                        .HasColumnName("miles");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("phone");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("Tier")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tier");
+
+                    b.HasKey("Id")
+                        .HasName("pk_customers");
+
+                    b.HasIndex("TenantId", "Phone")
+                        .IsUnique()
+                        .HasDatabaseName("ix_customers_tenant_id_phone");
+
+                    b.ToTable("customers");
+                });
+
             modelBuilder.Entity("JourneyOS.Api.Persistence.HoldPassenger", b =>
                 {
                     b.Property<long>("Id")
@@ -635,6 +1084,77 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasDatabaseName("ix_hold_passengers_hold_id");
 
                     b.ToTable("hold_passengers");
+                });
+
+            modelBuilder.Entity("JourneyOS.Api.Persistence.LedgerEntry", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<string>("By")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("by");
+
+                    b.Property<string>("ChannelKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("channel_key");
+
+                    b.Property<string>("ChannelType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("channel_type");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("note");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("type");
+
+                    b.Property<bool>("Voided")
+                        .HasColumnType("boolean")
+                        .HasColumnName("voided");
+
+                    b.Property<string>("VoidedBy")
+                        .HasColumnType("text")
+                        .HasColumnName("voided_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ledger_entries");
+
+                    b.HasIndex("TenantId", "ChannelKey")
+                        .HasDatabaseName("ix_ledger_entries_tenant_id_channel_key");
+
+                    b.ToTable("ledger_entries", t =>
+                        {
+                            t.HasCheckConstraint("ck_ledger_entries_amount", "amount > 0");
+                        });
                 });
 
             modelBuilder.Entity("JourneyOS.Api.Persistence.OtaInventory", b =>
@@ -949,6 +1469,93 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasDatabaseName("ix_ota_providers_tenant_id_provider");
 
                     b.ToTable("ota_providers");
+                });
+
+            modelBuilder.Entity("JourneyOS.Api.Persistence.OtaRating", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime?>("FollowUpAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("follow_up_at");
+
+                    b.Property<string>("FollowUpBy")
+                        .HasColumnType("text")
+                        .HasColumnName("follow_up_by");
+
+                    b.Property<string>("FollowUpNote")
+                        .HasColumnType("text")
+                        .HasColumnName("follow_up_note");
+
+                    b.Property<string>("FollowUpStatus")
+                        .HasColumnType("text")
+                        .HasColumnName("follow_up_status");
+
+                    b.Property<string>("OperatorReply")
+                        .HasColumnType("text")
+                        .HasColumnName("operator_reply");
+
+                    b.Property<string>("Ota")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("ota");
+
+                    b.Property<string>("PassengerName")
+                        .HasColumnType("text")
+                        .HasColumnName("passenger_name");
+
+                    b.Property<string>("Phone")
+                        .HasColumnType("text")
+                        .HasColumnName("phone");
+
+                    b.Property<string>("Pnr")
+                        .HasColumnType("text")
+                        .HasColumnName("pnr");
+
+                    b.Property<DateOnly>("RatedAt")
+                        .HasColumnType("date")
+                        .HasColumnName("rated_at");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("integer")
+                        .HasColumnName("rating");
+
+                    b.Property<DateTime?>("RepliedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("replied_at");
+
+                    b.Property<string>("RepliedBy")
+                        .HasColumnType("text")
+                        .HasColumnName("replied_by");
+
+                    b.Property<string>("Review")
+                        .HasColumnType("text")
+                        .HasColumnName("review");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateOnly?>("TravelAt")
+                        .HasColumnType("date")
+                        .HasColumnName("travel_at");
+
+                    b.Property<long?>("TripId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("trip_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ota_ratings");
+
+                    b.HasIndex("TenantId", "RatedAt")
+                        .HasDatabaseName("ix_ota_ratings_tenant_id_rated_at");
+
+                    b.ToTable("ota_ratings");
                 });
 
             modelBuilder.Entity("JourneyOS.Api.Persistence.OutboxAttempt", b =>
@@ -1408,6 +2015,51 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.ToTable("route_stops");
                 });
 
+            modelBuilder.Entity("JourneyOS.Api.Persistence.SarathiConversation", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("MessagesJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("messages_json");
+
+                    b.Property<string>("Owner")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("owner");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sarathi_conversations");
+
+                    b.HasIndex("TenantId", "Owner")
+                        .HasDatabaseName("ix_sarathi_conversations_tenant_id_owner");
+
+                    b.ToTable("sarathi_conversations");
+                });
+
             modelBuilder.Entity("JourneyOS.Api.Persistence.SeatAllocation", b =>
                 {
                     b.Property<long>("Id")
@@ -1833,6 +2485,105 @@ namespace JourneyOS.Api.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_trip_assignments_kind", "(kind = 'vehicle' AND vehicle_id IS NOT NULL) OR (kind = 'staff' AND staff_id IS NOT NULL)");
                         });
+                });
+
+            modelBuilder.Entity("JourneyOS.Api.Persistence.TripExpense", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTime>("At")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("at");
+
+                    b.Property<string>("By")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("by");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("category");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("text")
+                        .HasColumnName("note");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<long>("TripId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("trip_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_trip_expenses");
+
+                    b.HasIndex("TripId")
+                        .HasDatabaseName("ix_trip_expenses_trip_id");
+
+                    b.ToTable("trip_expenses", t =>
+                        {
+                            t.HasCheckConstraint("ck_trip_expenses_amount", "amount >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("JourneyOS.Api.Persistence.UserSession", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("TokenSha256")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("token_sha256");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_sessions");
+
+                    b.HasIndex("TokenSha256")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_sessions_token_sha256");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_user_sessions_user_id");
+
+                    b.ToTable("user_sessions");
                 });
 
             modelBuilder.Entity("JourneyOS.Api.Persistence.Vehicle", b =>

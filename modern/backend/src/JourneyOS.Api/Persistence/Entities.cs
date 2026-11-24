@@ -242,6 +242,8 @@ public sealed class Booking : ITenantOwned
     public string CancellationPolicy { get; set; } = "";
     public DateTime DateOfIssue { get; set; }
     public DateTime? DateOfCancellation { get; set; }
+    public string? BookedBy { get; set; }      // principal who created a counter/agent booking
+    public string? AgentPhone { get; set; }    // agent channel attribution (ledger agent:{phone})
     public List<BookingPassenger> Passengers { get; set; } = [];
 }
 

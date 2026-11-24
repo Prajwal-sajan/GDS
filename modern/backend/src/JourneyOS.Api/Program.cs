@@ -44,6 +44,10 @@ builder.Services.AddScoped<RedBusNotifier>();
 builder.Services.AddScoped<LegacyImporter>();
 builder.Services.AddScoped<JourneyOS.Api.Operations.OperationsService>();
 builder.Services.AddScoped<JourneyOS.Api.Accounts.ReconciliationService>();
+builder.Services.AddScoped<JourneyOS.Api.Crm.CrmService>();
+builder.Services.AddScoped<JourneyOS.Api.Reports.ReportsService>();
+builder.Services.AddScoped<JourneyOS.Api.Sarathi.SarathiService>();
+builder.Services.AddScoped<IamService>();
 builder.Services.AddSingleton<JourneyOS.Api.Realtime.ITripEvents, JourneyOS.Api.Realtime.SignalRTripEvents>();
 var signalR = builder.Services.AddSignalR();
 // Multi-node: fan realtime events out through Redis. Off by default (single node); events are refetch hints only,
@@ -65,13 +69,19 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(Policies.IntegrationRead, p => p.RequireRole("owner", "admin", "accounts", "ops", "viewer"))
     .AddPolicy(Policies.IntegrationWrite, p => p.RequireRole("owner", "admin"))
     .AddPolicy(Policies.Operations, p => p.RequireRole("owner", "admin", "ops"))
-    .AddPolicy(Policies.Accounts, p => p.RequireRole("owner", "admin", "accounts"));
+    .AddPolicy(Policies.Accounts, p => p.RequireRole("owner", "admin", "accounts"))
+    .AddPolicy(Policies.Crm, p => p.RequireRole("owner", "admin", "ops"))
+    .AddPolicy(Policies.Reports, p => p.RequireRole("owner", "admin", "accounts", "ops", "viewer"))
+    .AddPolicy(Policies.Iam, p => p.RequireRole("owner", "admin"))
+    .AddPolicy(Policies.Self, p => p.RequireAuthenticatedUser());
 
 builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = 429;
     o.AddPolicy("redbus", http => RateLimitPartition.GetFixedWindowLimiter(http.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = cfg.GetValue("RedBus:RatePerMinute", 600), Window = TimeSpan.FromMinutes(1) }));
+    o.AddPolicy("login", http => RateLimitPartition.GetFixedWindowLimiter(http.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = cfg.GetValue("Auth:LoginPerMinute", 20), Window = TimeSpan.FromMinutes(1) }));
 });
 builder.Services.AddHealthChecks();
 
@@ -112,6 +122,7 @@ app.UseExceptionHandler(e => e.Run(async ctx =>
     {
         GdsException g => (g.HttpStatus, g.Code, g.Message),
         BadHttpRequestException b => (400, "BAD_REQUEST", b.Message),
+        FormatException => (400, "BAD_REQUEST", "Invalid date or number format"),
         _ when StoreDown(ex) => (503, "STORE_UNAVAILABLE", "Booking store temporarily unavailable; no change was committed"),
         _ => (500, "INTERNAL", "Unexpected error"),
     };
@@ -151,6 +162,7 @@ app.MapGet("/health/ready", async (GdsDbContext db, IGdsCache cache) =>
 app.MapRedBus(redbusPrefix).RequireRateLimiting("redbus");
 app.MapAdmin();
 JourneyOS.Api.Admin.OperationsEndpoints.MapOperations(app);
+JourneyOS.Api.Admin.BusinessEndpoints.MapBusiness(app);
 app.MapHub<JourneyOS.Api.Realtime.OpsHub>("/hubs/ops");
 
 app.Run();

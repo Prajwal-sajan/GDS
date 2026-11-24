@@ -47,6 +47,19 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
     public DbSet<BookingFinance> BookingFinances => Set<BookingFinance>();
     public DbSet<OtaInvoice> OtaInvoices => Set<OtaInvoice>();
     public DbSet<OtaInvoiceLine> OtaInvoiceLines => Set<OtaInvoiceLine>();
+    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<CrmNote> CrmNotes => Set<CrmNote>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+    public DbSet<ChatBlock> ChatBlocks => Set<ChatBlock>();
+    public DbSet<CallLog> CallLogs => Set<CallLog>();
+    public DbSet<OtaRating> OtaRatings => Set<OtaRating>();
+    public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
+    public DbSet<TripExpense> TripExpenses => Set<TripExpense>();
+    public DbSet<ComplianceDocument> ComplianceDocuments => Set<ComplianceDocument>();
+    public DbSet<AppUser> Users => Set<AppUser>();
+    public DbSet<UserSession> UserSessions => Set<UserSession>();
+    public DbSet<Branch> Branches => Set<Branch>();
+    public DbSet<SarathiConversation> SarathiConversations => Set<SarathiConversation>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -68,6 +81,20 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
             e.HasMany(x => x.Lines).WithOne().HasForeignKey(l => l.InvoiceId).OnDelete(DeleteBehavior.Cascade);
         });
         b.Entity<OtaInvoiceLine>(e => { e.HasIndex(x => new { x.InvoiceId, x.LineKey }).IsUnique(); e.HasIndex(x => x.Pnr); });
+
+        b.Entity<Customer>(e => e.HasIndex(x => new { x.TenantId, x.Phone }).IsUnique());
+        b.Entity<CrmNote>(e => e.HasIndex(x => new { x.TenantId, x.Phone }));
+        b.Entity<ChatMessage>(e => { e.HasIndex(x => new { x.TenantId, x.ConversationId }); e.HasIndex(x => new { x.TenantId, x.Phone }); });
+        b.Entity<ChatBlock>(e => e.HasIndex(x => new { x.TenantId, x.Phone }).IsUnique());
+        b.Entity<CallLog>(e => { e.HasIndex(x => new { x.TenantId, x.Ts }); e.HasIndex(x => new { x.TenantId, x.Phone }); });
+        b.Entity<OtaRating>(e => e.HasIndex(x => new { x.TenantId, x.RatedAt }));
+        b.Entity<LedgerEntry>(e => { e.HasIndex(x => new { x.TenantId, x.ChannelKey }); e.ToTable(t => t.HasCheckConstraint("ck_ledger_entries_amount", "amount > 0")); });
+        b.Entity<TripExpense>(e => { e.HasIndex(x => x.TripId); e.ToTable(t => t.HasCheckConstraint("ck_trip_expenses_amount", "amount >= 0")); });
+        b.Entity<ComplianceDocument>(e => e.HasIndex(x => new { x.TenantId, x.ExpiryDate }));
+        b.Entity<AppUser>(e => { e.ToTable("app_users"); e.HasIndex(x => new { x.TenantId, x.Phone }).IsUnique(); e.Property(x => x.CommissionPct).HasPrecision(5, 2); });
+        b.Entity<UserSession>(e => { e.HasIndex(x => x.TokenSha256).IsUnique(); e.HasIndex(x => x.UserId); });
+        b.Entity<Branch>(e => e.Property(x => x.Id).ValueGeneratedNever());
+        b.Entity<SarathiConversation>(e => { e.Property(x => x.MessagesJson).HasColumnType("jsonb"); e.HasIndex(x => new { x.TenantId, x.Owner }); });
 
         b.Entity<Tenant>(e => { e.HasIndex(x => x.Code).IsUnique(); e.Property(x => x.GstPercent).HasPrecision(5, 2); });
 

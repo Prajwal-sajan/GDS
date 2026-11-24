@@ -242,6 +242,8 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
                 ContactMobile = Str(contact, "phone"), ContactEmail = Str(contact, "email"), TotalFare = Dec(fare, "total") ?? 0,
                 CancellationPolicy = Inventory.CancellationPolicy.FromRefundSlabs(await db.RefundSlabs.Where(x => x.RouteId == route.Id).ToListAsync()),
                 DateOfIssue = DateTime.Parse(Str(b, "booked_at") ?? Str(b, "created_at")!).ToUniversalTime(),
+                BookedBy = b.TryGetProperty("booked_by", out var bb) && bb.ValueKind == JsonValueKind.Object ? Str(bb, "name") : null,
+                AgentPhone = Str(b, "agent_phone"),
             };
             var first = true;
             foreach (var p in b.GetProperty("passengers").EnumerateArray())
@@ -293,7 +295,114 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
                 skipped++;
             }
         }
+        await ImportBusinessAsync(root, tenant.Id);
         return new Report(cityCount, coachCount, routeCount, tripCount, bookingCount, paxCount, skipped);
+    }
+
+    /// <summary>Legacy role → modern role. Unknown roles become viewer (least privilege).</summary>
+    public static string MapRole(string? legacy) => legacy switch
+    {
+        "owner" => "owner",
+        "manager" => "admin",
+        "accountant" => "accounts",
+        "booking_executive" or "pickup_manager" => "ops",
+        "agent" => "agent",
+        _ => "viewer",
+    };
+
+    /// <summary>CRM, accounts, IAM and compliance collections. Each collection is imported once (skipped if the tenant already has rows).</summary>
+    private async Task ImportBusinessAsync(JsonElement root, long tenantId)
+    {
+        IEnumerable<JsonElement> Col(string name) => root.TryGetProperty(name, out var a) && a.ValueKind == JsonValueKind.Array ? a.EnumerateArray() : [];
+        static DateTime Ts(string? s) => s is not null && DateTime.TryParse(s, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal, out var d) ? d : DateTime.UtcNow;
+        long? L(JsonElement e, string p) => e.TryGetProperty(p, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt64() : null;
+
+        var phones = await db.Customers.Select(c => c.Phone).ToHashSetAsync();
+        foreach (var c in Col("customers"))
+        {
+            var phone = Str(c, "phone");
+            if (phone is null || !phones.Add(phone)) continue;
+            db.Customers.Add(new Customer { TenantId = tenantId, Phone = phone, Name = Str(c, "name") ?? "", Email = Str(c, "email"), Tier = Str(c, "tier") ?? "Bronze", Miles = Int(c, "miles") ?? 0, CreatedAt = Ts(Str(c, "created_at")) });
+        }
+        var userPhones = await db.Users.Select(u => u.Phone).ToHashSetAsync();
+        foreach (var u in Col("users"))
+        {
+            var phone = Str(u, "phone");
+            if (phone is null || !userPhones.Add(phone)) continue;
+            db.Users.Add(new AppUser
+            {
+                TenantId = tenantId, Phone = phone, Name = Str(u, "name") ?? "", Email = Str(u, "email"), LegacyRole = Str(u, "role"), Role = MapRole(Str(u, "role")),
+                Status = Str(u, "status") == "INACTIVE" ? "INACTIVE" : "ACTIVE", CommissionPct = Dec(u, "commission_pct"), CreditLimit = Dec(u, "credit_limit"),
+                CreatedAt = Ts(Str(u, "created_at")), // no password: legacy used OTP; an admin must set one (see RUNBOOK)
+            });
+        }
+        var branchIds = await db.Branches.Select(b => b.Id).ToHashSetAsync();
+        foreach (var b in Col("branches"))
+            if (L(b, "id") is { } id && branchIds.Add(id))
+                db.Branches.Add(new Branch { Id = id, TenantId = tenantId, Name = Str(b, "name") ?? "", CityId = L(b, "city_id"), Address = Str(b, "address"), Phone = Str(b, "phone") });
+
+        if (!await db.ChatMessages.AnyAsync())
+            foreach (var m in Col("messages"))
+                db.ChatMessages.Add(new ChatMessage
+                {
+                    TenantId = tenantId, ConversationId = Str(m, "conversation_id") ?? "", Direction = Str(m, "direction") == "out" ? "out" : "in", Channel = Str(m, "channel") ?? "whatsapp",
+                    Text = Str(m, "text") ?? "", Phone = Str(m, "phone") ?? "", Ts = Ts(Str(m, "ts")), Read = m.TryGetProperty("read", out var r) && r.ValueKind == JsonValueKind.True,
+                    By = Str(m, "by"), DeliveryStatus = Str(m, "direction") == "out" ? "recorded" : "received",
+                });
+        if (!await db.ChatBlocks.AnyAsync())
+            foreach (var bl in Col("chat_blocks").GroupBy(x => Str(x, "phone")).Where(g => g.Key is not null).Select(g => g.First()))
+                db.ChatBlocks.Add(new ChatBlock { TenantId = tenantId, Phone = Str(bl, "phone")!, Reason = Str(bl, "reason") ?? "spam", By = Str(bl, "by") ?? "legacy", At = Ts(Str(bl, "at")) });
+        if (!await db.CallLogs.AnyAsync())
+            foreach (var c in Col("calls"))
+                db.CallLogs.Add(new CallLog
+                {
+                    TenantId = tenantId, Direction = Str(c, "direction") == "incoming" ? "incoming" : "outgoing", Kind = Str(c, "kind") ?? "manual", Phone = Str(c, "phone") ?? "",
+                    PassengerName = Str(c, "passenger_name"), Pnr = Str(c, "pnr"), TripId = L(c, "schedule_id"), Status = Str(c, "status") ?? "logged", DurationS = Int(c, "duration_s") ?? 0,
+                    Notes = Str(c, "notes"), Agent = Str(c, "agent") ?? "", Ts = Ts(Str(c, "ts")),
+                });
+        if (!await db.OtaRatings.AnyAsync())
+            foreach (var x in Col("ota_ratings"))
+            {
+                var fu = x.TryGetProperty("follow_up", out var f) && f.ValueKind == JsonValueKind.Object ? f : default;
+                db.OtaRatings.Add(new OtaRating
+                {
+                    TenantId = tenantId, Ota = Str(x, "ota") ?? "", Pnr = Str(x, "pnr"), PassengerName = Str(x, "passenger_name"), Phone = Str(x, "phone"), TripId = L(x, "schedule_id"),
+                    TravelAt = Date(x, "travel_at"), Rating = Int(x, "rating") ?? 0, RatedAt = Date(x, "rated_at") ?? DateOnly.FromDateTime(DateTime.UtcNow), Review = Str(x, "review"),
+                    OperatorReply = Str(x, "operator_reply"), RepliedBy = Str(x, "replied_by"),
+                    FollowUpStatus = fu.ValueKind == JsonValueKind.Object ? Str(fu, "status") : null, FollowUpNote = fu.ValueKind == JsonValueKind.Object ? Str(fu, "note") : null,
+                });
+            }
+        if (!await db.LedgerEntries.AnyAsync())
+            foreach (var e in Col("ledger"))
+            {
+                var key = Str(e, "channel_key"); var amt = Dec(e, "amount");
+                if (key is null || amt is not > 0) continue;
+                db.LedgerEntries.Add(new LedgerEntry
+                {
+                    TenantId = tenantId, ChannelKey = key, ChannelType = Str(e, "channel_type") ?? key.Split(':')[0], Type = Str(e, "type") == "debit" ? "debit" : "credit",
+                    Amount = amt.Value, Note = Str(e, "note") ?? "", Date = Date(e, "date") ?? DateOnly.FromDateTime(DateTime.UtcNow), By = Str(e, "by") ?? "legacy", CreatedAt = Ts(Str(e, "created_at")),
+                });
+            }
+        if (!await db.ComplianceDocuments.AnyAsync())
+            foreach (var d in Col("documents"))
+                if (L(d, "owner_id") is { } oid)
+                    db.ComplianceDocuments.Add(new ComplianceDocument
+                    {
+                        TenantId = tenantId, OwnerType = Str(d, "owner_type") ?? "vehicle", OwnerId = oid, DocumentType = Str(d, "document_type") ?? "",
+                        DocumentName = Str(d, "document_name") ?? "", ExpiryDate = Date(d, "expiry_date"), Category = Str(d, "category"), VerificationStatus = Str(d, "verification_status"),
+                    });
+        if (!await db.TripExpenses.AnyAsync())
+            foreach (var x in Col("trip_expenses"))
+                if (L(x, "schedule_id") is { } sid && Dec(x, "amount") is >= 0 and var amt)
+                    db.TripExpenses.Add(new TripExpense { TenantId = tenantId, TripId = sid, Category = Str(x, "label") ?? Str(x, "key") ?? "other", Amount = amt, Note = Str(x, "source"), By = "legacy", At = Ts(Str(x, "created_at")) });
+        if (!await db.SarathiConversations.AnyAsync())
+            foreach (var s in Col("sarathi"))
+                db.SarathiConversations.Add(new SarathiConversation
+                {
+                    TenantId = tenantId, Owner = $"legacy-user:{L(s, "user_id")}", Title = Str(s, "title") ?? "",
+                    MessagesJson = s.TryGetProperty("messages", out var ms) ? ms.GetRawText() : "[]", CreatedAt = Ts(Str(s, "created_at")), UpdatedAt = Ts(Str(s, "created_at")),
+                });
+        await db.SaveChangesAsync();
     }
 
     private static string? Str(JsonElement e, string p) => e.TryGetProperty(p, out var v) && v.ValueKind != JsonValueKind.Null ? v.ToString() : null;

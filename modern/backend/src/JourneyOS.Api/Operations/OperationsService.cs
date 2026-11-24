@@ -18,7 +18,7 @@ public sealed record BlockInput(List<string> Seats, int? FromSequence, int? ToSe
 public sealed record GenerateInput(DateOnly From, DateOnly To);
 public sealed record CounterPassenger(string Seat, string Name, int Age, string Gender, string? Mobile, string? Email, bool Primary);
 public sealed record CounterBookingInput(long TripId, long BoardingPointId, long DroppingPointId, List<CounterPassenger> Passengers,
-    string PaymentMethod, string? PaymentReference, string Channel = "counter");
+    string PaymentMethod, string? PaymentReference, string Channel = "counter", string? AgentPhone = null);
 
 /// <summary>Operator-side master data and operations. Every mutation is transactional, audited and cache-invalidating.</summary>
 public sealed class OperationsService(GdsDbContext db, InventoryService inventory, RedBusQueryService rbq, RedBusNotifier notifier,
@@ -220,6 +220,15 @@ ON CONFLICT DO NOTHING");
     {
         if (i.Channel is not ("counter" or "agent" or "branch" or "website")) throw new GdsException("VALIDATION", "Unsupported channel");
         if (i.PaymentMethod is not ("cash" or "card" or "upi" or "agent_credit")) throw new GdsException("VALIDATION", "Unsupported payment method");
+        if (i.PaymentMethod == "agent_credit" && i.Channel != "agent") throw new GdsException("VALIDATION", "agent_credit is only valid for the agent channel");
+        if (i.Channel == "agent")
+        {
+            if (string.IsNullOrWhiteSpace(i.AgentPhone)) throw new GdsException("VALIDATION", "agentPhone is required for agent bookings");
+            var agent = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Phone == i.AgentPhone && u.Role == "agent")
+                        ?? throw new GdsException("VALIDATION", "Unknown agent");
+            if (agent.Status != "ACTIVE") throw new GdsException("AGENT_INACTIVE", "Agent is inactive", 409);
+        }
+        else if (i.AgentPhone is not null) throw new GdsException("VALIDATION", "agentPhone is only valid for agent bookings");
         var trip = await db.Trips.AsNoTracking().FirstOrDefaultAsync(t => t.Id == i.TripId) ?? throw new GdsException("SERVICE_NOT_FOUND", "Service not found", 404);
         var route = await inventory.LoadRouteAsync(trip.RouteId);
         var bp = route.Stages.FirstOrDefault(s => s.Id == i.BoardingPointId && s.Kind == "pickup") ?? throw new GdsException("INVALID_BOARDING_POINT", "Unknown boarding point");
@@ -233,6 +242,6 @@ ON CONFLICT DO NOTHING");
             p.Mobile, null, p.Email, p.Age, p.Gender, null, null, null, p.Primary)).ToList();
         var hold = await inventory.HoldAsync(new HoldInput(inv.Id, bp.Id, dp.Id, src.CityId, dst.CityId, items, i.Channel));
         var paid = i.PaymentMethod == "agent_credit" ? "RECEIVABLE" : "PAID";
-        return await inventory.ConfirmAsync(hold.BlockKey, hold.TotalFare, new PaymentInput(i.PaymentMethod, paid, i.PaymentReference));
+        return await inventory.ConfirmAsync(hold.BlockKey, hold.TotalFare, new PaymentInput(i.PaymentMethod, paid, i.PaymentReference, actor, i.AgentPhone));
     }
 }

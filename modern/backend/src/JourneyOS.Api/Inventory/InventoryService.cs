@@ -29,7 +29,7 @@ public sealed record HoldInput(long InventoryId, long BoardingPointId, long Drop
 
 public sealed record CancelResult(Booking Booking, decimal Charge, decimal Refund, DateTime At);
 
-public sealed record PaymentInput(string Method, string Status, string? Reference);
+public sealed record PaymentInput(string Method, string Status, string? Reference, string? BookedBy = null, string? AgentPhone = null);
 
 /// <summary>
 /// Authoritative seat-inventory engine. Every mutation runs inside a PostgreSQL transaction that
@@ -207,6 +207,7 @@ public sealed class InventoryService(GdsDbContext db, IGdsCache cache, RedBusNot
             BoardingStageId = hold.BoardingStageId, DroppingStageId = hold.DroppingStageId, FromSeq = hold.FromSeq, ToSeq = hold.ToSeq,
             ContactMobile = primary.Mobile, ContactEmail = primary.Email, TotalFare = hold.TotalFare, Currency = hold.Currency,
             CancellationPolicy = CancellationPolicy.FromRefundSlabs(route.RefundSlabs), DateOfIssue = now,
+            BookedBy = payment?.BookedBy, AgentPhone = payment?.AgentPhone,
             Passengers = hold.Passengers.Select(p => new BookingPassenger
             {
                 CoachSeatId = p.CoachSeatId, SeatCode = p.SeatCode, Fare = p.Fare, BaseFare = p.BaseFare, Gst = p.Gst, LadiesSeat = p.LadiesSeat,
