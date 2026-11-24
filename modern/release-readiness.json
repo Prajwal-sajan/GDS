@@ -1,0 +1,199 @@
+{
+  "schema": 1,
+  "intendedTarget": "JourneyOS React/.NET/PostgreSQL/Redis production cutover",
+  "releaseAllowed": false,
+  "disclaimer": "Tests passing is not equivalent to visual parity, provider certification, operator UAT or migration reconciliation.",
+  "modules": [
+    {
+      "id": "navigation",
+      "status": "partial",
+      "visualParity": "unverified",
+      "workflowEvidence": [],
+      "screenshotEvidence": []
+    },
+    {
+      "id": "routes",
+      "status": "partial",
+      "visualParity": "unverified",
+      "workflowEvidence": [],
+      "screenshotEvidence": []
+    },
+    {
+      "id": "schedules",
+      "status": "partial",
+      "visualParity": "unverified",
+      "workflowEvidence": [],
+      "screenshotEvidence": []
+    },
+    {
+      "id": "coach-editor",
+      "status": "not-migrated",
+      "visualParity": "unverified",
+      "workflowEvidence": [],
+      "screenshotEvidence": []
+    },
+    {
+      "id": "seat-diagrams",
+      "status": "partial",
+      "visualParity": "unverified",
+      "workflowEvidence": [],
+      "screenshotEvidence": []
+    },
+    {
+      "id": "bookings-and-tickets",
+      "status": "partial",
+      "visualParity": "unverified",
+      "workflowEvidence": [],
+      "screenshotEvidence": []
+    },
+    {
+      "id": "payments-and-refunds",
+      "status": "partial",
+      "visualParity": "unverified",
+      "workflowEvidence": [],
+      "screenshotEvidence": []
+    },
+    {
+      "id": "crm",
+      "status": "partial",
+      "visualParity": "unverified",
+      "workflowEvidence": [],
+      "screenshotEvidence": []
+    },
+    {
+      "id": "communications",
+      "status": "partial",
+      "visualParity": "unverified",
+      "workflowEvidence": [],
+      "screenshotEvidence": []
+    },
+    {
+      "id": "vehicles-and-staff",
+      "status": "partial",
+      "visualParity": "unverified",
+      "workflowEvidence": [],
+      "screenshotEvidence": []
+    },
+    {
+      "id": "accounts",
+      "status": "partial",
+      "visualParity": "unverified",
+      "workflowEvidence": [],
+      "screenshotEvidence": []
+    },
+    {
+      "id": "ota-invoice-verifier",
+      "status": "partial",
+      "visualParity": "unverified",
+      "workflowEvidence": [],
+      "screenshotEvidence": []
+    },
+    {
+      "id": "daily-ops",
+      "status": "partial",
+      "visualParity": "unverified",
+      "workflowEvidence": [],
+      "screenshotEvidence": []
+    },
+    {
+      "id": "reports",
+      "status": "partial",
+      "visualParity": "unverified",
+      "workflowEvidence": [],
+      "screenshotEvidence": []
+    },
+    {
+      "id": "sarathi",
+      "status": "partial",
+      "visualParity": "unverified",
+      "workflowEvidence": [],
+      "screenshotEvidence": []
+    },
+    {
+      "id": "settings-and-access",
+      "status": "partial",
+      "visualParity": "unverified",
+      "workflowEvidence": [],
+      "screenshotEvidence": []
+    },
+    {
+      "id": "redbus-integration",
+      "status": "partial",
+      "visualParity": "unverified",
+      "workflowEvidence": [],
+      "screenshotEvidence": []
+    }
+  ],
+  "platform": [
+    {
+      "id": "postgresql-inventory-concurrency",
+      "status": "verified-by-automated-tests",
+      "evidence": []
+    },
+    {
+      "id": "redis-cache-degradation",
+      "status": "verified-by-automated-tests",
+      "evidence": []
+    },
+    {
+      "id": "multi-tenant-and-branch-authorization",
+      "status": "partial",
+      "evidence": []
+    },
+    {
+      "id": "legacy-data-reconciliation",
+      "status": "partial",
+      "evidence": []
+    },
+    {
+      "id": "authorized-redbus-sandbox-certification",
+      "status": "pending",
+      "evidence": []
+    },
+    {
+      "id": "payment-gateway-and-settlement-reconciliation",
+      "status": "pending",
+      "evidence": []
+    },
+    {
+      "id": "production-secret-management",
+      "status": "pending",
+      "evidence": []
+    },
+    {
+      "id": "aws-backup-restore-and-disaster-recovery",
+      "status": "pending",
+      "evidence": []
+    },
+    {
+      "id": "observability-alerting-and-oncall",
+      "status": "pending",
+      "evidence": []
+    },
+    {
+      "id": "security-penetration-and-threat-testing",
+      "status": "pending",
+      "evidence": []
+    },
+    {
+      "id": "performance-soak-and-accessibility",
+      "status": "pending",
+      "evidence": []
+    },
+    {
+      "id": "parallel-shadow-and-rollback-drill",
+      "status": "pending",
+      "evidence": []
+    },
+    {
+      "id": "operator-uat-signoff",
+      "status": "pending",
+      "evidence": []
+    },
+    {
+      "id": "financial-posting-and-refund-uat",
+      "status": "pending",
+      "evidence": []
+    }
+  ]
+}
