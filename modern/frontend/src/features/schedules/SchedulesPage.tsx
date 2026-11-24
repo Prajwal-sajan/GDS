@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, type Me, type ScheduleRow } from "../../api";
-import { confirmDialog, Modal, toast, toastError } from "../../components/ui/feedback";
+import { confirmDialog, toast, toastError } from "../../components/ui/feedback";
 import { addDays, inr, shortDate, t12, today } from "../../services/format";
-import { DispatchPanel } from "../../Operations";
+import { ScheduleOverlay } from "./ScheduleOverlay";
 
 // React port of the legacy GDS → Schedules list (public/js/schedules-screenshot-v6.js: dates(), top(), drawList(),
 // handleRootClick()). Same DOM, class names and SVG paths, so the vendored legacy CSS renders it identically.
@@ -32,6 +32,7 @@ export function SchedulesPage({ me }: { me: Me }) {
   const [jump, setJump] = useState(selected);
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "departure", dir: 1 });
   const [workspace, setWorkspace] = useState<{ row: ScheduleRow; tab: string }>();
+  const closeWorkspace = useCallback(() => { setWorkspace(undefined); void refreshRef.current(); }, []);
   const seq = useRef(0);
 
   const refresh = useCallback(async () => {
@@ -40,6 +41,8 @@ export function SchedulesPage({ me }: { me: Me }) {
     catch (e) { if (mine === seq.current) setError(e instanceof Error ? e.message : String(e)); }
   }, [start]);
   useEffect(() => { void refresh(); }, [refresh]);
+  const refreshRef = useRef(refresh);
+  refreshRef.current = refresh;
 
   const goTo = (d: string) => { setStart(d); setSelected(d); setJump(d); setCalOpen(false); };
   const rows = useMemo(() => {
@@ -106,13 +109,7 @@ export function SchedulesPage({ me }: { me: Me }) {
         </div>
       </div>
       {workspace && (
-        <Modal size="xl" title={<>{workspace.row.serviceNumber} {workspace.row.serviceName} · {workspace.row.origin} → {workspace.row.destination} · {shortDate(workspace.row.travelDate)}</>}
-          onClose={() => { setWorkspace(undefined); void refresh(); }}>
-          <div className="interim" data-testid="schedule-workspace" data-tab={workspace.tab}>
-            <div className="banner">Interim workspace: seat map, blocking, counter booking and vehicle/crew assignment work against live inventory here. The legacy Manage / Pickups / Drops / Fares overlay layout has not been migrated yet.</div>
-            <DispatchPanel initial={{ date: workspace.row.travelDate, tripId: workspace.row.id }} />
-          </div>
-        </Modal>
+        <ScheduleOverlay row={workspace.row} tab={workspace.tab} onClose={closeWorkspace} />
       )}
     </div>
   );

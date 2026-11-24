@@ -1,0 +1,15 @@
+{
+  "id": "schedule-overlay-history",
+  "region": "footer",
+  "legacy": [
+    1180,
+    59
+  ],
+  "react": [
+    1180,
+    59
+  ],
+  "sizeMatch": true,
+  "diffPixels": 65,
+  "diffRatio": 0.0009
+}

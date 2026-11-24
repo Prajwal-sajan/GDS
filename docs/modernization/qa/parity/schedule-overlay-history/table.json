@@ -1,0 +1,15 @@
+{
+  "id": "schedule-overlay-history",
+  "region": "table",
+  "legacy": [
+    1114,
+    388
+  ],
+  "react": [
+    1114,
+    388
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

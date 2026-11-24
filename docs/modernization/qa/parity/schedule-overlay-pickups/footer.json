@@ -1,0 +1,15 @@
+{
+  "id": "schedule-overlay-pickups",
+  "region": "footer",
+  "legacy": [
+    1180,
+    59
+  ],
+  "react": [
+    1180,
+    59
+  ],
+  "sizeMatch": true,
+  "diffPixels": 66,
+  "diffRatio": 0.0009
+}

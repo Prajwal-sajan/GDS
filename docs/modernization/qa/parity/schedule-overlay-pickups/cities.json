@@ -1,0 +1,15 @@
+{
+  "id": "schedule-overlay-pickups",
+  "region": "cities",
+  "legacy": [
+    348,
+    40
+  ],
+  "react": [
+    348,
+    40
+  ],
+  "sizeMatch": true,
+  "diffPixels": 22,
+  "diffRatio": 0.0016
+}

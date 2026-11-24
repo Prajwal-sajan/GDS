@@ -1,0 +1,15 @@
+{
+  "id": "schedule-overlay-cities",
+  "region": "routes",
+  "legacy": [
+    1146,
+    533
+  ],
+  "react": [
+    1146,
+    533
+  ],
+  "sizeMatch": true,
+  "diffPixels": 65,
+  "diffRatio": 0.0001
+}

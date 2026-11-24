@@ -168,6 +168,25 @@ public sealed class BusinessTests(GdsFixture fx)
     }
 
     [Fact]
+    public async Task Schedule_detail_returns_route_stops_stages_and_trip_booking_history()
+    {
+        var trip = await fx.Sql(db => db.Trips.Where(t => db.Bookings.Any(b => b.TripId == t.Id)).FirstAsync());
+        var d = await Admin.GetJson($"/api/admin/schedule-detail/{trip.Id}");
+        Assert.Equal(trip.Id, (long)d["id"]!);
+        Assert.Equal(trip.RouteId, (long)d["routeId"]!);
+        Assert.Equal(await fx.Sql(db => db.RouteStops.CountAsync(s => s.RouteId == trip.RouteId)), d["stops"]!.AsArray().Count);
+        Assert.Equal(await fx.Sql(db => db.RouteStages.CountAsync(s => s.RouteId == trip.RouteId)), d["stages"]!.AsArray().Count);
+        var history = d["history"]!.AsArray();
+        Assert.Equal(await fx.Sql(db => db.Bookings.CountAsync(b => b.TripId == trip.Id)), history.Count);
+        Assert.All(history, h => Assert.Contains((string)h!["status"]!, new[] { "confirmed", "cancelled" }));
+        var dates = history.Select(h => (DateTimeOffset)h!["bookedAt"]!).ToList();
+        Assert.Equal(dates.OrderByDescending(x => x), dates);
+        Assert.Equal(HttpStatusCode.NotFound, (await Admin.GetAsync("/api/admin/schedule-detail/999")).StatusCode);
+        var (_, phone) = await CreateUser("viewer");
+        Assert.Equal(HttpStatusCode.OK, (await (await Login(phone)).GetAsync($"/api/admin/schedule-detail/{trip.Id}")).StatusCode);
+    }
+
+    [Fact]
     public async Task Fleet_lists_reflect_postgres_and_status_switches_are_audited()
     {
         var vehicles = (await Admin.GetJson("/api/admin/vehicle-list"))["vehicles"]!.AsArray();

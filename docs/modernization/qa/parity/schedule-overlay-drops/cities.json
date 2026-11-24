@@ -1,0 +1,15 @@
+{
+  "id": "schedule-overlay-drops",
+  "region": "cities",
+  "legacy": [
+    344,
+    40
+  ],
+  "react": [
+    344,
+    40
+  ],
+  "sizeMatch": true,
+  "diffPixels": 19,
+  "diffRatio": 0.0014
+}

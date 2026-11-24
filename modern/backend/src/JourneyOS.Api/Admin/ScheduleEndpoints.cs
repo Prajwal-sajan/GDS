@@ -64,5 +64,45 @@ public static class ScheduleEndpoints
 
         g.MapPost("/schedules/{id:long}/toggle", async (long id, ScheduleToggleInput i, OperationsService s, HttpContext h) =>
             Results.Ok(new { bookable = await s.SetBookableAsync(id, i.Active, h.User.Identity!.Name!) })).RequireAuthorization(Policies.Operations);
+
+        // Schedule management overlay read model (legacy GET /api/schedules/:id + /trips/:id passengers + /schedules/:id/booking-history).
+        g.MapGet("/schedule-detail/{id:long}", async (long id, GdsDbContext db) =>
+        {
+            var t = await db.Trips.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id) ?? throw new GdsException("SERVICE_NOT_FOUND", "Schedule not found", 404);
+            var r = await db.Routes.AsNoTracking().AsSplitQuery().Include(x => x.Stops).ThenInclude(s => s.City).Include(x => x.Stages).Include(x => x.CoachTemplate)
+                .FirstAsync(x => x.Id == t.RouteId);
+            var stops = r.Stops.OrderBy(s => s.Sequence).ToList();
+            var cityNames = await db.Cities.AsNoTracking().Where(c => r.Stages.Select(s => s.CityId).Contains(c.Id)).ToDictionaryAsync(c => c.Id, c => c.Name);
+            var bookings = await db.Bookings.AsNoTracking().Include(b => b.Passengers).Where(b => b.TripId == id).ToListAsync();
+            // Seats (not tickets) per boarding / dropping point, excluding cancelled passengers — legacy stopTab() count.
+            var live = bookings.SelectMany(b => b.Passengers.Where(p => p.Status != "CANCELLED").Select(_ => b)).ToList();
+            var lastDrop = r.Stages.Where(s => s.Kind == "drop").OrderBy(s => s.Day).ThenBy(s => s.Time).LastOrDefault();
+            return Results.Ok(new
+            {
+                id = t.Id, routeId = r.Id, travelDate = t.TravelDate, status = t.Status, bookable = t.Bookable,
+                serviceNumber = r.ServiceNumber, serviceName = r.Name, coach = r.CoachTemplate?.Name,
+                origin = stops.FirstOrDefault()?.City?.Name, destination = stops.LastOrDefault()?.City?.Name,
+                departureTime = r.DepartureTime, arrivalTime = lastDrop?.Time ?? stops.LastOrDefault()?.Time,
+                arrivalDay = lastDrop?.Day ?? stops.LastOrDefault()?.Day ?? 1,
+                stops = stops.Select(s => new { cityId = s.CityId, name = s.City?.Name, state = s.City?.State, day = s.Day, time = s.Time }),
+                stages = r.Stages.OrderBy(s => s.Day).ThenBy(s => s.Time).Select(s => new
+                {
+                    s.Id, s.Kind, s.Name, s.Address, s.Landmark, s.ContactNumber, s.Lat, s.Lng, s.Day, s.Time, s.Prime, s.PickupType,
+                    cityId = s.CityId, city = cityNames.GetValueOrDefault(s.CityId),
+                    passengers = live.Count(b => (s.Kind == "pickup" ? b.BoardingStageId : b.DroppingStageId) == s.Id),
+                }),
+                history = bookings.OrderByDescending(b => b.DateOfIssue).ThenByDescending(b => b.Id).Select(b =>
+                {
+                    var pax = b.Passengers.OrderBy(p => p.Id).ToList();
+                    return new
+                    {
+                        pnr = b.Pnr, seats = pax.Select(p => p.SeatCode), totalAmount = b.TotalFare, source = b.Channel,
+                        // legacy contact.name is always the primary (first) passenger
+                        contactName = (pax.FirstOrDefault(p => p.IsPrimary) ?? pax.FirstOrDefault())?.Name,
+                        bookedAt = b.DateOfIssue, status = b.Status == "CANCELLED" ? "cancelled" : "confirmed", // legacy has no partial state
+                    };
+                }),
+            });
+        }).RequireAuthorization(Policies.Reports);
     }
 }

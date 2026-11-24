@@ -1,0 +1,15 @@
+{
+  "id": "schedule-overlay-drops",
+  "region": "card-0",
+  "legacy": [
+    374,
+    198
+  ],
+  "react": [
+    374,
+    198
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

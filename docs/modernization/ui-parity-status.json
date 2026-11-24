@@ -11,13 +11,17 @@
       "status": "VISUAL_PASS",
       "react": "src/features/schedules/SchedulesPage.tsx",
       "evidence": [
-        "e2e/parity/schedules.parity.spec.ts — date-controls 0, table-head 0, table 0.0018; identical DOM skeleton; toggle persisted + viewer 403"
+        "e2e/parity/schedules.parity.spec.ts — date-controls 0, table-head 0, table 0.0018; identical DOM skeleton; toggle persisted + viewer 403",
+        "e2e/parity/schedule-overlay.parity.spec.ts — overlay head/tabs/footer + History, Pickups, Drops, Cities bodies: identical DOM skeleton and text, pixel regions <= 1% (8/8); data from GET /api/admin/schedule-detail/{id}"
       ],
       "gaps": [
         "Expense excludes OTA commission (legacy adds it)",
         "profit excludes cancellation charges",
         "schedule delete unsupported",
-        "detail modal (Manage/Update v51, seat layout, copy image, share) not migrated"
+        "overlay Bookings/Block/Update tabs render the existing DispatchPanel, not the legacy seat-layout markup",
+        "overlay Fares and P&L tabs show an explanatory empty state (no per-trip fare override / trip expense API)",
+        "stop edits, history edit, delay/advance, via toggles and sub-routes are aria-disabled preview-only (legacy also preview-only)",
+        "copy image / share not migrated"
       ]
     },
     "V003": {

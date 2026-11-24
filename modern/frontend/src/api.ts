@@ -77,6 +77,18 @@ async function call<T>(method: string, url: string, body?: unknown): Promise<T> 
 
 const rb = "/api/admin/integrations/redbus";
 const pr = "/api/admin/payroll";
+
+export type ScheduleStop = { cityId: number; name: string; state: string | null; day: number; time: string };
+export type ScheduleStage = {
+  id: number; kind: "pickup" | "drop"; name: string; address: string | null; landmark: string | null; contactNumber: string | null;
+  lat: number | null; lng: number | null; day: number; time: string; prime: boolean; pickupType: string | null; cityId: number; city: string; passengers: number;
+};
+export type ScheduleHistoryRow = { pnr: string; seats: string[]; totalAmount: number; source: string; contactName: string; bookedAt: string; status: string };
+export type ScheduleDetail = {
+  id: number; routeId: number; travelDate: string; status: string; bookable: boolean; serviceNumber: string; serviceName: string; coach: string;
+  origin: string; destination: string; departureTime: string; arrivalTime: string; arrivalDay: number;
+  stops: ScheduleStop[]; stages: ScheduleStage[]; history: ScheduleHistoryRow[];
+};
 export const api = {
   status: () => call<RedBusStatus>("GET", `${rb}/status`),
   outbox: (status?: string) => call<OutboxRow[]>("GET", `${rb}/outbox${status ? `?status=${status}` : ""}`),
@@ -100,6 +112,7 @@ export const api = {
   unblock: (tripId: number, seat: string) => call<{ released: number }>("DELETE", `/api/admin/trips/${tripId}/blocks/${encodeURIComponent(seat)}`),
   routes: () => call<RouteRow[]>("GET", "/api/admin/routes"),
   schedules: (from: string, to: string) => call<{ schedules: ScheduleRow[] }>("GET", `/api/admin/schedules?from=${from}&to=${to}`),
+  scheduleDetail: (id: number) => call<ScheduleDetail>("GET", `/api/admin/schedule-detail/${id}`),
   toggleSchedule: (id: number, active: boolean) => call<{ bookable: boolean }>("POST", `/api/admin/schedules/${id}/toggle`, { active }),
   routeList: () => call<{ routes: RouteListRow[] }>("GET", "/api/admin/route-list"),
   vehicleList: () => call<{ vehicles: VehicleListRow[] }>("GET", "/api/admin/vehicle-list"),

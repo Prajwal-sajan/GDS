@@ -315,6 +315,306 @@
     "diffRatio": 0
   },
   {
+    "id": "schedule-overlay-cities",
+    "region": "adjust",
+    "legacy": [
+      1146,
+      107
+    ],
+    "react": [
+      1146,
+      107
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "schedule-overlay-cities",
+    "region": "footer",
+    "legacy": [
+      1180,
+      59
+    ],
+    "react": [
+      1180,
+      59
+    ],
+    "sizeMatch": true,
+    "diffPixels": 66,
+    "diffRatio": 0.0009
+  },
+  {
+    "id": "schedule-overlay-cities",
+    "region": "head",
+    "legacy": [
+      1180,
+      63
+    ],
+    "react": [
+      1180,
+      63
+    ],
+    "sizeMatch": true,
+    "diffPixels": 138,
+    "diffRatio": 0.0019
+  },
+  {
+    "id": "schedule-overlay-cities",
+    "region": "routes",
+    "legacy": [
+      1146,
+      533
+    ],
+    "react": [
+      1146,
+      533
+    ],
+    "sizeMatch": true,
+    "diffPixels": 65,
+    "diffRatio": 0.0001
+  },
+  {
+    "id": "schedule-overlay-cities",
+    "region": "tabs",
+    "legacy": [
+      1180,
+      53
+    ],
+    "react": [
+      1180,
+      53
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "schedule-overlay-drops",
+    "region": "card-0",
+    "legacy": [
+      374,
+      198
+    ],
+    "react": [
+      374,
+      198
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "schedule-overlay-drops",
+    "region": "cities",
+    "legacy": [
+      344,
+      40
+    ],
+    "react": [
+      344,
+      40
+    ],
+    "sizeMatch": true,
+    "diffPixels": 19,
+    "diffRatio": 0.0014
+  },
+  {
+    "id": "schedule-overlay-drops",
+    "region": "footer",
+    "legacy": [
+      1180,
+      59
+    ],
+    "react": [
+      1180,
+      59
+    ],
+    "sizeMatch": true,
+    "diffPixels": 65,
+    "diffRatio": 0.0009
+  },
+  {
+    "id": "schedule-overlay-drops",
+    "region": "head",
+    "legacy": [
+      1180,
+      63
+    ],
+    "react": [
+      1180,
+      63
+    ],
+    "sizeMatch": true,
+    "diffPixels": 138,
+    "diffRatio": 0.0019
+  },
+  {
+    "id": "schedule-overlay-drops",
+    "region": "tabs",
+    "legacy": [
+      1180,
+      53
+    ],
+    "react": [
+      1180,
+      53
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "schedule-overlay-history",
+    "region": "footer",
+    "legacy": [
+      1180,
+      59
+    ],
+    "react": [
+      1180,
+      59
+    ],
+    "sizeMatch": true,
+    "diffPixels": 65,
+    "diffRatio": 0.0009
+  },
+  {
+    "id": "schedule-overlay-history",
+    "region": "head",
+    "legacy": [
+      1180,
+      63
+    ],
+    "react": [
+      1180,
+      63
+    ],
+    "sizeMatch": true,
+    "diffPixels": 138,
+    "diffRatio": 0.0019
+  },
+  {
+    "id": "schedule-overlay-history",
+    "region": "table",
+    "legacy": [
+      1114,
+      388
+    ],
+    "react": [
+      1114,
+      388
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "schedule-overlay-history",
+    "region": "tabs",
+    "legacy": [
+      1180,
+      53
+    ],
+    "react": [
+      1180,
+      53
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "schedule-overlay-pickups",
+    "region": "card-0",
+    "legacy": [
+      374,
+      261
+    ],
+    "react": [
+      374,
+      261
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "schedule-overlay-pickups",
+    "region": "card-1",
+    "legacy": [
+      374,
+      261
+    ],
+    "react": [
+      374,
+      261
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "schedule-overlay-pickups",
+    "region": "cities",
+    "legacy": [
+      348,
+      40
+    ],
+    "react": [
+      348,
+      40
+    ],
+    "sizeMatch": true,
+    "diffPixels": 22,
+    "diffRatio": 0.0016
+  },
+  {
+    "id": "schedule-overlay-pickups",
+    "region": "footer",
+    "legacy": [
+      1180,
+      59
+    ],
+    "react": [
+      1180,
+      59
+    ],
+    "sizeMatch": true,
+    "diffPixels": 66,
+    "diffRatio": 0.0009
+  },
+  {
+    "id": "schedule-overlay-pickups",
+    "region": "head",
+    "legacy": [
+      1180,
+      63
+    ],
+    "react": [
+      1180,
+      63
+    ],
+    "sizeMatch": true,
+    "diffPixels": 138,
+    "diffRatio": 0.0019
+  },
+  {
+    "id": "schedule-overlay-pickups",
+    "region": "tabs",
+    "legacy": [
+      1180,
+      53
+    ],
+    "react": [
+      1180,
+      53
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
     "id": "schedules-list",
     "region": "date-controls",
     "legacy": [
