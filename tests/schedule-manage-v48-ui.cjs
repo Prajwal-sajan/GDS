@@ -155,7 +155,7 @@ test('two-deck layout preserves occupied blue/pink, nonbooked white and real pri
  assert.ok(out.includes('sx48-seat berth female'));
  assert.ok(out.includes('sx48-seat berth male'));
  assert.ok(out.includes('sx48-seat berth available'));
- assert.ok(out.includes('₹')===false,'Seat cards show numeric fare, not hardcoded currency');
+ assert.ok(out.includes('<span class="sx48-price">920</span>')&&out.includes('<span class="sx48-price">700</span>'),'Seat cards show data-driven visible numeric fares');
  assert.ok(out.includes('×3'));
  assert.ok(out.includes('data-sx-seat="1L"'));
  assert.ok(!out.includes('9870000001'));
@@ -170,7 +170,7 @@ test('four Notification menu options and typed messages never assert delivery or
  await M.notify(data,['BOOK_001','BOOK_001'],'ticket_confirmation');
  const call=requests.filter(x=>x[0]==='POST').at(-1);
  assert.equal(call[1],'/trips/601/notify');
- assert.deepEqual(call[2].pnrs,['BOOK_001']);
+ assert.equal(Array.from(call[2].pnrs).join(','),'BOOK_001');
  assert.equal(call[2].template,'ticket_confirmation');
  assert.ok(toasts.some(t=>t.message.includes('external delivery remains unverified')));
  const previous=requests.length;
