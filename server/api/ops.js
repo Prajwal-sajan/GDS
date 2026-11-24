@@ -101,13 +101,69 @@ r.post('/trips/:sid/status', can('trips.update_passengers'), h((req) => {
   db.persist(); D.audit('schedule', s.id, 'trip', { trip_status }, req.user); return scheduleCard(s);
 }));
 
+// v48: signed time adjustments are idempotent. Future stops move by the
+// difference between new and previous delay; visited stops remain fixed.
+// This is schedule-only, never a mutation to the operator's route template.
+function adjustedClock(hhmm,day,delta){
+ const m=String(hhmm||'').match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+ if(!m)throw D.httpErr(400,'Invalid scheduled stop time');
+ const start=(Number(day||1)-1)*1440+Number(m[1])*60+Number(m[2])+delta;
+ if(start<0||start>=16*1440)throw D.httpErr(409,'Timing adjustment would move a stop outside supported journey days');
+ return {time:String(Math.floor(start%1440/60)).padStart(2,'0')+':'+String(start%60).padStart(2,'0'),
+  day:Math.floor(start/1440)+1};
+}
 r.post('/trips/:sid/delay', can('trips.update_passengers'), h((req) => {
-  const s = db.col('schedules').get(req.params.sid); if (!s) throw D.httpErr(404, 'Trip not found');
-  s.delay_minutes = Number(req.body.minutes) || 0; s.delay_reason = req.body.reason || '';
-  let notified = 0;
-  if (req.body.notify) for (const b of db.col('bookings').filter((x) => x.schedule_id == s.id && x.status === 'confirmed')) { db.col('messages').insert({ conversation_id: D.passengerConvId(b, b.passengers[0]), direction: 'out', channel: 'whatsapp', template: 'trip_delayed', text: `Your bus ${s.delay_minutes >= 0 ? 'is delayed by' : 'is early by'} ${Math.abs(s.delay_minutes)} min. Reason: ${s.delay_reason}`, phone: b.contact.phone, ts: U.nowIso(), read: true, by: req.user.name }); notified++; }
-  db.persist(); D.audit('schedule', s.id, 'trip', { delay_minutes: s.delay_minutes, reason: s.delay_reason }, req.user);
-  return { success: true, notified };
+ const schedule=db.col('schedules').get(req.params.sid);
+ if(!schedule)throw D.httpErr(404,'Trip not found');
+ if(schedule.status==='cancelled'||schedule.trip_status==='completed')
+  throw D.httpErr(409,'Cannot adjust a cancelled or completed service');
+ const mins=Number(req.body.minutes),reason=String(req.body.reason||'').trim();
+ if(!Number.isInteger(mins)||Math.abs(mins)>720)
+  throw D.httpErr(400,'Timing change must be an integer between -720 and +720 minutes');
+ if(mins!==0&&!reason)throw D.httpErr(400,'Reason is required for a timing change');
+ if(req.body.notify&&!req.user.permissions.includes('trips.chat'))
+  throw D.httpErr(403,'Messaging permission is required to record notifications');
+ const previous=Number(schedule.delay_minutes||0),delta=mins-previous;
+ const route=db.col('routes').get(schedule.route_id);
+ if(!route)throw D.httpErr(404,'Route not found');
+ const overrides={...(schedule.stage_overrides||{})};
+ const modified=[];
+ for(const st of route.stages||[]){
+  const ev=(schedule.stop_events||{})[st.id]||{};
+  if(ev.atime||ev.dtime||ev.arrival_time||ev.departure_time)continue;
+  if(delta===0)continue;
+  const old=overrides[st.id]||{};
+  const shift=adjustedClock(old.time||st.time,old.day??st.day,delta);
+  overrides[st.id]={...old,...shift};
+  modified.push({id:st.id,time:shift.time,day:shift.day});
+ }
+ // Validate all mutations before saving. Departing the origin after a pickup
+ // event has been recorded must not move that already-reached schedule stop.
+ const seen=Object.values(schedule.stop_events||{}).some(x=>x?.atime||x?.dtime);
+ const dep=!seen&&delta?adjustedClock(schedule.departure_time,1,delta):null;
+ const arrival=delta?adjustedClock(schedule.arrival_time,2,delta):null;
+ if(dep)schedule.departure_time=dep.time;
+ if(arrival)schedule.arrival_time=arrival.time;
+ schedule.stage_overrides=overrides;
+ schedule.delay_minutes=mins;
+ schedule.delay_reason=reason;
+ const recorded=[];
+ if(req.body.notify){
+  for(const b of db.col('bookings').filter(x=>String(x.schedule_id)===String(schedule.id)&&
+      x.status==='confirmed'&&(x.passengers||[]).length)){
+   const msg=db.col('messages').insert({
+    conversation_id:D.passengerConvId(b,b.passengers[0]),direction:'out',channel:'whatsapp',
+    template:'trip_delayed',text:'Your bus '+(mins>=0?'is delayed by':'is early by')+' '+
+     Math.abs(mins)+' minutes. Reason: '+reason,phone:b.contact.phone,ts:U.nowIso(),
+    read:true,by:req.user.name});
+   recorded.push(msg.id);
+  }
+ }
+ db.persist();
+ D.audit('schedule',schedule.id,'trip',{op:'adjust_trip_time',previous_delay_minutes:previous,
+   delay_minutes:mins,delta_minutes:delta,reason,adjusted_stops:modified.length},req.user);
+ return {success:true,delay_minutes:mins,delta_minutes:delta,adjusted_stops:modified.length,
+  modified_stops:modified,recorded:recorded.length,notified:recorded.length,delivery_verified:false};
 }));
 
 r.post('/trips/:sid/notify', can('trips.chat'), h((req) => {
