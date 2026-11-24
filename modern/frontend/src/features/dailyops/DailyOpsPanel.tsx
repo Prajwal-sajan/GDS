@@ -13,7 +13,6 @@ const errorText=(e:unknown)=>e instanceof Error?e.message:String(e);
 const dateLabel=(date:string)=>date?new Date(date.slice(0,10)+"T12:00:00Z")
   .toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric",timeZone:"UTC"}):"—";
 const label=(s:string)=>s.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase());
-const ring=(value:number,full:number)=>full>0?Math.round(value/full*100):0;
 function Metric({icon,title,value,caption,className=""}:{icon:string;title:string;value:string|number;
   caption?:string;className?:string}){
   return <div className={"do-metric "+className}><span className="do-metric-icon" aria-hidden="true">{icon}</span>
