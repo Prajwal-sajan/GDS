@@ -1,0 +1,39 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Schedule seat PNG browser acceptance</title></head>
+<body><pre id="status">SL49_BROWSER_PENDING</pre>
+<script src="../public/js/coach-2plus1-v46.js"></script>
+<script src="../public/js/seat-layout-copy-v49.js"></script>
+<script>
+(async function(){
+ const status=document.getElementById('status');
+ try{
+  const layout=window.Coach21V46.build();
+  const lower=layout.decks[0],upper=layout.decks[1];
+  lower.seats.find(s=>s.code==='1L').status='booked_male';
+  lower.seats.find(s=>s.code==='2L').status='booked_female';
+  upper.seats.find(s=>s.code==='2U').status='blocked';
+  const svg=window.SeatLayoutCopyV49.buildSvg({
+   origin:'Hyderabad',destination:'Bengaluru',travel_date:'2026-11-22',
+   service_number:'NTHB1',website:'novembertravels.com',decks:layout.decks
+  });
+  const blob=await window.SeatLayoutCopyV49.svgToPng(svg);
+  const bytes=new Uint8Array(await blob.slice(0,8).arrayBuffer());
+  const signature=[137,80,78,71,13,10,26,10];
+  if(bytes.some((x,i)=>x!==signature[i]))throw Error('PNG signature');
+  if(blob.type!=='image/png'||blob.size<10000)throw Error('PNG blank or invalid size '+blob.size);
+  const url=URL.createObjectURL(blob);
+  let png;
+  try{png=await createImageBitmap(blob)}finally{URL.revokeObjectURL(url)}
+  if(png.width!==1800||png.height<2200)throw Error('Wrong dimensions '+png.width+'x'+png.height);
+  const canvas=document.createElement('canvas');canvas.width=png.width;canvas.height=png.height;
+  const ctx=canvas.getContext('2d');ctx.drawImage(png,0,0);
+  // Screenshot's blue first lower single, pink second lower single and
+  // dark first UPPER right-hand berth must rasterize as different colors.
+  const sample=(x,y)=>Array.from(ctx.getImageData(x,y,1,1).data);
+  const blue=sample(230,900),pink=sample(230,1180);
+  if(blue[2]<=blue[0]||pink[0]<=pink[2])throw Error('Seat status gradients missing '+JSON.stringify({blue,pink}));
+  status.textContent='SL49_BROWSER_PASS '+blob.size+' bytes '+png.width+'x'+png.height;
+ }catch(e){status.textContent='SL49_BROWSER_FAIL '+(e?.stack||e)}
+})();
+</script>
+</body></html>
