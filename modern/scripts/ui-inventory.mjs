@@ -43,7 +43,7 @@ for (const f of walk(path.join(ROOT, "modern/backend/src"), ".cs")) {
     if (m[1]) { const parent = groups.find((g) => g.name === m[2].split(".")[0]); groups.unshift({ name: m[1], prefix: (parent?.prefix ?? "") + m[3] }); continue; }
     const g = groups.find((x) => x.name === m[4]);
     const line = src.slice(0, m.index).split("\n").length;
-    netApi.push({ method: m[5].toUpperCase(), path: (g?.prefix ?? "") + m[6], src: `${rel(f)}:${line}` });
+    netApi.push({ method: m[5].toUpperCase(), path: ((g?.prefix ?? "") + m[6]).replace(/\{(\w+):[^}]+\}/g, "{$1}"), src: `${rel(f)}:${line}` });
   }
 }
 const apiMap = status.apiMap ?? {};
