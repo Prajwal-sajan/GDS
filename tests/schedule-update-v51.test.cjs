@@ -91,6 +91,7 @@ test('edit opens and shows staff add/remove/select rows, phone, escalation, cab 
  assert.equal(doc.querySelectorAll('[data-u51-staff]').length,config.crew.length);
  assert.equal(doc.querySelectorAll('.u51-cab-actions button').length,4);
  assert.ok(doc.querySelector('[data-u51-escalation]'));
+ assert.ok(doc.querySelectorAll('[data-u51-phone]').length>0,'Staff phone input editable in screenshot edit mode');
  const staffOpts=doc.querySelectorAll('[data-u51-staff] option');
  assert.ok(staffOpts.length>=config.staff_options.length);
  await UI.click({dataset:{u51Action:'add'}},S,ctx);
@@ -152,6 +153,27 @@ test('update assignment persists schedule-only config, disables sync, displays e
   'Route seat blocks remain effective when sync is disabled');
  const reloaded=await call('GET','/schedules/'+schedule.id+'/update-v51');
  assert.equal(reloaded.body.cab_mode,'Drops');
+});
+test('editable phone field persists as a schedule-local contact override, without changing global Staff',async()=>{
+ const d=(await call('GET','/schedules/'+schedule.id+'/update-v51')).body;
+ const selected=d.crew[0];
+ const staff=db.col('staff').get(selected.staff_id);
+ const original=staff.phone;
+ const alternate='9113209427';
+ const crew=d.crew.map((x,i)=>({role:x.role,staff_id:x.staff_id,...(i===0?{phone_override:alternate}:{})}));
+ const out=await call('PUT','/schedules/'+schedule.id+'/update-v51/assignment',{
+  vehicle_id:d.vehicle_id,crew
+ });
+ assert.equal(out.status,200,JSON.stringify(out.body));
+ assert.equal(out.body.crew[0].phone,alternate);
+ assert.equal(out.body.crew[0].phone_override,alternate);
+ assert.equal(db.col('staff').get(selected.staff_id).phone,original);
+ const sched=(await call('GET','/schedules/'+schedule.id)).body;
+ assert.equal(sched.crew[0].phone,alternate,'Trip panels use per-schedule phone override');
+ const bad=await call('PUT','/schedules/'+schedule.id+'/update-v51/assignment',{
+  vehicle_id:d.vehicle_id,crew:[{...crew[0],phone_override:'123'}]
+ });
+ assert.equal(bad.status,400);
 });
 test('enabling route sync restores valid assignment/calls/coach, clears schedule-level v51 overrides',async()=>{
  const out=await call('PUT','/schedules/'+schedule.id+'/update-v51/sync',{enabled:true});
