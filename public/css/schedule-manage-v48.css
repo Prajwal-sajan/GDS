@@ -187,3 +187,44 @@
  .sx48-deck{width:238px}
 }
 @media print{.sx48-overlay{position:static;background:#fff}.sx48-dialog{max-height:none}.sx48-close{display:none}.sx48-scroll{overflow:visible}}
+
+/* Cities tab screenshot continuation, isolated from all other screen modules. */
+.sx48-cities .sx-source-chip{display:inline-flex;align-items:center;gap:6px;color:#1564dc;background:#d3eaff;padding:7px 13px;border-radius:20px;font-size:12px;margin-bottom:16px;font-weight:680}
+.sx48-cities .sx-time-shift.sx48-adjust{border:1px solid #ffc9cf;border-radius:18px;background:#fff8f8;display:flex;align-items:center;flex-wrap:wrap;gap:9px;padding:13px 17px;color:#d52f34;margin:0 0 19px}
+.sx48-cities .sx48-adjust>b{font-size:16px;color:#b31324;margin-right:8px}
+.sx48-cities .sx48-adjust .sx-segment{display:inline-flex;gap:0;border-radius:12px;border:1px solid #ff747b;overflow:hidden}
+.sx48-cities .sx48-adjust .sx-segment button{min-height:43px;border:0;border-radius:0;color:#b41a23;background:#fff;padding:10px 19px;font-weight:720;font-size:14px}
+.sx48-cities .sx48-adjust .sx-segment button.active{color:#fff;background:#e70018}
+.sx48-cities .sx48-adjust label{display:inline-flex;align-items:center;gap:5px;color:#a62b35;font-size:14px}
+.sx48-cities .sx48-adjust input[type=number]{width:70px;min-height:45px;padding:10px;border:1px solid #cbd7fb;border-radius:14px;background:#fff;color:#344562;font-size:15px;box-shadow:0 2px 3px #253a5819}
+.sx48-cities .sx48-adjust .sx-btn{min-height:43px;border:0;border-radius:12px;background:#f47580;color:#fff;font-weight:740;font-size:14px;padding:11px 19px}
+.sx48-cities .sx48-adjust p{width:100%;color:#dc3745;font-size:12px;line-height:1.5;margin:0;padding-top:1px}
+.sx48-cities .sx-two-card.sx48-city-endpoints{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px}
+.sx48-cities .sx48-city-endpoints>div{min-height:113px;border-radius:21px;padding:19px;display:flex;align-items:center;gap:18px}
+.sx48-cities .sx48-city-endpoints .sx-origin{background:linear-gradient(130deg,#effff8,#fff);border:1px solid #c5f6df}
+.sx48-cities .sx48-city-endpoints .sx-destination{background:linear-gradient(130deg,#fff5f6,#fff);border:1px solid #ffd4db}
+.sx48-cities .sx48-city-symbol{background:#00b876;color:#fff;display:grid;place-items:center;border-radius:18px;width:55px;height:55px;flex:none;box-shadow:0 4px 8px #186c4632}
+.sx48-cities .sx-destination .sx48-city-symbol{background:#ff185a}
+.sx48-cities .sx48-city-endpoints small{font-size:11px;font-weight:820;letter-spacing:.045em;color:#009457}
+.sx48-cities .sx48-city-endpoints .sx-destination small{color:#fb174f}
+.sx48-cities .sx48-city-endpoints h3{font-size:18px;font-weight:770;color:#21334f;margin:6px 0}
+.sx48-cities .sx48-city-endpoints p{font-size:13px;color:#8a9aba;margin:0}
+.sx48-cities .sx48-daychip{display:inline-flex;background:#d6f7e4;border-radius:15px;color:#02875d;font-size:12px;font-weight:720;padding:5px 10px}
+.sx48-cities .sx-destination .sx48-daychip{background:#ffe5ea;color:#d8194e}
+.sx48-cities .sx-light-card{border:1px solid #dce4ff;border-radius:22px;padding:18px;margin:17px 0;background:linear-gradient(#f9fbff,#fff)}
+.sx48-cities .sx-light-card>header{padding-bottom:14px;display:flex;align-items:center;gap:10px}
+.sx48-cities .sx-light-card>header b{display:flex;align-items:center;gap:11px;color:#1c2e4d;font-size:17px;font-weight:740}
+.sx48-cities .sx-light-card>header b svg{color:#fff;background:#3f55f0;padding:6px;width:31px;height:31px;border-radius:10px}
+.sx48-cities .sx48-combination-count{border-radius:19px;background:#e0f8eb;color:#048d58;font-size:12px;padding:6px 10px;font-weight:760}
+.sx48-cities .sx-light-card .sx-table{min-width:750px}
+.sx48-cities .sx-light-card .sx-table th{color:#5451e8;font-size:12px}
+.sx48-cities .sx-light-card .sx-table td{min-height:59px;padding:12px 10px}
+.sx48-cities .sx48-route-pairs td small{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+.sx48-cities .sx48-route-kind{display:block;width:fit-content;padding:4px 9px;background:#edf0ff;color:#4545e3;border-radius:18px;font-size:10px;font-weight:720}
+.sx48-cities .sx48-route-pairs input[type=number]{border:1px solid #d1deff;border-radius:23px;width:115px;min-height:40px;padding:7px 14px;font-size:13px}
+.sx48-cities .sx48-route-pairs button{border:1px solid #ffadb6;background:#fff;color:#dc2343;border-radius:9px;padding:7px}
+.sx48-cities .sx-switch input:checked+span{background:#00b581}
+@media(max-width:900px){
+ .sx48-cities .sx-two-card.sx48-city-endpoints{grid-template-columns:1fr}
+ .sx48-cities .sx48-adjust{gap:8px}
+}
