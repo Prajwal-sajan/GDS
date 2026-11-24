@@ -154,6 +154,13 @@ public sealed class AppUser : ITenantOwned
     public DateTime? LockedUntil { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? LastLoginAt { get; set; }
+    public int LoginCount { get; set; }
+    public long? BranchId { get; set; }
+    /// <summary>Legacy Team &amp; access profile (language, mode, agent category/type, master agent, route limits,
+    /// extra/denied permission codes, corridor tags), jsonb.</summary>
+    public string? ProfileJson { get; set; }
+    /// <summary>Archived (legacy soft delete): hidden from Team &amp; access, cannot sign in.</summary>
+    public DateTime? DeletedAt { get; set; }
 }
 
 public sealed class UserSession : ITenantOwned
@@ -165,6 +172,8 @@ public sealed class UserSession : ITenantOwned
     public DateTime CreatedAt { get; set; }
     public DateTime ExpiresAt { get; set; }
     public DateTime? RevokedAt { get; set; }
+    public string? UserAgent { get; set; }
+    public DateTime? LastSeenAt { get; set; }
 }
 
 public sealed class Branch : ITenantOwned
@@ -175,6 +184,9 @@ public sealed class Branch : ITenantOwned
     public long? CityId { get; set; }
     public string? Address { get; set; }
     public string? Phone { get; set; }
+    public string? Code { get; set; }
+    /// <summary>Legacy branch extras (city label, operations_area, operation_city_ids, operation_route_ids), jsonb.</summary>
+    public string? ExtraJson { get; set; }
 }
 
 // ---------- Sarathi ----------

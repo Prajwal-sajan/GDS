@@ -36,6 +36,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("agent_terms_json");
 
+                    b.Property<long?>("BranchId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("branch_id");
+
                     b.Property<decimal?>("CommissionPct")
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)")
@@ -49,6 +53,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasPrecision(12, 2)
                         .HasColumnType("numeric(12,2)")
                         .HasColumnName("credit_limit");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
 
                     b.Property<string>("Email")
                         .HasColumnType("text")
@@ -78,6 +86,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("locked_until");
 
+                    b.Property<int>("LoginCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("login_count");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text")
@@ -91,6 +103,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("phone");
+
+                    b.Property<string>("ProfileJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("profile_json");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -464,6 +480,14 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.Property<long?>("CityId")
                         .HasColumnType("bigint")
                         .HasColumnName("city_id");
+
+                    b.Property<string>("Code")
+                        .HasColumnType("text")
+                        .HasColumnName("code");
+
+                    b.Property<string>("ExtraJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("extra_json");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -3142,6 +3166,43 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.ToTable("tenants");
                 });
 
+            modelBuilder.Entity("JourneyOS.Api.Persistence.TenantDocument", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Json")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("json");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("key");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_tenant_documents");
+
+                    b.HasIndex("TenantId", "Key")
+                        .IsUnique()
+                        .HasDatabaseName("ix_tenant_documents_tenant_id_key");
+
+                    b.ToTable("tenant_documents", (string)null);
+                });
+
             modelBuilder.Entity("JourneyOS.Api.Persistence.Trip", b =>
                 {
                     b.Property<long>("Id")
@@ -3346,6 +3407,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
+                    b.Property<DateTime?>("LastSeenAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_seen_at");
+
                     b.Property<DateTime?>("RevokedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("revoked_at");
@@ -3358,6 +3423,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("token_sha256");
+
+                    b.Property<string>("UserAgent")
+                        .HasColumnType("text")
+                        .HasColumnName("user_agent");
 
                     b.Property<long>("UserId")
                         .HasColumnType("bigint")

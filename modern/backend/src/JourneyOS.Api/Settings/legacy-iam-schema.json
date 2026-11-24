@@ -1,0 +1,1807 @@
+{
+ "catalog": {
+  "trips": [
+   "trips.view",
+   "trips.update_passengers",
+   "trips.location",
+   "trips.call",
+   "trips.chat",
+   "trips.import_chart"
+  ],
+  "bookings": [
+   "bookings.create",
+   "bookings.view_all",
+   "bookings.modify",
+   "bookings.cancel",
+   "bookings.block_seats",
+   "bookings.release_hold",
+   "bookings.comments",
+   "bookings.on_behalf",
+   "bookings.see_phone"
+  ],
+  "schedules": [
+   "schedules.view",
+   "schedules.modify",
+   "schedules.fares",
+   "schedules.toggle",
+   "schedules.delete",
+   "schedules.financial",
+   "schedules.assign_bus",
+   "schedules.assign_crew",
+   "schedules.edit_expenses"
+  ],
+  "routes": [
+   "routes.view",
+   "routes.create",
+   "routes.modify",
+   "routes.delete"
+  ],
+  "fleet": [
+   "fleet.view",
+   "fleet.modify",
+   "fleet.delete",
+   "fleet.documents"
+  ],
+  "staff": [
+   "staff.view",
+   "staff.modify",
+   "staff.payroll",
+   "staff.delete"
+  ],
+  "accounts": [
+   "accounts.view",
+   "accounts.reports",
+   "accounts.ledger",
+   "accounts.reconciliation",
+   "accounts.own_only",
+   "accounts.export"
+  ],
+  "offers": [
+   "offers.manage_coupons",
+   "offers.loyalty"
+  ],
+  "chats": [
+   "chats.view",
+   "chats.send"
+  ],
+  "calls": [
+   "calls.view",
+   "calls.make"
+  ],
+  "dailyops": [
+   "dailyops.view",
+   "dailyops.ratings_reply"
+  ],
+  "crm": [
+   "crm.view"
+  ],
+  "sarathi": [
+   "sarathi.ask"
+  ],
+  "settings": [
+   "settings.view",
+   "settings.modify",
+   "iam.manage_users",
+   "iam.manage_roles"
+  ]
+ },
+ "default_roles": {
+  "owner": {
+   "name": "Organization Owner",
+   "permissions": [
+    "trips.view",
+    "trips.update_passengers",
+    "trips.location",
+    "trips.call",
+    "trips.chat",
+    "trips.import_chart",
+    "bookings.create",
+    "bookings.view_all",
+    "bookings.modify",
+    "bookings.cancel",
+    "bookings.block_seats",
+    "bookings.release_hold",
+    "bookings.comments",
+    "bookings.on_behalf",
+    "bookings.see_phone",
+    "schedules.view",
+    "schedules.modify",
+    "schedules.fares",
+    "schedules.toggle",
+    "schedules.delete",
+    "schedules.financial",
+    "schedules.assign_bus",
+    "schedules.assign_crew",
+    "schedules.edit_expenses",
+    "routes.view",
+    "routes.create",
+    "routes.modify",
+    "routes.delete",
+    "fleet.view",
+    "fleet.modify",
+    "fleet.delete",
+    "fleet.documents",
+    "staff.view",
+    "staff.modify",
+    "staff.payroll",
+    "staff.delete",
+    "accounts.view",
+    "accounts.reports",
+    "accounts.ledger",
+    "accounts.reconciliation",
+    "accounts.own_only",
+    "accounts.export",
+    "offers.manage_coupons",
+    "offers.loyalty",
+    "chats.view",
+    "chats.send",
+    "calls.view",
+    "calls.make",
+    "dailyops.view",
+    "dailyops.ratings_reply",
+    "crm.view",
+    "sarathi.ask",
+    "settings.view",
+    "settings.modify",
+    "iam.manage_users",
+    "iam.manage_roles"
+   ]
+  },
+  "admin": {
+   "name": "Admin",
+   "permissions": [
+    "trips.view",
+    "trips.update_passengers",
+    "trips.location",
+    "trips.call",
+    "trips.chat",
+    "trips.import_chart",
+    "bookings.create",
+    "bookings.view_all",
+    "bookings.modify",
+    "bookings.cancel",
+    "bookings.block_seats",
+    "bookings.release_hold",
+    "bookings.comments",
+    "bookings.on_behalf",
+    "bookings.see_phone",
+    "schedules.view",
+    "schedules.modify",
+    "schedules.fares",
+    "schedules.toggle",
+    "schedules.delete",
+    "schedules.financial",
+    "schedules.assign_bus",
+    "schedules.assign_crew",
+    "schedules.edit_expenses",
+    "routes.view",
+    "routes.create",
+    "routes.modify",
+    "routes.delete",
+    "fleet.view",
+    "fleet.modify",
+    "fleet.delete",
+    "fleet.documents",
+    "staff.view",
+    "staff.modify",
+    "staff.payroll",
+    "staff.delete",
+    "accounts.view",
+    "accounts.reports",
+    "accounts.ledger",
+    "accounts.reconciliation",
+    "accounts.own_only",
+    "accounts.export",
+    "offers.manage_coupons",
+    "offers.loyalty",
+    "chats.view",
+    "chats.send",
+    "calls.view",
+    "calls.make",
+    "dailyops.view",
+    "dailyops.ratings_reply",
+    "crm.view",
+    "sarathi.ask",
+    "settings.view",
+    "settings.modify",
+    "iam.manage_users",
+    "iam.manage_roles"
+   ]
+  },
+  "manager": {
+   "name": "Manager",
+   "permissions": [
+    "trips.view",
+    "trips.update_passengers",
+    "trips.location",
+    "trips.call",
+    "trips.chat",
+    "trips.import_chart",
+    "bookings.create",
+    "bookings.view_all",
+    "bookings.modify",
+    "bookings.cancel",
+    "bookings.block_seats",
+    "bookings.release_hold",
+    "bookings.comments",
+    "bookings.on_behalf",
+    "bookings.see_phone",
+    "schedules.view",
+    "schedules.modify",
+    "schedules.fares",
+    "schedules.toggle",
+    "schedules.financial",
+    "schedules.assign_bus",
+    "schedules.assign_crew",
+    "schedules.edit_expenses",
+    "routes.view",
+    "routes.create",
+    "routes.modify",
+    "fleet.view",
+    "fleet.modify",
+    "fleet.documents",
+    "staff.view",
+    "staff.modify",
+    "staff.payroll",
+    "accounts.view",
+    "accounts.reports",
+    "accounts.ledger",
+    "accounts.reconciliation",
+    "accounts.own_only",
+    "accounts.export",
+    "offers.manage_coupons",
+    "offers.loyalty",
+    "chats.view",
+    "chats.send",
+    "calls.view",
+    "calls.make",
+    "dailyops.view",
+    "dailyops.ratings_reply",
+    "crm.view",
+    "sarathi.ask",
+    "settings.view",
+    "settings.modify",
+    "iam.manage_users"
+   ]
+  },
+  "accountant": {
+   "name": "Accountant",
+   "permissions": [
+    "accounts.view",
+    "accounts.reports",
+    "accounts.ledger",
+    "accounts.reconciliation",
+    "accounts.own_only",
+    "accounts.export",
+    "offers.manage_coupons",
+    "offers.loyalty",
+    "trips.view",
+    "schedules.view",
+    "schedules.financial",
+    "routes.view",
+    "fleet.view",
+    "staff.view",
+    "staff.payroll",
+    "bookings.view_all",
+    "crm.view",
+    "sarathi.ask",
+    "dailyops.view"
+   ]
+  },
+  "booking_executive": {
+   "name": "Booking Executive",
+   "permissions": [
+    "bookings.create",
+    "bookings.view_all",
+    "bookings.modify",
+    "bookings.cancel",
+    "bookings.block_seats",
+    "bookings.release_hold",
+    "bookings.comments",
+    "bookings.on_behalf",
+    "bookings.see_phone",
+    "chats.view",
+    "chats.send",
+    "calls.view",
+    "calls.make",
+    "crm.view",
+    "trips.view",
+    "trips.update_passengers",
+    "trips.call",
+    "trips.chat",
+    "trips.location",
+    "schedules.view",
+    "routes.view"
+   ]
+  },
+  "pickup_manager": {
+   "name": "Pickup Manager",
+   "permissions": [
+    "trips.view",
+    "trips.update_passengers",
+    "trips.location",
+    "trips.call",
+    "trips.chat",
+    "trips.import_chart",
+    "chats.view",
+    "chats.send",
+    "calls.view",
+    "calls.make",
+    "schedules.view",
+    "bookings.view_all",
+    "fleet.view",
+    "dailyops.view"
+   ]
+  },
+  "agent": {
+   "name": "Agent",
+   "permissions": [
+    "bookings.create",
+    "bookings.cancel",
+    "schedules.view",
+    "accounts.view",
+    "accounts.own_only"
+   ]
+  },
+  "driver": {
+   "name": "Driver",
+   "permissions": [
+    "trips.view",
+    "trips.update_passengers",
+    "trips.location",
+    "trips.call"
+   ]
+  },
+  "conductor": {
+   "name": "Conductor",
+   "permissions": [
+    "trips.view",
+    "trips.update_passengers",
+    "trips.location",
+    "trips.call"
+   ]
+  },
+  "helper": {
+   "name": "Helper",
+   "permissions": [
+    "trips.view",
+    "trips.update_passengers"
+   ]
+  },
+  "viewer": {
+   "name": "Viewer",
+   "permissions": []
+  },
+  "service_associate": {
+   "name": "Service Associate",
+   "permissions": [
+    "trips.view",
+    "trips.update_passengers",
+    "schedules.view"
+   ]
+  },
+  "service_agent": {
+   "name": "Service Agent",
+   "permissions": [
+    "trips.view",
+    "schedules.view",
+    "bookings.create",
+    "bookings.view_all"
+   ]
+  },
+  "branch_admin": {
+   "name": "Branch Admin",
+   "permissions": [
+    "trips.view",
+    "trips.location",
+    "bookings.create",
+    "bookings.view_all",
+    "schedules.view",
+    "routes.view",
+    "dailyops.view",
+    "settings.view",
+    "iam.manage_users"
+   ],
+   "scopes": {
+    "View users": "Branch",
+    "Add users (roles below their own)": "Branch",
+    "Edit users (name, branch, status, routes)": "Branch",
+    "Remove users": "Branch",
+    "Branches": "Branch"
+   }
+  }
+ },
+ "matrix": [
+  {
+   "title": "TRIPS & PICKUPS",
+   "rows": [
+    {
+     "key": "trips_pickups__view_trip_sheets_pickup_charts",
+     "label": "View trip sheets & pickup charts",
+     "code": "trips.view",
+     "kind": "scope",
+     "roleImpossible": [
+      "agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "trips_pickups__mark_boarded_no_show_passenger_notes",
+     "label": "Mark boarded / no-show, passenger notes",
+     "code": "trips.update_passengers",
+     "kind": "toggle",
+     "roleImpossible": [
+      "agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "trips_pickups__see_bus_location",
+     "label": "See bus location",
+     "code": "trips.location",
+     "kind": "toggle",
+     "roleImpossible": [
+      "agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "trips_pickups__call_passengers_and_crew",
+     "label": "Call passengers and crew",
+     "code": "trips.call",
+     "kind": "toggle",
+     "roleImpossible": [
+      "agent"
+     ],
+     "limit": null
+    }
+   ]
+  },
+  {
+   "title": "BOOKINGS",
+   "rows": [
+    {
+     "key": "bookings__book_tickets",
+     "label": "Book tickets",
+     "code": "bookings.create",
+     "kind": "toggle",
+     "roleImpossible": [],
+     "limit": null
+    },
+    {
+     "key": "bookings__view_bookings",
+     "label": "View bookings",
+     "code": "bookings.view_all",
+     "kind": "scope",
+     "roleImpossible": [],
+     "limit": null
+    },
+    {
+     "key": "bookings__edit_passengers_points",
+     "label": "Edit passengers & points",
+     "code": "bookings.modify",
+     "kind": "scope",
+     "roleImpossible": [],
+     "limit": null
+    },
+    {
+     "key": "bookings__cancel_tickets",
+     "label": "Cancel tickets",
+     "code": "bookings.cancel",
+     "kind": "scope",
+     "roleImpossible": [],
+     "limit": "cancel_cutoff_hours"
+    },
+    {
+     "key": "bookings__shift_seat_date",
+     "label": "Shift seat / date",
+     "code": "bookings.modify",
+     "kind": "scope",
+     "roleImpossible": [],
+     "limit": null
+    },
+    {
+     "key": "bookings__send_passenger_messages_delay_pre_boarding_resend_ticket",
+     "label": "Send passenger messages (delay, pre-boarding, resend ticket)",
+     "code": "trips.chat",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "bookings__add_comments_to_a_pnr",
+     "label": "Add comments to a PNR",
+     "code": "bookings.comments",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "bookings__book_on_behalf_of_agents",
+     "label": "Book on behalf of agents",
+     "code": "bookings.on_behalf",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "bookings__block_seats",
+     "label": "Block seats",
+     "code": "bookings.block_seats",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver"
+     ],
+     "limit": "seat_block"
+    },
+    {
+     "key": "bookings__unblock_seats_book_a_blocked_seat",
+     "label": "Unblock seats / book a blocked seat",
+     "code": "bookings.release_hold",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver"
+     ],
+     "limit": null
+    },
+    {
+     "key": "bookings__see_passenger_phone_numbers",
+     "label": "See passenger phone numbers",
+     "code": "bookings.see_phone",
+     "kind": "toggle",
+     "roleImpossible": [],
+     "limit": null
+    }
+   ]
+  },
+  {
+   "title": "SCHEDULES",
+   "rows": [
+    {
+     "key": "schedules__view_schedules_seat_layouts",
+     "label": "View schedules & seat layouts",
+     "code": "schedules.view",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "schedules__see_who_is_booked_on_a_schedule",
+     "label": "See who is booked on a schedule",
+     "code": "schedules.view",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "schedules__view_income_expenses",
+     "label": "View income & expenses",
+     "code": "schedules.financial",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "schedules__edit_timings_coach_delay",
+     "label": "Edit timings, coach & delay",
+     "code": "schedules.modify",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "schedules__edit_expenses",
+     "label": "Edit expenses",
+     "code": "schedules.edit_expenses",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "schedules__change_cities_pickups_drops",
+     "label": "Change cities, pickups & drops",
+     "code": "schedules.modify",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "schedules__assign_bus",
+     "label": "Assign bus",
+     "code": "schedules.assign_bus",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "schedules__assign_crew_driver_conductor_helper",
+     "label": "Assign crew (driver, conductor, helper)",
+     "code": "schedules.assign_crew",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "schedules__edit_fares",
+     "label": "Edit fares",
+     "code": "schedules.fares",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "schedules__switch_schedules_on_off",
+     "label": "Switch schedules on / off",
+     "code": "schedules.toggle",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "schedules__create_schedules_import_trip_sheets",
+     "label": "Create schedules / import trip sheets",
+     "code": "schedules.modify",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "schedules__delete_schedules",
+     "label": "Delete schedules",
+     "code": "schedules.delete",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    }
+   ]
+  },
+  {
+   "title": "ROUTES",
+   "rows": [
+    {
+     "key": "routes__view_routes",
+     "label": "View routes",
+     "code": "routes.view",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "routes__create_routes",
+     "label": "Create routes",
+     "code": "routes.create",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "routes__edit_general_details_name_coach_settings_route_map",
+     "label": "Edit general details (name, coach, settings, route map)",
+     "code": "routes.modify",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "routes__change_cities_timings",
+     "label": "Change cities & timings",
+     "code": "routes.modify",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "routes__change_pickups_drops_breaks",
+     "label": "Change pickups, drops & breaks",
+     "code": "routes.modify",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "routes__change_fares",
+     "label": "Change fares",
+     "code": "routes.modify",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "routes__block_seats_on_the_route",
+     "label": "Block seats on the route",
+     "code": "routes.modify",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "routes__change_cancellation_rules",
+     "label": "Change cancellation rules",
+     "code": "routes.modify",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "routes__change_expenses",
+     "label": "Change expenses",
+     "code": "routes.modify",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "routes__update_shift_the_timings_of_its_schedules",
+     "label": "Update (shift the timings of its schedules)",
+     "code": "routes.modify",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "routes__delete_routes",
+     "label": "Delete routes",
+     "code": "routes.delete",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    }
+   ]
+  },
+  {
+   "title": "FLEET",
+   "rows": [
+    {
+     "key": "fleet__view_vehicles_fleet_map",
+     "label": "View vehicles & fleet map",
+     "code": "fleet.view",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "fleet__add_vehicles",
+     "label": "Add vehicles",
+     "code": "fleet.modify",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "fleet__edit_vehicles_documents",
+     "label": "Edit vehicles & documents",
+     "code": "fleet.modify",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "fleet__delete_vehicles",
+     "label": "Delete vehicles",
+     "code": "fleet.delete",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "fleet__share_a_bus_location_link",
+     "label": "Share a bus location link",
+     "code": "fleet.view",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "fleet__view_coaches_seat_layouts",
+     "label": "View coaches / seat layouts",
+     "code": "fleet.view",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "fleet__create_edit_coaches",
+     "label": "Create & edit coaches",
+     "code": "fleet.modify",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "fleet__delete_coaches",
+     "label": "Delete coaches",
+     "code": "fleet.delete",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    }
+   ]
+  },
+  {
+   "title": "CHATS",
+   "rows": [
+    {
+     "key": "chats__view_trip_chats",
+     "label": "View trip chats",
+     "code": "chats.view",
+     "kind": "scope",
+     "roleImpossible": [
+      "agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "chats__reply_send_photos",
+     "label": "Reply / send photos",
+     "code": "chats.send",
+     "kind": "toggle",
+     "roleImpossible": [
+      "agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "chats__change_chat_status_mark_read",
+     "label": "Change chat status / mark read",
+     "code": "chats.send",
+     "kind": "toggle",
+     "roleImpossible": [
+      "agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "chats__delete_chats_block_or_report_passengers",
+     "label": "Delete chats, block or report passengers",
+     "code": "chats.send",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "chats__share_revoke_chat_links",
+     "label": "Share / revoke chat links",
+     "code": "chats.send",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent"
+     ],
+     "limit": null
+    }
+   ]
+  },
+  {
+   "title": "CALLS",
+   "rows": [
+    {
+     "key": "calls__make_calls",
+     "label": "Make calls",
+     "code": "calls.make",
+     "kind": "toggle",
+     "roleImpossible": [
+      "agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "calls__view_call_history",
+     "label": "View call history",
+     "code": "calls.view",
+     "kind": "scope",
+     "roleImpossible": [
+      "agent"
+     ],
+     "limit": null,
+     "choices": [
+      "Off",
+      "Own",
+      "Company"
+     ]
+    },
+    {
+     "key": "calls__listen_to_recordings",
+     "label": "Listen to recordings",
+     "code": "calls.view",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "calls__manage_speed_dials",
+     "label": "Manage speed dials",
+     "code": "settings.modify",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    }
+   ]
+  },
+  {
+   "title": "ACCOUNTS",
+   "rows": [
+    {
+     "key": "accounts__sales",
+     "label": "Sales",
+     "code": "accounts.view",
+     "kind": "scope",
+     "roleImpossible": [],
+     "limit": null
+    },
+    {
+     "key": "accounts__transactions_receivables",
+     "label": "Transactions & receivables",
+     "code": "accounts.view",
+     "kind": "scope",
+     "roleImpossible": [],
+     "limit": null
+    },
+    {
+     "key": "accounts__add_delete_ledger_entries",
+     "label": "Add / delete ledger entries",
+     "code": "accounts.ledger",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "accounts__reports",
+     "label": "Reports",
+     "code": "accounts.reports",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "accounts__invoices_statements_view_pay",
+     "label": "Invoices & statements (view / pay)",
+     "code": "accounts.view",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "accounts__settlements_view",
+     "label": "Settlements (view)",
+     "code": "accounts.view",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "accounts__upload_match_settlements",
+     "label": "Upload & match settlements",
+     "code": "accounts.reconciliation",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "accounts__agent_settings_terms_credit_commission",
+     "label": "Agent settings (terms, credit, commission)",
+     "code": "iam.manage_users",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "accounts__send_payment_links_collect",
+     "label": "Send payment links / collect",
+     "code": "accounts.ledger",
+     "kind": "toggle",
+     "roleImpossible": [],
+     "limit": null
+    },
+    {
+     "key": "accounts__export_download",
+     "label": "Export / download",
+     "code": "accounts.export",
+     "kind": "toggle",
+     "roleImpossible": [
+      "viewer",
+      "driver",
+      "agent",
+      "service_associate",
+      "booking_executive",
+      "pickup_manager",
+      "service_agent",
+      "manager"
+     ],
+     "limit": null
+    }
+   ]
+  },
+  {
+   "title": "DAILY OPS",
+   "rows": [
+    {
+     "key": "daily_ops__daily_report",
+     "label": "Daily report",
+     "code": "dailyops.view",
+     "kind": "scope",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null,
+     "choices": [
+      "Off",
+      "Branch",
+      "Company"
+     ]
+    },
+    {
+     "key": "daily_ops__view_ratings",
+     "label": "View ratings",
+     "code": "dailyops.view",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "daily_ops__follow_up_on_ratings_status_comments",
+     "label": "Follow up on ratings (status, comments)",
+     "code": "dailyops.ratings_reply",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "daily_ops__import_ratings",
+     "label": "Import ratings",
+     "code": "dailyops.ratings_reply",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent"
+     ],
+     "limit": null
+    }
+   ]
+  },
+  {
+   "title": "STAFF & HR",
+   "rows": [
+    {
+     "key": "staff_hr__view_staff",
+     "label": "View staff",
+     "code": "staff.view",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "staff_hr__add_edit_staff",
+     "label": "Add / edit staff",
+     "code": "staff.modify",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate"
+     ],
+     "limit": null
+    },
+    {
+     "key": "staff_hr__attendance_view_correct_approve",
+     "label": "Attendance (view, correct, approve)",
+     "code": "staff.payroll",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate"
+     ],
+     "limit": null
+    },
+    {
+     "key": "staff_hr__advances_reimbursements",
+     "label": "Advances & reimbursements",
+     "code": "staff.payroll",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate"
+     ],
+     "limit": null
+    },
+    {
+     "key": "staff_hr__payouts_generate_approve_mark_paid",
+     "label": "Payouts (generate, approve, mark paid)",
+     "code": "staff.payroll",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate"
+     ],
+     "limit": null
+    }
+   ]
+  },
+  {
+   "title": "OFFERS & LOYALTY",
+   "rows": [
+    {
+     "key": "offers_loyalty__coupons",
+     "label": "Coupons",
+     "code": "offers.manage_coupons",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "offers_loyalty__branch_offers_at_the_counter",
+     "label": "Branch offers at the counter",
+     "code": "offers.manage_coupons",
+     "kind": "toggle",
+     "roleImpossible": [],
+     "limit": null
+    },
+    {
+     "key": "offers_loyalty__loyalty_program_settings",
+     "label": "Loyalty program settings",
+     "code": "offers.loyalty",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "offers_loyalty__seat_upgrade_settings",
+     "label": "Seat-upgrade settings",
+     "code": "offers.loyalty",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    }
+   ]
+  },
+  {
+   "title": "USERS & ACCESS",
+   "rows": [
+    {
+     "key": "users_access__view_users",
+     "label": "View users",
+     "code": "settings.view",
+     "kind": "scope",
+     "roleImpossible": [
+      "driver",
+      "agent"
+     ],
+     "limit": null,
+     "choices": [
+      "Off",
+      "Branch",
+      "Company"
+     ]
+    },
+    {
+     "key": "users_access__add_users_roles_below_their_own",
+     "label": "Add users (roles below their own)",
+     "code": "iam.manage_users",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "users_access__edit_users_name_branch_status_routes",
+     "label": "Edit users (name, branch, status, routes)",
+     "code": "iam.manage_users",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "users_access__change_a_user_s_role",
+     "label": "Change a user's role",
+     "code": "iam.manage_users",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "users_access__remove_users",
+     "label": "Remove users",
+     "code": "iam.manage_users",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "users_access__change_what_roles_can_do",
+     "label": "Change what roles can do",
+     "code": "iam.manage_roles",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    }
+   ]
+  },
+  {
+   "title": "SETTINGS",
+   "rows": [
+    {
+     "key": "settings__configuration_notifications",
+     "label": "Configuration & notifications",
+     "code": "settings.modify",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "settings__branding",
+     "label": "Branding",
+     "code": "settings.modify",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "settings__branches",
+     "label": "Branches",
+     "code": "settings.modify",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "settings__whatsapp_setup",
+     "label": "WhatsApp setup",
+     "code": "settings.modify",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    },
+    {
+     "key": "settings__use_sarathi_ai_assistant",
+     "label": "Use Sarathi (AI assistant)",
+     "code": "sarathi.ask",
+     "kind": "toggle",
+     "roleImpossible": [
+      "driver",
+      "agent",
+      "service_associate",
+      "service_agent"
+     ],
+     "limit": null
+    }
+   ]
+  }
+ ],
+ "role_columns": [
+  [
+   "viewer",
+   "Viewer"
+  ],
+  [
+   "driver",
+   "Bus crew (Driver, Conductor, Helper)"
+  ],
+  [
+   "agent",
+   "Agent"
+  ],
+  [
+   "service_associate",
+   "Service Associate"
+  ],
+  [
+   "booking_executive",
+   "Booking Executive"
+  ],
+  [
+   "pickup_manager",
+   "Pickup Manager"
+  ],
+  [
+   "service_agent",
+   "Service Agent"
+  ],
+  [
+   "accountant",
+   "Accountant"
+  ],
+  [
+   "branch_admin",
+   "Branch Admin"
+  ],
+  [
+   "manager",
+   "Manager"
+  ]
+ ],
+ "role_descriptions": {
+  "owner": "Organization owner with full business and access control",
+  "admin": "Administrator with full operator management",
+  "manager": "Route/fleet manager with operational control",
+  "pickup_manager": "Manages assigned pickup operations and trip handovers",
+  "booking_executive": "Counter bookings and passenger service",
+  "accountant": "Accounts, settlements and payroll access",
+  "agent": "Agent booking access",
+  "driver": "Vehicle driver with access to assigned trips",
+  "helper": "Helper with access to assigned trip passengers",
+  "conductor": "Conductor responsible for assigned trip operations",
+  "viewer": "Read-only access to assigned information",
+  "service_associate": "Trip and boarding operations",
+  "service_agent": "Agent team service management",
+  "branch_admin": "Office and branch operations"
+ },
+ "role_hues": {
+  "owner": "#a646f5",
+  "admin": "#6057fb",
+  "manager": "#3578ff",
+  "pickup_manager": "#00b8d6",
+  "booking_executive": "#00b990",
+  "accountant": "#78bd02",
+  "agent": "#00bba4",
+  "driver": "#ff7200",
+  "helper": "#ff7200",
+  "conductor": "#ff7200",
+  "viewer": "#95a6be",
+  "service_associate": "#535ff6",
+  "service_agent": "#00a8bd",
+  "branch_admin": "#5763f6"
+ },
+ "limit_fields": {
+  "cancel_cutoff_hours": {
+   "label": "Cancel cut-off (hours before departure)",
+   "max": 8760,
+   "unit": "h"
+  },
+  "block_max_seats": {
+   "label": "Maximum seats per block",
+   "max": 500,
+   "unit": "seats"
+  },
+  "block_max_hours": {
+   "label": "Maximum block duration",
+   "max": 8760,
+   "unit": "h"
+  }
+ },
+ "legacy_for": {
+  "Book tickets": "Book seats",
+  "View schedules & seat layouts": "View services & seat layouts",
+  "See who is booked on a schedule": "See who is booked on a service",
+  "View income & expenses": "View a service's revenue",
+  "Edit timings, coach & delay": "Edit services (timings, coach, bus & driver, delay)",
+  "Switch schedules on / off": "Switch services on / off",
+  "Create schedules / import trip sheets": "Create services / import trip sheets",
+  "Delete schedules": "Delete services",
+  "Edit general details (name, coach, settings, route map)": "Edit routes, fares, stops & route map",
+  "Daily report": "Daily report"
+ },
+ "rule_templates": [
+  {
+   "id": "seat_blocks_3_24",
+   "name": "Limit seat blocks (3 seats, 24 h)",
+   "effect": "limit",
+   "action_key": "bookings__block_seats",
+   "condition": {
+    "kind": "always"
+   },
+   "limits": {
+    "max_seats": 3,
+    "max_hours": 24
+   }
+  },
+  {
+   "id": "cancel_before_2h",
+   "name": "No cancelling within 2 h of departure",
+   "effect": "deny",
+   "action_key": "bookings__cancel_tickets",
+   "condition": {
+    "kind": "departure_within_hours",
+    "hours": 2
+   },
+   "limits": {}
+  },
+  {
+   "id": "corridor_blocks",
+   "name": "Seat blocks only on routes with the person's corridor tag",
+   "effect": "deny",
+   "action_key": "bookings__block_seats",
+   "condition": {
+    "kind": "corridor_mismatch"
+   },
+   "limits": {}
+  },
+  {
+   "id": "read_only",
+   "name": "Read-only (view everything, change nothing)",
+   "effect": "deny",
+   "action_key": "*",
+   "condition": {
+    "kind": "write_action"
+   },
+   "limits": {}
+  }
+ ],
+ "read_only": [
+  "View trip sheets & pickup charts",
+  "See bus location",
+  "View bookings",
+  "View schedules & seat layouts",
+  "See who is booked on a schedule",
+  "View income & expenses",
+  "View routes",
+  "View vehicles & fleet map",
+  "View coaches / seat layouts",
+  "View trip chats",
+  "View call history",
+  "Listen to recordings",
+  "Sales",
+  "Transactions & receivables",
+  "Reports",
+  "Settlements (view)",
+  "Daily report",
+  "View ratings",
+  "View staff",
+  "View users"
+ ],
+ "situation_fields": [
+  [
+   "caller_id",
+   "The caller's id (91 + mobile)"
+  ],
+  [
+   "acting_operator_id",
+   "Operator the caller is acting for"
+  ],
+  [
+   "caller_branch_id",
+   "The caller's branch id"
+  ],
+  [
+   "caller_role_names",
+   "The caller's role names (multi-valued)"
+  ],
+  [
+   "calling_app",
+   "Calling app: app | hub | website | gds | partner"
+  ],
+  [
+   "client_ip",
+   "Client IP address"
+  ],
+  [
+   "request_time_utc",
+   "Request time (ISO 8601, UTC)"
+  ],
+  [
+   "operator_hour",
+   "Hour of day at the operator (0-23)"
+  ],
+  [
+   "resource_operator_id",
+   "Operator that owns the resource"
+  ],
+  [
+   "booked_by_mobile",
+   "Who booked / is assigned (91 + mobile)"
+  ],
+  [
+   "sold_branch_id",
+   "Branch that sold it (sales boundary)"
+  ],
+  [
+   "route_id",
+   "Route id of the trip"
+  ],
+  [
+   "stop_city_ids",
+   "Cities the trip stops in (multi-valued)"
+  ],
+  [
+   "inside_branch_operations_area",
+   "Inside the caller's branch operations area (Bool)"
+  ],
+  [
+   "on_trip_roster",
+   "Caller is on the trip roster (Bool)"
+  ],
+  [
+   "request_amount_inr",
+   "Money amount of the request (₹)"
+  ],
+  [
+   "discount_percent",
+   "Discount being given (%)"
+  ],
+  [
+   "fare_change_percent",
+   "Fare change being made (±%)"
+  ],
+  [
+   "seat_count",
+   "Seats in the request"
+  ],
+  [
+   "already_blocked_seats",
+   "Seats the caller already holds blocked"
+  ],
+  [
+   "block_duration_hours",
+   "Requested block duration (hours)"
+  ],
+  [
+   "days_before_departure",
+   "Days from now to departure"
+  ],
+  [
+   "hours_before_departure",
+   "Hours from now to departure"
+  ]
+ ]
+}

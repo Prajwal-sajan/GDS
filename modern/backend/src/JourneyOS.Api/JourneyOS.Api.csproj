@@ -17,4 +17,9 @@
     <PackageReference Include="StackExchange.Redis" Version="3.4.35" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Settings\*.json" LogicalName="JourneyOS.Api.Settings.%(Filename)%(Extension)" />
+    <Content Remove="Settings\*.json" />
+  </ItemGroup>
+
 </Project>
