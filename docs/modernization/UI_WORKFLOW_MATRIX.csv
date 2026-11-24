@@ -68,10 +68,10 @@ W066,PUT,/settings/loyalty-v34/:section,server/api/loyalty-v34.js:12,,,,NOT_STAR
 W067,GET,/cities,server/api/master.js:16,V003 V015,,,NOT_STARTED
 W068,POST,/cities,server/api/master.js:17,,,,NOT_STARTED
 W069,GET,/city-pairs,server/api/master.js:18,,,,NOT_STARTED
-W070,GET,/routes,server/api/master.js:32,V003 V008,GET /api/admin/route-list,modern/backend/src/JourneyOS.Api/Admin/RouteEndpoints.cs:21,FUNCTIONAL_PASS
+W070,GET,/routes,server/api/master.js:32,V003 V008,GET /api/admin/route-list,modern/backend/src/JourneyOS.Api/Admin/RouteEndpoints.cs:22,FUNCTIONAL_PASS
 W071,GET,/routes/:id,server/api/master.js:33,V015,,,NOT_STARTED
 W072,POST,/routes,server/api/master.js:34,,,,NOT_STARTED
-W073,PUT,/routes/:id,server/api/master.js:79,,PUT /api/admin/routes/{id}/status,modern/backend/src/JourneyOS.Api/Admin/RouteEndpoints.cs:57,IMPLEMENTED_UNVERIFIED
+W073,PUT,/routes/:id,server/api/master.js:79,,PUT /api/admin/routes/{id}/status,modern/backend/src/JourneyOS.Api/Admin/RouteEndpoints.cs:58,IMPLEMENTED_UNVERIFIED
 W074,GET,/routes/:id/validate,server/api/master.js:117,,,,NOT_STARTED
 W075,POST,/routes/:id/shift-time,server/api/master.js:125,,,,NOT_STARTED
 W076,POST,/routes/:id/stops/import,server/api/master.js:132,,,,NOT_STARTED

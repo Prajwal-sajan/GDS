@@ -1,5 +1,110 @@
 [
   {
+    "id": "route-editor-edit",
+    "region": "header",
+    "legacy": [
+      1294,
+      116
+    ],
+    "react": [
+      1294,
+      116
+    ],
+    "sizeMatch": true,
+    "diffPixels": 8,
+    "diffRatio": 0.0001
+  },
+  {
+    "id": "route-editor-edit",
+    "region": "tabbar",
+    "legacy": [
+      1232,
+      59
+    ],
+    "react": [
+      1232,
+      59
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "route-editor-view",
+    "region": "header",
+    "legacy": [
+      1294,
+      116
+    ],
+    "react": [
+      1294,
+      116
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "route-editor-view",
+    "region": "pickup-card-info",
+    "legacy": [
+      262,
+      270
+    ],
+    "react": [
+      262,
+      271
+    ],
+    "sizeMatch": false,
+    "diffPixels": 3803,
+    "diffRatio": 0.0536
+  },
+  {
+    "id": "route-editor-view",
+    "region": "pickup-metro",
+    "legacy": [
+      262,
+      71
+    ],
+    "react": [
+      262,
+      71
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "route-editor-view",
+    "region": "pickup-title",
+    "legacy": [
+      262,
+      72
+    ],
+    "react": [
+      262,
+      72
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "route-editor-view",
+    "region": "tabbar",
+    "legacy": [
+      1232,
+      59
+    ],
+    "react": [
+      1232,
+      59
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
     "id": "routes-list",
     "region": "list-head",
     "legacy": [

@@ -1,0 +1,15 @@
+{
+  "id": "route-editor-view",
+  "region": "tabbar",
+  "legacy": [
+    1232,
+    59
+  ],
+  "react": [
+    1232,
+    59
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

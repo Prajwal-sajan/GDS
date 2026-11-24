@@ -101,6 +101,9 @@ export const api = {
   schedules: (from: string, to: string) => call<{ schedules: ScheduleRow[] }>("GET", `/api/admin/schedules?from=${from}&to=${to}`),
   toggleSchedule: (id: number, active: boolean) => call<{ bookable: boolean }>("POST", `/api/admin/schedules/${id}/toggle`, { active }),
   routeList: () => call<{ routes: RouteListRow[] }>("GET", "/api/admin/route-list"),
+  routeDetail: (id: number) => call<RouteDetail>("GET", `/api/admin/route-detail/${id}`),
+  saveExpenseTemplate: (id: number, items: { type: string; key: string | null; label: string; perTrip: number }[]) =>
+    call<unknown>("PUT", `/api/admin/routes/${id}/expense-template`, items),
   setRouteStatus: (id: number, status: "active" | "inactive") => call<{ status: string }>("PUT", `/api/admin/routes/${id}/status`, { status }),
   saveFares: (routeId: number, fares: Fare[]) => call<{ updated: number }>("PUT", `/api/admin/routes/${routeId}/fares`, fares),
   counterBook: (body: unknown) => call<CounterResult>("POST", "/api/admin/bookings/counter", body),
@@ -193,4 +196,20 @@ export interface RouteListRow {
   departureTime: string; arrivalTime: string | null; arrivalDay: number; durationMinutes: number | null;
   origin: { name: string; state: string | null } | null; destination: { name: string; state: string | null } | null;
   via: string[]; coach: { id: number; name: string; capacity: number } | null; startDate: string | null; endDate: string | null;
+}
+
+export interface RouteStageRow { id: number; kind: string; name: string; address: string | null; landmark: string | null; contactNumber: string | null;
+  lat: number | null; lng: number | null; day: number; time: string; prime: boolean; cityId: number; city: string | null;
+  pickupType: string | null; exchangePoint: string | null; exchangeTime: string | null; metroDescription: string | null }
+export interface RouteDetail {
+  id: number; serviceNumber: string; name: string; altName: string | null; status: string; departureTime: string; arrivalTime: string | null;
+  arrivalDay: number | null; startDate: string | null; endDate: string | null; partialCancellationAllowed: boolean; maxSeatsPerTicket: number; updateCutoffMinutes: number;
+  coach: { id: number; name: string; pattern: string; capacity: number; seaters: number; sleepers: number } | null;
+  stops: { sequence: number; cityId: number; city: string | null; state: string | null; lat: number | null; lng: number | null; day: number; time: string }[];
+  stages: RouteStageRow[];
+  fares: { fromSequence: number; toSequence: number; from: string | null; to: string | null; seater: number; sleeperLower: number; sleeperUpper: number }[];
+  refundSlabs: { hoursBefore: number; refundPercent: number }[];
+  seatFareRules: { kind: string; label: string; seats: string[]; days: string[]; value: number }[];
+  expenses: { type: string; key: string; label: string; perTrip: number }[];
+  history: { action: string; actor: string; at: string }[];
 }

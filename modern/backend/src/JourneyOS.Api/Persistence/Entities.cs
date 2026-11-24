@@ -128,6 +128,11 @@ public sealed class RouteStage
     public int Day { get; set; } = 1;
     public TimeOnly Time { get; set; }
     public bool Prime { get; set; }
+    // Legacy free-metro pickup: passengers ride the metro to an interchange station and board the bus there.
+    public string? PickupType { get; set; }        // e.g. "Metro"
+    public string? ExchangePoint { get; set; }
+    public TimeOnly? ExchangeTime { get; set; }
+    public string? MetroDescription { get; set; }
 }
 
 public sealed class RouteFare

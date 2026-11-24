@@ -2002,6 +2002,14 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("day");
 
+                    b.Property<string>("ExchangePoint")
+                        .HasColumnType("text")
+                        .HasColumnName("exchange_point");
+
+                    b.Property<TimeOnly?>("ExchangeTime")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("exchange_time");
+
                     b.Property<string>("Kind")
                         .IsRequired()
                         .HasColumnType("text")
@@ -2021,10 +2029,18 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("numeric(12,6)")
                         .HasColumnName("lng");
 
+                    b.Property<string>("MetroDescription")
+                        .HasColumnType("text")
+                        .HasColumnName("metro_description");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("name");
+
+                    b.Property<string>("PickupType")
+                        .HasColumnType("text")
+                        .HasColumnName("pickup_type");
 
                     b.Property<bool>("Prime")
                         .HasColumnType("boolean")

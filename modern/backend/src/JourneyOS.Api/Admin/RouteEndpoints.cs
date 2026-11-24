@@ -1,3 +1,4 @@
+using JourneyOS.Api.Inventory;
 using JourneyOS.Api.Operations;
 using JourneyOS.Api.Persistence;
 using JourneyOS.Api.Security;
@@ -56,5 +57,46 @@ public static class RouteEndpoints
 
         g.MapPut("/routes/{id:long}/status", async (long id, RouteStatusInput i, OperationsService s, HttpContext h) =>
             Results.Ok(new { status = await s.SetRouteStatusAsync(id, i.Status, h.User.Identity!.Name!) })).RequireAuthorization(Policies.Operations);
+
+        // Route editor read model (legacy GET /api/routes/:id): every tab's data in one call, PostgreSQL only.
+        g.MapGet("/route-detail/{id:long}", async (long id, GdsDbContext db) =>
+        {
+            var r = await db.Routes.AsNoTracking().AsSplitQuery()
+                .Include(x => x.Stops).ThenInclude(s => s.City).Include(x => x.Stages).Include(x => x.Fares).Include(x => x.RefundSlabs)
+                .Include(x => x.SeatFareRules).Include(x => x.ExpenseItems).Include(x => x.CoachTemplate).ThenInclude(c => c!.Seats)
+                .FirstOrDefaultAsync(x => x.Id == id) ?? throw new GdsException("ROUTE_NOT_FOUND", "Route not found", 404);
+            var cityIds = r.Stages.Select(s => s.CityId).Concat(r.Stops.Select(s => s.CityId)).Distinct().ToList();
+            var cities = await db.Cities.AsNoTracking().Where(c => cityIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id, c => c.Name);
+            var history = await db.AuditLogs.AsNoTracking().Where(a => a.Entity == "route" && a.EntityId == id.ToString())
+                .OrderByDescending(a => a.Id).Take(50).Select(a => new { a.Action, a.Actor, a.At }).ToListAsync();
+            var stops = r.Stops.OrderBy(s => s.Sequence).ToList();
+            return Results.Ok(new
+            {
+                id = r.Id, serviceNumber = r.ServiceNumber, name = r.Name, altName = r.AltName, status = r.Status,
+                departureTime = r.DepartureTime, arrivalTime = r.ArrivalTime, arrivalDay = r.ArrivalDay, startDate = r.StartDate, endDate = r.EndDate,
+                partialCancellationAllowed = r.PartialCancellationAllowed, maxSeatsPerTicket = r.MaxSeatsPerTicket, updateCutoffMinutes = r.UpdateCutoffMinutes,
+                coach = r.CoachTemplate is null ? null : new
+                {
+                    id = r.CoachTemplate.Id, name = r.CoachTemplate.Name, pattern = r.CoachTemplate.Pattern, capacity = r.CoachTemplate.Seats.Count,
+                    seaters = r.CoachTemplate.Seats.Count(s => s.SeatType == "seater"), sleepers = r.CoachTemplate.Seats.Count(s => s.SeatType == "sleeper"),
+                },
+                stops = stops.Select(s => new { s.Sequence, cityId = s.CityId, city = s.City?.Name, state = s.City?.State, lat = s.City?.Lat, lng = s.City?.Lng, s.Day, s.Time }),
+                stages = r.Stages.OrderBy(s => s.Day).ThenBy(s => s.Time).Select(s => new
+                {
+                    s.Id, s.Kind, s.Name, s.Address, s.Landmark, s.ContactNumber, s.Lat, s.Lng, s.Day, s.Time, s.Prime, cityId = s.CityId,
+                    s.PickupType, s.ExchangePoint, s.ExchangeTime, s.MetroDescription,
+                    city = cities.GetValueOrDefault(s.CityId),
+                }),
+                fares = r.Fares.OrderBy(f => f.FromSequence).ThenBy(f => f.ToSequence).Select(f => new
+                {
+                    f.FromSequence, f.ToSequence, from = stops.FirstOrDefault(s => s.Sequence == f.FromSequence)?.City?.Name,
+                    to = stops.FirstOrDefault(s => s.Sequence == f.ToSequence)?.City?.Name, f.Seater, f.SleeperLower, f.SleeperUpper,
+                }),
+                refundSlabs = r.RefundSlabs.OrderByDescending(s => s.HoursBefore).Select(s => new { s.HoursBefore, s.RefundPercent }),
+                seatFareRules = r.SeatFareRules.Select(s => new { s.Kind, s.Label, s.Seats, s.Days, s.Value }),
+                expenses = r.ExpenseItems.OrderBy(e => e.Type).ThenBy(e => e.Id).Select(e => new { e.Type, e.Key, e.Label, e.PerTrip }),
+                history,
+            });
+        }).RequireAuthorization(Policies.Reports);
     }
 }

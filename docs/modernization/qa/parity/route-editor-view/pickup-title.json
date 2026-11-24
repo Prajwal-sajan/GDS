@@ -1,0 +1,15 @@
+{
+  "id": "route-editor-view",
+  "region": "pickup-title",
+  "legacy": [
+    262,
+    72
+  ],
+  "react": [
+    262,
+    72
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

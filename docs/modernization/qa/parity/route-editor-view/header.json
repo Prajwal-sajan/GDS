@@ -1,0 +1,15 @@
+{
+  "id": "route-editor-view",
+  "region": "header",
+  "legacy": [
+    1294,
+    116
+  ],
+  "react": [
+    1294,
+    116
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

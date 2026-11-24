@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { activate, api, ApiError, getKey, login, logout, setKey, type Attempt, type Me, type OutboxRow, type RedBusStatus, type TripRow } from "./api";
 
-import { FaresPanel, FleetPanel, ReconciliationPanel, StaffPanel } from "./Operations";
+import { FleetPanel, ReconciliationPanel, StaffPanel } from "./Operations";
 import { CommsPanel, CrmPanel, LedgerPanel, ReportsPanel, SarathiPanel, UsersPanel } from "./Business";
 
 import { AppShell } from "./layouts/AppShell";
 import { FeedbackHost } from "./components/ui/feedback";
 import { SchedulesPage } from "./features/schedules/SchedulesPage";
 import { RoutesPage } from "./features/routes/RoutesPage";
+import { RouteEditorPage } from "./features/routes/RouteEditorPage";
 import { useHashRoute } from "./navigation/useHashRoute";
 import type { Role } from "./navigation/nav";
 
@@ -87,8 +88,7 @@ function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Ele
     [/^trips$/, ALL_R, () => <TripsPanel />],
     [/^gds(\/schedules)?$/, ALL_R, () => <SchedulesPage me={me} />, true],
     [/^gds\/routes$/, ALL_R, () => <RoutesPage me={me} />, true],
-    // Route editor (legacy rvtab tabs) is not ported yet: the interim fare editor stays reachable so fares remain editable.
-    [/^gds\/routes\/\d+$/, ALL_R, () => <FaresPanel />],
+    [/^gds\/routes\/\d+$/, ALL_R, () => <RouteEditorPage key={path} me={me} id={Number(seg[2])} />, true],
     [/^crm(\/.*)?$/, ALL_R, () => <CrmPanel me={me} />],
     [/^fleet(\/vehicles)?$/, OPS_R, () => <FleetPanel />],
     [/^fleet\/staff$/, OPS_R, () => <StaffPanel />],

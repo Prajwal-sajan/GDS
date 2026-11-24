@@ -32,6 +32,21 @@
         "Bus halts needs GPS halt evidence not stored by the modern backend",
         "Row links (view/edit/pickups/drops/fares) open the route editor V015, which is not ported yet (interim fare editor shown)"
       ]
+    },
+    "V015": {
+      "status": "IMPLEMENTED_UNVERIFIED",
+      "react": "src/features/routes/RouteEditorPage.tsx",
+      "evidence": [
+        "e2e/parity/route-editor.parity.spec.ts — header + tab bar pixel diff 0/0.0001 (view and edit); tab labels identical; pickups: same city tabs, names, times, identical stop-info markup incl. metro exchange text",
+        "Fares tab edit persists to PostgreSQL and restores (e2e); Expenses tab saves via expense-template endpoint"
+      ],
+      "gaps": [
+        "General/Cities/Update/Block/Cancellation settings are shown read-only: no .NET write endpoint for those route fields",
+        "Legacy fares tab shows client-side fare-group/day-price preview data; React shows the persisted city-pair fare matrix",
+        "Simulated GPS halt evidence is not shown (no stored observations)",
+        "Break stops are not imported (not boarding inventory)",
+        "Full-page pixel parity not achieved for body tabs other than Pickups"
+      ]
     }
   },
   "apiMap": {

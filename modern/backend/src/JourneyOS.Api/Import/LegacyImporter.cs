@@ -87,8 +87,10 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
             if (existingRoutes.Contains(id))
             {
                 // Backfill the legacy header fields on routes imported before they were modelled (idempotent).
-                var existing = await db.Routes.FirstAsync(x => x.Id == id);
+                var existing = await db.Routes.Include(x => x.Stages).FirstAsync(x => x.Id == id);
                 ApplyHeader(existing, r);
+                foreach (var s in r.GetProperty("stages").EnumerateArray())
+                    if (existing.Stages.FirstOrDefault(x => x.Id == s.GetProperty("id").GetInt64()) is { } st) ApplyMetro(st, s);
                 continue;
             }
             var route = new Route
@@ -114,13 +116,15 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
                 var cityId = s.GetProperty("city_id").GetInt64();
                 if (!seqByCity.TryGetValue(cityId, out var seq)) { log.LogWarning("Stage {Id} city not on route {Route}", s.GetProperty("id"), id); continue; }
                 var kind = type;
-                route.Stages.Add(new RouteStage
+                var stage = new RouteStage
                 {
                     Id = s.GetProperty("id").GetInt64(), CityId = cityId, StopSequence = seq, Kind = kind, Name = Str(s, "name") ?? "",
                     Address = Str(s, "address"), Landmark = Str(s, "landmark"), ContactNumber = Str(s, "contact_number"),
                     Lat = Dec(s, "lat"), Lng = Dec(s, "lng"), Day = Int(s, "day") ?? 1, Time = TimeOnly.Parse(Str(s, "time")!),
                     Prime = primeSeen.Add((cityId, kind)), // legacy has no prime flag: first stage per city/kind
-                });
+                };
+                ApplyMetro(stage, s);
+                route.Stages.Add(stage);
             }
             foreach (var f in r.GetProperty("fares").EnumerateArray())
             {
@@ -431,6 +435,14 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
     }
 
     private static string? Str(JsonElement e, string p) => e.TryGetProperty(p, out var v) && v.ValueKind != JsonValueKind.Null ? v.ToString() : null;
+
+    private static void ApplyMetro(RouteStage stage, JsonElement s)
+    {
+        stage.PickupType = Str(s, "pickup_type");
+        stage.ExchangePoint = Str(s, "exchange_point");
+        stage.ExchangeTime = TimeOnly.TryParse(Str(s, "exchange_time"), out var t) ? t : null;
+        stage.MetroDescription = Str(s, "metro_description");
+    }
 
     private static void ApplyHeader(Route route, JsonElement r)
     {

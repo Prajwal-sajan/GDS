@@ -201,6 +201,20 @@ public sealed class BusinessTests(GdsFixture fx)
     }
 
     [Fact]
+    public async Task Route_detail_returns_persisted_editor_data()
+    {
+        var route = await fx.Sql(db => db.Routes.OrderBy(r => r.Id).FirstAsync());
+        var d = await Admin.GetJson($"/api/admin/route-detail/{route.Id}");
+        Assert.Equal(route.ServiceNumber, (string)d["serviceNumber"]!);
+        Assert.Equal(await fx.Sql(db => db.RouteStages.CountAsync(s => s.RouteId == route.Id)), d["stages"]!.AsArray().Count);
+        Assert.Equal(await fx.Sql(db => db.RouteFares.CountAsync(s => s.RouteId == route.Id)), d["fares"]!.AsArray().Count);
+        Assert.All(d["fares"]!.AsArray(), f => { Assert.NotNull(f!["from"]); Assert.NotNull(f["to"]); });
+        Assert.Equal(HttpStatusCode.NotFound, (await Admin.GetAsync("/api/admin/route-detail/999999")).StatusCode);
+        var (_, phone) = await CreateUser("viewer");
+        Assert.Equal(HttpStatusCode.OK, (await (await Login(phone)).GetAsync($"/api/admin/route-detail/{route.Id}")).StatusCode);
+    }
+
+    [Fact]
     public async Task Legacy_route_expense_templates_are_imported_and_editable()
     {
         var routeId = await fx.Sql(db => db.Routes.OrderBy(r => r.Id).Select(r => r.Id).FirstAsync());
