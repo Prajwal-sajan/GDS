@@ -33,7 +33,7 @@ function BusIcon({name}:{name:"bus"|"eye"|"edit"|"copy"|"refresh"}){
   copy:"M8 4h12v14H8zM4 8H2v14h14v-2",
   refresh:"M21 12a9 9 0 11-2.6-6.4M21 3v6h-6"
  };
- return <svg viewBox="0 0 24 24" width="20" height="20" role="img" aria-label={name}
+ return <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"
    fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
    <path d={paths[name]}/></svg>;
 }
