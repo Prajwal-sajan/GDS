@@ -34,10 +34,12 @@ function ensureCoachCompatible(s,r,v){
  if(!next)fail(409,'Selected vehicle has no valid coach template');
  const live=db.col('bookings').count(b=>String(b.schedule_id)===String(s.id)&&['hold','confirmed'].includes(b.status));
  if(live&&existing){
-  const currentCodes=new Set((existing.layout?.decks||[]).flatMap(d=>(d.seats||[]).map(x=>String(x.code))));
-  const nextCodes=new Set((next.layout?.decks||[]).flatMap(d=>(d.seats||[]).map(x=>String(x.code))));
-  if(currentCodes.size!==nextCodes.size||[...currentCodes].some(c=>!nextCodes.has(c)))
-   fail(409,'Coach transfer changes booked seat inventory. Use an authorized seat migration workflow instead.');
+  const entries=coach=>(coach.layout?.decks||[]).flatMap(d=>(d.seats||[]).map(seat=>[
+   String(d.deck||''),String(seat.code),Number(seat.row),Number(seat.col),Number(seat.w||1),Number(seat.h||1)
+  ].join('|'))).sort();
+  const before=entries(existing),after=entries(next);
+  if(before.length!==after.length||before.some((entry,i)=>entry!==after[i]))
+   fail(409,'Coach transfer changes booked seat geometry. Use an authorized seat migration workflow instead.');
  }
 }
 function freezeRouteBlocks(s,r){
@@ -62,7 +64,9 @@ function validateCrew(crew){
   if(['Helper','Attendant'].includes(row.role)&&!['helper','attendant'].includes(staff.role))
    fail(400,'Select a helper/attendant for this role');
   if(row.role==='Conductor'&&staff.role!=='conductor')fail(400,'Select an active conductor');
-  seen.add(id);result.push({staff_id:id,role:row.role});
+  const raw=String(row.phone_override||'').replace(/[\s()-]/g,'');
+  if(raw&&!/^\+?[0-9]{10,15}$/.test(raw))fail(400,'Staff contact override must be a valid phone number');
+  seen.add(id);result.push({staff_id:id,role:row.role,...(raw&&raw!==staff.phone?{phone_override:raw}:{})});
  }
  return result;
 }
@@ -101,7 +105,8 @@ function response(s,r,req){
  const showStaff=req.user.permissions.includes('staff.view');
  const activeCrew=(s.crew||[]).map(c=>{
   const person=db.col('staff').get(c.staff_id);
-  return{role:c.role||'Driver',staff_id:c.staff_id,name:person?.name||'Unavailable',phone:showStaff?person?.phone||'':''};
+  return{role:c.role||'Driver',staff_id:c.staff_id,name:person?.name||'Unavailable',
+   phone:showStaff?(c.phone_override||person?.phone||''):'',phone_override:showStaff?c.phone_override||'':''};
  });
  return{
   schedule_id:s.id,service_number:r.service_number,
