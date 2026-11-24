@@ -158,12 +158,13 @@ const payload={booking_url:'https://novembertravels.com/bus/search/?fromCity=107
  link_type:'route_date_search'};
 test('ClipboardItem text/plain write starts synchronously before deferred server response',async()=>{
  let deliver;
+ const pending=new Promise(resolve=>{deliver=resolve});
  const {env,seen}=browserEnv(async items=>{
   const blob=await items[0].items['text/plain'];
   assert.equal(blob.type,'text/plain');
   assert.equal(await blob.text(),payload.message);
  },()=>{throw Error('writeText should not run')});
- const awaited=Client.copy(()=>new Promise(resolve=>{deliver=resolve}),{env});
+ const awaited=Client.copy(()=>pending,{env});
  assert.equal(seen.write,1,'clipboard write must start inside user click activation');
  assert.deepEqual(seen.types,['text/plain']);
  deliver(payload);
