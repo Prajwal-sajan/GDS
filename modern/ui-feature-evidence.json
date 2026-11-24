@@ -1,0 +1,147 @@
+{
+  "schema": 1,
+  "reference": "SCREENSHOT_FEATURE_RECONCILIATION.csv",
+  "notes": "Sparse verified implementation evidence only. 'implemented' proves the component/contract is present and tested, NOT pixel parity or production readiness. 'verified' requires real screenshot comparison and workflow sign-off.",
+  "features": {
+    "0": {
+      "status": "partial",
+      "files": [
+        "modern/frontend/src/navigation/ModernShell.tsx"
+      ],
+      "screenshotEvidence": []
+    },
+    "1": {
+      "status": "partial",
+      "files": [
+        "modern/frontend/src/navigation/ModernShell.tsx"
+      ],
+      "screenshotEvidence": []
+    },
+    "51": {
+      "status": "partial",
+      "files": [
+        "modern/frontend/src/features/coaches/CoachEditorPanel.tsx"
+      ],
+      "screenshotEvidence": []
+    },
+    "52": {
+      "status": "implemented",
+      "files": [
+        "modern/backend/tests/JourneyOS.Tests/CoachManagementTests.cs",
+        "modern/frontend/e2e/coaches-parity.spec.ts"
+      ],
+      "screenshotEvidence": []
+    },
+    "53": {
+      "status": "implemented",
+      "files": [
+        "modern/frontend/src/features/coaches/coachModel.ts",
+        "modern/frontend/e2e/coaches-parity.spec.ts"
+      ],
+      "screenshotEvidence": []
+    },
+    "54": {
+      "status": "implemented",
+      "files": [
+        "modern/backend/src/JourneyOS.Api/Operations/CoachManagementService.cs",
+        "modern/frontend/src/features/coaches/CoachEditorPanel.tsx"
+      ],
+      "screenshotEvidence": []
+    },
+    "55": {
+      "status": "implemented",
+      "files": [
+        "modern/frontend/src/features/coaches/CoachEditorPanel.tsx",
+        "modern/frontend/e2e/coaches-parity.spec.ts"
+      ],
+      "screenshotEvidence": []
+    },
+    "56": {
+      "status": "implemented",
+      "files": [
+        "modern/backend/tests/JourneyOS.Tests/CoachManagementTests.cs"
+      ],
+      "screenshotEvidence": []
+    },
+    "57": {
+      "status": "implemented",
+      "files": [
+        "modern/backend/tests/JourneyOS.Tests/CoachManagementTests.cs",
+        "modern/frontend/src/features/schedules/SeatLayoutView.tsx"
+      ],
+      "screenshotEvidence": []
+    },
+    "58": {
+      "status": "implemented",
+      "files": [
+        "modern/frontend/src/features/coaches/coachModel.ts"
+      ],
+      "screenshotEvidence": []
+    },
+    "59": {
+      "status": "implemented",
+      "files": [
+        "modern/backend/tests/JourneyOS.Tests/CoachManagementTests.cs",
+        "modern/frontend/src/features/coaches/coachModel.ts"
+      ],
+      "screenshotEvidence": []
+    },
+    "60": {
+      "status": "partial",
+      "files": [
+        "modern/frontend/src/features/coaches/CoachEditorPanel.tsx"
+      ],
+      "screenshotEvidence": []
+    },
+    "80": {
+      "status": "partial",
+      "files": [
+        "modern/frontend/src/features/dailyops/DailyOpsPanel.tsx"
+      ],
+      "screenshotEvidence": []
+    },
+    "81": {
+      "status": "partial",
+      "files": [
+        "modern/frontend/src/features/dailyops/DailyOpsPanel.tsx"
+      ],
+      "screenshotEvidence": []
+    },
+    "85": {
+      "status": "partial",
+      "files": [
+        "modern/frontend/src/features/dailyops/DailyOpsPanel.tsx"
+      ],
+      "screenshotEvidence": []
+    },
+    "112": {
+      "status": "partial",
+      "files": [
+        "modern/frontend/src/features/calls/CallsPanel.tsx"
+      ],
+      "screenshotEvidence": []
+    },
+    "129": {
+      "status": "partial",
+      "files": [
+        "modern/frontend/src/features/settings/SettingsPanel.tsx"
+      ],
+      "screenshotEvidence": []
+    },
+    "141": {
+      "status": "partial",
+      "files": [
+        "modern/backend/src/JourneyOS.Api/Persistence/Migrations/20261124124500_PublicBookingSiteSettings.cs"
+      ],
+      "screenshotEvidence": []
+    },
+    "142": {
+      "status": "partial",
+      "files": [
+        "modern/backend/tests/JourneyOS.Tests/CoachManagementTests.cs",
+        "modern/backend/tests/JourneyOS.Tests/PublicBookingSiteSettingsTests.cs"
+      ],
+      "screenshotEvidence": []
+    }
+  }
+}
