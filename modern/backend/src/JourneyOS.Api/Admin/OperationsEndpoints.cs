@@ -41,6 +41,88 @@ public static class OperationsEndpoints
         g.MapPost("/trips/{id:long}/blocks", async (long id, BlockInput i, OperationsService s, HttpContext h) => Results.Ok(new { blocked = await s.BlockSeatsAsync(id, i, Actor(h)) })).RequireAuthorization(ops);
         g.MapDelete("/trips/{id:long}/blocks/{seat}", async (long id, string seat, OperationsService s, HttpContext h) => Results.Ok(new { released = await s.UnblockSeatAsync(id, seat, Actor(h)) })).RequireAuthorization(ops);
 
+        // Schedule Manage / Bookings: authoritative selected-segment coach geometry.
+        // Distinct from the older all-segments /seats endpoint used by Dispatch.
+        // Return only what the user is permitted to see, and never derive
+        // availability from cached or client-calculated occupancy.
+        g.MapGet("/trips/{id:long}/seat-layout", async (long id, int? fromSequence, int? toSequence,
+            GdsDbContext db, JourneyOS.Api.Inventory.InventoryService inventory) =>
+        {
+            var trip = await db.Trips.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id);
+            if (trip is null) return Results.NotFound(new { message = "Service not found" });
+            var route = await inventory.LoadRouteAsync(trip.RouteId);
+            var ordered = route.Stops.OrderBy(x => x.Sequence).ToList();
+            if (ordered.Count < 2) return Results.Conflict(new { message = "Route has no valid segment" });
+            var from = fromSequence ?? ordered[0].Sequence;
+            var to = toSequence ?? ordered[^1].Sequence;
+            if (from >= to || !ordered.Any(x => x.Sequence == from) || !ordered.Any(x => x.Sequence == to))
+                return Results.BadRequest(new { message = "Choose an ordered pair of route cities" });
+
+            var states = await inventory.SeatStatesAsync(trip, route, from, to);
+            var occupied = await db.SeatAllocations.AsNoTracking()
+                .Where(a => a.TripId == id && a.IsActive && a.FromSeq < to && from < a.ToSeq)
+                .ToListAsync();
+            var bySeat = occupied.GroupBy(a => a.CoachSeatId)
+                .ToDictionary(g => g.Key, g => g.OrderByDescending(a => a.Kind == AllocationKind.Booked)
+                    .ThenByDescending(a => a.Kind == AllocationKind.Hold).First());
+
+            return Results.Ok(new {
+                tripId = trip.Id,
+                travelDate = trip.TravelDate.ToString("yyyy-MM-dd"),
+                status = trip.Status,
+                bookable = trip.Bookable,
+                serviceNumber = route.ServiceNumber,
+                routeName = route.Name,
+                coachName = route.CoachTemplate?.Name ?? "Coach",
+                fromSequence = from,
+                toSequence = to,
+                stops = ordered.Select(x => new {
+                    sequence = x.Sequence, cityId = x.CityId,
+                    name = x.City?.Name ?? $"City #{x.CityId}",
+                    day = x.Day, time = x.Time.ToString("HH:mm")
+                }).ToArray(),
+                stages = route.Stages.OrderBy(x => x.StopSequence).ThenBy(x => x.Time)
+                    .Select(x => new {
+                        id = x.Id, kind = x.Kind, name = x.Name, stopSequence = x.StopSequence,
+                        day = x.Day, time = x.Time.ToString("HH:mm")
+                    }).ToArray(),
+                seats = states.Select(x => {
+                    bySeat.TryGetValue(x.Seat.Id, out var alloc);
+                    var state = alloc is null ? (x.Available ? "available" : "unavailable") :
+                        alloc.Kind switch {
+                            AllocationKind.Booked => "booked",
+                            AllocationKind.Hold => "held",
+                            AllocationKind.Blocked => "blocked",
+                            _ => "unavailable"
+                        };
+                    return new {
+                        seatCode = x.Seat.Code, deck = x.Seat.Deck,
+                        row = x.Seat.Row, col = x.Seat.Col,
+                        width = x.Seat.Width, length = x.Seat.Length,
+                        seatType = x.Seat.SeatType, state,
+                        gender = alloc?.Gender,
+                        ladiesOnly = x.LadiesOnly, malesOnly = x.MalesOnly,
+                        fare = x.Price?.Fare
+                    };
+                }).ToArray()
+            });
+        }).RequireAuthorization(ops);
+
+        g.MapGet("/trips/{id:long}/booking-chart", async (long id, GdsDbContext db) =>
+        {
+            if (!await db.Trips.AsNoTracking().AnyAsync(t => t.Id == id))
+                return Results.NotFound(new { message = "Service not found" });
+            // No passenger phone, email, ID or payment token in chart response.
+            return Results.Ok(await db.Bookings.AsNoTracking().Where(b => b.TripId == id)
+                .Include(b => b.Passengers).OrderBy(b => b.Pnr)
+                .Select(b => new {
+                    b.Pnr, b.Status, b.Channel, b.TotalFare,
+                    passengers = b.Passengers.Select(p => new {
+                        p.SeatCode, p.Name, p.Status, p.BoardingStatus
+                    })
+                }).ToArrayAsync());
+        }).RequireAuthorization(ops);
+
         // seat map with current occupancy (any active allocation on any segment)
         g.MapGet("/trips/{id:long}/seats", async (long id, GdsDbContext db) =>
         {
