@@ -20,7 +20,7 @@ This register deliberately separates **implemented** from **tested**, **full beh
 | Schedule Manage Update | schedule-update-v51.js | Basic vehicle/staff editor using real .NET assignment API | Provider settings, route sync, cab policies, complete form/details parity |
 | Cities, Pickups and Drops | schedules-screenshot-v6.js | Read-only source-backed tabs | Real edit/cutoff/booking impact workflows |
 | Fares | schedule-parity.js | Read-only in Manage, existing Fares editor retained | Full fare variants and visual parity |
-| P&L and History | schedule-pnl-v18.js, schedule-manage-v48.js | Explicitly disabled | Missing migrated endpoints and UI |
+| P&L and History | schedule-pnl-v18.js, schedule-manage-v48.js | **History: partially migrated in v2** with authenticated audit timestamps and event filters; P&L remains disabled | Full booking/passenger history from original, exact screen parity, and P&L domain API |
 | Bookings/Ticketing | booking-ticket-v38.js | Partial counter booking only | Ticket, shift, cancellation/refund and dialogs |
 | Vehicles and Coach Editor | vehicles-parity-v9.js, vehicle-detail-v19.js | Partial Fleet | Full coach editor and vehicle screens |
 | Staff | staff-parity-v11.js | Partial Staff | Payroll/docs/assignment editor parity |
@@ -50,6 +50,7 @@ This register deliberately separates **implemented** from **tested**, **full beh
 - **v2:** Native React Routes authoring with 0-based city sequences, days/timings, pickup/drop stages, route fare matrix, publication status, booking/cancellation guards, coach selection and protected schedule generation.
 - **v2:** PostgreSQL transactional route validation, audited creation/editing, cross-tenant coach/city guards, route structure locks once trips exist; new modern route IDs generate sequential trip IDs without breaking legacy route IDs. Existing services remain unchanged.
 - **v2:** Source-inspired React pill navigation preserving the major GDS menu order, without iframe or old HTML injection.
+- **v2:** Audit-backed Schedule Manage History shows only timestamps backed by persisted trip events; missing historical records are not fabricated.
 - **v2:** Visual comparison tool `modern/frontend/visual/capture-compare.mjs` can produce real legacy-vs-React screenshots, pixel diff and mismatch report when authenticated URLs and identical test data are supplied. **No pixel fidelity score has been verified yet.**
 - **v2:** Explicit fail-closed `modern/release-readiness.json` and `modern/scripts/check-release-readiness.mjs`. It intentionally prevents a production cutover while required evidence is missing.
 
