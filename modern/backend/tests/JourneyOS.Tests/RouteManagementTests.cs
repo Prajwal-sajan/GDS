@@ -74,6 +74,13 @@ public sealed class RouteManagementTests(GdsFixture fx)
         Assert.Equal(1,(int)gen!["created"]!);
         var tripId=await fx.Sql(db=>db.Trips.Where(t=>t.RouteId==routeId&&t.TravelDate==date).Select(t=>t.Id).SingleAsync());
         Assert.True(tripId>0);
+        // Newly generated routes must be discoverable and bookable by an
+        // authorized OTA search, not merely exist in the local trip table.
+        using var redbus=fx.Factory.CreateClient();
+        var search=await redbus.GetJson($"/redbus/search?source={one}&destination={three}&doj={date:yyyy-MM-dd}");
+        var visible=search["availableTrips"]!.AsArray().Any(x =>
+            (long)x!["routeId"]! == routeId && (string)x["serviceId"]! == service);
+        Assert.True(visible, "A generated modern route must appear in the OTA search results");
         var (againStatus,again)=await admin.Post($"/api/admin/routes/{routeId}/generate",new {from=date.ToString("yyyy-MM-dd"),to=date.ToString("yyyy-MM-dd")});
         Assert.Equal(HttpStatusCode.OK,againStatus);
         Assert.Equal(0,(int)again!["created"]!);
