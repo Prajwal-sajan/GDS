@@ -1,0 +1,15 @@
+{
+  "id": "accounts-pnl",
+  "region": "stats",
+  "legacy": [
+    1296,
+    83
+  ],
+  "react": [
+    1296,
+    83
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

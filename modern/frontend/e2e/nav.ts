@@ -17,9 +17,14 @@ export async function open(page: Page, screen: Screen) {
     await page.locator('a[data-top="gds"]').click();
     return page.locator(`nav.subnav a[href="${SUB[screen]}"]`).click();
   }
-  if (screen === "ledger" || screen === "reconciliation") {
+  if (screen === "ledger") {
     await open(page, "accounts");
-    return page.getByRole("navigation", { name: "Accounts sections" }).getByRole("link", { name: screen === "ledger" ? "Ledger" : "Reconciliation" }).click();
+    return page.locator('.ac10-nav [data-ac10-tab="transactions"], .ac10-nav a[href="#/accounts/transactions"]').first().click();
+  }
+  if (screen === "reconciliation") {
+    // not a legacy Accounts tab; reached by URL like the legacy OTA verifier deep link
+    await open(page, "accounts");
+    return page.evaluate(() => { location.hash = "#/accounts/reconciliation"; });
   }
   const pop = await settingsMenu(page);
   if (screen === "users") return pop.locator('[data-settings-link="team-access"]').click();

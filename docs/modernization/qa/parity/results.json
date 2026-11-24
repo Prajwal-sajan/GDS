@@ -1,5 +1,560 @@
 [
   {
+    "id": "accounts-booking-basis-sector",
+    "region": "grid",
+    "legacy": [
+      1296,
+      437
+    ],
+    "react": [
+      1296,
+      437
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-booking-basis-sector",
+    "region": "gst",
+    "legacy": [
+      1296,
+      67
+    ],
+    "react": [
+      1296,
+      67
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-booking-basis-sector",
+    "region": "head",
+    "legacy": [
+      1296,
+      108
+    ],
+    "react": [
+      1296,
+      108
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-booking-basis-sector",
+    "region": "lower",
+    "legacy": [
+      1296,
+      46
+    ],
+    "react": [
+      1296,
+      46
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-booking-basis-sector",
+    "region": "nav",
+    "legacy": [
+      986,
+      51
+    ],
+    "react": [
+      986,
+      51
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-booking-basis-sector",
+    "region": "stats",
+    "legacy": [
+      1296,
+      83
+    ],
+    "react": [
+      1296,
+      83
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-by-date",
+    "region": "grid",
+    "legacy": [
+      1296,
+      437
+    ],
+    "react": [
+      1296,
+      437
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-by-date",
+    "region": "gst",
+    "legacy": [
+      1296,
+      67
+    ],
+    "react": [
+      1296,
+      67
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-by-date",
+    "region": "head",
+    "legacy": [
+      1296,
+      108
+    ],
+    "react": [
+      1296,
+      108
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-by-date",
+    "region": "lower",
+    "legacy": [
+      1296,
+      46
+    ],
+    "react": [
+      1296,
+      46
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-by-date",
+    "region": "nav",
+    "legacy": [
+      986,
+      51
+    ],
+    "react": [
+      986,
+      51
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-by-date",
+    "region": "stats",
+    "legacy": [
+      1296,
+      83
+    ],
+    "react": [
+      1296,
+      83
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-by-sector",
+    "region": "grid",
+    "legacy": [
+      1296,
+      214
+    ],
+    "react": [
+      1296,
+      214
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-by-sector",
+    "region": "gst",
+    "legacy": [
+      1296,
+      67
+    ],
+    "react": [
+      1296,
+      67
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-by-sector",
+    "region": "head",
+    "legacy": [
+      1296,
+      108
+    ],
+    "react": [
+      1296,
+      108
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-by-sector",
+    "region": "lower",
+    "legacy": [
+      1296,
+      46
+    ],
+    "react": [
+      1296,
+      46
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-by-sector",
+    "region": "nav",
+    "legacy": [
+      986,
+      51
+    ],
+    "react": [
+      986,
+      51
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-by-sector",
+    "region": "stats",
+    "legacy": [
+      1296,
+      83
+    ],
+    "react": [
+      1296,
+      83
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-by-service",
+    "region": "grid",
+    "legacy": [
+      1296,
+      392
+    ],
+    "react": [
+      1296,
+      392
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-by-service",
+    "region": "gst",
+    "legacy": [
+      1296,
+      67
+    ],
+    "react": [
+      1296,
+      67
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-by-service",
+    "region": "head",
+    "legacy": [
+      1296,
+      108
+    ],
+    "react": [
+      1296,
+      108
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-by-service",
+    "region": "lower",
+    "legacy": [
+      1296,
+      46
+    ],
+    "react": [
+      1296,
+      46
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-by-service",
+    "region": "nav",
+    "legacy": [
+      986,
+      51
+    ],
+    "react": [
+      986,
+      51
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-by-service",
+    "region": "stats",
+    "legacy": [
+      1296,
+      83
+    ],
+    "react": [
+      1296,
+      83
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-pnl",
+    "region": "grid",
+    "legacy": [
+      1296,
+      437
+    ],
+    "react": [
+      1296,
+      437
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-pnl",
+    "region": "gst",
+    "legacy": [
+      1296,
+      67
+    ],
+    "react": [
+      1296,
+      67
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-pnl",
+    "region": "head",
+    "legacy": [
+      1296,
+      108
+    ],
+    "react": [
+      1296,
+      108
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-pnl",
+    "region": "lower",
+    "legacy": [
+      1296,
+      46
+    ],
+    "react": [
+      1296,
+      46
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-pnl",
+    "region": "nav",
+    "legacy": [
+      986,
+      51
+    ],
+    "react": [
+      986,
+      51
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-pnl",
+    "region": "stats",
+    "legacy": [
+      1296,
+      83
+    ],
+    "react": [
+      1296,
+      83
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-sector-menu",
+    "region": "grid",
+    "legacy": [
+      1296,
+      437
+    ],
+    "react": [
+      1296,
+      437
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-sector-menu",
+    "region": "gst",
+    "legacy": [
+      1296,
+      67
+    ],
+    "react": [
+      1296,
+      67
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-sector-menu",
+    "region": "head",
+    "legacy": [
+      1296,
+      108
+    ],
+    "react": [
+      1296,
+      108
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-sector-menu",
+    "region": "lower",
+    "legacy": [
+      1296,
+      46
+    ],
+    "react": [
+      1296,
+      46
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-sector-menu",
+    "region": "menu",
+    "legacy": [
+      250,
+      167
+    ],
+    "react": [
+      250,
+      167
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-sector-menu",
+    "region": "nav",
+    "legacy": [
+      986,
+      51
+    ],
+    "react": [
+      986,
+      51
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-sector-menu",
+    "region": "stats",
+    "legacy": [
+      1296,
+      83
+    ],
+    "react": [
+      1296,
+      83
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
     "id": "coaches",
     "region": "card-0",
     "legacy": [

@@ -339,6 +339,127 @@ public sealed class ReportsService(GdsDbContext db, TimeProvider clock)
         return new { channelKey, entries = rows, totalDebits = rows.Sum(r => r.Debit), totalCredits = rows.Sum(r => r.Credit), balance = R2(bal) };
     }
 
+    // ---------------- accounts / sales (legacy reports.js analytics + /accounts/sales-facets) ----------------
+    private sealed record RouteInfo(long Id, string Service, string Name, long Origin, long Destination, string OriginName, string DestinationName)
+    {
+        public string Sector => $"{Origin}:{Destination}";
+        public string SectorLabel => $"{OriginName} → {DestinationName}";
+        public string Label => Service + (!string.IsNullOrEmpty(Name) && Name != Service ? " · " + Name : "");
+    }
+
+    private async Task<Dictionary<long, RouteInfo>> RouteInfoAsync()
+    {
+        var routes = await db.Routes.AsNoTracking().Where(r => r.Status != "deleted")
+            .Select(r => new { r.Id, r.ServiceNumber, r.Name, Stops = r.Stops.OrderBy(s => s.Sequence).Select(s => new { s.CityId, s.City!.Name }).ToList() }).ToListAsync();
+        return routes.Where(r => r.Stops.Count > 0).ToDictionary(r => r.Id, r => new RouteInfo(r.Id, r.ServiceNumber, r.Name,
+            r.Stops[0].CityId, r.Stops[^1].CityId, r.Stops[0].Name, r.Stops[^1].Name));
+    }
+
+    public async Task<object> SalesFacetsAsync()
+    {
+        var routes = (await RouteInfoAsync()).Values.ToList();
+        var channels = await db.Bookings.AsNoTracking().Select(b => b.Channel).Distinct().ToListAsync();
+        return new
+        {
+            sectors = routes.GroupBy(r => r.Sector).Select(g => new { value = g.Key, label = g.First().SectorLabel }).OrderBy(x => x.label, StringComparer.Ordinal).ToList(),
+            services = routes.Select(r => new { value = r.Id.ToString(), sector = r.Sector, label = r.Label }).OrderBy(x => x.label, StringComparer.Ordinal).ToList(),
+            channels = channels.Where(c => !string.IsNullOrEmpty(c)).OrderBy(c => c, StringComparer.Ordinal).ToList(),
+        };
+    }
+
+    /// <summary>
+    /// Accounts → Sales. Same semantics as legacy analytics(): basis travel_date | booking_date (local issue date), source / sector
+    /// (origin:destination city ids) / service (route id) filters scope bookings, capacity and expenses alike; fleet utilisation =
+    /// running trips ÷ active main vehicles. Offers are always 0: no discount is captured at booking (legacy data has none either).
+    /// Per-channel daily net sales are returned inline (legacy issued one analytics call per channel).
+    /// </summary>
+    public async Task<object> SalesAsync(DateOnly from, DateOnly to, string basis, string source, string sector, string service)
+    {
+        ValidateRange(from, to);
+        if (basis is not ("travel_date" or "booking_date")) throw new GdsException("VALIDATION", "basis must be travel_date or booking_date");
+        var tenant = await TenantAsync();
+        var tz = TimeZoneInfo.FindSystemTimeZoneById(tenant.TimeZone);
+        var routes = await RouteInfoAsync();
+        bool Selected(long routeId) => routes.TryGetValue(routeId, out var r) && (service == "all" || r.Id.ToString() == service) && (sector == "all" || r.Sector == sector);
+        var fleet = Math.Max(1, await db.Vehicles.AsNoTracking().CountAsync(v => v.VehicleRole == "main" && v.Status == "active"));
+
+        // Booking-date basis needs a wider travel window: fetch by issue date (UTC window padded by a day, filtered locally).
+        var q = from b in db.Bookings.AsNoTracking() join t in db.Trips on b.TripId equals t.Id select new { b, t.TravelDate, t.RouteId };
+        if (basis == "travel_date") q = q.Where(x => x.TravelDate >= from && x.TravelDate <= to);
+        else
+        {
+            var lo = DateTime.SpecifyKind(from.AddDays(-1).ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc); var hi = DateTime.SpecifyKind(to.AddDays(2).ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+            q = q.Where(x => x.b.DateOfIssue >= lo && x.b.DateOfIssue < hi);
+        }
+        if (source != "all") q = q.Where(x => x.b.Channel == source);
+        // PNR order = legacy creation order (legacy groups channels by first appearance in its bookings array).
+        var raw = (await q.OrderBy(x => x.b.Pnr).ToListAsync()).Where(x => Selected(x.RouteId)).ToList();
+        DateOnly Key(DateTime issued, DateOnly travel) => basis == "booking_date" ? DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(issued, DateTimeKind.Utc), tz)) : travel;
+        raw = raw.Where(x => { var d = Key(x.b.DateOfIssue, x.TravelDate); return d >= from && d <= to; }).ToList();
+        var ids = raw.Select(x => x.b.Id).ToList();
+        var pax = (await db.BookingPassengers.AsNoTracking().Where(p => ids.Contains(p.BookingId)).ToListAsync()).GroupBy(p => p.BookingId).ToDictionary(g => g.Key, g => g.ToList());
+        var cxl = (await db.Cancellations.AsNoTracking().Where(c => ids.Contains(c.BookingId)).ToListAsync()).GroupBy(c => c.BookingId).ToDictionary(g => g.Key, g => g.ToList());
+        var gstDiv = 1 + tenant.GstPercent / 100m;
+        var bks = raw.Select(x =>
+        {
+            var live = (pax.GetValueOrDefault(x.b.Id) ?? []).Where(p => p.Status == "CONFIRMED").ToList();
+            return new { x.b.Id, x.b.Channel, x.RouteId, Date = Key(x.b.DateOfIssue, x.TravelDate), Live = x.b.Status != "CANCELLED", Seats = live.Count, Net = live.Sum(p => p.BaseFare), Cxl = cxl.GetValueOrDefault(x.b.Id) ?? [] };
+        }).ToList();
+
+        var trips = (await TripsAsync(from, to)).Where(t => t.Value.Status == "active" && Selected(t.Value.RouteId)).ToDictionary(t => t.Key, t => t.Value);
+        var costs = await CostsAsync(trips);
+        // Legacy tripExpense(): recorded OTA commission of every live booking on a running trip is a running cost (independent of the source filter).
+        var tripIdList = trips.Keys.ToList();
+        var commission = (await (from f in db.BookingFinances.AsNoTracking() join b in db.Bookings on f.BookingId equals b.Id
+                                 where tripIdList.Contains(b.TripId) && b.Status != "CANCELLED" && f.OtaCommission != null
+                                 select new { b.TripId, c = f.OtaCommission!.Value }).ToListAsync())
+            .GroupBy(x => x.TripId).ToDictionary(g => g.Key, g => g.Sum(x => x.c));
+        var liveBks = bks.Where(b => b.Live).ToList();
+        var channelKeys = liveBks.Select(b => b.Channel).Distinct().ToList();
+
+        var rows = new List<Dictionary<string, object>>();
+        for (var d = from; d <= to; d = d.AddDays(1))
+        {
+            var live = liveBks.Where(b => b.Date == d).ToList();
+            var cx = bks.Where(b => b.Date == d && b.Cxl.Count > 0).ToList();
+            var dayTrips = trips.Where(t => t.Value.Date == d).ToList();
+            int seats = live.Sum(b => b.Seats), cap = dayTrips.Sum(t => t.Value.Capacity);
+            decimal net = live.Sum(b => b.Net), gst95 = live.Where(b => b.Channel is "redbus" or "abhibus").Sum(b => b.Net) * tenant.GstPercent / 100m, gstOwn = net * tenant.GstPercent / 100m - gst95;
+            decimal dayCommission = dayTrips.Sum(t => commission.GetValueOrDefault(t.Key));
+            decimal charges = cx.Sum(b => b.Cxl.Sum(c => c.Charge)) / gstDiv, expense = dayTrips.Sum(t => costs[t.Key].Total) + dayCommission;
+            rows.Add(new()
+            {
+                ["date"] = d, ["bookings"] = live.Count, ["seats"] = seats, ["sales"] = R2(net), ["offers"] = 0m, ["netSales"] = R2(net), ["gstOwn"] = R2(gstOwn), ["gst95"] = R2(gst95),
+                ["gst"] = R2(gstOwn) + R2(gst95), ["cancelCharges"] = R2(charges), ["cancelledPnrs"] = cx.Count, ["cancelledSeats"] = cx.Sum(b => b.Cxl.Sum(c => c.Seats.Length)),
+                ["refunds"] = R2(cx.Sum(b => b.Cxl.Sum(c => c.Refund))), ["expense"] = R2(expense), ["commission"] = R2(dayCommission), ["capacity"] = cap, ["trips"] = dayTrips.Count,
+                ["asp"] = seats > 0 ? R2(net / seats) : 0m, ["occupancyPct"] = cap > 0 ? R2(seats * 100m / cap) : 0m, ["fleetUtilPct"] = R2(dayTrips.Count * 100m / fleet),
+                ["profit"] = R2(R2(net) + R2(charges) - R2(expense)),
+                ["byChannel"] = channelKeys.ToDictionary(c => c, c => (object)R2(live.Where(b => b.Channel == c).Sum(b => b.Net))),
+            });
+        }
+        decimal T(string k) => rows.Sum(r => Convert.ToDecimal(r[k]));
+        var tSeats = T("seats"); var tCap = T("capacity"); var tNet = T("netSales");
+        var totals = new
+        {
+            bookings = (int)T("bookings"), seats = (int)tSeats, sales = T("sales"), offers = 0m, netSales = tNet, asp = tSeats > 0 ? R2(tNet / tSeats) : 0,
+            occupancyPct = tCap > 0 ? R2(tSeats * 100 / tCap) : 0, fleetUtilPct = R2(T("trips") * 100 / (fleet * rows.Count)), cancelCharges = T("cancelCharges"),
+            cancelledPnrs = (int)T("cancelledPnrs"), cancelledSeats = (int)T("cancelledSeats"), refunds = T("refunds"), gst = T("gstOwn") + T("gst95"), gstOwn = T("gstOwn"), gst95 = T("gst95"),
+            expense = T("expense"), commission = T("commission"), profit = T("profit"), expenseBasis = Basis(costs.Values),
+        };
+        object Breakdown(Func<RouteInfo, string> key, Func<RouteInfo, string> name) => liveBks.GroupBy(b => key(routes[b.RouteId])).Select(g =>
+        {
+            var net = R2(g.Sum(b => b.Net));
+            return new { value = g.Key, name = name(routes[g.First().RouteId]), bookings = g.Count(), seats = g.Sum(b => b.Seats), netSales = net, avgFare = R2(net / g.Count()) };
+        }).OrderBy(x => x.name, StringComparer.Ordinal).ToList();
+        return new
+        {
+            from, to, basis, source, sector, service, totals, rows,
+            channels = liveBks.GroupBy(b => b.Channel).Select(g => new { source = g.Key, bookings = g.Count(), seats = g.Sum(b => b.Seats), netSales = R2(g.Sum(b => b.Net)) }).ToList(),
+            sectorBreakdown = Breakdown(r => r.Sector, r => r.SectorLabel),
+            serviceBreakdown = Breakdown(r => r.Id.ToString(), r => r.Label),
+        };
+    }
+
     public async Task<object> ChannelsAsync()
     {
         var agents = await db.Users.AsNoTracking().Where(u => u.Role == "agent").OrderBy(u => u.Name)

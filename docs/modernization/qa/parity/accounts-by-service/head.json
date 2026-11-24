@@ -1,0 +1,15 @@
+{
+  "id": "accounts-by-service",
+  "region": "head",
+  "legacy": [
+    1296,
+    108
+  ],
+  "react": [
+    1296,
+    108
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

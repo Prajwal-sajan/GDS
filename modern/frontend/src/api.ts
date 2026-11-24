@@ -114,7 +114,18 @@ export type CrmBooking = {
   amount: number; from: string; to: string; boarding: CrmPoint; dropping: CrmPoint;
   contact: { name: string; phone: string | null; email: string | null }; comments: { text: string; by: string; at: string }[];
 };
+export type SalesDay = { date: string; bookings: number; seats: number; sales: number; offers: number; netSales: number; gst: number; cancelCharges: number; expense: number;
+  commission: number; capacity: number; trips: number; asp: number; occupancyPct: number; fleetUtilPct: number; profit: number; byChannel: Record<string, number> };
+export type SalesBreakdown = { value: string; name: string; bookings: number; seats: number; netSales: number; avgFare: number };
+export type Sales = {
+  from: string; to: string; basis: string; rows: SalesDay[]; channels: { source: string; bookings: number; seats: number; netSales: number }[];
+  totals: { bookings: number; seats: number; sales: number; offers: number; netSales: number; asp: number; occupancyPct: number; fleetUtilPct: number; cancelCharges: number; gst: number; expense: number; profit: number };
+  sectorBreakdown: SalesBreakdown[]; serviceBreakdown: SalesBreakdown[];
+};
+export type SalesFacets = { sectors: { value: string; label: string }[]; services: { value: string; sector: string; label: string }[]; channels: string[] };
 export const api = {
+  sales: (q: Record<string, string>) => call<Sales>("GET", `/api/admin/accounts/sales?${new URLSearchParams(q)}`),
+  salesFacets: () => call<SalesFacets>("GET", "/api/admin/accounts/sales-facets"),
   crmBooking: (pnr: string) => call<{ booking: CrmBooking; map: { coach: { id: number; name: string; capacity: number }; decks: CrmDeck[] } | null }>("GET", `/api/admin/crm/booking/${encodeURIComponent(pnr)}`),
   status: () => call<RedBusStatus>("GET", `${rb}/status`),
   outbox: (status?: string) => call<OutboxRow[]>("GET", `${rb}/outbox${status ? `?status=${status}` : ""}`),

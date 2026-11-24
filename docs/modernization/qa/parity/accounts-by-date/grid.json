@@ -1,0 +1,15 @@
+{
+  "id": "accounts-by-date",
+  "region": "grid",
+  "legacy": [
+    1296,
+    437
+  ],
+  "react": [
+    1296,
+    437
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

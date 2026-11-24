@@ -89,6 +89,14 @@ public static class BusinessEndpoints
         rp.MapGet("/frequent-travellers", async (string? from, string? to, int? minTrips, ReportsService s) =>
         { var today = await s.TodayAsync(); var (f, t) = Range(from ?? today.AddDays(-90).ToString("yyyy-MM-dd"), to ?? today.ToString("yyyy-MM-dd"), today); return Results.Ok(await s.FrequentTravellersAsync(f, t, minTrips ?? 2)); });
         rp.MapGet("/trip-pnl", async (string? from, string? to, ReportsService s) => { var (f, t) = Range(from, to, await s.TodayAsync()); return Results.Ok(await s.TripPnlAsync(f, t)); });
+        // Accounts → Sales (legacy /accounts/analytics + /accounts/sales-facets): read-only, same audience as reports
+        g.MapGet("/accounts/sales", async (string? from, string? to, string? basis, string? source, string? sector, string? service, ReportsService s) =>
+        {
+            var today = await s.TodayAsync();
+            var (f, t) = Range(from ?? today.AddDays(-6).ToString("yyyy-MM-dd"), to ?? today.ToString("yyyy-MM-dd"), today);
+            return Results.Ok(await s.SalesAsync(f, t, basis ?? "travel_date", source ?? "all", sector ?? "all", service ?? "all"));
+        }).RequireAuthorization(Policies.Reports);
+        g.MapGet("/accounts/sales-facets", async (ReportsService s) => Results.Ok(await s.SalesFacetsAsync())).RequireAuthorization(Policies.Reports);
 
         // trip expenses (feed P&L)
         g.MapGet("/routes/{id:long}/expense-template", async (long id, GdsDbContext db) =>

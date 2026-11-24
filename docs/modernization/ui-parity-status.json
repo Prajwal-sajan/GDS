@@ -117,7 +117,9 @@
         "e2e/parity/staff-payroll.parity.spec.ts — identical DOM skeleton + innerText of .sp-workspace-head and [data-body] grid (dates x staff, P/A/L cells, draft/approved), head/toolbar/thead/rows <= 0.01 pixel diff",
         "Backend: StaffAttendance (migration StaffPayroll, importer), /api/admin/payroll/attendance (+generate from trip crew, approve, manual, edit) — all audited; BusinessTests.Payroll_* 48/48"
       ],
-      "gaps": ["Cell edit / manual entry use the legacy G.prompt markup with native selects"]
+      "gaps": [
+        "Cell edit / manual entry use the legacy G.prompt markup with native selects"
+      ]
     },
     "V017": {
       "status": "VISUAL_PASS",
@@ -160,6 +162,37 @@
         "Break stops are not imported (not boarding inventory)",
         "Full-page pixel parity not achieved for body tabs other than Pickups"
       ]
+    },
+    "V008": {
+      "status": "VISUAL_PASS",
+      "react": "src/features/accounts/AccountsPage.tsx, src/components/ui/NiceDate.tsx",
+      "evidence": [
+        "e2e/parity/accounts.parity.spec.ts  by-date / by-service / by-sector / pnl / booking-basis+sector / open sector menu: tab nav, filters, stats, GST, grid identical DOM skeleton + text, pixel <= 1% (6/6)",
+        "BusinessTests.Accounts_sales_totals_match_bookings_and_filters_narrow; e2e business 'accounts sales: legacy tabs, KPIs'",
+        "Data from GET /api/admin/accounts/sales and /accounts/sales-facets (port of legacy reports.js analytics); legacy cancellations backfilled by the importer"
+      ],
+      "gaps": [
+        "Offers always 0: no discount captured at booking (legacy data has none)",
+        "154 legacy PNRs skipped by the importer, so figures differ; numbers are masked in parity",
+        "Booking-date basis buckets by IST issue date (legacy bucketed by UTC)",
+        "Print uses window.print"
+      ]
+    },
+    "V020": {
+      "status": "VISUAL_PASS",
+      "react": "src/features/accounts/AccountsPage.tsx, src/components/ui/NiceDate.tsx",
+      "evidence": [
+        "e2e/parity/accounts.parity.spec.ts  by-date / by-service / by-sector / pnl / booking-basis+sector / open sector menu: tab nav, filters, stats, GST, grid identical DOM skeleton + text, pixel <= 1% (6/6)",
+        "BusinessTests.Accounts_sales_totals_match_bookings_and_filters_narrow; e2e business 'accounts sales: legacy tabs, KPIs'",
+        "Data from GET /api/admin/accounts/sales and /accounts/sales-facets (port of legacy reports.js analytics); legacy cancellations backfilled by the importer"
+      ],
+      "gaps": [
+        "Offers always 0: no discount captured at booking (legacy data has none)",
+        "154 legacy PNRs skipped by the importer, so figures differ; numbers are masked in parity",
+        "Booking-date basis buckets by IST issue date (legacy bucketed by UTC)",
+        "Print uses window.print"
+      ],
+      "note": "Sales tab of the Accounts shell (V008)"
     }
   },
   "apiMap": {

@@ -440,6 +440,31 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
             foreach (var x in Col("trip_expenses"))
                 if (L(x, "schedule_id") is { } sid && Dec(x, "amount") is >= 0 and var amt)
                     db.TripExpenses.Add(new TripExpense { TenantId = tenantId, TripId = sid, Category = Str(x, "label") ?? Str(x, "key") ?? "other", Amount = amt, Note = Str(x, "source"), By = "legacy", At = Ts(Str(x, "created_at")) });
+        // Legacy booking.cancellations[] (charge kept / refund / seats / when) → cancellations. Backfilled per booking that has none yet,
+        // so re-running the import over an existing database repairs earlier imports without duplicating rows.
+        {
+            var byPnr = await db.Bookings.AsNoTracking().Select(b => new { b.Id, b.Pnr }).ToDictionaryAsync(b => b.Pnr, b => b.Id);
+            var hasCxl = (await db.Cancellations.AsNoTracking().Select(c => c.BookingId).Distinct().ToListAsync()).ToHashSet();
+            foreach (var b in Col("bookings"))
+            {
+                if (Str(b, "pnr") is not { } pnr || !byPnr.TryGetValue(pnr, out var bid) || hasCxl.Contains(bid)) continue;
+                if (!b.TryGetProperty("cancellations", out var cs) || cs.ValueKind != JsonValueKind.Array) continue;
+                DateTime? lastAt = null;
+                foreach (var c in cs.EnumerateArray())
+                {
+                    var at = Ts(Str(c, "at"));
+                    lastAt = at;
+                    db.Cancellations.Add(new Cancellation
+                    {
+                        TenantId = tenantId, BookingId = bid, CreatedAt = at, Charge = Dec(c, "charge") ?? 0, Refund = Dec(c, "refund") ?? 0,
+                        Seats = c.TryGetProperty("seats", out var ss) && ss.ValueKind == JsonValueKind.Array ? ss.EnumerateArray().Select(x => x.ToString()).ToArray() : [],
+                        Reason = Str(c, "by") is "operator" or "bus_cancellation" ? "bus_cancellation" : "customer",
+                        Notes = string.Join(" · ", new[] { Str(c, "reason"), Str(c, "actor") is { } who ? $"by {who}" : null, "legacy" }.Where(x => !string.IsNullOrEmpty(x))),
+                    });
+                }
+                if (lastAt is { } when) await db.Bookings.Where(x => x.Id == bid && x.DateOfCancellation == null).ExecuteUpdateAsync(u => u.SetProperty(x => x.DateOfCancellation, when));
+            }
+        }
         if (!await db.SarathiConversations.AnyAsync())
             foreach (var s in Col("sarathi"))
                 db.SarathiConversations.Add(new SarathiConversation

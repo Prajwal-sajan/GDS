@@ -1,0 +1,15 @@
+{
+  "id": "accounts-sector-menu",
+  "region": "menu",
+  "legacy": [
+    250,
+    167
+  ],
+  "react": [
+    250,
+    167
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

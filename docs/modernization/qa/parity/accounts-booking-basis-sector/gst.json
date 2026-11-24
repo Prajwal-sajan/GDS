@@ -1,0 +1,15 @@
+{
+  "id": "accounts-booking-basis-sector",
+  "region": "gst",
+  "legacy": [
+    1296,
+    67
+  ],
+  "react": [
+    1296,
+    67
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

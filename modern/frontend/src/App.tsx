@@ -8,6 +8,7 @@ import { AppShell } from "./layouts/AppShell";
 import { FeedbackHost } from "./components/ui/feedback";
 import { SchedulesPage } from "./features/schedules/SchedulesPage";
 import { TripsPage } from "./features/trips/TripsPage";
+import { AccountsPage } from "./features/accounts/AccountsPage";
 import { CrmPage } from "./features/crm/CrmPage";
 import { RoutesPage } from "./features/routes/RoutesPage";
 import { RouteEditorPage } from "./features/routes/RouteEditorPage";
@@ -87,7 +88,6 @@ function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Ele
       {items.filter(([, , roles]) => allowed(roles)).map(([href, text]) => <a key={href} href={href} aria-current={`#/${path}` === href ? "page" : undefined}>{text}</a>)}
     </nav>
   );
-  const acct = strip("Accounts sections", [["#/accounts", "Reports", ALL_R], ["#/accounts/transactions", "Ledger", [...ACC_R, "agent"]], ["#/accounts/reconciliation", "Reconciliation", ACC_R]]);
   const integ = strip("Integration sections", [["#/settings/integrations", "RedBus", ALL_R], ["#/settings/integrations/outbox", "Outbox", ALL_R]]);
   const table: [RegExp, Role[], () => JSX.Element, true?][] = [
     [/^trips$/, ALL_R, () => <TripsPage me={me} />, true],
@@ -104,10 +104,13 @@ function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Ele
     [/^fleet\/advances$/, OPS_R, () => <AdvancesPage me={me} />, true],
     [/^fleet\/reimbursements$/, OPS_R, () => <ReimbursementsPage me={me} />, true],
     [/^fleet\/payouts$/, OPS_R, () => <PayoutsPage key={location.hash} me={me} />, true],
-    [/^accounts\/reconciliation$/, ACC_R, () => <>{acct}<ReconciliationPanel /></>],
-    [/^accounts\/transactions$/, [...ACC_R, "agent"], () => <>{acct}<LedgerPanel me={me} /></>],
-    [/^accounts$/, [...ALL_R, "agent"], () => <>{acct}{r === "agent" ? <LedgerPanel me={me} /> : <ReportsPanel me={me} />}</>],
-    [/^accounts\/(analytics|reports(\/.*)?)$/, ALL_R, () => <>{acct}<ReportsPanel me={me} /></>],
+    [/^accounts\/reconciliation$/, ACC_R, () => <AccountsPage me={me} tab="reconciliation"><ReconciliationPanel /></AccountsPage>, true],
+    [/^accounts\/transactions$/, [...ACC_R, "agent"], () => r === "agent" ? <LedgerPanel me={me} /> : <AccountsPage me={me} tab="transactions"><LedgerPanel me={me} /></AccountsPage>, true],
+    [/^accounts$/, [...ALL_R, "agent"], () => r === "agent" ? <LedgerPanel me={me} /> : <AccountsPage me={me} tab="analytics" />, true],
+    [/^accounts\/analytics$/, ALL_R, () => <AccountsPage key={location.hash} me={me} tab="analytics" />, true],
+    [/^accounts\/reports(\/.*)?$/, ALL_R, () => <AccountsPage me={me} tab="reports"><ReportsPanel me={me} /></AccountsPage>, true],
+    [/^accounts\/(receivables|invoices|agent-settings)$/, ACC_R, () => <AccountsPage me={me} tab={seg[1]}><NotMigrated path={path} /></AccountsPage>, true],
+    [/^accounts\/coupons$/, ["owner", "admin"], () => <AccountsPage me={me} tab="coupons"><NotMigrated path={path} /></AccountsPage>, true],
     [/^dailyops$/, ALL_R, () => <ReportsPanel me={me} />],
     [/^sarathi$/, ALL_R, () => <SarathiPanel />],
     [/^(chats|calls)(\/.*)?$/, OPS_R, () => <CommsPanel />],

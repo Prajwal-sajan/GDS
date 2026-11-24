@@ -563,6 +563,31 @@ public sealed class BusinessTests(GdsFixture fx)
         var docs = await Admin.Post("/api/admin/sarathi/ask", new { question = "Which documents are expiring soon?" });
         Assert.Equal("documents", (string)docs.Body!["answer"]!["intent"]!);
     }
+
+    [Fact]
+    public async Task Accounts_sales_totals_match_bookings_and_filters_narrow()
+    {
+        const string from = "2026-11-20", to = "2026-11-26";
+        var (s, sales) = await Admin.Get($"/api/admin/accounts/sales?from={from}&to={to}");
+        Assert.True(s == HttpStatusCode.OK, sales?.ToJsonString());
+        Assert.Equal(7, sales!["rows"]!.AsArray().Count);
+        var (f, t) = (DateOnly.Parse(from), DateOnly.Parse(to));
+        var live = await fx.Sql(db => (from b in db.Bookings join tr in db.Trips on b.TripId equals tr.Id
+                                       where tr.TravelDate >= f && tr.TravelDate <= t && b.Status != "CANCELLED" select b.Id).CountAsync());
+        Assert.Equal(live, (int)sales["totals"]!["bookings"]!);
+        Assert.Equal(0m, (decimal)sales["totals"]!["offers"]!);
+        Assert.True((int)sales["totals"]!["cancelledPnrs"]! > 0, "legacy cancellations are backfilled");
+
+        var facets = await Admin.GetJson("/api/admin/accounts/sales-facets");
+        var sector = (string)facets["sectors"]!.AsArray()[0]!["value"]!;
+        var (s2, scoped) = await Admin.Get($"/api/admin/accounts/sales?from={from}&to={to}&sector={Uri.EscapeDataString(sector)}");
+        Assert.Equal(HttpStatusCode.OK, s2);
+        Assert.True((int)scoped!["totals"]!["bookings"]! <= live);
+        Assert.All(scoped["sectorBreakdown"]!.AsArray(), x => Assert.Equal(sector, (string)x!["value"]!));
+
+        Assert.Equal(HttpStatusCode.BadRequest, (await Admin.GetAsync($"/api/admin/accounts/sales?from={from}&to={to}&basis=nope")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await Admin.GetAsync($"/api/admin/accounts/sales?from={from}&to={to}&basis=booking_date")).StatusCode);
+    }
 }
 
 internal static class HttpGetExt

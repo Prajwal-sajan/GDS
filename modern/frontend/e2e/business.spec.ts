@@ -71,7 +71,7 @@ test("CRM search validates input and never lists customers without a query", asy
 
 test("reports, Sarathi and users render from live data", async ({ page, request }) => {
   await signInUser(page, await provision(request, "admin"));
-  await open(page, "accounts");
+  await page.goto("/#/accounts/reports");
   await expect(page.getByTestId("kpi-Seats")).toBeVisible();
   await page.getByLabel("Report").selectOption("daily-ops");
   await expect(page.getByRole("heading", { name: "Fleet" })).toBeVisible();
@@ -115,8 +115,25 @@ test("admin issues invite; user activates with own password; code is single-use"
 
 test("profit report states its expense basis", async ({ page, request }) => {
   await signInUser(page, await provision(request, "admin"));
-  await open(page, "accounts");
+  await page.goto("/#/accounts/reports");
   await expect(page.getByTestId("expense-basis")).toContainText("route-template estimate");
+});
+
+test("accounts sales: legacy tabs, KPIs from live data, pivots and filters round-trip through the URL", async ({ page, request }) => {
+  await signInUser(page, await provision(request, "admin"));
+  await open(page, "accounts");
+  await expect(page.locator(".ac10-nav a.active")).toHaveText("Sales");
+  await expect(page.locator(".ac10-salesstats .ac10-stat")).toHaveCount(8);
+  await expect(page.locator("#ac10-salesgrid tbody tr")).toHaveCount(7);
+  await page.locator('[data-ac10="change-pivot"][data-value="service"]').click();
+  await expect(page.locator(".ac10-table-label")).toHaveText("BY SERVICE");
+  await page.locator("[data-ac37-sector-trigger]").click();
+  await page.locator("[data-ac37-option]").nth(1).click();
+  await expect(page).toHaveURL(/sector=\d+%3A\d+/);
+  await expect(page.locator(".ac10-table-label")).toHaveText("BY SERVICE");
+  await expect(page.locator("#ac10-salesgrid tbody tr")).toHaveCount(3);
+  await page.locator('[data-ac10="change-basis"][data-value="booking_date"]').click();
+  await expect(page).toHaveURL(/basis=booking_date/);
 });
 
 // ---------------------------------------------------------------- React regression snapshots
@@ -131,7 +148,7 @@ test("visual: login screen", async ({ page }) => {
 
 test("visual: reports shell with data masked", async ({ page, request }) => {
   await signInUser(page, await provision(request, "viewer"));
-  await open(page, "accounts");
+  await page.goto("/#/accounts/reports");
   await expect(page.getByTestId("kpi-Seats")).toBeVisible();
   await expect(page).toHaveScreenshot("reports.png", {
     fullPage: false, maxDiffPixelRatio: 0.02,

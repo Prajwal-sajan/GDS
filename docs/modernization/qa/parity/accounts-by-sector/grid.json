@@ -1,0 +1,15 @@
+{
+  "id": "accounts-by-sector",
+  "region": "grid",
+  "legacy": [
+    1296,
+    214
+  ],
+  "react": [
+    1296,
+    214
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}
