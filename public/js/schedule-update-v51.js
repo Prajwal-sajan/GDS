@@ -182,7 +182,7 @@
   const id=encodeURIComponent(S.detail?.id||'');
   if(!s.data||String(s.data.schedule_id)!==String(S.detail?.id))
     s.data=await G.get('/schedules/'+id+'/update-v51');
-  const d={...s.data,...S.detail,vehicle_number:S.detail.vehicle?.registration_number||'Unassigned vehicle',
+  const d={...S.detail,...s.data,vehicle_number:S.detail.vehicle?.registration_number||'Unassigned vehicle',
    vehicle_position:S.trip?.position?.address||'',sync_with_route:S.detail.sync_with_route!==false};
   return '<div class="sx-update-shell u51-root" data-u51-root>'+
    banner(d)+assignment(d,s)+scheduleDetails(d)+syncCard(d,s)+'</div>';
@@ -241,7 +241,12 @@
   const index=k=>Number(element.dataset[k]);
   if(element.hasAttribute('data-u51-vehicle'))edit.vehicle_id=element.value;
   else if(element.hasAttribute('data-u51-role'))edit.crew[index('u51Role')].role=element.value;
-  else if(element.hasAttribute('data-u51-staff'))edit.crew[index('u51Staff')].staff_id=element.value;
+  else if(element.hasAttribute('data-u51-staff')){
+   edit.crew[index('u51Staff')].staff_id=element.value;
+   const selected=s.data?.staff_options?.find(x=>String(x.id)===String(element.value));
+   const phoneField=element.closest?.('[data-u51-row]')?.querySelector('.u51-staff-phone');
+   if(phoneField)phoneField.value=selected?.phone||'';
+  }
   else if(element.hasAttribute('data-u51-call'))edit.call_settings[element.dataset.u51Call]=element.checked;
   else if(element.hasAttribute('data-u51-escalation'))edit.escalation_contacts=element.value.split(',').map(v=>v.replace(/[\s()-]/g,'')).filter(Boolean);
   else return false;
