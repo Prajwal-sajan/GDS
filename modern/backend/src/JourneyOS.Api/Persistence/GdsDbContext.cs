@@ -18,9 +18,11 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
     public long CurrentTenantId => tenant.TenantId;
 
     public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<PublicBookingSite> PublicBookingSites => Set<PublicBookingSite>();
     public DbSet<City> Cities => Set<City>();
     public DbSet<CoachTemplate> CoachTemplates => Set<CoachTemplate>();
     public DbSet<CoachSeat> CoachSeats => Set<CoachSeat>();
+    public DbSet<CoachFixture> CoachFixtures => Set<CoachFixture>();
     public DbSet<Route> Routes => Set<Route>();
     public DbSet<RouteStop> RouteStops => Set<RouteStop>();
     public DbSet<RouteStage> RouteStages => Set<RouteStage>();
@@ -102,9 +104,21 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
         b.Entity<SarathiConversation>(e => { e.Property(x => x.MessagesJson).HasColumnType("jsonb"); e.HasIndex(x => new { x.TenantId, x.Owner }); });
 
         b.Entity<Tenant>(e => { e.HasIndex(x => x.Code).IsUnique(); e.Property(x => x.GstPercent).HasPrecision(5, 2); });
+        b.Entity<PublicBookingSite>(e =>
+        {
+            e.HasKey(x => x.TenantId);
+            e.Property(x => x.CityMapJson).HasColumnType("jsonb");
+            e.HasOne<Tenant>().WithOne().HasForeignKey<PublicBookingSite>(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
+        });
 
         b.Entity<City>(e => { e.Property(x => x.Id).ValueGeneratedNever(); e.HasIndex(x => new { x.TenantId, x.Name }); });
-        b.Entity<CoachTemplate>(e => e.Property(x => x.Id).ValueGeneratedNever());
+        b.Entity<CoachTemplate>(e =>
+        {
+            e.Property(x => x.Id).ValueGeneratedNever();
+            e.Property(x => x.Amenities).HasColumnType("text[]").HasDefaultValueSql("ARRAY[]::text[]");
+            e.HasMany(x => x.Fixtures).WithOne().HasForeignKey(x => x.CoachTemplateId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<CoachFixture>(e => e.HasIndex(x => new { x.CoachTemplateId, x.Deck, x.Row, x.Col }));
         b.Entity<CoachSeat>(e => e.HasIndex(x => new { x.CoachTemplateId, x.Code }).IsUnique());
 
         b.Entity<Route>(e =>

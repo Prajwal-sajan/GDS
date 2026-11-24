@@ -1,0 +1,27 @@
+.modern-settings{background:#fff;border:1px solid #dfe6ef;border-radius:12px;padding:22px;min-height:520px}
+.settings-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px}
+.settings-head h2{font-size:22px;margin:0;color:#173b5a}.settings-head p{margin:6px 0}
+.settings-operator{font-size:12px;font-weight:700;color:#38577d;background:#e9f0ff;padding:9px 12px;border-radius:9px}
+.settings-tabs{display:flex;gap:9px;padding-bottom:12px;border-bottom:1px solid #e0e8ef;margin:18px 0;flex-wrap:wrap}
+.settings-tabs button.active{background:#2855b1;color:#fff}
+.settings-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:22px}
+.settings-summary>div{display:flex;flex-direction:column;gap:7px;border:1px solid #e3e8f2;background:#f7f9fc;border-radius:9px;padding:14px}
+.settings-summary small{color:#647890;font-size:12px}.settings-summary strong{color:#1e4261}
+.modern-settings h3{font-size:17px;color:#23405d;margin:20px 0 9px}
+.settings-url{display:flex;flex-direction:column;gap:7px;font-weight:650;margin:15px 0}
+.settings-url input{margin:0;padding:11px;max-width:790px;width:100%}
+.settings-map-tools{display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin:15px 0}
+.settings-map-tools label{display:flex;align-items:center;gap:7px}
+.settings-map-tools input[type=text]{margin:0}
+.settings-map-tools label.check input{margin:0}
+.settings-map-scroll{overflow:auto;max-height:360px;border:1px solid #e1e8f2;border-radius:9px}
+.settings-map-scroll table{border:0}
+.settings-map-scroll th{position:sticky;top:0;z-index:1}
+.settings-map-scroll td input{max-width:190px;margin:0}
+.settings-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:16px 0}
+.settings-actions button.danger{color:#a52119}
+.settings-errors{color:#b42318;font-size:13px;padding-left:19px}
+.settings-simple{max-width:800px;background:#f9fbff;border:1px solid #e2eaf2;border-radius:9px;padding:22px}
+.settings-simple dl{display:grid;grid-template-columns:minmax(100px,160px) 1fr;gap:12px}
+.settings-simple dt{color:#617188}.settings-simple dd{margin:0;font-weight:700;color:#234363}
+@media(max-width:640px){.modern-settings{padding:12px}.settings-head h2{font-size:19px}.settings-simple{padding:14px}.settings-simple dl{grid-template-columns:1fr;gap:4px}}

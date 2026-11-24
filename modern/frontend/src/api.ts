@@ -118,6 +118,15 @@ export const api = {
   routes: () => call<RouteRow[]>("GET", "/api/admin/routes"),
   cities: () => call<CityOption[]>("GET", "/api/admin/cities"),
   coaches: () => call<CoachOption[]>("GET", "/api/admin/coaches"),
+  coachFull: (id: number) => call<FullCoach>("GET", "/api/admin/coaches/" + id + "/full"),
+  saveCoach: (draft: CoachDraft, id?: number) =>
+    call<{id:number}>(id == null ? "POST" : "PUT",
+      "/api/admin/coaches" + (id == null ? "" : "/" + id), draft),
+  cloneCoach: (id: number) =>
+    call<{id:number}>("POST", "/api/admin/coaches/" + id + "/clone", {}),
+  deleteCoach: (id: number) =>
+    call<void>("DELETE", "/api/admin/coaches/" + id),
+
   routeFull: (id: number) => call<FullRoute>("GET", "/api/admin/routes/" + id + "/full"),
   saveRoute: (draft: RouteDraft, id?: number) =>
     call<{id:number}>(id ? "PUT" : "POST", "/api/admin/routes" + (id ? "/" + id : ""), draft),
@@ -152,6 +161,9 @@ export const api = {
     URL.revokeObjectURL(a.href);
   },
   // identity
+  bookingSite: () => call<BookingSiteSettings>("GET", "/api/admin/settings/booking-site"),
+  saveBookingSite: (input: { searchUrl: string; cityMappings: { cityId: number; publicCityId: number | null }[] }) =>
+    call<BookingSiteSettings>("PUT", "/api/admin/settings/booking-site", input),
   me: () => call<Me>("GET", "/api/admin/me"),
   // CRM
   passengerSearch: (mode: string, q: string) => call<{ total: number; customers: CustomerHit[] }>("GET", `/api/admin/crm/passenger-search?mode=${mode}&q=${encodeURIComponent(q)}`),
@@ -293,4 +305,28 @@ export interface DailyOpsReport {
     licences: { name: string; role: string; phone: string; licenseExpiry: string; state: string }[] };
   ratings: { average: number | null; count: number; low: { id: number; ota: string; pnr: string | null;
     rating: number; review: string | null; ratedAt: string; operatorReply: string | null }[] };
+}
+
+export interface CoachSeatDraft {
+  code: string; deck: "LOWER" | "UPPER"; row: number; col: number;
+  width: number; length: number; seatType: "seater" | "sleeper"; isWindow: boolean;
+}
+export interface CoachFixtureDraft {
+  kind: "emergency_exit" | "roof_exit" | "toilet" | "stairs" | "driver" | "door" | "luggage" | "other";
+  label: string; deck: "LOWER" | "UPPER"; row: number; col: number;
+  width: number; length: number;
+}
+export interface CoachDraft {
+  name: string; busType: string; pattern: "2+1" | "2+2"; isAc: boolean;
+  amenities: string[]; seats: CoachSeatDraft[]; fixtures: CoachFixtureDraft[];
+}
+export interface FullCoach extends CoachDraft {
+  id:number;structuralLocked:boolean;routeReferences:number;vehicleReferences:number;seatCount:number;
+}
+
+export interface BookingSiteSettings {
+  operatorCode: string; operatorName: string; searchUrl: string;
+  configured: boolean; source: "database" | "server_configuration";
+  cityMappings: { cityId: number; name: string; publicCityId: number | null }[];
+  updatedBy: string | null; updatedAt: string | null;
 }

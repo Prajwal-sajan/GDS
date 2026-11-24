@@ -33,6 +33,15 @@ export interface RouteStage {
   day: number;
   time: string;
 }
+export interface CoachFixtureCell {
+  kind: string;
+  label: string;
+  deck: string;
+  row: number;
+  col: number;
+  width: number;
+  length: number;
+}
 export interface ScheduleSeatLayout {
   tripId: number;
   travelDate: string;
@@ -46,6 +55,7 @@ export interface ScheduleSeatLayout {
   stops: RouteStop[];
   stages: RouteStage[];
   seats: SeatCell[];
+  fixtures?: CoachFixtureCell[];
 }
 export type GenderVisual = "available" | "male" | "female" | "unavailable";
 export const esc = (x: unknown): string => String(x ?? "").replace(/[&<>"']/g,
@@ -79,6 +89,14 @@ export function visualStatus(s: SeatCell): GenderVisual {
 export function validateLayout(layout: ScheduleSeatLayout): void {
   if (!layout || !Array.isArray(layout.seats) || !layout.seats.length ||
     !Array.isArray(layout.stops) || layout.stops.length < 2) throw Error("No valid seat layout available");
+  for (const f of layout.fixtures ?? []) {
+    if (!f.label || !["LOWER", "UPPER"].includes(f.deck) ||
+      !Number.isInteger(f.row) || !Number.isInteger(f.col) ||
+      !Number.isInteger(f.width) || !Number.isInteger(f.length) ||
+      f.row < 0 || f.col < 0 || f.width < 1 || f.width > 3 ||
+      f.length < 1 || f.length > 3 || f.row + f.length > 30 ||
+      f.col + f.width > 8) throw Error("Invalid cabin fixture geometry: " + f.label);
+  }
   const ids = new Set<string>();
   for (const s of layout.seats) {
     if (!s.seatCode || ids.has(s.seatCode) || !Number.isInteger(s.row) || !Number.isInteger(s.col) ||
@@ -88,16 +106,18 @@ export function validateLayout(layout: ScheduleSeatLayout): void {
     ids.add(s.seatCode);
   }
 }
-export function groupDecks(layout: ScheduleSeatLayout): { name: string; seats: SeatCell[]; rows: number; cols: number }[] {
+export function groupDecks(layout: ScheduleSeatLayout): { name: string; seats: SeatCell[]; fixtures: CoachFixtureCell[]; rows: number; cols: number }[] {
   validateLayout(layout);
   const seats = physicalGeometry(layout.seats);
-  const deckNames = Array.from(new Set(seats.map((s) => s.deck))).sort((a, b) =>
+  const fixtures = layout.fixtures ?? [];
+  const deckNames = Array.from(new Set([...seats.map(s => s.deck), ...fixtures.map(f => f.deck)])).sort((a, b) =>
     (a === "LOWER" ? -1 : a === "UPPER" ? 1 : 0) - (b === "LOWER" ? -1 : b === "UPPER" ? 1 : 0));
   return deckNames.map((name) => {
     const current = seats.filter((s) => s.deck === name);
-    return { name, seats: current,
-      rows: Math.max(...current.map((s) => s.row + s.length)),
-      cols: Math.max(...current.map((s) => s.col + s.width)) };
+    const physical = fixtures.filter(f => f.deck === name);
+    return { name, seats: current, fixtures: physical,
+      rows: Math.max(1, ...current.map(s => s.row + s.length), ...physical.map(f => f.row + f.length)),
+      cols: Math.max(1, ...current.map(s => s.col + s.width), ...physical.map(f => f.col + f.width)) };
   });
 }
 export function formatDate(date: string): string {
@@ -180,6 +200,16 @@ export function seatPosterSvg(layout: ScheduleSeatLayout): string {
         rect(sx + 9, sy + sh - 19, sw - 18, 11, 5, "#ffffff55", 'stroke="#ffffff9f"') +
         label(sx + sw/2, sy + sh/2 + 8, s.seatCode, Math.max(13, Math.min(24, sw*0.35)),
           v === "available" ? "#152c4b" : "#ffffff", 800, 'text-anchor="middle"') + "</g>";
+    }
+    // Non-bookable features are part of the actual coach plan, not fake seats.
+    for (const f of d.fixtures) {
+      const sx = gridX + f.col * (cellW + 7), sy = gridY + f.row * (tileRow + tileGap);
+      const fw = cellW * f.width + (f.width - 1) * 7;
+      const fh = tileRow * f.length + (f.length - 1) * tileGap - 8;
+      body += '<g data-fixture="' + esc(f.kind) + '">' +
+        rect(sx, sy, fw, fh, 7, "#ffe6b8", 'stroke="#aa8653" stroke-width="2"') +
+        label(sx + fw / 2, sy + fh / 2 + 4, f.label, Math.max(9, Math.min(14, fw * 0.19)),
+          "#604824", 700, 'text-anchor="middle"') + "</g>";
     }
     if (d.name === "LOWER") {
       body += '<g stroke="#e82035" fill="none" stroke-width="3.5" stroke-linecap="round">' +

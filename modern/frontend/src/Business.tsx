@@ -264,6 +264,7 @@ export function UsersPanel({ me }: { me: Me }) {
   const act = (f: () => Promise<unknown>, ok: string) => void f().then(() => { setMsg(ok); return users.reload(); }).catch((e) => setMsg(err(e)));
   return (
     <section>
+      <h2>Users & Access</h2>
       <div className="banner">Legacy users signed in with SMS OTP, which needs a provider that is not connected. Click <strong>Issue invite</strong>, give the one-time code to the user in person or by phone (valid 72 h); they choose their own password under “Activate with invite code”.</div>
       {invite && <div className="card wide" role="status" data-testid="invite-code">Invite for <strong>{invite.name}</strong>: <code>{invite.code}</code> · expires {new Date(invite.expiresAt).toLocaleString()} · shown once
         <button className="link" onClick={() => setInvite(undefined)}>Dismiss</button></div>}

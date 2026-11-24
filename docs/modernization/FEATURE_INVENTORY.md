@@ -18,7 +18,7 @@ Status legend: **Modern** = implemented in .NET/PostgreSQL with tests · **Parti
 | Bus cancellation | ops.js `/trips/:sid/cancel` | **Partial** | 0 % charge, REMOVE_SERVICE + MANUAL_BUS_CANCELLATION; SMS/WhatsApp fan-out not ported |
 | Bus / passenger shift | ops.js `/bookings/:pnr/shift*` | **Partial** | Whole-PNR shift + SHIFT callback; shift-options & fare difference not ported |
 | Boarding status / trip status | ops.js trips, pickup-chart-v40.js (7) | **Partial** | Boarding status API + RedBus tripstatus; pickup chart UI legacy |
-| Masters: cities, coaches, routes, stops, stages, fares, refund slabs | master.js (61, part) | **Partial (import only)** | Imported idempotently from db.json; CRUD UI/API still legacy |
+| Masters: cities, coaches, routes, stops, stages, fares, refund slabs | master.js (61, part) | **Partial (v5 coach authoring, v2 routes, imported cities)** | Coaches: React create/edit/clone/delete, amenities, physical fixtures and locked in-use versions; routes modern authoring; remaining reference UI paths still outstanding |
 | Vehicles, staff | master.js (part) | **Partial** | CRUD for vehicles (unique registration, compliance expiries) and staff (phone/licence validation, activate/deactivate); Fleet & Staff UI. GPS/DMS, documents, Aadhaar/PAN/bank not ported |
 | Attendance, advances, documents, payouts | master.js, vehicle-details-v19.js (11), fleet-operations-v20.js (3) | Legacy | |
 | Schedules management / insights / share | schedule-*.js, pnl-v18.js | Legacy | |
@@ -27,7 +27,7 @@ Status legend: **Modern** = implemented in .NET/PostgreSQL with tests · **Parti
 | OTA ratings | ota-ratings-settings-v44.js (3) | Legacy | |
 | CRM, chats, calls, notifications, WhatsApp, communications | misc.js (44, part), whatsapp-v33.js (5), communication-history-v35.js | Legacy | |
 | Loyalty & upgrades | loyalty-v34.js, loyalty-upgrades-v39.js | Legacy | |
-| Settings, configuration, branding | settings-complete.js (20), configuration-v30.js (12), branding-public-v17.js | Legacy | |
+| Settings, configuration, branding | settings-complete.js (20), configuration-v30.js (12), branding-public-v17.js | **Partial (v5 Website & City Mapping)** | Owner/admin React Settings, PostgreSQL HTTPS booking site and external city-ID mappings, Share integration; remaining branding, organization, configuration and role matrix legacy |
 | Auth, IAM, team access, switch user | misc.js auth/iam, settings-v16-iam-bridge.js, team-access-v26/28.js (26), switch-user-v34.js | Legacy | Modern admin API uses interim hashed service keys + role policies; OTP login/IAM not ported |
 | Operator admin UI | — (new) | **Modern (subset)** | React SPA: RedBus status/outbox/config, Trips & bus cancel, Dispatch (crew/vehicle, seat map block/release, counter booking, live updates), Fleet, Staff, Fares, Reconciliation |
 

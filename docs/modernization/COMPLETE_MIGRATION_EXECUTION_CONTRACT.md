@@ -6,8 +6,15 @@
 
 - **Legacy functional and visual baseline:** `savetrip-screenshotcomplete`, the Node/Express `public/` + `server/` application, screenshot batches, audit reports and `SCREENSHOT_FEATURE_RECONCILIATION.csv` (145 features, as of 2026-11-21).
 - **Destination:** native React/TypeScript frontend + ASP.NET Core/.NET backend + PostgreSQL authoritative database + Redis disposable cache. Do not replace the React app with embedded old DOM, mock tables, or a hidden legacy iframe.
-- **Delivery lineage:** v1 seat layout; v2 Routes/navigation; v3 P&L/Share; v4 Tickets and Daily Operations. Carry forward earlier validated commits. Feature branches are integration checkpoints, **not** declarations of overall completion.
+- **Delivery lineage:** v1 seat layout; v2 Routes/navigation; v3 P&L/Share; v4 Tickets, Daily Operations and Calls; v5 Coach Editor plus operator Settings/Website City Mapping. Each branch continues the same full-migration objective. Carry forward earlier validated commits. Feature branches are integration checkpoints, **not** declarations of overall completion.
 - **Definitive evidence:** `docs/modernization/UI_PARITY_MASTER_MATRIX.md`, `docs/modernization/API_PARITY_MATRIX.md`, `modern/release-readiness.json`, Playwright tests, PostgreSQL API tests, and visual screenshot comparison outputs. Reconcile them against the real repository periodically; the matrices themselves can lag code changes.
+
+## v5 implementation evidence (not release acceptance)
+
+- Coach layout is stored in PostgreSQL with two physical decks, seat code/position/type and separate non-bookable fixtures. Referenced coaches are immutable; cloning creates an independent version. The same fixture geometry appears in the React Schedule seat map and copy poster.
+- Public booking site is a tenant-scoped owner/admin setting with an approved HTTPS domain, independently mapped external city IDs and an audit trail. Schedule Share neither invents an exact-service deep link nor guesses city mappings.
+- The new automated tests cover PostgreSQL/API authorization and safety, plus Playwright UI wiring. These are **not** a substitute for pixel-level visual parity or actual provider sandbox acceptance.
+- `modern/release-readiness.json` remains fail-closed, and the Node source remains available until full acceptance.
 
 ## End-to-end deliverable set (each is a mandatory part of the one migration)
 

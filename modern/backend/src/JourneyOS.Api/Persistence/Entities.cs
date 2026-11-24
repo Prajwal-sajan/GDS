@@ -14,6 +14,17 @@ public sealed class Tenant
 
 public interface ITenantOwned { long TenantId { get; set; } }
 
+/// <summary>Operator-authorized passenger website. City mappings are explicit, never inferred from GDS IDs.</summary>
+public sealed class PublicBookingSite : ITenantOwned
+{
+    public long TenantId { get; set; }
+    public string SearchUrl { get; set; } = "";
+    public string CityMapJson { get; set; } = "{}";
+    public string UpdatedBy { get; set; } = "";
+    public DateTime UpdatedAt { get; set; }
+}
+
+
 // ---------- Master data ----------
 public sealed class City : ITenantOwned
 {
@@ -36,7 +47,10 @@ public sealed class CoachTemplate : ITenantOwned
     public string BusType { get; set; } = "";
     public string Pattern { get; set; } = "";      // 2+1 / 2+2
     public bool IsAc { get; set; }
+    /// <summary>Operator-selected supported amenities. No implicit facility guarantee.</summary>
+    public string[] Amenities { get; set; } = [];
     public List<CoachSeat> Seats { get; set; } = [];
+    public List<CoachFixture> Fixtures { get; set; } = [];
 }
 
 public sealed class CoachSeat
@@ -53,6 +67,21 @@ public sealed class CoachSeat
     public bool IsWindow { get; set; }
     /// <summary>Fare class used by the fare matrix: seater, sleeper_lower, sleeper_upper.</summary>
     public string FareClass => SeatType == "sleeper" ? (Deck == "UPPER" ? "sleeper_upper" : "sleeper_lower") : "seater";
+}
+
+/// <summary>Non-bookable coach geometry, such as exits, toilets and steps.
+/// These cells never contribute to passenger/seat capacity.</summary>
+public sealed class CoachFixture
+{
+    public long Id { get; set; }
+    public long CoachTemplateId { get; set; }
+    public string Kind { get; set; } = "other";
+    public string Label { get; set; } = "";
+    public string Deck { get; set; } = "LOWER";
+    public int Row { get; set; }
+    public int Col { get; set; }
+    public int Width { get; set; } = 1;
+    public int Length { get; set; } = 1;
 }
 
 public sealed class Route : ITenantOwned

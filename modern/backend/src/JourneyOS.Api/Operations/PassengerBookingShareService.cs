@@ -87,10 +87,22 @@ public sealed class PassengerBookingShareService(
         if (boardingLocal <= today.DateTime)
             throw new GdsException("DEPARTURE_PASSED",
                 "The selected city boarding time has already passed.", 409);
+        // Database settings entered by the operator take precedence over an
+        // explicitly provisioned server configuration; neither is guessed.
         var siteConfig = configuration.GetSection($"PublicBooking:Operators:{tenant.Code}");
-        var site = ValidatePublicSite(siteConfig["SearchUrl"]);
-        var fromPublic = siteConfig.GetValue<long?>($"CityMap:{source.CityId}");
-        var toPublic = siteConfig.GetValue<long?>($"CityMap:{destination.CityId}");
+        var stored = await db.PublicBookingSites.AsNoTracking().SingleOrDefaultAsync();
+        var site = ValidatePublicSite(stored?.SearchUrl ?? siteConfig["SearchUrl"]);
+        var explicitMap = stored is null ? null :
+            System.Text.Json.JsonSerializer.Deserialize<Dictionary<string,long>>(stored.CityMapJson);
+        long? CityId(long id)
+        {
+            if (stored is not null)
+                return explicitMap is not null && explicitMap.TryGetValue(id.ToString(System.Globalization.CultureInfo.InvariantCulture), out var val)
+                    ? val : null;
+            return siteConfig.GetValue<long?>($"CityMap:{id}");
+        }
+        var fromPublic = CityId(source.CityId);
+        var toPublic = CityId(destination.CityId);
         if (fromPublic is null || toPublic is null)
             throw new GdsException("BOOKING_CITY_MAPPING",
                 "This operator's website city IDs have not been mapped for both selected cities.", 409);
