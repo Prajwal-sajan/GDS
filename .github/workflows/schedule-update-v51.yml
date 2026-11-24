@@ -1,0 +1,36 @@
+name: Schedule Manage Update v51
+on:
+  push:
+    branches:
+      - feature/schedule-update-v51
+  pull_request:
+    paths:
+      - "public/js/schedule-update-v51.js"
+      - "public/css/schedule-update-v51.css"
+      - "public/js/schedules-screenshot-v6.js"
+      - "server/api/schedule-update-v51.js"
+      - "server/index.js"
+      - "public/index.html"
+      - "tests/schedule-update-v51.test.cjs"
+      - ".github/workflows/schedule-update-v51.yml"
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Verify Update v51 reference, edit workflow and API
+        run: node --test tests/schedule-update-v51.test.cjs
+      - name: Verify v50 customer booking sharing
+        run: node --test tests/schedule-booking-share-v50.test.cjs
+      - name: Verify v49 copy PNG
+        run: node --test tests/schedule-seat-layout-copy-v49.test.cjs
+      - name: Verify v48 Schedule Manage Bookings
+        run: node --test tests/schedule-manage-v48.test.cjs tests/schedule-manage-v48-ui.cjs
+      - name: Full GDS regression
+        run: npm test
