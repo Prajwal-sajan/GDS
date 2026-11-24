@@ -90,6 +90,8 @@ export const api = {
   cancelTrip: (id: number) => call<{ cancelledBookings: number }>("POST", `/api/admin/trips/${id}/cancel`),
   // operations
   vehicles: () => call<Vehicle[]>("GET", "/api/admin/vehicles"),
+  vehicleDocuments: (id:number)=>call<ComplianceDocument[]>("GET","/api/admin/vehicles/"+id+"/documents"),
+  staffDocuments: (id:number)=>call<ComplianceDocument[]>("GET","/api/admin/staff/"+id+"/documents"),
   saveVehicle: (v: Partial<Vehicle>, id?: number) => call<Vehicle>(id ? "PUT" : "POST", `/api/admin/vehicles${id ? `/${id}` : ""}`, { gpsEnabled: false, ...v }),
   staff: () => call<Staff[]>("GET", "/api/admin/staff"),
   saveStaff: (s: Partial<Staff>, id?: number) => call<Staff>(id ? "PUT" : "POST", `/api/admin/staff${id ? `/${id}` : ""}`, s),
@@ -220,8 +222,10 @@ export interface UserRow { id: number; phone: string; name: string; email: strin
   creditLimit: number | null; hasPassword: boolean; invitePendingUntil: string | null; lastLoginAt: string | null; locked: boolean }
 
 export interface Vehicle { id: number; registrationNumber: string; coachTemplateId: number | null; status: string; modelName: string | null; gpsEnabled: boolean;
+  manufactureYear?:number|null;ownershipType?:string|null;phoneNumber?:string|null;
   insuranceExpiry: string | null; permitExpiry: string | null; fitnessExpiry: string | null; pucExpiry: string | null }
-export interface Staff { id: number; name: string; phone: string; role: string; status: string; licenseNumber: string | null; licenseExpiry: string | null }
+export interface Staff { id: number; name: string; phone: string; role: string; status: string; licenseNumber: string | null; licenseExpiry: string | null;
+  designation?:string|null;salaryType?:string|null;salaryAmount?:number|null;bataPerTrip?:number|null }
 export interface Assignment { id: number; tripId: number; kind: string; vehicleId: number | null; staffId: number | null; role: string; isActive: boolean;
   assignedAt: string; replacedAt: string | null; replacedReason: string | null }
 export interface SeatRow { seatCode: string; deck: string; row: number; col: number; seatType: string; occupied: boolean; state: string; gender: string | null }
@@ -335,3 +339,7 @@ export interface DailyOpsReport {
   ratings:{average:number|null;count:number;low:{id:number;ota:string;pnr:string|null;
     rating:number;review:string|null;ratedAt:string;operatorReply:string|null}[]};
 }
+
+export interface ComplianceDocument { id:number;documentType:string;documentName:string;
+  expiryDate:string|null;category:string|null;verificationStatus:string|null;
+  source:"metadata_only";downloadAvailable:false }
