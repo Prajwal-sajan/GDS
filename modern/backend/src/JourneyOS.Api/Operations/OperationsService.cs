@@ -198,15 +198,26 @@ public sealed class OperationsService(GdsDbContext db, InventoryService inventor
         if (i.To < i.From || i.To.DayNumber - i.From.DayNumber > 120) throw new GdsException("VALIDATION", "Range must be 0–120 days");
         var route = await db.Routes.FirstOrDefaultAsync(r => r.Id == routeId) ?? throw new GdsException("ROUTE_NOT_FOUND", "Route not found", 404);
         if (route.Status != "active") throw new GdsException("ROUTE_INACTIVE", "Route is not active", 409);
-        if (routeId > 999) throw new GdsException("VALIDATION", "Route id exceeds trip id scheme");
+        // Legacy date-route IDs are preserved; newly authored routes use master_ids.
         var created = 0;
         await using var tx = await db.Database.BeginTransactionAsync();
         for (var d = i.From; d <= i.To; d = d.AddDays(1))
         {
-            var id = long.Parse($"1000{d:yyMMdd}{routeId:000}"); // legacy schedule id scheme
-            created += await db.Database.ExecuteSqlInterpolatedAsync($@"
+            if (routeId <= 999)
+            {
+                var id = long.Parse($"1000{d:yyMMdd}{routeId:000}"); // original ID contract
+                created += await db.Database.ExecuteSqlInterpolatedAsync($@"
 INSERT INTO trips (id, tenant_id, route_id, travel_date, status, bookable) VALUES ({id}, {T}, {routeId}, {d}, 'active', true)
 ON CONFLICT DO NOTHING");
+            }
+            else
+            {
+                // PostgreSQL uniqueness on route/date keeps retries idempotent.
+                created += await db.Database.ExecuteSqlInterpolatedAsync($@"
+INSERT INTO trips (id, tenant_id, route_id, travel_date, status, bookable)
+VALUES (nextval('master_ids'), {T}, {routeId}, {d}, 'active', true)
+ON CONFLICT (route_id, travel_date) DO NOTHING");
+            }
         }
         Audit(actor, "TRIPS_GENERATE", "route", routeId.ToString(), new { i.From, i.To, created });
         await db.SaveChangesAsync();
