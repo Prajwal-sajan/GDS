@@ -30,7 +30,7 @@
   // Screenshot's blue first lower single, pink second lower single and
   // dark first UPPER right-hand berth must rasterize as different colors.
   const sample=(x,y)=>Array.from(ctx.getImageData(x,y,1,1).data);
-  const blue=sample(230,900),pink=sample(230,1180);
+  const blue=sample(220,740),pink=sample(220,1000);
   if(blue[2]<=blue[0]||pink[0]<=pink[2])throw Error('Seat status gradients missing '+JSON.stringify({blue,pink}));
   status.textContent='SL49_BROWSER_PASS '+blob.size+' bytes '+png.width+'x'+png.height;
  }catch(e){status.textContent='SL49_BROWSER_FAIL '+(e?.stack||e)}
