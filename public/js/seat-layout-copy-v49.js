@@ -261,8 +261,11 @@
    const svg=buildSvg(snapshot,env.Coach21V46);
    return generate(svg,env);
   })();
-  const item=env.ClipboardItem&&env.navigator?.clipboard?.write?
-   new env.ClipboardItem({'image/png':pngPromise}):null;
+  let item=null;
+  if(env.ClipboardItem&&env.navigator?.clipboard?.write){
+   try{item=new env.ClipboardItem({'image/png':pngPromise})}
+   catch(_){/* Safari/older browsers may reject promise-backed ClipboardItem; download PNG instead. */}
+  }
   if(item){
    try{
     await env.navigator.clipboard.write([item]);
