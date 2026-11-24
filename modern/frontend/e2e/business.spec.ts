@@ -136,6 +136,27 @@ test("accounts sales: legacy tabs, KPIs from live data, pivots and filters round
   await expect(page).toHaveURL(/basis=booking_date/);
 });
 
+test("accounts transactions: credits/debits filter, live search, basis toggle and booking overlay", async ({ page, request }) => {
+  await signInUser(page, await provision(request, "accounts"));
+  await open(page, "accounts");
+  await page.locator('.ac10-nav a[href="#/accounts/transactions"]').click();
+  await expect(page.locator(".ac10-txstats .ac10-stat")).toHaveCount(3);
+  await expect(page.locator("[data-ac10-count]")).toHaveText(/^\d+ rows$/);
+  await page.locator('[data-ac10="transaction-kind"][data-value="debits"]').click();
+  const types = await page.locator("[data-ac10-tbody] .ac10-type").allInnerTexts();
+  expect(types.every((t) => t === "PAX CANCEL")).toBeTruthy();
+  await page.locator('[data-ac10="transaction-kind"][data-value="all"]').click();
+  const pnr = await page.locator("[data-ac10-tbody] tr").first().getAttribute("data-pnr");
+  await page.locator("[data-live-search]").fill(pnr!);
+  await expect(page.locator("[data-ac10-tbody] tr").first()).toHaveAttribute("data-pnr", pnr!);
+  await page.locator("[data-ac10-tbody] tr").first().click();
+  await expect(page.getByText(pnr!).first()).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.locator('.ac10-segment .ac10-btn', { hasText: "Booked On" }).click();
+  await expect(page).toHaveURL(/basis=booked/);
+  await expect(page.locator('.ac10-segment .ac10-btn.selected', { hasText: "Booked On" })).toBeVisible();
+});
+
 // ---------------------------------------------------------------- React regression snapshots
 // These are React SELF-baselines: they catch unintended changes to interim screens and prove NOTHING about parity with the
 // legacy GDS. Legacy↔React comparisons live in e2e/parity (playwright.parity.config.ts) and use the live legacy UI as baseline.

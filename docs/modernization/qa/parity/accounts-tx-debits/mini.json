@@ -1,0 +1,15 @@
+{
+  "id": "accounts-tx-debits",
+  "region": "mini",
+  "legacy": [
+    1296,
+    65
+  ],
+  "react": [
+    1296,
+    65
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

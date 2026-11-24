@@ -355,6 +355,58 @@ public sealed class ReportsService(GdsDbContext db, TimeProvider clock)
             r.Stops[0].CityId, r.Stops[^1].CityId, r.Stops[0].Name, r.Stops[^1].Name));
     }
 
+    // ---------------- accounts / transactions (legacy reports.js transactions) ----------------
+    public sealed record TxRow(string Pnr, string Ticket, DateOnly TravelDate, string Service, string Source, string? Passenger, string? Phone, string Seats,
+        string? Payment, string? Method, string BookedBy, string Type, DateTime Date, decimal Total, decimal Refund, decimal Charge, string Status);
+
+    /// <summary>
+    /// One row per booking (credit, + total) and per cancellation event (debit, − refund), newest first. basis travel_date filters both by
+    /// date of journey; booked filters bookings by issue date and cancellations by cancellation date (local tenant day). Legacy rendered a
+    /// "Travel Date / Booked On" toggle that did nothing and always filtered by booking date; here both bases are real.
+    /// </summary>
+    public async Task<List<TxRow>> TransactionsAsync(DateOnly from, DateOnly to, string basis, string source, string service, string search)
+    {
+        ValidateRange(from, to);
+        if (basis is not ("travel_date" or "booked")) throw new GdsException("VALIDATION", "basis must be travel_date or booked");
+        var tz = TimeZoneInfo.FindSystemTimeZoneById((await TenantAsync()).TimeZone);
+        DateOnly Local(DateTime utc) => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), tz));
+        var routes = await RouteInfoAsync();
+        var lo = DateTime.SpecifyKind(from.AddDays(-1).ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+        var hi = DateTime.SpecifyKind(to.AddDays(2).ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+        var q = from b in db.Bookings.AsNoTracking() join t in db.Trips on b.TripId equals t.Id select new { b, t.TravelDate, t.RouteId };
+        q = basis == "travel_date" ? q.Where(x => x.TravelDate >= from && x.TravelDate <= to)
+            : q.Where(x => (x.b.DateOfIssue >= lo && x.b.DateOfIssue < hi) || db.Cancellations.Any(c => c.BookingId == x.b.Id && c.CreatedAt >= lo && c.CreatedAt < hi));
+        if (source != "all") q = q.Where(x => x.b.Channel == source);
+        var raw = (await q.ToListAsync()).Where(x => routes.ContainsKey(x.RouteId) && (service == "all" || routes[x.RouteId].Service == service)).ToList();
+        var ids = raw.Select(x => x.b.Id).ToList();
+        var pax = (await db.BookingPassengers.AsNoTracking().Where(p => ids.Contains(p.BookingId)).OrderBy(p => p.Id).ToListAsync()).GroupBy(p => p.BookingId).ToDictionary(g => g.Key, g => g.ToList());
+        var cxl = (await db.Cancellations.AsNoTracking().Where(c => ids.Contains(c.BookingId)).ToListAsync()).GroupBy(c => c.BookingId).ToDictionary(g => g.Key, g => g.ToList());
+        var pay = (await db.Payments.AsNoTracking().Where(p => ids.Contains(p.BookingId)).OrderBy(p => p.Id).ToListAsync()).GroupBy(p => p.BookingId).ToDictionary(g => g.Key, g => g.First());
+        bool In(DateOnly d) => d >= from && d <= to;
+        var needle = search.Trim().ToLowerInvariant();
+        var rows = new List<TxRow>();
+        foreach (var x in raw)
+        {
+            var b = x.b; var ps = pax.GetValueOrDefault(b.Id) ?? []; var p = pay.GetValueOrDefault(b.Id); var primary = ps.FirstOrDefault(z => z.IsPrimary) ?? ps.FirstOrDefault();
+            var ticket = b.Pnr.Length > 6 ? b.Pnr[^6..] : b.Pnr;
+            var payment = p?.Status switch { "PAID" => "paid", "PENDING" => "pending", "RECEIVABLE" => "receivable", null => null, var s => s.ToLowerInvariant() };
+            TxRow Row(string type, DateTime at, decimal total, decimal refund, decimal charge, string status, string seats) =>
+                new(b.Pnr, ticket, x.TravelDate, routes[x.RouteId].Service, b.Channel, primary?.Name, b.ContactMobile, seats, payment, p?.Method, b.BookedBy ?? "Operator", type, at, total, refund, charge, status);
+            if (basis == "travel_date" || In(Local(b.DateOfIssue)))
+                rows.Add(Row("booking", b.DateOfIssue, b.TotalFare, 0, 0, b.Status.ToLowerInvariant(), string.Join(", ", ps.Select(z => z.SeatCode))));
+            foreach (var c in cxl.GetValueOrDefault(b.Id) ?? [])
+                if (basis == "travel_date" || In(Local(c.CreatedAt)))
+                    rows.Add(Row("cancellation", c.CreatedAt, -c.Refund, c.Refund, c.Charge, "cancelled", string.Join(", ", c.Seats)));
+        }
+        return rows.Where(r => needle == "" || $"{r.Pnr} {r.Passenger} {r.Phone}".ToLowerInvariant().Contains(needle))
+            .OrderByDescending(r => r.Date).ThenBy(r => r.Pnr, StringComparer.Ordinal).ToList();
+    }
+
+    /// <summary>Service numbers in route order (legacy G.serviceList over /routes?status=all).</summary>
+    public async Task<List<object>> ServiceListAsync() =>
+        (await db.Routes.AsNoTracking().OrderBy(r => r.Id).Select(r => new { r.ServiceNumber, r.Name }).ToListAsync())
+            .Select(r => (object)new { value = r.ServiceNumber, label = r.ServiceNumber + (string.IsNullOrEmpty(r.Name) ? "" : " · " + r.Name) }).ToList();
+
     public async Task<object> SalesFacetsAsync()
     {
         var routes = (await RouteInfoAsync()).Values.ToList();

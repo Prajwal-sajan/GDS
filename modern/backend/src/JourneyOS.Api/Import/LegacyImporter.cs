@@ -447,6 +447,9 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
             var hasCxl = (await db.Cancellations.AsNoTracking().Select(c => c.BookingId).Distinct().ToListAsync()).ToHashSet();
             foreach (var b in Col("bookings"))
             {
+                // booked_by.name was added to the booking import later: fill it on rows imported before (only where still null)
+                if (Str(b, "pnr") is { } bp && byPnr.TryGetValue(bp, out var bbid) && b.TryGetProperty("booked_by", out var bb) && bb.ValueKind == JsonValueKind.Object && Str(bb, "name") is { } bname)
+                    await db.Bookings.Where(x => x.Id == bbid && x.BookedBy == null).ExecuteUpdateAsync(u => u.SetProperty(x => x.BookedBy, bname));
                 if (Str(b, "pnr") is not { } pnr || !byPnr.TryGetValue(pnr, out var bid) || hasCxl.Contains(bid)) continue;
                 if (!b.TryGetProperty("cancellations", out var cs) || cs.ValueKind != JsonValueKind.Array) continue;
                 DateTime? lastAt = null;

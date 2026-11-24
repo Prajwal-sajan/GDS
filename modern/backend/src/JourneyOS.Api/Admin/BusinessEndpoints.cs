@@ -97,6 +97,26 @@ public static class BusinessEndpoints
             return Results.Ok(await s.SalesAsync(f, t, basis ?? "travel_date", source ?? "all", sector ?? "all", service ?? "all"));
         }).RequireAuthorization(Policies.Reports);
         g.MapGet("/accounts/sales-facets", async (ReportsService s) => Results.Ok(await s.SalesFacetsAsync())).RequireAuthorization(Policies.Reports);
+        // Accounts → Transactions (legacy /accounts/transactions): bookings as credits, cancellation refunds as debits; format=csv downloads
+        g.MapGet("/accounts/transactions", async (string? from, string? to, string? basis, string? source, string? service, string? q, string? format, ReportsService s) =>
+        {
+            var today = await s.TodayAsync();
+            var (f, t) = Range(from ?? today.AddDays(-6).ToString("yyyy-MM-dd"), to ?? today.ToString("yyyy-MM-dd"), today);
+            var rows = await s.TransactionsAsync(f, t, basis ?? "travel_date", source ?? "all", service ?? "all", q ?? "");
+            if (format == "csv")
+            {
+                static string C(object? v) { var x = v switch { null => "", DateTime d => d.ToString("o"), _ => Convert.ToString(v, System.Globalization.CultureInfo.InvariantCulture) ?? "" }; return x.IndexOfAny([',', '"', '\n', '\r']) >= 0 ? $"\"{x.Replace("\"", "\"\"")}\"" : x; }
+                var props = typeof(ReportsService.TxRow).GetProperties();
+                var csv = string.Join(",", props.Select(p => p.Name)) + "\r\n" + string.Concat(rows.Select(r => string.Join(",", props.Select(p => C(p.GetValue(r)))) + "\r\n"));
+                return Results.File(System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(csv)).ToArray(), "text/csv", $"transactions_{f:yyyy-MM-dd}_{t:yyyy-MM-dd}.csv");
+            }
+            var credits = rows.Where(r => r.Type == "booking").ToList();
+            return Results.Ok(new
+            {
+                rows, services = await s.ServiceListAsync(),
+                totals = new { bookings = credits.Count, credits = credits.Sum(r => r.Total), debits = rows.Sum(r => r.Refund), net = rows.Sum(r => r.Total) },
+            });
+        }).RequireAuthorization(Policies.Accounts);
 
         // trip expenses (feed P&L)
         g.MapGet("/routes/{id:long}/expense-template", async (long id, GdsDbContext db) =>

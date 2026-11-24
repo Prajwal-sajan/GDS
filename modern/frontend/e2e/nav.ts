@@ -19,7 +19,7 @@ export async function open(page: Page, screen: Screen) {
   }
   if (screen === "ledger") {
     await open(page, "accounts");
-    return page.locator('.ac10-nav [data-ac10-tab="transactions"], .ac10-nav a[href="#/accounts/transactions"]').first().click();
+    return page.locator('.ac10-nav a[href="#/accounts/receivables"]').click();
   }
   if (screen === "reconciliation") {
     // not a legacy Accounts tab; reached by URL like the legacy OTA verifier deep link

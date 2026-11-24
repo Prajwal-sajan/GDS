@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { api, type Me, type Sales, type SalesFacets } from "../../api";
+import { api, type Me, type Sales, type SalesFacets, type Transactions, type TxRow } from "../../api";
 import { toast, toastError } from "../../components/ui/feedback";
 import { NiceDate } from "../../components/ui/NiceDate";
 import { NiceSelect } from "../../components/ui/NiceSelect";
 import type { Role } from "../../navigation/nav";
+import { BookingOverlay } from "../crm/BookingOverlay";
 
 // React port of legacy Accounts (public/js/accounts-parity-v10.js + accounts-sales-v37.js sector dropdown).
 // Same DOM / classes (div.ac10-root > nav.ac10-nav + section.ac10-content) so the legacy CSS applies unchanged.
@@ -19,6 +20,8 @@ const P: Record<string, string> = {
   calendar: '<rect x="3" y="4" width="18" height="18" rx="3"/><path d="M7 2v4m10-4v4M3 10h18"/>',
   print: '<path d="M6 9V3h12v6M6 18H3V9h18v9h-3M6 15h12v7H6z"/>',
   chevron: '<path d="m6 9 6 6 6-6"/>',
+  download: '<path d="M12 3v13m-5-5 5 5 5-5M5 19v3h14v-3"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
 };
 export function Ic({ k, s = 17 }: { k: string; s?: number }) {
   return <svg width={s} height={s} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.9"
@@ -32,6 +35,7 @@ const inr = (n: number | null | undefined, d = 0) => (n == null || isNaN(n) ? "�
 const num = (n: number | null | undefined) => (n == null ? "—" : Number(n).toLocaleString("en-IN"));
 const fdate = (s: string | null | undefined) => (s ? new Date(`${String(s).slice(0, 10)}T00:00:00`).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—");
 const pct = (x: number | null | undefined) => (x == null ? "—" : `${Number(x).toFixed(1)}%`);
+const fdt = (s: string | null | undefined) => (s ? new Date(s).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—");
 type Kind = "money" | "pct" | "int" | "date" | undefined;
 const fmt = (v: unknown, t: Kind) => t === "money" ? inr(v as number) : t === "pct" ? pct(v as number) : t === "date" ? fdate(v as string) : t === "int" ? num(v as number) : v == null || v === "" ? "—" : String(v);
 const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -72,7 +76,7 @@ export function AccountsPage({ me, tab, children }: { me: Me; tab: string; child
         ))}
       </nav>
       <section className="ac10-content" data-ac10-page="">
-        {tab === "analytics" ? <SalesTab /> : children}
+        {tab === "analytics" ? <SalesTab /> : tab === "transactions" ? <TransactionsTab me={me} /> : children}
       </section>
     </div>
   );
@@ -200,4 +204,91 @@ function SalesGrid({ d, pivot, basis }: { d: Sales; pivot: string; basis: string
   return list.length ? <Table rows={list} foot cols={[{ key: "name", label: pivot === "service" ? "SERVICE" : "SECTOR" }, { key: "bookings", label: "BOOKINGS", type: "int", total: true },
     { key: "seats", label: "SEATS", type: "int", total: true }, { key: "netSales", label: "NET SALES", type: "money", total: true }, { key: "avgFare", label: "AVG BOOKING", type: "money" }]} />
     : <Empty text={`No ${pivot} sales for the selected filters`} />;
+}
+
+// ---------------- Transactions (legacy accounts-parity-v10.js transactions()) ----------------
+const OTAS = ["redbus", "abhibus", "paytm"];
+function TransactionsTab({ me }: { me: Me }) {
+  const q = query();
+  const s = { from: q.from || addDays(today(), -6), to: q.to || today(), basis: q.basis || "travel_date", source: q.source || "all", service: q.service || "all", q: q.q || "" };
+  const [kind, setKind] = useState(q.kind || "all");
+  const [search, setSearch] = useState((q.q || "").toLowerCase());
+  const [d, setD] = useState<Transactions | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
+  const key = JSON.stringify(s);
+  useEffect(() => {
+    let live = true;
+    api.transactions(s).then((x) => { if (live) setD(x); })
+      .catch((e) => { if (live) { setError(e instanceof Error ? e.message : String(e)); toastError(e); } });
+    return () => { live = false; };
+  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+  const update = (next: Partial<typeof s>) => {
+    const merged = { ...s, ...next };
+    if (merged.from > merged.to) return toast("Invalid date range", "bad");
+    location.hash = `#/accounts/transactions?${new URLSearchParams(merged)}`;
+  };
+  if (error) return <div className="ac10-empty error"><Ic k="reports" s={30} /><b>Could not load transactions</b><p>{error}</p></div>;
+  if (!d) return <div className="ac10-loading">Loading Accounts…</div>;
+  const all = d.rows;
+  const found = search ? all.filter((r) => `${r.pnr} ${r.phone} ${r.passenger} ${r.source}`.toLowerCase().includes(search)) : all;
+  const shown = found.filter((r) => kind === "all" || (kind === "credits" && r.type === "booking") || (kind === "debits" && r.type === "cancellation"));
+  const total = (rows: TxRow[], k: "total" | "refund") => rows.reduce((v, r) => v + (Number(r[k]) || 0), 0);
+  const btn = (label: string, cur: boolean, action: string, on: () => void, value?: string) =>
+    <button key={label} type="button" className={`ac10-btn ${cur ? "selected" : ""}`} data-ac10={action} data-value={value} onClick={on}>{label}</button>;
+  const sel = (name: string, value: string, options: [string, string][]) => (
+    <label className="ac10-select ui-dd-hosted"><NiceSelect name={name} value={value} onChange={(v) => update({ [name]: v })} options={options} /><Ic k="chevron" s={16} /></label>
+  );
+  return (
+    <>
+      <div className="ac10-saleshead">
+        <label className="ac10-date"><span><Ic k="calendar" s={21} /></span><NiceDate name="from" label="From date" value={s.from} onChange={(v) => update({ from: v })} /></label>
+        <label className="ac10-date"><span><Ic k="calendar" s={21} /></span><NiceDate name="to" label="To date" value={s.to} onChange={(v) => update({ to: v })} /></label>
+        <div className="ac10-segment">
+          {btn("Travel Date", s.basis === "travel_date", "nop", () => update({ basis: "travel_date" }))}
+          {btn("Booked On", s.basis === "booked", "nop", () => update({ basis: "booked" }))}
+        </div>
+        {sel("source", s.source, [["all", "All Agents"], ["redbus", "RedBus"], ["abhibus", "AbhiBus"], ["paytm", "Paytm"], ["website", "Website"], ["agent", "Agent"], ["branch", "Branch"]])}
+        {sel("service", s.service, [["all", "All Services"], ...d.services.map((x) => [x.value, x.label] as [string, string])])}
+        <div className="ac10-segment">
+          {([["all", "All"], ["credits", "Credits"], ["debits", "Debits"]] as const).map(([k, v]) => btn(v, kind === k, "transaction-kind", () => setKind(k), k))}
+        </div>
+      </div>
+      <div className="ac10-saleslower">
+        <label className="ac10-search"><Ic k="search" /><input data-live-search="" placeholder="PNR, phone, passenger or agent" defaultValue={s.q} onChange={(e) => setSearch(e.target.value.toLowerCase())} /></label>
+        <button type="button" className="ac10-btn success" data-ac10="export" onClick={() => api.exportTransactions(s).catch(toastError)}><Ic k="download" />{" Download"}</button>
+      </div>
+      <div className="ac10-txstats">
+        <Stat label="Credits" value={inr(total(all.filter((r) => r.type === "booking"), "total"))} kind="green" />
+        <Stat label="Debits" value={inr(total(all.filter((r) => r.type === "cancellation"), "refund"))} kind="red" />
+        <Stat label="Net" value={inr(total(all, "total"))} kind="blue" />
+      </div>
+      <div className="ac10-transactionmini">
+        <Stat label="SAVE TRIP / OPERATOR" value={inr(total(all.filter((r) => r.source === "website"), "total"))} />
+        <Stat label="BRANCHES OWN" value={inr(total(all.filter((r) => r.source === "branch"), "total"))} />
+        <Stat label="OTAs → PAY" value={inr(total(all.filter((r) => OTAS.includes(r.source)), "total"))} />
+      </div>
+      <div className="ac10-section">
+        <div className="ac10-listcount" data-ac10-count="">{shown.length} rows</div>
+        <div className="ac10-scroll"><table className="ac10-table ac10-payments">
+          <thead><tr>{["Agent", "PNR", "Service", "Seats", "Type", "DOJ", "Booked At", "Amount", "Paid by · Money with", "Status"].map((x) => <th key={x}>{x}</th>)}</tr></thead>
+          <tbody data-ac10-tbody="">{shown.length ? shown.map((r, i) => (
+            <tr key={`${r.pnr}-${r.type}-${i}`} data-pnr={r.pnr} className="ac10-rowclick" onClick={() => setOpen(r.pnr)}>
+              <td>{r.source || "—"}</td>
+              <td><b className="ac10-mono">{r.ticket || r.pnr}</b><small>{r.pnr}</small></td>
+              <td><b className="ac10-link">{r.service}</b></td>
+              <td>{r.seats}</td>
+              <td><span className={`ac10-type ${r.type === "booking" ? "ok" : "warn"}`}>{r.type === "booking" ? "BOOKING" : "PAX CANCEL"}</span></td>
+              <td>{fdate(r.travelDate)}</td>
+              <td>{fdt(r.date)}</td>
+              <td className={`ac10-txamount ${r.total < 0 ? "red" : ""}`}>{inr(Math.abs(r.total))}</td>
+              <td><b>{r.method || r.payment || "—"}</b><small>{`${r.source} · ${r.bookedBy || "Operator"}`}</small></td>
+              <td><span className={`ac10-status ${/confirm|complete|paid/i.test(r.status) ? "ok" : "bad"}`}>{r.status || "—"}</span></td>
+            </tr>
+          )) : <tr><td colSpan={10} className="ac10-nodata">No transactions found</td></tr>}</tbody>
+        </table></div>
+      </div>
+      {open && <BookingOverlay me={me} pnr={open} onClose={() => setOpen(null)} />}
+    </>
+  );
 }

@@ -1,0 +1,15 @@
+{
+  "id": "accounts-tx-all",
+  "region": "list",
+  "legacy": [
+    1296,
+    584
+  ],
+  "react": [
+    1296,
+    584
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

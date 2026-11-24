@@ -588,6 +588,36 @@ public sealed class BusinessTests(GdsFixture fx)
         Assert.Equal(HttpStatusCode.BadRequest, (await Admin.GetAsync($"/api/admin/accounts/sales?from={from}&to={to}&basis=nope")).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await Admin.GetAsync($"/api/admin/accounts/sales?from={from}&to={to}&basis=booking_date")).StatusCode);
     }
+
+    [Fact]
+    public async Task Accounts_transactions_list_credits_and_debits_with_csv_and_role_guard()
+    {
+        const string from = "2026-11-18", to = "2026-11-24";
+        var (s, tx) = await Admin.Get($"/api/admin/accounts/transactions?from={from}&to={to}");
+        Assert.True(s == HttpStatusCode.OK, tx?.ToJsonString());
+        var rows = tx!["rows"]!.AsArray();
+        var (f, t) = (DateOnly.Parse(from), DateOnly.Parse(to));
+        var bookings = await fx.Sql(db => (from b in db.Bookings join tr in db.Trips on b.TripId equals tr.Id where tr.TravelDate >= f && tr.TravelDate <= t select b.Id).CountAsync());
+        Assert.Equal(bookings, rows.Count(r => (string)r!["type"]! == "booking"));
+        Assert.Equal(bookings, (int)tx["totals"]!["bookings"]!);
+        Assert.All(rows.Where(r => (string)r!["type"]! == "cancellation"), r => Assert.Equal(-(decimal)r!["refund"]!, (decimal)r["total"]!));
+        var dates = rows.Select(r => (DateTime)r!["date"]!).ToList();
+        Assert.Equal(dates.OrderByDescending(d => d), dates);
+        Assert.NotEmpty(tx["services"]!.AsArray());
+
+        var pnr = (string)rows[0]!["pnr"]!;
+        var (_, one) = await Admin.Get($"/api/admin/accounts/transactions?from={from}&to={to}&q={pnr}");
+        Assert.All(one!["rows"]!.AsArray(), r => Assert.Equal(pnr, (string)r!["pnr"]!));
+        var (_, red) = await Admin.Get($"/api/admin/accounts/transactions?from={from}&to={to}&source=redbus");
+        Assert.All(red!["rows"]!.AsArray(), r => Assert.Equal("redbus", (string)r!["source"]!));
+
+        var csv = await Admin.GetAsync($"/api/admin/accounts/transactions?from={from}&to={to}&format=csv");
+        Assert.Equal("text/csv", csv.Content.Headers.ContentType!.MediaType);
+        Assert.StartsWith("Pnr,Ticket,TravelDate", (await csv.Content.ReadAsStringAsync()).TrimStart('\uFEFF'));
+        Assert.Equal(HttpStatusCode.BadRequest, (await Admin.GetAsync($"/api/admin/accounts/transactions?from={from}&to={to}&basis=nope")).StatusCode);
+        var viewer = await Login((await CreateUser("viewer")).Phone);
+        Assert.Equal(HttpStatusCode.Forbidden, (await viewer.GetAsync($"/api/admin/accounts/transactions?from={from}&to={to}")).StatusCode);
+    }
 }
 
 internal static class HttpGetExt

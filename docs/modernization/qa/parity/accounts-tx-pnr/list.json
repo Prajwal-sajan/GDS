@@ -1,0 +1,15 @@
+{
+  "id": "accounts-tx-pnr",
+  "region": "list",
+  "legacy": [
+    1296,
+    148
+  ],
+  "react": [
+    1296,
+    148
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

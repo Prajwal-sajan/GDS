@@ -1,0 +1,15 @@
+{
+  "id": "accounts-tx-debits",
+  "region": "head",
+  "legacy": [
+    1296,
+    53
+  ],
+  "react": [
+    1296,
+    53
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}
