@@ -33,6 +33,21 @@
         "Row links (view/edit/pickups/drops/fares) open the route editor V015, which is not ported yet (interim fare editor shown)"
       ]
     },
+    "V007": {
+      "status": "VISUAL_PASS",
+      "react": "src/features/staff/StaffPage.tsx",
+      "evidence": [
+        "e2e/parity/staff.parity.spec.ts — identical DOM skeleton (top, filter bar incl. ui-dd custom dropdowns, thead, rows), identical row text for all legacy staff, top/filters/thead/5 rows <= 0.01 pixel diff",
+        "Status switch flips and restores in PostgreSQL; editor email save persists (e2e); BackendTests 46/46 after Staff Email/BloodGroup/JoiningDate migration StaffLegacyProfile + importer backfill"
+      ],
+      "gaps": [
+        "Editor fields address, emergency contact, Aadhaar, PAN, employment type, retention, overtime, bonus/deduction rules: not stored by .NET — shown disabled",
+        "Editor Bank/Ledger/Documents tabs: no .NET endpoints — explicit not-persisted state",
+        "Legacy DELETE /staff/:id deactivates; React performs the same via PUT status=inactive",
+        "Rows created only by the modern e2e suite are excluded from the visual comparison (not present in legacy data)",
+        "Attendance/Advances/Reimbursements/Payouts subpages (V016-V019) not ported"
+      ]
+    },
     "V015": {
       "status": "IMPLEMENTED_UNVERIFIED",
       "react": "src/features/routes/RouteEditorPage.tsx",

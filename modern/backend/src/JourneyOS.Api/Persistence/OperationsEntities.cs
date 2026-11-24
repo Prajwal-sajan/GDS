@@ -33,6 +33,9 @@ public sealed class Staff : ITenantOwned
     public string? SalaryType { get; set; }
     public decimal? SalaryAmount { get; set; }
     public decimal? BataPerTrip { get; set; }
+    public string? Email { get; set; }
+    public string? BloodGroup { get; set; }
+    public DateOnly? JoiningDate { get; set; }
 }
 
 /// <summary>Vehicle and crew assigned to a trip. One active row per (trip, role slot).</summary>

@@ -177,7 +177,9 @@ export interface UserRow { id: number; phone: string; name: string; email: strin
 
 export interface Vehicle { id: number; registrationNumber: string; coachTemplateId: number | null; status: string; modelName: string | null; gpsEnabled: boolean;
   insuranceExpiry: string | null; permitExpiry: string | null; fitnessExpiry: string | null; pucExpiry: string | null }
-export interface Staff { id: number; name: string; phone: string; role: string; status: string; licenseNumber: string | null; licenseExpiry: string | null }
+export interface Staff { id: number; name: string; phone: string; role: string; status: string; licenseNumber: string | null; licenseExpiry: string | null;
+  designation?: string | null; salaryType?: string | null; salaryAmount?: number | null; bataPerTrip?: number | null;
+  email?: string | null; bloodGroup?: string | null; joiningDate?: string | null }
 export interface Assignment { id: number; tripId: number; kind: string; vehicleId: number | null; staffId: number | null; role: string; isActive: boolean;
   assignedAt: string; replacedAt: string | null; replacedReason: string | null }
 export interface SeatRow { seatCode: string; deck: string; row: number; col: number; seatType: string; occupied: boolean; state: string; gender: string | null }

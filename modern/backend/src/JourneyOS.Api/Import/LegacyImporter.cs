@@ -165,9 +165,14 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
         foreach (var s in root.GetProperty("staff").EnumerateArray())
         {
             var id = s.GetProperty("id").GetInt64();
-            if (existingStaff.Contains(id)) continue;
+            if (existingStaff.Contains(id))
+            {
+                if (await db.Staff.FirstOrDefaultAsync(x => x.Id == id) is { } ex) { ex.Email = Str(s, "email"); ex.BloodGroup = Str(s, "blood_group"); ex.JoiningDate = Date(s, "joining_date"); }
+                continue;
+            }
             db.Staff.Add(new Staff
             {
+                Email = Str(s, "email"), BloodGroup = Str(s, "blood_group"), JoiningDate = Date(s, "joining_date"),
                 Id = id, TenantId = tenant.Id, Name = Str(s, "name") ?? "", Phone = Str(s, "phone") ?? "", Role = Str(s, "role") ?? "driver", Status = Str(s, "status") ?? "active",
                 Designation = Str(s, "designation"), LicenseNumber = Str(s, "license_number"), LicenseExpiry = Date(s, "license_expiry"),
                 SalaryType = Str(s, "salary_type"), SalaryAmount = Dec(s, "salary_amount"), BataPerTrip = Dec(s, "bata_per_trip"),

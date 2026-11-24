@@ -11,7 +11,7 @@ namespace JourneyOS.Api.Operations;
 public sealed record VehicleInput(string RegistrationNumber, long? CoachTemplateId, string? Status, string? ModelName, int? ManufactureYear,
     string? OwnershipType, string? PhoneNumber, bool GpsEnabled, DateOnly? InsuranceExpiry, DateOnly? PermitExpiry, DateOnly? FitnessExpiry, DateOnly? PucExpiry);
 public sealed record StaffInput(string Name, string Phone, string Role, string? Status, string? Designation, string? LicenseNumber, DateOnly? LicenseExpiry,
-    string? SalaryType, decimal? SalaryAmount, decimal? BataPerTrip);
+    string? SalaryType, decimal? SalaryAmount, decimal? BataPerTrip, string? Email = null, string? BloodGroup = null, DateOnly? JoiningDate = null);
 public sealed record AssignInput(string Role, long? VehicleId, long? StaffId, string? Reason);
 public sealed record FareInput(int FromSequence, int ToSequence, decimal Seater, decimal SleeperLower, decimal SleeperUpper);
 public sealed record BlockInput(List<string> Seats, int? FromSequence, int? ToSequence, string? Reason);
@@ -63,6 +63,9 @@ public sealed class OperationsService(GdsDbContext db, InventoryService inventor
         else s = await db.Staff.FirstOrDefaultAsync(x => x.Id == id) ?? throw new GdsException("NOT_FOUND", "Staff not found", 404);
         s.Name = i.Name.Trim(); s.Phone = i.Phone; s.Role = i.Role; s.Status = i.Status ?? s.Status; s.Designation = i.Designation; s.LicenseNumber = i.LicenseNumber;
         s.LicenseExpiry = i.LicenseExpiry; s.SalaryType = i.SalaryType; s.SalaryAmount = i.SalaryAmount; s.BataPerTrip = i.BataPerTrip;
+        if (i.Email is not null) s.Email = i.Email.Trim() is { Length: > 0 } em ? em : null;
+        if (i.BloodGroup is not null) s.BloodGroup = i.BloodGroup is "" ? null : i.BloodGroup;
+        if (i.JoiningDate is not null) s.JoiningDate = i.JoiningDate;
         Audit(actor, id is null ? "STAFF_CREATE" : "STAFF_UPDATE", "staff", s.Id.ToString(), new { i.Name, i.Role, i.Status });
         await db.SaveChangesAsync();
         return s;

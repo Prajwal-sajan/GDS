@@ -403,5 +403,125 @@
     "sizeMatch": true,
     "diffPixels": 0,
     "diffRatio": 0
+  },
+  {
+    "id": "staff-list",
+    "region": "filters",
+    "legacy": [
+      1296,
+      91
+    ],
+    "react": [
+      1296,
+      91
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-list",
+    "region": "row-0",
+    "legacy": [
+      1294,
+      87
+    ],
+    "react": [
+      1294,
+      87
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-list",
+    "region": "row-1",
+    "legacy": [
+      1294,
+      86
+    ],
+    "react": [
+      1294,
+      86
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-list",
+    "region": "row-2",
+    "legacy": [
+      1294,
+      86
+    ],
+    "react": [
+      1294,
+      86
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-list",
+    "region": "row-3",
+    "legacy": [
+      1294,
+      86
+    ],
+    "react": [
+      1294,
+      86
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-list",
+    "region": "row-4",
+    "legacy": [
+      1294,
+      86
+    ],
+    "react": [
+      1294,
+      86
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-list",
+    "region": "thead",
+    "legacy": [
+      1294,
+      84
+    ],
+    "react": [
+      1294,
+      84
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "staff-list",
+    "region": "top",
+    "legacy": [
+      1296,
+      52
+    ],
+    "react": [
+      1296,
+      52
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
   }
 ]

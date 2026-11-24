@@ -2379,9 +2379,21 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("numeric(12,2)")
                         .HasColumnName("bata_per_trip");
 
+                    b.Property<string>("BloodGroup")
+                        .HasColumnType("text")
+                        .HasColumnName("blood_group");
+
                     b.Property<string>("Designation")
                         .HasColumnType("text")
                         .HasColumnName("designation");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("text")
+                        .HasColumnName("email");
+
+                    b.Property<DateOnly?>("JoiningDate")
+                        .HasColumnType("date")
+                        .HasColumnName("joining_date");
 
                     b.Property<DateOnly?>("LicenseExpiry")
                         .HasColumnType("date")

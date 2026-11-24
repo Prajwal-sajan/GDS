@@ -1,0 +1,15 @@
+{
+  "id": "staff-list",
+  "region": "thead",
+  "legacy": [
+    1294,
+    84
+  ],
+  "react": [
+    1294,
+    84
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}
