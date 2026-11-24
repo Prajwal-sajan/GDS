@@ -154,14 +154,30 @@ public static class BusinessEndpoints
         var ac = g.MapGroup("/accounts").RequireAuthorization(Policies.Accounts);
         ac.MapGet("/channels", async (ReportsService s) => Results.Ok(await s.ChannelsAsync()));
         ac.MapGet("/ledger", async (string channelKey, ReportsService s) => Results.Ok(await s.LedgerAsync(channelKey)));
+        // Accounts → Receivables (legacy /accounts/receivables): per-channel collected / deductions / paid / receivable; format=csv downloads
+        ac.MapGet("/receivables", async (string? from, string? to, string? format, ReportsService s) =>
+        {
+            var today = await s.TodayAsync();
+            var (f, t) = Range(from ?? today.AddDays(-6).ToString("yyyy-MM-dd"), to ?? today.ToString("yyyy-MM-dd"), today);
+            var rows = await s.ReceivablesAsync(f, t);
+            if (format == "csv")
+            {
+                var props = typeof(ReportsService.ReceivableRow).GetProperties();
+                static string C(object? v) { var x = Convert.ToString(v, System.Globalization.CultureInfo.InvariantCulture) ?? ""; if (x.Length > 0 && "=+-@".Contains(x[0]) && !decimal.TryParse(x, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out _)) x = "'" + x; return x.IndexOfAny([',', '"', '\n', '\r']) >= 0 ? $"\"{x.Replace("\"", "\"\"")}\"" : x; }
+                var csv = string.Join(",", props.Select(p => p.Name)) + "\r\n" + string.Concat(rows.Select(r => string.Join(",", props.Select(p => C(p.GetValue(r)))) + "\r\n"));
+                return Results.File(System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(csv)).ToArray(), "text/csv", $"receivables_{f:yyyy-MM-dd}_{t:yyyy-MM-dd}.csv");
+            }
+            decimal G(string type) => rows.Where(r => r.ChannelType == type).Sum(r => r.Receivable);
+            return Results.Ok(new { from = f, to = t, summary = new { agents = G("agent"), branches = G("branch"), otas = G("ota"), @operator = G("operator") }, rows });
+        });
         ac.MapPost("/ledger", async (LedgerInput i, GdsDbContext db, ReportsService s, HttpContext h) =>
         {
             await s.LedgerAsync(i.ChannelKey); // validates key format
             if (i.Type is not ("credit" or "debit")) throw new GdsException("VALIDATION", "type must be credit or debit");
             if (i.Amount <= 0 || i.Amount > 100_000_000) throw new GdsException("VALIDATION", "Amount must be positive");
-            if (string.IsNullOrWhiteSpace(i.Note)) throw new GdsException("VALIDATION", "A reference note (e.g. UTR) is required");
+            if (i.Note is { Length: > 250 }) throw new GdsException("VALIDATION", "Note must be at most 250 characters");
             var e = new LedgerEntry { TenantId = db.CurrentTenantId, ChannelKey = i.ChannelKey, ChannelType = i.ChannelKey.Split(':')[0], Type = i.Type, Amount = i.Amount,
-                Note = i.Note.Trim(), Date = i.Date ?? await s.TodayAsync(), By = Actor(h), CreatedAt = DateTime.UtcNow };
+                Note = i.Note?.Trim() ?? "", Date = i.Date ?? await s.TodayAsync(), By = Actor(h), CreatedAt = DateTime.UtcNow };
             db.LedgerEntries.Add(e);
             db.AuditLogs.Add(new AuditLog { TenantId = db.CurrentTenantId, Actor = Actor(h), Action = "LEDGER_ADD", Entity = "ledger", EntityId = i.ChannelKey, DataJson = System.Text.Json.JsonSerializer.Serialize(i), At = DateTime.UtcNow });
             await db.SaveChangesAsync();

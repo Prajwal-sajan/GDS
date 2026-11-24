@@ -1,0 +1,15 @@
+{
+  "id": "accounts-rec-all",
+  "region": "table",
+  "legacy": [
+    1296,
+    577
+  ],
+  "react": [
+    1296,
+    577
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

@@ -122,6 +122,17 @@ export type Sales = {
   totals: { bookings: number; seats: number; sales: number; offers: number; netSales: number; asp: number; occupancyPct: number; fleetUtilPct: number; cancelCharges: number; gst: number; expense: number; profit: number };
   sectorBreakdown: SalesBreakdown[]; serviceBreakdown: SalesBreakdown[];
 };
+export type ReceivableRow = { channelKey: string; channelType: string; displayName: string; bookings: number; total: number; commission: number; gstOnCommission: number;
+  tds: number; deductions: number; paid: number; receivable: number };
+export type Receivables = { from: string; to: string; rows: ReceivableRow[]; summary: Record<string, number> };
+/** Accounts CSV export (legacy G.download of `${path}?format=csv`, file `${tab}__${from}_${to}.csv`). */
+async function downloadCsv(path: string, q: Record<string, string>) {
+  const res = await fetch(`/api/admin/accounts/${path}?${new URLSearchParams({ ...q, format: "csv" })}`, { headers: authHeaders() });
+  if (!res.ok) throw new ApiError(res.status, `HTTP ${res.status}`);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(await res.blob()); a.download = `${path}__${q.from}_${q.to}.csv`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+}
 export type TxRow = { pnr: string; ticket: string; travelDate: string; service: string; source: string; passenger: string | null; phone: string | null; seats: string;
   payment: string | null; method: string | null; bookedBy: string; type: "booking" | "cancellation"; date: string; total: number; refund: number; charge: number; status: string };
 export type Transactions = { rows: TxRow[]; services: { value: string; label: string }[]; totals: { bookings: number; credits: number; debits: number; net: number } };
@@ -130,13 +141,9 @@ export const api = {
   sales: (q: Record<string, string>) => call<Sales>("GET", `/api/admin/accounts/sales?${new URLSearchParams(q)}`),
   salesFacets: () => call<SalesFacets>("GET", "/api/admin/accounts/sales-facets"),
   transactions: (q: Record<string, string>) => call<Transactions>("GET", `/api/admin/accounts/transactions?${new URLSearchParams(q)}`),
-  exportTransactions: async (q: Record<string, string>) => {
-    const res = await fetch(`/api/admin/accounts/transactions?${new URLSearchParams({ ...q, format: "csv" })}`, { headers: authHeaders() });
-    if (!res.ok) throw new ApiError(res.status, `HTTP ${res.status}`);
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(await res.blob()); a.download = `transactions__${q.from}_${q.to}.csv`; a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1500);
-  },
+  exportTransactions: (q: Record<string, string>) => downloadCsv("transactions", q),
+  receivables: (q: Record<string, string>) => call<Receivables>("GET", `/api/admin/accounts/receivables?${new URLSearchParams(q)}`),
+  exportReceivables: (q: Record<string, string>) => downloadCsv("receivables", q),
   crmBooking: (pnr: string) => call<{ booking: CrmBooking; map: { coach: { id: number; name: string; capacity: number }; decks: CrmDeck[] } | null }>("GET", `/api/admin/crm/booking/${encodeURIComponent(pnr)}`),
   status: () => call<RedBusStatus>("GET", `${rb}/status`),
   outbox: (status?: string) => call<OutboxRow[]>("GET", `${rb}/outbox${status ? `?status=${status}` : ""}`),
@@ -232,7 +239,7 @@ export const api = {
   channels: () => call<{ agents: { channelKey: string; name: string; phone: string; commissionPct: number | null; active: boolean }[]; otas: { channelKey: string; name: string }[]; branches: { channelKey: string; name: string }[] }>("GET", "/api/admin/accounts/channels"),
   ledger: (channelKey: string) => call<Ledger>("GET", `/api/admin/accounts/ledger?channelKey=${encodeURIComponent(channelKey)}`),
   myLedger: () => call<Ledger>("GET", "/api/admin/me/ledger"),
-  addLedger: (body: { channelKey: string; type: string; amount: number; note: string; date?: string }) => call<unknown>("POST", "/api/admin/accounts/ledger", body),
+  addLedger: (body: { channelKey: string; type: string; amount: number; note?: string; date?: string }) => call<unknown>("POST", "/api/admin/accounts/ledger", body),
   voidLedger: (id: number) => call<unknown>("POST", `/api/admin/accounts/ledger/${id}/void`, {}),
   // Sarathi
   suggestions: () => call<string[]>("GET", "/api/admin/sarathi/suggestions"),

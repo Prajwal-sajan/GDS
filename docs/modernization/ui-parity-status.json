@@ -207,6 +207,20 @@
         "Service filter is applied server-side (legacy ignored it)",
         "Seats of partially cancelled legacy bookings list only the seats still imported"
       ]
+    },
+    "V022": {
+      "status": "VISUAL_PASS",
+      "react": "src/features/accounts/AccountsPage.tsx (ReceivablesTab, LedgerDialog)",
+      "evidence": [
+        "e2e/parity/accounts-receivables.parity.spec.ts: all / agents filter / ledger dialog: filters, kind segment, stats, table, dialog identical DOM skeleton + text, pixel <= 1% (3/3; amounts masked)",
+        "BusinessTests.Accounts_receivables_split_by_channel_and_ledger_credit_reduces_receivable; e2e business accounts receivables (records a confirmed payment)",
+        "Data from GET /api/admin/accounts/receivables (port of legacy reports.js receivables; format=csv) and /accounts/ledger (aligned with legacy ledger(): recorded OTA commission, refund %, cancelled-with-history tickets, website channel); importer backfills agent_phone; agent rows equal legacy exactly"
+      ],
+      "gaps": [
+        "Branch channel keyed by booking clerk name (legacy keyed by phone; modern bookings store no clerk phone)",
+        "Ledger note optional like legacy; entries are voided (never deleted) and audited",
+        "OTA/website/branch amounts differ by the 154 skipped legacy PNRs"
+      ]
     }
   },
   "apiMap": {

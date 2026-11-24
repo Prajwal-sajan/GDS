@@ -157,6 +157,27 @@ test("accounts transactions: credits/debits filter, live search, basis toggle an
   await expect(page.locator('.ac10-segment .ac10-btn.selected', { hasText: "Booked On" })).toBeVisible();
 });
 
+test("accounts receivables: channel filter, ledger dialog records a confirmed payment that reduces the receivable", async ({ page, request }) => {
+  await signInUser(page, await provision(request, "accounts"));
+  await open(page, "accounts");
+  await page.locator('.ac10-nav a[href="#/accounts/receivables"]').click();
+  await expect(page.locator(".ac10-recstats .ac10-stat")).toHaveCount(4);
+  await page.locator('[data-ac10="receivables-kind"][data-value="ota"]').click();
+  const ota = page.locator(".ac10-rec-table tbody tr");
+  await expect(ota.first()).toBeVisible();
+  expect((await ota.locator("td:nth-child(2)").allInnerTexts()).every((t) => t === "ota")).toBeTruthy();
+  const before = await page.locator(".ac10-recstats .ac10-stat.green strong").innerText();
+  await ota.first().locator('[data-ac10="ledger-open"][data-ledtype="credit"]').first().click();
+  const dlg = page.locator(".ac10-overlay");
+  await expect(dlg.locator(".ac10-led-line").first()).toBeVisible();
+  await dlg.locator('input[name="amount"]').fill("1");
+  await dlg.locator('input[name="note"]').fill(`E2E ${Date.now()}`);
+  await dlg.getByRole("button", { name: "Record payment" }).click();
+  await page.locator("#modal-root [data-y]").click();
+  await expect(dlg).toHaveCount(0);
+  await expect(page.locator(".ac10-recstats .ac10-stat.green strong")).not.toHaveText(before);
+});
+
 // ---------------------------------------------------------------- React regression snapshots
 // These are React SELF-baselines: they catch unintended changes to interim screens and prove NOTHING about parity with the
 // legacy GDS. Legacy↔React comparisons live in e2e/parity (playwright.parity.config.ts) and use the live legacy UI as baseline.

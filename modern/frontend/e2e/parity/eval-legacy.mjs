@@ -1,6 +1,8 @@
 // Dev probe: evaluate an expression in the legacy app after load. Usage: node e2e/parity/eval-legacy.mjs "#/trips" "expr"
 import { chromium } from "@playwright/test";
-const [hash, expr] = process.argv.slice(2);
+import fs from "node:fs";
+const [hash, arg] = process.argv.slice(2);
+const expr = arg.startsWith("@") ? fs.readFileSync(arg.slice(1), "utf8") : arg; // "@file.js" avoids shell quoting
 const LEGACY = process.env.LEGACY_URL ?? "http://localhost:3100";
 const b = await chromium.launch();
 const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } });

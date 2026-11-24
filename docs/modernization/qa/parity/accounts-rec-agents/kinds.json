@@ -1,0 +1,15 @@
+{
+  "id": "accounts-rec-agents",
+  "region": "kinds",
+  "legacy": [
+    279,
+    42
+  ],
+  "react": [
+    279,
+    42
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

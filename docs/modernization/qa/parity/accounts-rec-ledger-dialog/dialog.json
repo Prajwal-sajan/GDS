@@ -1,0 +1,15 @@
+{
+  "id": "accounts-rec-ledger-dialog",
+  "region": "dialog",
+  "legacy": [
+    960,
+    683
+  ],
+  "react": [
+    960,
+    683
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

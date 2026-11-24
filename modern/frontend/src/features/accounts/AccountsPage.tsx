@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { api, type Me, type Sales, type SalesFacets, type Transactions, type TxRow } from "../../api";
-import { toast, toastError } from "../../components/ui/feedback";
+import { api, type Ledger, type Me, type ReceivableRow, type Sales, type SalesFacets, type Transactions, type TxRow } from "../../api";
+import { confirmDialog, Modal, toast, toastError } from "../../components/ui/feedback";
 import { NiceDate } from "../../components/ui/NiceDate";
 import { NiceSelect } from "../../components/ui/NiceSelect";
 import type { Role } from "../../navigation/nav";
@@ -43,12 +43,12 @@ const today = () => isoDay(new Date());
 const addDays = (s: string, n: number) => { const d = new Date(`${s}T12:00:00`); d.setDate(d.getDate() + n); return isoDay(d); };
 
 type Col = { key: string; label: string; type?: Kind; total?: boolean; col?: string };
-function Table<T extends Record<string, unknown>>({ rows, cols, foot }: { rows: T[]; cols: Col[]; foot?: boolean }) {
+function Table<T extends Record<string, unknown>>({ rows, cols, foot, cls = "", cell }: { rows: T[]; cols: Col[]; foot?: boolean; cls?: string; cell?: (r: T, c: Col) => ReactNode }) {
   const sum = (k: string) => rows.reduce((v, r) => v + (Number(r[k]) || 0), 0);
   return (
-    <div className="ac10-scroll"><table className="ac10-table ">
+    <div className="ac10-scroll"><table className={`ac10-table ${cls}`}>
       <thead><tr>{cols.map((c) => <th key={c.key} className={c.col ?? ""}>{c.label}</th>)}</tr></thead>
-      <tbody>{rows.length ? rows.map((r, i) => <tr key={i}>{cols.map((c) => <td key={c.key} className={c.col ?? ""}>{fmt(r[c.key], c.type)}</td>)}</tr>)
+      <tbody>{rows.length ? rows.map((r, i) => <tr key={i}>{cols.map((c) => <td key={c.key} className={c.col ?? ""}>{cell ? cell(r, c) : fmt(r[c.key], c.type)}</td>)}</tr>)
         : <tr><td colSpan={cols.length} className="ac10-nodata">No data for selected period</td></tr>}</tbody>
       {rows.length > 0 && foot && <tfoot><tr>{cols.map((c, i) => <td key={c.key}>{i === 0 ? `Total (${rows.length})` : c.total ? (c.type === "money" ? inr(sum(c.key)) : c.type === "int" ? num(sum(c.key)) : "") : " "}</td>)}</tr></tfoot>}
     </table></div>
@@ -76,7 +76,7 @@ export function AccountsPage({ me, tab, children }: { me: Me; tab: string; child
         ))}
       </nav>
       <section className="ac10-content" data-ac10-page="">
-        {tab === "analytics" ? <SalesTab /> : tab === "transactions" ? <TransactionsTab me={me} /> : children}
+        {tab === "analytics" ? <SalesTab /> : tab === "transactions" ? <TransactionsTab me={me} /> : tab === "receivables" ? <ReceivablesTab /> : children}
       </section>
     </div>
   );
@@ -290,5 +290,136 @@ function TransactionsTab({ me }: { me: Me }) {
       </div>
       {open && <BookingOverlay me={me} pnr={open} onClose={() => setOpen(null)} />}
     </>
+  );
+}
+
+// ---------------- Receivables (legacy accounts-parity-v10.js receivables() + ledgerDialog()) ----------------
+/** Legacy dates(s,{compact:true}): two calendar inputs, period presets (fill the inputs only) and Apply (commits to the URL). */
+function DateFilters({ from, to, onApply }: { from: string; to: string; onApply: (from: string, to: string) => void }) {
+  const [f, setF] = useState(from);
+  const [t, setT] = useState(to);
+  const preset = (which: string) => {
+    let a = addDays(today(), -6), b = today();
+    if (which === "month") a = `${today().slice(0, 7)}-01`;
+    if (which === "last") { const d = new Date(`${today()}T12:00:00`); d.setDate(0); b = isoDay(d); a = `${b.slice(0, 7)}-01`; }
+    setF(a); setT(b);
+  };
+  return (
+    <form className="ac10-filterform compact" data-filters="" onSubmit={(e) => { e.preventDefault(); onApply(f, t); }}>
+      <label className="ac10-date"><span><Ic k="calendar" s={21} /></span><NiceDate name="from" label="From date" value={f} onChange={setF} /></label>
+      <label className="ac10-date"><span><Ic k="calendar" s={21} /></span><NiceDate name="to" label="To date" value={t} onChange={setT} /></label>
+      <div className="ac10-presets">
+        {([["7", "Last 7 days"], ["month", "This month"], ["last", "Last month"]] as const).map(([k, l]) =>
+          <button key={k} type="button" className="ac10-btn subtle" data-ac10="preset" data-preset={k} onClick={() => preset(k)}>{l}</button>)}
+      </div>
+      <button type="button" className="ac10-btn primary" data-ac10="filter-apply" onClick={() => onApply(f, t)}>Apply</button>
+    </form>
+  );
+}
+
+const REC_KINDS: [string, string][] = [["all", "All"], ["operator", "SaveTrip"], ["ota", "OTAs"], ["agent", "Agents"], ["branch", "Staff"]];
+function ReceivablesTab() {
+  const q = query();
+  const s = { from: q.from || addDays(today(), -6), to: q.to || today() };
+  const [kind, setKind] = useState("all");
+  const [rows, setRows] = useState<ReceivableRow[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [ledger, setLedger] = useState<{ channel: string; type: "credit" | "debit" } | null>(null);
+  const [reload, setReload] = useState(0);
+  useEffect(() => {
+    let live = true;
+    api.receivables(s).then((d) => { if (live) setRows(d.rows); })
+      .catch((e) => { if (live) { setError(e instanceof Error ? e.message : String(e)); toastError(e); } });
+    return () => { live = false; };
+  }, [s.from, s.to, reload]); // eslint-disable-line react-hooks/exhaustive-deps
+  const apply = (from: string, to: string) => {
+    if (from > to) return toast("Invalid date range", "bad");
+    location.hash = `#/accounts/receivables?${new URLSearchParams({ ...q, from, to })}`;
+  };
+  if (error) return <div className="ac10-empty error"><Ic k="reports" s={30} /><b>Could not load receivables</b><p>{error}</p></div>;
+  if (!rows) return <div className="ac10-loading">Loading Accounts…</div>;
+  const sum = (k: keyof ReceivableRow) => rows.reduce((v, r) => v + (Number(r[k]) || 0), 0);
+  const shown = rows.filter((r) => kind === "all" || r.channelType === kind);
+  const cols: Col[] = [{ key: "displayName", label: "CHANNEL" }, { key: "channelType", label: "RATE" }, { key: "bookings", label: "PNR", type: "int", total: true },
+    { key: "total", label: "FARE", type: "money", total: true }, { key: "commission", label: "OFFERS / COMMISSION", type: "money", total: true },
+    { key: "gstOnCommission", label: "TAX", type: "money", total: true }, { key: "tds", label: "TDS", type: "money", total: true },
+    { key: "deductions", label: "TOTAL DEDUCTIONS", type: "money", total: true }, { key: "paid", label: "PAID", type: "money", total: true },
+    { key: "receivable", label: "RECEIVABLES", type: "money", total: true }, { key: "actions", label: "ACTIONS" }];
+  const open = (channel: string, type: "credit" | "debit") => setLedger({ channel, type });
+  return (
+    <>
+      <div className="ac10-row-between">
+        <DateFilters from={s.from} to={s.to} onApply={apply} />
+        <div className="ac10-tools">
+          <button type="button" className="ac10-btn primary" data-ac10="print" onClick={() => window.print()}><Ic k="print" />{" Print"}</button>
+          <button type="button" className="ac10-btn success" data-ac10="export" onClick={() => api.exportReceivables(s).catch(toastError)}><Ic k="download" />{" Download"}</button>
+        </div>
+      </div>
+      <div className="ac10-segment">
+        {REC_KINDS.map(([k, v]) => <button key={k} type="button" className={`ac10-btn ${kind === k ? "selected" : ""}`} data-ac10="receivables-kind" data-value={k} onClick={() => setKind(k)}>{v}</button>)}
+      </div>
+      <div className="ac10-recstats">
+        <Stat label="Collected" value={inr(sum("total"))} /><Stat label="Total Deductions" value={inr(sum("deductions"))} kind="orange" />
+        <Stat label="Paid" value={inr(sum("paid"))} kind="blue" /><Stat label="Receivables" value={inr(sum("receivable"))} kind="green" />
+      </div>
+      <div data-ac10-restable="">
+        <Table rows={shown} cols={cols} foot cls="ac10-rec-table" cell={(r, c) => c.key === "actions" ? (
+          <div className="ac10-ledger-actions">
+            <button type="button" className="ac10-btn green" data-ac10="ledger-open" data-channel={r.channelKey} data-ledtype="credit" onClick={() => open(r.channelKey, "credit")}>Credit</button>
+            <button type="button" className="ac10-btn amber" data-ac10="ledger-open" data-channel={r.channelKey} data-ledtype="debit" onClick={() => open(r.channelKey, "debit")}>Debit</button>
+            <button type="button" className="ac10-btn light" data-ac10="ledger-open" data-channel={r.channelKey} data-ledtype="credit" onClick={() => open(r.channelKey, "credit")}><Ic k="reports" s={13} />{" Ledger"}</button>
+          </div>
+        ) : c.key === "receivable" ? <strong className="ac10-green">{inr(r.receivable)}</strong> : fmt(r[c.key as keyof ReceivableRow], c.type)} />
+      </div>
+      {ledger && <LedgerDialog channel={ledger.channel} type={ledger.type} onClose={() => setLedger(null)} onSaved={() => { setLedger(null); setReload((n) => n + 1); }} />}
+    </>
+  );
+}
+
+export function LedgerDialog({ channel, type, onClose, onSaved }: { channel: string; type: "credit" | "debit"; onClose: () => void; onSaved: () => void }) {
+  const [d, setD] = useState<Ledger | null>(null);
+  const [t, setT] = useState(type);
+  const [form, setForm] = useState({ amount: "", date: today(), note: "" });
+  useEffect(() => { api.ledger(channel).then(setD).catch((e) => { toastError(e); onClose(); }); }, [channel]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!d) return null;
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = Number(form.amount);
+    if (!(amount > 0)) return toast("Enter a valid amount", "bad");
+    if (!(await confirmDialog(`Record ${t === "credit" ? "payment received" : "debit owed"} of ${inr(amount)}?`, { ok: "Record" }))) return;
+    try {
+      await api.addLedger({ channelKey: channel, type: t, amount, date: form.date, note: form.note });
+      toast("Ledger entry recorded", "ok");
+      onSaved();
+    } catch (err) { toastError(err); }
+  };
+  const head = (label: string, v: number, cls = "") => <div className={`ac10-headstat ${cls}`}><div>{label}</div><b>{inr(v)}</b></div>;
+  const kindLabel = (x: Ledger["entries"][number]) => x.kind === "manual" ? "Manual entry" : x.kind === "ticket" ? `Booking ${x.ref}` : `Cancellation ${x.ref}`;
+  return (
+    <Modal size="lg" portal className="ac10-overlay ac10-small-modal" onClose={onClose}
+      title={<><span className="ac10-modalicon"><Ic k="receivables" s={23} /></span><div className="ac10-modalheading"><b>{channel.replace(/^\w+:/, "")}</b><small>{`Settlement ledger · ${channel}`}</small></div></>}>
+      <div className="ac10-ledstat">{head("ACCRUED", d.totalDebits)}{head("RECEIVED", d.totalCredits)}{head("BALANCE", d.balance, "ac10-strongblue")}</div>
+      <div className="ac10-segment fill">
+        <button type="button" className={`ac10-btn ${t === "credit" ? "selected" : ""}`} data-ac10="ledger-type" data-value="credit" onClick={() => setT("credit")}>Payment received</button>
+        <button type="button" className={`ac10-btn ${t === "debit" ? "selected" : ""}`} data-ac10="ledger-type" data-value="debit" onClick={() => setT("debit")}>Debit (owed)</button>
+      </div>
+      <form data-ledger-form="" onSubmit={submit}>
+        <div className="ac10-grid-2">
+          <label className="ac10-field"><span>₹ Amount</span><input name="amount" type="number" value={form.amount} required min="0.01" step="0.01" onChange={(e) => setForm({ ...form, amount: e.target.value })} /></label>
+          <label className="ac10-field"><span>Date</span><input name="date" type="date" value={form.date} required onChange={(e) => setForm({ ...form, date: e.target.value })} /></label>
+        </div>
+        <label className="ac10-field"><span>Note (e.g. UTR / reference) — optional</span><input name="note" type="text" value={form.note} maxLength={250} onChange={(e) => setForm({ ...form, note: e.target.value })} /></label>
+        <button className="ac10-btn primary full" type="submit">{t === "credit" ? "Record payment" : "Record debit"}</button>
+      </form>
+      <h3>HISTORY</h3>
+      <div className="ac10-led-history">
+        {d.entries.length ? d.entries.slice().reverse().map((x, i) => (
+          <div key={i} className="ac10-led-line">
+            <div><b>{kindLabel(x)}</b><small>{`${fdate(x.date)} · ${x.note}`}</small></div>
+            <strong className={x.debit > 0 ? "ac10-red" : "ac10-green"}>{x.debit > 0 ? `+ ${inr(x.debit)}` : `- ${inr(x.credit)}`}</strong>
+          </div>
+        )) : <Empty text="No manual entries yet" />}
+      </div>
+    </Modal>
   );
 }

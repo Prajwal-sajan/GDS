@@ -618,6 +618,43 @@ public sealed class BusinessTests(GdsFixture fx)
         var viewer = await Login((await CreateUser("viewer")).Phone);
         Assert.Equal(HttpStatusCode.Forbidden, (await viewer.GetAsync($"/api/admin/accounts/transactions?from={from}&to={to}")).StatusCode);
     }
+
+    [Fact]
+    public async Task Accounts_receivables_split_by_channel_and_ledger_credit_reduces_receivable()
+    {
+        const string from = "2026-11-18", to = "2026-11-24";
+        var (s, rec) = await Admin.Get($"/api/admin/accounts/receivables?from={from}&to={to}");
+        Assert.True(s == HttpStatusCode.OK, rec?.ToJsonString());
+        var rows = rec!["rows"]!.AsArray();
+        var (f, t) = (DateOnly.Parse(from), DateOnly.Parse(to));
+        var live = await fx.Sql(db => (from b in db.Bookings join tr in db.Trips on b.TripId equals tr.Id where tr.TravelDate >= f && tr.TravelDate <= t && b.Status == "CONFIRMED" select b.Id).CountAsync());
+        Assert.Equal(live, rows.Sum(r => (int)r!["bookings"]!));
+        foreach (var r in rows)
+        {
+            // each figure is rounded on its own (as legacy), so sums may differ by a paisa or two
+            Assert.InRange((decimal)r!["commission"]! + (decimal)r["gstOnCommission"]! + (decimal)r["tds"]! - (decimal)r["deductions"]!, -0.02m, 0.02m);
+            Assert.InRange((decimal)r["total"]! - (decimal)r["deductions"]! - (decimal)r["paid"]! - (decimal)r["receivable"]!, -0.02m, 0.02m);
+            Assert.Contains((string)r["channelType"]!, new[] { "ota", "agent", "branch", "operator" });
+        }
+        var redbus = rows.Single(r => (string)r!["channelKey"]! == "ota:redbus")!;
+        Assert.Equal(0m, (decimal)redbus["paid"]!); // OTA money is never counted as paid at booking
+
+        // a manual credit dated inside the range is counted as paid for that channel (note is optional, like legacy)
+        var (sl, entry) = await Admin.Post("/api/admin/accounts/ledger", new { channelKey = "ota:redbus", type = "credit", amount = 10m, date = to });
+        Assert.True(sl == HttpStatusCode.OK, entry?.ToJsonString());
+        var after = (await Admin.GetJson($"/api/admin/accounts/receivables?from={from}&to={to}"))["rows"]!.AsArray().Single(r => (string)r!["channelKey"]! == "ota:redbus")!;
+        Assert.Equal((decimal)redbus["receivable"]! - 10m, (decimal)after["receivable"]!);
+        await Admin.Post($"/api/admin/accounts/ledger/{(long)entry!["id"]!}/void", new { });
+
+        var website = await Admin.GetJson("/api/admin/accounts/ledger?channelKey=website");
+        Assert.All(website["entries"]!.AsArray(), e => Assert.Equal("manual", (string)e!["kind"]!));
+        var ota = await Admin.GetJson("/api/admin/accounts/ledger?channelKey=ota:redbus");
+        Assert.Contains(ota["entries"]!.AsArray(), e => (string)e!["kind"]! == "cancellation" && ((string)e["note"]!).StartsWith("Refund "));
+        var csv = await Admin.GetAsync($"/api/admin/accounts/receivables?from={from}&to={to}&format=csv");
+        Assert.Equal("text/csv", csv.Content.Headers.ContentType!.MediaType);
+        var viewer = await Login((await CreateUser("viewer")).Phone);
+        Assert.Equal(HttpStatusCode.Forbidden, (await viewer.GetAsync($"/api/admin/accounts/receivables?from={from}&to={to}")).StatusCode);
+    }
 }
 
 internal static class HttpGetExt

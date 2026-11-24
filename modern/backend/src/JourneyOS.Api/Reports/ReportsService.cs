@@ -305,38 +305,91 @@ public sealed class ReportsService(GdsDbContext db, TimeProvider clock)
     public async Task<object> LedgerAsync(string channelKey)
     {
         var parts = channelKey.Split(':', 2);
-        if (parts.Length != 2 || parts[0] is not ("agent" or "ota" or "branch") || parts[1].Length == 0)
-            throw new GdsException("VALIDATION", "channelKey must be agent:{phone}, branch:{name} or ota:{name}");
+        if (channelKey == "website") parts = ["website", "-"]; // operator's own channel: manual entries only (legacy)
+        if (parts.Length != 2 || parts[0] is not ("agent" or "ota" or "branch" or "website") || parts[1].Length == 0)
+            throw new GdsException("VALIDATION", "channelKey must be website, agent:{phone}, branch:{name} or ota:{name}");
         var (type, id) = (parts[0], parts[1]);
         var q = db.Bookings.AsNoTracking().Include(b => b.Passengers).AsQueryable();
         q = type switch
         {
             "agent" => q.Where(b => b.AgentPhone == id),
             "ota" => q.Where(b => b.Channel == id),
+            "website" => q.Where(b => false),
             _ => q.Where(b => b.Channel == "branch" && b.BookedBy == id),
         };
-        var bookings = await q.ToListAsync();
+        var bookings = await q.OrderBy(b => b.Pnr).ToListAsync();
         var ids = bookings.Select(b => b.Id).ToList();
         var pays = (await db.Payments.AsNoTracking().Where(p => ids.Contains(p.BookingId)).ToListAsync()).GroupBy(p => p.BookingId).ToDictionary(g => g.Key, g => g.ToList());
-        var cxl = await db.Cancellations.AsNoTracking().Where(c => ids.Contains(c.BookingId)).ToListAsync();
+        var cxl = (await db.Cancellations.AsNoTracking().Where(c => ids.Contains(c.BookingId)).OrderBy(c => c.CreatedAt).ToListAsync()).GroupBy(c => c.BookingId).ToDictionary(g => g.Key, g => g.ToList());
+        var otaCom = await db.BookingFinances.AsNoTracking().Where(f => ids.Contains(f.BookingId) && f.OtaCommission != null).ToDictionaryAsync(f => f.BookingId, f => f.OtaCommission!.Value);
+        var travel = await db.Trips.AsNoTracking().Where(t => bookings.Select(b => b.TripId).Contains(t.Id)).ToDictionaryAsync(t => t.Id, t => t.TravelDate);
         var pct = type == "agent" ? await db.Users.AsNoTracking().Where(u => u.Phone == id && u.Role == "agent").Select(u => u.CommissionPct).FirstOrDefaultAsync() ?? 0 : 0;
         var tz = TimeZoneInfo.FindSystemTimeZoneById((await TenantAsync()).TimeZone);
-        DateOnly Local(DateTime utc) => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(utc, tz));
+        DateOnly Local(DateTime utc) => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), tz));
 
+        // Same entries as legacy ledger(): a ticket line for every live booking or one with cancellations (amount due net of the recorded
+        // commission, else the agent's commission %), each cancellation as a refund credit, then manual entries; stable order by date.
         var entries = new List<(DateOnly Date, string Kind, string Ref, decimal Debit, decimal Credit, string Note, long? Id)>();
         foreach (var b in bookings)
         {
-            var commission = R2(b.Passengers.Sum(p => p.BaseFare) * pct / 100m);
-            var due = b.TotalFare - commission;
+            var cs = cxl.GetValueOrDefault(b.Id) ?? [];
+            if (b.Status == "CANCELLED" && cs.Count == 0) continue;
+            var commission = otaCom.TryGetValue(b.Id, out var oc) ? oc : R2(b.Passengers.Sum(p => p.BaseFare) * pct / 100m);
+            var due = R2(b.TotalFare - commission);
             var paid = type != "ota" && (pays.GetValueOrDefault(b.Id) ?? []).Any(p => p.Status == "PAID") ? due : 0;
-            entries.Add((Local(b.DateOfIssue), "ticket", b.Pnr, due, paid, $"{b.Passengers.Count} seat(s){(commission > 0 ? $" · commission {commission}" : "")}", null));
+            entries.Add((Local(b.DateOfIssue), "ticket", b.Pnr, due, paid, $"{b.Passengers.Count} seat(s) · {travel[b.TripId]:yyyy-MM-dd}", null));
+            foreach (var c in cs)
+                entries.Add((Local(c.CreatedAt), "cancellation", b.Pnr, 0, c.Refund, $"Refund {(c.Refund + c.Charge > 0 ? Math.Round(c.Refund / (c.Refund + c.Charge) * 100, MidpointRounding.AwayFromZero) : 0)}%", null));
         }
-        foreach (var c in cxl) entries.Add((Local(c.CreatedAt), "cancellation", bookings.First(b => b.Id == c.BookingId).Pnr, 0, c.Refund, $"Refund for {string.Join(",", c.Seats)}", null));
         foreach (var e in await db.LedgerEntries.AsNoTracking().Where(e => e.ChannelKey == channelKey && !e.Voided).ToListAsync())
             entries.Add((e.Date, "manual", e.Note, e.Type == "debit" ? e.Amount : 0, e.Type == "credit" ? e.Amount : 0, $"by {e.By}", e.Id));
         decimal bal = 0;
-        var rows = entries.OrderBy(e => e.Date).ThenBy(e => e.Kind).Select(e => { bal += e.Debit - e.Credit; return new { e.Date, e.Kind, e.Ref, e.Debit, e.Credit, e.Note, e.Id, balance = R2(bal) }; }).ToList();
-        return new { channelKey, entries = rows, totalDebits = rows.Sum(r => r.Debit), totalCredits = rows.Sum(r => r.Credit), balance = R2(bal) };
+        var rows = entries.OrderBy(e => e.Date).Select(e => { bal += e.Debit - e.Credit; return new { e.Date, e.Kind, e.Ref, e.Debit, e.Credit, e.Note, e.Id, balance = R2(bal) }; }).ToList();
+        return new { channelKey, entries = rows, totalDebits = R2(rows.Sum(r => r.Debit)), totalCredits = R2(rows.Sum(r => r.Credit)), balance = R2(bal) };
+    }
+
+    // ---------------- accounts / receivables (legacy reports.js receivables) ----------------
+    public sealed record ReceivableRow(string ChannelKey, string ChannelType, string DisplayName, int Bookings, decimal Total, decimal Commission, decimal GstOnCommission,
+        decimal Tds, decimal Deductions, decimal Paid, decimal Receivable);
+
+    /// <summary>
+    /// Per channel for live bookings travelling in [from, to]: fare collected, deductions (commission + GST on it + OTA TDS 0.1% of net),
+    /// paid (non-OTA bookings already paid + manual ledger credits − debits dated in the range) and the receivable remainder.
+    /// Commission is the recorded OTA commission, else the agent's configured commission % of base fare (never guessed otherwise).
+    /// </summary>
+    public async Task<List<ReceivableRow>> ReceivablesAsync(DateOnly from, DateOnly to)
+    {
+        ValidateRange(from, to);
+        var bs = await db.Bookings.AsNoTracking().Join(db.Trips, b => b.TripId, t => t.Id, (b, t) => new { b, t.TravelDate })
+            .Where(x => x.TravelDate >= from && x.TravelDate <= to && x.b.Status == "CONFIRMED").OrderBy(x => x.b.Pnr).Select(x => x.b).ToListAsync();
+        var ids = bs.Select(b => b.Id).ToList();
+        var fin = await db.BookingFinances.AsNoTracking().Where(f => ids.Contains(f.BookingId)).ToDictionaryAsync(f => f.BookingId);
+        var paid = (await db.Payments.AsNoTracking().Where(p => ids.Contains(p.BookingId) && p.Status == "PAID").Select(p => p.BookingId).ToListAsync()).ToHashSet();
+        var basef = (await db.BookingPassengers.AsNoTracking().Where(p => ids.Contains(p.BookingId) && p.Status == "CONFIRMED").GroupBy(p => p.BookingId)
+            .Select(g => new { g.Key, s = g.Sum(p => p.BaseFare) }).ToListAsync()).ToDictionary(x => x.Key, x => x.s);
+        var agents = await db.Users.AsNoTracking().Where(u => u.Role == "agent").Select(u => new { u.Phone, u.Name, u.CommissionPct }).ToListAsync();
+        var agg = new Dictionary<string, (string Type, string Name, int N, decimal Total, decimal Com, decimal Gst, decimal Tds, decimal Paid)>();
+        foreach (var b in bs)
+        {
+            string key, type, name;
+            if (b.Channel == "agent") { key = $"agent:{b.AgentPhone}"; type = "agent"; name = agents.FirstOrDefault(a => a.Phone == b.AgentPhone)?.Name ?? b.AgentPhone ?? "Agent"; }
+            else if (b.Channel is "redbus" or "abhibus" or "paytm") { key = $"ota:{b.Channel}"; type = "ota"; name = b.Channel; }
+            else if (b.Channel == "branch") { key = $"branch:{b.BookedBy}"; type = "branch"; name = b.BookedBy ?? "Branch"; }
+            else { key = "website"; type = "operator"; name = "Website"; }
+            var f = fin.GetValueOrDefault(b.Id);
+            var net = f?.NetFare ?? basef.GetValueOrDefault(b.Id);
+            var com = f?.OtaCommission ?? (type == "agent" ? R2(basef.GetValueOrDefault(b.Id) * (agents.FirstOrDefault(a => a.Phone == b.AgentPhone)?.CommissionPct ?? 0) / 100m) : 0);
+            if (!agg.TryGetValue(key, out var a)) a = (type, name, 0, 0m, 0m, 0m, 0m, 0m);
+            agg[key] = (type, name, a.N + 1, a.Total + b.TotalFare, a.Com + com, a.Gst + (f?.OtaCommissionGst ?? 0), a.Tds + (type == "ota" ? net * 0.001m : 0),
+                a.Paid + (type != "ota" && paid.Contains(b.Id) ? b.TotalFare : 0));
+        }
+        foreach (var e in await db.LedgerEntries.AsNoTracking().Where(e => !e.Voided && e.Date >= from && e.Date <= to).ToListAsync())
+            if (agg.TryGetValue(e.ChannelKey, out var a)) agg[e.ChannelKey] = a with { Paid = a.Paid + (e.Type == "credit" ? e.Amount : -e.Amount) };
+        return agg.Select(kv =>
+        {
+            var a = kv.Value; var ded = a.Com + a.Gst + a.Tds;
+            return new ReceivableRow(kv.Key, a.Type, a.Name, a.N, R2(a.Total), R2(a.Com), R2(a.Gst), R2(a.Tds), R2(ded), R2(a.Paid), R2(a.Total - ded - a.Paid));
+        }).ToList();
     }
 
     // ---------------- accounts / sales (legacy reports.js analytics + /accounts/sales-facets) ----------------

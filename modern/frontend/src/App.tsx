@@ -109,7 +109,7 @@ function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Ele
     [/^accounts$/, [...ALL_R, "agent"], () => r === "agent" ? <LedgerPanel me={me} /> : <AccountsPage me={me} tab="analytics" />, true],
     [/^accounts\/analytics$/, ALL_R, () => <AccountsPage key={location.hash} me={me} tab="analytics" />, true],
     [/^accounts\/reports(\/.*)?$/, ALL_R, () => <AccountsPage me={me} tab="reports"><ReportsPanel me={me} /></AccountsPage>, true],
-    [/^accounts\/receivables$/, ACC_R, () => <AccountsPage me={me} tab="receivables"><LedgerPanel me={me} /></AccountsPage>, true],
+    [/^accounts\/receivables$/, ACC_R, () => <AccountsPage key={location.hash} me={me} tab="receivables" />, true],
     [/^accounts\/(invoices|agent-settings)$/, ACC_R, () => <AccountsPage me={me} tab={seg[1]}><NotMigrated path={path} /></AccountsPage>, true],
     [/^accounts\/coupons$/, ["owner", "admin"], () => <AccountsPage me={me} tab="coupons"><NotMigrated path={path} /></AccountsPage>, true],
     [/^dailyops$/, ALL_R, () => <ReportsPanel me={me} />],

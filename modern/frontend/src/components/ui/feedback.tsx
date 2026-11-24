@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 // React port of the legacy feedback primitives (public/js/core.js G.toast / G.modal / G.confirm) with the same DOM and
 // class names (#toasts .toast, .ov > .md > .hd/.bd/.ft), so the vendored legacy CSS styles them identically.
@@ -21,17 +22,22 @@ export function confirmDialog(msg: string, { ok = "Confirm", danger = false }: {
   return new Promise<boolean>((resolve) => { ask?.resolve(false); ask = { msg, ok, danger, resolve }; emit(); });
 }
 
-export function Modal({ title, size = "", onClose, foot, children }: { title: ReactNode; size?: string; onClose: () => void; foot?: ReactNode; children: ReactNode }) {
+export function Modal({ title, size = "", className = "", portal = false, onClose, foot, children }: { title: ReactNode; size?: string; className?: string; portal?: boolean; onClose: () => void; foot?: ReactNode; children: ReactNode }) {
   const box = useRef<HTMLDivElement>(null);
+  const close = useRef(onClose);
+  close.current = onClose;
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
     box.current?.focus();
-    const key = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const key = (e: KeyboardEvent) => {
+      const all = document.querySelectorAll(".ov"); // only the topmost dialog closes on Escape
+      if (e.key === "Escape" && all[all.length - 1]?.contains(box.current)) close.current();
+    };
     document.addEventListener("keydown", key);
     return () => { document.removeEventListener("keydown", key); prev?.focus?.(); };
-  }, [onClose]);
-  return (
-    <div className="ov" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+  }, []);
+  const dialog = (
+    <div className={`ov${className ? ` ${className}` : ""}`} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className={`md ${size}`} role="dialog" aria-modal="true" tabIndex={-1} ref={box}>
         <div className="hd"><h2>{title}</h2><button className="btn ghost sm" data-x type="button" aria-label="Close" onClick={onClose}>✕</button></div>
         <div className="bd">{children}</div>
@@ -39,6 +45,9 @@ export function Modal({ title, size = "", onClose, foot, children }: { title: Re
       </div>
     </div>
   );
+  // portal: mount in #modal-root at body level like legacy G.modal, so page typography doesn't leak into the dialog.
+  const host = portal ? document.getElementById("modal-root") : null;
+  return host ? createPortal(dialog, host) : dialog;
 }
 
 /** Mount once at the app root: renders the legacy #modal-root (confirm dialogs) and #toasts containers. */
