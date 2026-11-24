@@ -108,6 +108,7 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
         {
             e.HasKey(x => x.TenantId);
             e.Property(x => x.CityMapJson).HasColumnType("jsonb");
+            e.HasOne<Tenant>().WithOne().HasForeignKey<PublicBookingSite>(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<City>(e => { e.Property(x => x.Id).ValueGeneratedNever(); e.HasIndex(x => new { x.TenantId, x.Name }); });
