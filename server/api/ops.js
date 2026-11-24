@@ -29,7 +29,7 @@ function scheduleCard(s) {
   return {
     id: s.id, tripsheet_id: D.tripsheetId(s), route_id: s.route_id, service_number: route.service_number, service_name: route.name,
     origin: D.cityName(route.origin_city_id), destination: D.cityName(route.destination_city_id), travel_date: s.travel_date,
-    departure_time: s.departure_time, arrival_time: s.arrival_time, arrival_day_offset: Math.max(0, (Number(D.routeCities(route).slice(-1)[0]?.day) || (String(s.arrival_time) < String(s.departure_time) ? 2 : 1)) - 1), status: s.status, trip_status: s.trip_status, delay_minutes: s.delay_minutes || 0,
+    departure_time: s.departure_time, arrival_time: s.arrival_time, arrival_day_offset: Math.max(0, (Number(s.arrival_day_override||D.routeCities(route).slice(-1)[0]?.day) || (String(s.arrival_time) < String(s.departure_time) ? 2 : 1)) - 1), status: s.status, trip_status: s.trip_status, delay_minutes: s.delay_minutes || 0,
     vehicle: v ? { id: v.id, registration_number: v.registration_number, phone: v.phone_number } : null,
     coach: coach ? coach.name : null, capacity: coach?.layout.capacity || 0, seats_booked: seats, occupancy_pct: coach ? U.round2(seats / coach.layout.capacity * 100) : 0,
     crew: (s.crew || []).map((c) => ({ ...c, name: staff(c.staff_id)?.name, phone: staff(c.staff_id)?.phone })),
@@ -141,9 +141,13 @@ r.post('/trips/:sid/delay', can('trips.update_passengers'), h((req) => {
  // event has been recorded must not move that already-reached schedule stop.
  const seen=Object.values(schedule.stop_events||{}).some(x=>x?.atime||x?.dtime);
  const dep=!seen&&delta?adjustedClock(schedule.departure_time,1,delta):null;
- const arrival=delta?adjustedClock(schedule.arrival_time,2,delta):null;
+ const lastStage=(route.stages||[]).at(-1),lastEvent=lastStage?(schedule.stop_events||{})[lastStage.id]||{}:{};
+ const arrivalDay=Number(schedule.arrival_day_override||D.routeCities(route).at(-1)?.day||
+   (String(schedule.arrival_time)<String(schedule.departure_time)?2:1));
+ const arrival=delta&&!lastEvent.atime&&!lastEvent.dtime?
+  adjustedClock(schedule.arrival_time,arrivalDay,delta):null;
  if(dep)schedule.departure_time=dep.time;
- if(arrival)schedule.arrival_time=arrival.time;
+ if(arrival){schedule.arrival_time=arrival.time;schedule.arrival_day_override=arrival.day;}
  schedule.stage_overrides=overrides;
  schedule.delay_minutes=mins;
  schedule.delay_reason=reason;
