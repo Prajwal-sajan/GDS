@@ -3,19 +3,20 @@
 > **Generated** by `node modern/scripts/ui-inventory.mjs` from the captured legacy UI (`docs/modernization/qa/legacy/`), the legacy Node routes,
 > the ASP.NET Core endpoints and `docs/modernization/ui-parity-status.json`. Do not edit by hand — change the status file and regenerate.
 
-Legacy capture: 2026-11-24T08:10:39.217Z · http://localhost:3000 · 1440x900. Views: **49**, captured interaction states: **6**, inventoried elements: **3343**, legacy API endpoints: **299**, .NET endpoints: **88**.
+Legacy capture: 2026-11-24T08:10:39.217Z · http://localhost:3000 · 1440x900. Views: **49**, captured interaction states: **6**, inventoried elements: **3343**, legacy API endpoints: **299**, .NET endpoints: **90**.
 
 ## Totals (reproducible from this inventory)
 
 - Views — NOT_STARTED: 49 · IMPLEMENTED_UNVERIFIED: 0 · FUNCTIONAL_PASS: 0 · VISUAL_PASS: 0 · VERIFIED_COMPLETE: 0 · BLOCKED: 0
-- Shell (header/nav) — NOT_STARTED
-- Legacy endpoints — NOT_STARTED: 249 · IMPLEMENTED_UNVERIFIED: 50 · FUNCTIONAL_PASS: 0 · VISUAL_PASS: 0 · VERIFIED_COMPLETE: 0 · BLOCKED: 0
+- Shell (header/nav) — VISUAL_PASS
+- Legacy endpoints — NOT_STARTED: 247 · IMPLEMENTED_UNVERIFIED: 50 · FUNCTIONAL_PASS: 2 · VISUAL_PASS: 0 · VERIFIED_COMPLETE: 0 · BLOCKED: 0
 
 A view is only VERIFIED_COMPLETE when functional *and* visual evidence (against the legacy capture, not a React self-baseline) is recorded below.
 
 ## Shell
 
-- Status: **NOT_STARTED**
+- Status: **VISUAL_PASS**
+- Evidence: e2e/parity/shell.parity.spec.ts — header/subnav diff 0 on 4 routes; language menu 0.0001; settings menu 0.0301 (documented deviation: user/tenant line, Integrations, Sign out)
 
 ## Views
 

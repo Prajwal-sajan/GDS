@@ -175,13 +175,13 @@ W173,POST,/trips/:sid/status,server/api/ops.js:96,,,,NOT_STARTED
 W174,POST,/trips/:sid/delay,server/api/ops.js:115,,,,NOT_STARTED
 W175,POST,/trips/:sid/notify,server/api/ops.js:173,,,,NOT_STARTED
 W176,POST,/trips/:sid/cancel,server/api/ops.js:186,,POST /api/admin/trips/{id:long}/cancel,modern/backend/src/JourneyOS.Api/Admin/AdminEndpoints.cs:130,IMPLEMENTED_UNVERIFIED
-W177,GET,/schedules,server/api/ops.js:196,V002,,,NOT_STARTED
+W177,GET,/schedules,server/api/ops.js:196,V002,GET /api/admin/schedules,modern/backend/src/JourneyOS.Api/Admin/ScheduleEndpoints.cs:22,FUNCTIONAL_PASS
 W178,GET,/schedules/deleted,server/api/ops.js:206,,,,NOT_STARTED
 W179,POST,/schedules/restore,server/api/ops.js:207,,,,NOT_STARTED
 W180,GET,/schedules/:id,server/api/ops.js:209,V002/S0004,,,NOT_STARTED
 W181,GET,/schedules/:id/seat-layout,server/api/ops.js:215,V002/S0004,GET /api/admin/trips/{id:long}/seats,modern/backend/src/JourneyOS.Api/Admin/OperationsEndpoints.cs:45,IMPLEMENTED_UNVERIFIED
 W182,PUT,/schedules/:id,server/api/ops.js:221,,,,NOT_STARTED
-W183,POST,/schedules/:id/toggle,server/api/ops.js:255,,,,NOT_STARTED
+W183,POST,/schedules/:id/toggle,server/api/ops.js:255,,POST /api/admin/schedules/{id}/toggle,modern/backend/src/JourneyOS.Api/Admin/ScheduleEndpoints.cs:65,FUNCTIONAL_PASS
 W184,DELETE,/schedules/:id,server/api/ops.js:263,,,,NOT_STARTED
 W185,GET,/schedules/:id/fares,server/api/ops.js:271,,,,NOT_STARTED
 W186,PUT,/schedules/:id/fares,server/api/ops.js:272,,,,NOT_STARTED

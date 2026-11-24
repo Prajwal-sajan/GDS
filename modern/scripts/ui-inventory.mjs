@@ -82,7 +82,7 @@ legacyApi.forEach((l, i) => {
   const k = `${l.method} ${l.path}`;
   const ui = [...(callers[`${l.method} /api${norm(l.path)}`] ?? callers[`${l.method} ${norm(l.path)}`] ?? [])].join(" ");
   const m = apiMap[k];
-  const net = m ? netApi.find((n) => `${n.method} ${n.path}` === m.net) : undefined;
+  const net = m ? netApi.find((n) => `${n.method} ${n.path}` === m.net.replace(/\{(\w+):[^}]+\}/g, "{$1}")) : undefined;
   if (m && !net) throw new Error(`apiMap ${k} -> ${m.net} does not exist in .NET source`);
   wf.push([`W${String(i + 1).padStart(3, "0")}`, l.method, l.path, l.src, ui, m?.net ?? "", net?.src ?? "", m?.status ?? "NOT_STARTED"]);
 });
