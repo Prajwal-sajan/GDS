@@ -13,7 +13,7 @@ public sealed class BookingDeskTests(GdsFixture fx)
     public async Task Operator_booking_can_be_quoted_cancelled_and_audited_without_claiming_payout()
     {
         var rb = fx.Factory.CreateClient();
-        var f = await FindTrip(rb, 5);
+        var f = await FindTrip(rb, 2);
         var tripId = await fx.Sql(db => db.OtaInventories.Where(i => i.Id == f.InventoryId).Select(i => i.TripId).FirstAsync());
         var (bp, dp) = await fx.Sql(async db =>
         {
@@ -65,7 +65,7 @@ public sealed class BookingDeskTests(GdsFixture fx)
     public async Task Redbus_owned_ticket_cannot_be_cancelled_from_operator_desk()
     {
         var rb = fx.Factory.CreateClient();
-        var f = await FindTrip(rb, 6);
+        var f = await FindTrip(rb, 1);
         var pnr = await Book(rb, f, f.Seats[0]!);
         using var admin = fx.Factory.Admin();
         var seat = (string)f.Seats[0]!["name"]!;
