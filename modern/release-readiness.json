@@ -30,16 +30,23 @@
     },
     {
       "id": "coach-editor",
-      "status": "not-migrated",
+      "status": "partial",
       "visualParity": "unverified",
-      "workflowEvidence": [],
+      "workflowEvidence": [
+        "modern/backend/tests/JourneyOS.Tests/CoachManagementTests.cs: PostgreSQL CRUD, geometry/fixtures, reference locks and tenant isolation",
+        "modern/frontend/e2e/coaches-parity.spec.ts: native two-deck layout editing, overlap validation, clone and saving",
+        "modern/backend/tests/JourneyOS.Tests/CoachManagementTests.cs: real schedule seat-layout fixture propagation without capacity inflation"
+      ],
       "screenshotEvidence": []
     },
     {
       "id": "seat-diagrams",
       "status": "partial",
       "visualParity": "unverified",
-      "workflowEvidence": [],
+      "workflowEvidence": [
+        "modern/frontend/e2e/coaches-parity.spec.ts: physical non-seat fixture in seat copy poster",
+        "modern/backend/tests/JourneyOS.Tests/CoachManagementTests.cs: database-backed cabin fixtures in Schedule Manage layout"
+      ],
       "screenshotEvidence": []
     },
     {
@@ -125,7 +132,10 @@
       "id": "settings-and-access",
       "status": "partial",
       "visualParity": "unverified",
-      "workflowEvidence": [],
+      "workflowEvidence": [
+        "modern/backend/tests/JourneyOS.Tests/PublicBookingSiteSettingsTests.cs: per-operator Website settings, city mapping and Share integration",
+        "modern/frontend/e2e/settings-parity.spec.ts: HTTPS domain, mapping, restricted Settings and IAM navigation"
+      ],
       "screenshotEvidence": []
     },
     {
