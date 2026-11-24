@@ -120,3 +120,18 @@
 .sm-data-card p{margin-top:15px}
 @media(max-width:1100px){.sm-trip-banner{grid-template-columns:1.5fr 1fr 1fr}.sm-trip-banner .sm-occupancy{grid-column:2/4}.sm-bookings-content{grid-template-columns:1fr}.sm-service-row{grid-template-columns:1.7fr 1fr 1fr 1fr}}
 @media(max-width:750px){.sm-modal-backdrop{padding:0}.sm-modal{height:100dvh;max-height:none;width:100vw;border-radius:0}.sm-modal-scroll{padding:15px}.sm-trip-banner{grid-template-columns:1fr 1fr}.sm-service-summary{grid-column:1/-1;border:0}.sm-occupancy{grid-column:1/-1!important}.sm-service-row{grid-template-columns:1fr 1fr;padding:14px}.sm-service-name{grid-column:1/-1}.sm-row-actions{grid-column:1/-1}.sm-assignment-columns{grid-template-columns:1fr}.sm-deck{min-width:245px}.sm-seat-decks{justify-content:start}.sm-tabbar{padding:10px}.sm-toolbar-actions{width:100%}.sm-page-header{flex-wrap:wrap}}
+
+
+/* Recorded schedule activity; no invented timeline events or source times. */
+.sm-history-toolbar{display:flex;justify-content:space-between;align-items:end;gap:18px;flex-wrap:wrap;margin:0 0 22px}
+.sm-history-toolbar>div{flex:1 1 250px}
+.sm-history-toolbar p{margin:5px 0 0}
+.sm-history-toolbar label{display:flex;gap:7px;flex-direction:column;color:#51678a;font-size:12px;font-weight:800}
+.sm-history-list{padding:0 0 0 15px;list-style:none;margin:15px 0 0;border-left:3px solid #dce6fb}
+.sm-history-item{position:relative;display:flex;gap:18px;align-items:flex-start;border:1px solid #dbe6fc;background:white;border-radius:15px;padding:16px 19px;margin:0 0 14px}
+.sm-history-item:before{content:"";display:block;width:13px;height:13px;border:3px solid #fff;border-radius:50%;position:absolute;background:#5964ff;top:22px;left:-24px;box-shadow:0 0 0 2px #a7b5ef}
+.sm-history-item time{font-size:12px;color:#5068a0;font-weight:800;white-space:nowrap;min-width:160px}
+.sm-history-item>div{display:flex;flex-direction:column;gap:7px}
+.sm-history-item b{font-size:14px;color:#233358}
+.sm-history-item span{font-size:12px;color:#8191a7}
+@media(max-width:650px){.sm-history-item{flex-direction:column;gap:7px}.sm-history-item time{min-width:0}}
