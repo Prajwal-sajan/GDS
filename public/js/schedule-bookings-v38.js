@@ -31,7 +31,7 @@ const people=S=>(S.trip?.passengers||[]).filter(p=>p.status!=='cancelled'&&p.sta
 function state(S){
  if(!S.v38)S.v38={panel:'chart',mode:'view',group:'Pickup',selected:new Set(),
   pnr:null,seat:null,ticket:null,ticketPnr:null,edit:null,stops:null,commentOpen:false,
-  stopOpen:null,search:'',shift:{date:'',service:'',services:[],seats:[],assignment:{},chosen:null},notifyOpen:false};
+  stopOpen:null,search:'',historyFilter:'all',shift:{date:'',service:'',services:[],seats:[],assignment:{},chosen:null},notifyOpen:false};
  return S.v38;
 }
 function time(s){if(!s)return '—';try{return /^\d\d:\d\d$/.test(s)?(Number(s.slice(0,2))%12||12)+':'+s.slice(3)+' '+(Number(s.slice(0,2))>=12?'PM':'AM'):String(s)}catch(_){return String(s)}}
@@ -71,7 +71,10 @@ function chart(S,V){
   btn('Import Pickup Chart','upload','import')+
   '<span class="sx38-toolbar-divider"></span>'+
   btn('Cancel ('+selected+')','trash','cancel-selected','danger',!selected||!can('bookings.cancel'))+
-  btn('Notify ('+selected+')','bell','notify-selected','',!selected||!can('trips.chat'))+
+  '<div class="sx48-notify-holder">'+
+  btn('Notify ('+selected+') ▾','bell','notify-selected','',!selected||!can('trips.chat'),
+    'aria-haspopup="menu" aria-expanded="'+String(!!V.notifyOpen)+'"')+
+   (V.notifyOpen&&window.ScheduleManageV48?ScheduleManageV48.notifyMenu():'')+'</div>'+
   btn('History','history','chart-history','')+'</div>';
  const controls='<div class="sx38-groupcontrols"><span>Group by:</span>'+
   ['Pickup','Drop','City','Source','Booked On','Fare','Trips'].map(g=>
@@ -119,7 +122,7 @@ function tabs(V){
    ' Seat '+escape(V.seat||'—')+' — '+escape(V.pnr)+'</button>':'')+
   '</nav>';
 }
-function historyChart(S){
+function historyChart(S,V){if(window.ScheduleManageV48)return ScheduleManageV48.historyPanel(S,V);
  const records=S.history||[];
  return '<div class="sx38-history-list"><h3>Booking History</h3><p>'+records.length+' booking records</p>'+
   records.slice(0,150).map(x=>'<button type="button" class="sx38-history-item" data-v38="open-ticket" data-pnr="'+escape(x.pnr)+'" data-seat="'+escape(x.passengers?.[0]?.seat||'')+'"><b>PNR '+escape(x.ticket_number||x.pnr)+'</b><span>'+escape(x.contact_name||'Passenger')+
@@ -135,13 +138,22 @@ async function mount(S,ctx){
   catch(e){V.ticket=null;V.ticketPnr=V.pnr;V.loadError=e.message}
  }
  right.classList.add('sx38-right');S.ov.classList.add('sx38-workspace');
- let content=V.panel==='chart'?chart(S,V):V.panel==='history'?historyChart(S):
+ let content=V.panel==='chart'?chart(S,V):V.panel==='history'?historyChart(S,V):
   (window.BookingTicketV38?BookingTicketV38.render(S,V,{icon,escape,time,formatDate,btn}):'<div class="sx38-no-data">Ticket workspace is unavailable</div>');
  right.innerHTML=tabs(V)+'<div class="sx38-panel-body">'+content+'</div>';
  if(!V.bound){
   V.bound=true;
   S.ov.addEventListener('click',event=>{
    if(S.tab!=='bookings')return;
+   const notifyItem=event.target.closest('[data-v48-notify]');
+   if(notifyItem){
+    event.preventDefault();event.stopPropagation();
+    const pnrs=[...new Set(people(S).filter(p=>V.selected.has(key(p))).map(p=>String(p.pnr)))];
+    const template=notifyItem.dataset.v48Notify;V.notifyOpen=false;
+    ScheduleManageV48.notify(S,pnrs,template).then(()=>ctx.redraw()).catch(G.err);return;
+   }
+   const filter=event.target.closest('[data-v48-history-filter]');
+   if(filter){event.preventDefault();event.stopPropagation();V.historyFilter=filter.dataset.v48HistoryFilter;ctx.redraw().catch(G.err);return;}
    const bookedSeat=event.target.closest('[data-sx-seat]');
    if(bookedSeat){
     const seat=(S.map?.decks||[]).flatMap(d=>d.seats||[]).find(x=>String(x.code)===bookedSeat.dataset.sxSeat);
@@ -152,7 +164,15 @@ async function mount(S,ctx){
     }
    }
    const legacyNotify=event.target.closest('[data-sx-notify-pop]');
-   if(legacyNotify){event.preventDefault();event.stopPropagation();act('notify-selected',legacyNotify,S,V,ctx).catch(G.err);return;}
+   if(legacyNotify){
+    event.preventDefault();event.stopPropagation();
+    if(window.ScheduleManageV48){
+     const pnrs=[...new Set(people(S).filter(p=>V.selected.has(key(p))).map(p=>String(p.pnr)))];
+     if(!pnrs.length){G.toast('Select passengers first','warn');return;}
+     ScheduleManageV48.notify(S,pnrs,'ticket_confirmation').catch(G.err);
+    }else act('notify-selected',legacyNotify,S,V,ctx).catch(G.err);
+    return;
+   }
    const node=event.target.closest('[data-v38]');
    if(!node||!S.ov?.contains(node))return;
    event.preventDefault();event.stopPropagation();
@@ -189,8 +209,8 @@ async function mount(S,ctx){
 }
 async function act(action,node,S,V,ctx){
  switch(action){
-  case 'chart':V.panel='chart';V.mode='view';return ctx.redraw();
-  case 'chart-history':V.panel='history';return ctx.redraw();
+  case 'chart':V.panel='chart';V.mode='view';V.notifyOpen=false;return ctx.redraw();
+  case 'chart-history':V.panel='history';V.notifyOpen=false;return ctx.redraw();
   case 'ticket':V.panel='ticket';return ctx.redraw();
   case 'open-ticket':
    if(!can('bookings.view_all'))return G.toast('Booking details permission is required','bad');
@@ -204,6 +224,7 @@ async function act(action,node,S,V,ctx){
   case 'import':return window.PickupChartV40?PickupChartV40.openImport(S,V,ctx):G.toast('Pickup Chart importer is not loaded','bad');
   case 'notify-selected':
    if(!V.selected.size||!can('trips.chat'))return;
+   if(window.ScheduleManageV48){V.notifyOpen=!V.notifyOpen;return ctx.redraw();}
    return notify(S,[...new Set(people(S).filter(p=>V.selected.has(key(p))).map(p=>p.pnr))]);
   case 'cancel-selected':
    if(!V.selected.size||!can('bookings.cancel'))return;
