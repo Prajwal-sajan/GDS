@@ -194,6 +194,25 @@ public sealed class OperationsService(GdsDbContext db, InventoryService inventor
         return trip.Bookable;
     }
 
+    /// <summary>Legacy route list on/off switch (PUT /routes/:id {status}). Inactive routes drop out of OTA search and refuse new
+    /// bookings (InventoryService / RedBusQueryService gate on route status); existing bookings and trips are untouched.</summary>
+    public async Task<string> SetRouteStatusAsync(long routeId, string status, string actor)
+    {
+        if (status is not ("active" or "inactive")) throw new GdsException("VALIDATION", "Status must be active or inactive");
+        var route = await db.Routes.Include(r => r.Stops).FirstOrDefaultAsync(r => r.Id == routeId) ?? throw new GdsException("ROUTE_NOT_FOUND", "Route not found", 404);
+        if (route.Status == status) return status;
+        var previous = route.Status;
+        route.Status = status;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(5.5));
+        var trips = await db.Trips.Where(t => t.RouteId == routeId && t.TravelDate >= today && t.Status == "active").ToListAsync();
+        if (route.Stops.Count > 0)
+            foreach (var t in trips) await notifier.ServiceChangedAsync(t, route.Stops.Min(s => s.Sequence), route.Stops.Max(s => s.Sequence));
+        Audit(actor, status == "active" ? "ROUTE_ACTIVATED" : "ROUTE_DEACTIVATED", "route", routeId.ToString(), new { previous, status });
+        await db.SaveChangesAsync();
+        foreach (var t in trips) await inventory.InvalidateTripAsync(t.Id);
+        return status;
+    }
+
     public async Task<int> UnblockSeatAsync(long tripId, string seat, string actor)
     {
         await using var tx = await db.Database.BeginTransactionAsync();

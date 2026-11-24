@@ -1,5 +1,125 @@
 [
   {
+    "id": "routes-list",
+    "region": "list-head",
+    "legacy": [
+      1294,
+      77
+    ],
+    "react": [
+      1294,
+      77
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "routes-list",
+    "region": "row-0",
+    "legacy": [
+      1294,
+      186
+    ],
+    "react": [
+      1294,
+      186
+    ],
+    "sizeMatch": true,
+    "diffPixels": 19,
+    "diffRatio": 0.0001
+  },
+  {
+    "id": "routes-list",
+    "region": "row-1",
+    "legacy": [
+      1294,
+      186
+    ],
+    "react": [
+      1294,
+      186
+    ],
+    "sizeMatch": true,
+    "diffPixels": 19,
+    "diffRatio": 0.0001
+  },
+  {
+    "id": "routes-list",
+    "region": "row-2",
+    "legacy": [
+      1294,
+      186
+    ],
+    "react": [
+      1294,
+      186
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "routes-list",
+    "region": "row-3",
+    "legacy": [
+      1294,
+      186
+    ],
+    "react": [
+      1294,
+      186
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "routes-list",
+    "region": "row-4",
+    "legacy": [
+      1294,
+      186
+    ],
+    "react": [
+      1294,
+      186
+    ],
+    "sizeMatch": true,
+    "diffPixels": 19,
+    "diffRatio": 0.0001
+  },
+  {
+    "id": "routes-list",
+    "region": "row-5",
+    "legacy": [
+      1294,
+      186
+    ],
+    "react": [
+      1294,
+      186
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "routes-list",
+    "region": "top",
+    "legacy": [
+      1296,
+      49
+    ],
+    "react": [
+      1296,
+      49
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
     "id": "schedules-list",
     "region": "date-controls",
     "legacy": [

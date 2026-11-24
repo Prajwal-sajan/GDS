@@ -7,6 +7,7 @@ import { CommsPanel, CrmPanel, LedgerPanel, ReportsPanel, SarathiPanel, UsersPan
 import { AppShell } from "./layouts/AppShell";
 import { FeedbackHost } from "./components/ui/feedback";
 import { SchedulesPage } from "./features/schedules/SchedulesPage";
+import { RoutesPage } from "./features/routes/RoutesPage";
 import { useHashRoute } from "./navigation/useHashRoute";
 import type { Role } from "./navigation/nav";
 
@@ -85,7 +86,9 @@ function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Ele
   const table: [RegExp, Role[], () => JSX.Element, true?][] = [
     [/^trips$/, ALL_R, () => <TripsPanel />],
     [/^gds(\/schedules)?$/, ALL_R, () => <SchedulesPage me={me} />, true],
-    [/^gds\/routes$/, ALL_R, () => <FaresPanel />],
+    [/^gds\/routes$/, ALL_R, () => <RoutesPage me={me} />, true],
+    // Route editor (legacy rvtab tabs) is not ported yet: the interim fare editor stays reachable so fares remain editable.
+    [/^gds\/routes\/\d+$/, ALL_R, () => <FaresPanel />],
     [/^crm(\/.*)?$/, ALL_R, () => <CrmPanel me={me} />],
     [/^fleet(\/vehicles)?$/, OPS_R, () => <FleetPanel />],
     [/^fleet\/staff$/, OPS_R, () => <StaffPanel />],

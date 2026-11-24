@@ -100,6 +100,8 @@ export const api = {
   routes: () => call<RouteRow[]>("GET", "/api/admin/routes"),
   schedules: (from: string, to: string) => call<{ schedules: ScheduleRow[] }>("GET", `/api/admin/schedules?from=${from}&to=${to}`),
   toggleSchedule: (id: number, active: boolean) => call<{ bookable: boolean }>("POST", `/api/admin/schedules/${id}/toggle`, { active }),
+  routeList: () => call<{ routes: RouteListRow[] }>("GET", "/api/admin/route-list"),
+  setRouteStatus: (id: number, status: "active" | "inactive") => call<{ status: string }>("PUT", `/api/admin/routes/${id}/status`, { status }),
   saveFares: (routeId: number, fares: Fare[]) => call<{ updated: number }>("PUT", `/api/admin/routes/${routeId}/fares`, fares),
   counterBook: (body: unknown) => call<CounterResult>("POST", "/api/admin/bookings/counter", body),
   invoices: () => call<InvoiceRow[]>("GET", "/api/admin/reconciliation/invoices"),
@@ -185,3 +187,10 @@ export interface InvoiceRow { id: number; invoiceNumber: string; fileName: strin
 export interface InvoiceLine { id: number; pnr: string; section: string; status: string; differences: string[]; why: string; fare: number | null;
   expectedFare: number | null; takeHome: number | null; expectedTakeHome: number | null; delta: number | null; doj: string | null; expectedDoj: string | null;
   resolutionAction: string | null; resolutionNote: string | null }
+
+export interface RouteListRow {
+  id: number; serviceNumber: string; name: string; altName: string | null; status: string;
+  departureTime: string; arrivalTime: string | null; arrivalDay: number; durationMinutes: number | null;
+  origin: { name: string; state: string | null } | null; destination: { name: string; state: string | null } | null;
+  via: string[]; coach: { id: number; name: string; capacity: number } | null; startDate: string | null; endDate: string | null;
+}

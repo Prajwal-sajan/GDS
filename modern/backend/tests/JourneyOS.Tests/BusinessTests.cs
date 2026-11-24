@@ -168,6 +168,39 @@ public sealed class BusinessTests(GdsFixture fx)
     }
 
     [Fact]
+    public async Task Route_list_reflects_postgres_and_status_switch_gates_sales()
+    {
+        var list = (await Admin.GetJson("/api/admin/route-list"))["routes"]!.AsArray();
+        Assert.Equal(await fx.Sql(db => db.Routes.CountAsync()), list.Count);
+        var route = await fx.Sql(db => db.Routes.Where(r => r.Status == "active").OrderByDescending(r => r.Id).FirstAsync());
+        var row = list.First(x => (long)x!["id"]! == route.Id)!;
+        Assert.Equal(route.ServiceNumber, (string)row["serviceNumber"]!);
+        Assert.NotNull(row["origin"]); Assert.NotNull(row["destination"]); Assert.NotNull(row["coach"]);
+        Assert.True((int)row["durationMinutes"]! > 0);
+        Assert.True((int)row["coach"]!["capacity"]! > 0);
+
+        var (_, phone) = await CreateUser("viewer");
+        var viewer = await Login(phone);
+        Assert.Equal(HttpStatusCode.OK, (await viewer.GetAsync("/api/admin/route-list")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await viewer.PutAsJsonAsync($"/api/admin/routes/{route.Id}/status", new { status = "inactive" })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await Admin.PutAsJsonAsync($"/api/admin/routes/{route.Id}/status", new { status = "deleted" })).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await Admin.PutAsJsonAsync("/api/admin/routes/999999/status", new { status = "inactive" })).StatusCode);
+        try
+        {
+            Assert.Equal(HttpStatusCode.OK, (await Admin.PutAsJsonAsync($"/api/admin/routes/{route.Id}/status", new { status = "inactive" })).StatusCode);
+            Assert.Equal("inactive", await fx.Sql(db => db.Routes.Where(r => r.Id == route.Id).Select(r => r.Status).FirstAsync()));
+            Assert.True(await fx.Sql(db => db.AuditLogs.AnyAsync(a => a.Action == "ROUTE_DEACTIVATED" && a.EntityId == route.Id.ToString())));
+            var after = (await Admin.GetJson("/api/admin/route-list"))["routes"]!.AsArray().First(x => (long)x!["id"]! == route.Id)!;
+            Assert.Equal("inactive", (string)after["status"]!);
+        }
+        finally
+        {
+            Assert.Equal(HttpStatusCode.OK, (await Admin.PutAsJsonAsync($"/api/admin/routes/{route.Id}/status", new { status = "active" })).StatusCode);
+        }
+        Assert.Equal("active", await fx.Sql(db => db.Routes.Where(r => r.Id == route.Id).Select(r => r.Status).FirstAsync()));
+    }
+
+    [Fact]
     public async Task Legacy_route_expense_templates_are_imported_and_editable()
     {
         var routeId = await fx.Sql(db => db.Routes.OrderBy(r => r.Id).Select(r => r.Id).FirstAsync());

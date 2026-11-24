@@ -84,13 +84,20 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
             routeSeatBlocks[id] = r.TryGetProperty("seat_blocks", out var sb)
                 ? sb.EnumerateArray().Where(b => b.GetProperty("from").ValueKind == JsonValueKind.Null).SelectMany(b => b.GetProperty("seats").EnumerateArray().Select(x => x.GetString()!)).ToList()
                 : [];
-            if (existingRoutes.Contains(id)) continue;
+            if (existingRoutes.Contains(id))
+            {
+                // Backfill the legacy header fields on routes imported before they were modelled (idempotent).
+                var existing = await db.Routes.FirstAsync(x => x.Id == id);
+                ApplyHeader(existing, r);
+                continue;
+            }
             var route = new Route
             {
                 Id = id, TenantId = tenant.Id, ServiceNumber = Str(r, "service_number") ?? id.ToString(), Name = Str(r, "name") ?? "",
                 CoachTemplateId = r.GetProperty("coach_template_id").GetInt64(), DepartureTime = TimeOnly.Parse(Str(r, "departure_time")!),
                 Status = Str(r, "status") ?? "active",
             };
+            ApplyHeader(route, r);
             var seqByCity = new Dictionary<long, int>();
             foreach (var v in r.GetProperty("via_cities").EnumerateArray().OrderBy(v => v.GetProperty("order").GetInt32()))
             {
@@ -424,6 +431,16 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
     }
 
     private static string? Str(JsonElement e, string p) => e.TryGetProperty(p, out var v) && v.ValueKind != JsonValueKind.Null ? v.ToString() : null;
+
+    private static void ApplyHeader(Route route, JsonElement r)
+    {
+        route.AltName = Str(r, "alt_name");
+        route.ArrivalTime = TimeOnly.TryParse(Str(r, "arrival_time"), out var at) ? at : null;
+        route.ArrivalDay = Int(r, "arrival_day");
+        route.DurationMinutes = Int(r, "duration_minutes");
+        route.StartDate = DateOnly.TryParse(Str(r, "start_date")?[..Math.Min(10, Str(r, "start_date")!.Length)], out var sd) ? sd : null;
+        route.EndDate = DateOnly.TryParse(Str(r, "end_date")?[..Math.Min(10, Str(r, "end_date")!.Length)], out var ed) ? ed : null;
+    }
     private static DateOnly? Date(JsonElement e, string p) => Str(e, p) is { Length: >= 10 } s && DateOnly.TryParse(s[..10], out var d) ? d : null;
     private static int? Int(JsonElement e, string p) => e.TryGetProperty(p, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt32() : null;
     private static decimal? Dec(JsonElement e, string p) => e.TryGetProperty(p, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDecimal() : null;

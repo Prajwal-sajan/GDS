@@ -65,6 +65,13 @@ public sealed class Route : ITenantOwned
     public CoachTemplate? CoachTemplate { get; set; }
     public TimeOnly DepartureTime { get; set; }
     public string Status { get; set; } = "active";
+    // Legacy route header (routes list card). Nullable: routes created outside the import simply have no value.
+    public string? AltName { get; set; }
+    public TimeOnly? ArrivalTime { get; set; }
+    public int? ArrivalDay { get; set; }
+    public int? DurationMinutes { get; set; }
+    public DateOnly? StartDate { get; set; }
+    public DateOnly? EndDate { get; set; }
     public bool PartialCancellationAllowed { get; set; } = true;
     public bool PrimaryPaxCancellable { get; set; } = false;
     public int MaxSeatsPerTicket { get; set; } = 6;

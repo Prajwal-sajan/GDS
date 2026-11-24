@@ -1806,6 +1806,18 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
+                    b.Property<string>("AltName")
+                        .HasColumnType("text")
+                        .HasColumnName("alt_name");
+
+                    b.Property<int?>("ArrivalDay")
+                        .HasColumnType("integer")
+                        .HasColumnName("arrival_day");
+
+                    b.Property<TimeOnly?>("ArrivalTime")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("arrival_time");
+
                     b.Property<long>("CoachTemplateId")
                         .HasColumnType("bigint")
                         .HasColumnName("coach_template_id");
@@ -1813,6 +1825,14 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.Property<TimeOnly>("DepartureTime")
                         .HasColumnType("time without time zone")
                         .HasColumnName("departure_time");
+
+                    b.Property<int?>("DurationMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("duration_minutes");
+
+                    b.Property<DateOnly?>("EndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("end_date");
 
                     b.Property<int>("MaxSeatsPerTicket")
                         .HasColumnType("integer")
@@ -1835,6 +1855,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("service_number");
+
+                    b.Property<DateOnly?>("StartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("start_date");
 
                     b.Property<string>("Status")
                         .IsRequired()

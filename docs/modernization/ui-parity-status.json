@@ -19,9 +19,30 @@
         "schedule delete unsupported",
         "detail modal (Manage/Update v51, seat layout, copy image, share) not migrated"
       ]
+    },
+    "V003": {
+      "status": "VISUAL_PASS",
+      "react": "src/features/routes/RoutesPage.tsx",
+      "evidence": [
+        "e2e/parity/routes.parity.spec.ts — toolbar 0, list header 0, all 6 rows <= 0.0001; identical row + filter DOM skeleton; same services in same order",
+        "Status switch: cancel leaves PostgreSQL untouched; confirm persists, row moves to Inactive filter, reactivation restores (e2e + BusinessTests.Route_list_reflects_postgres_and_status_switch_gates_sales)"
+      ],
+      "gaps": [
+        "Add Route, Duplicate, Delete (OTP step-up) have no .NET endpoint: rendered in legacy style, aria-disabled, explain on click",
+        "Bus halts needs GPS halt evidence not stored by the modern backend",
+        "Row links (view/edit/pickups/drops/fares) open the route editor V015, which is not ported yet (interim fare editor shown)"
+      ]
     }
   },
   "apiMap": {
+    "GET /routes": {
+      "net": "GET /api/admin/route-list",
+      "status": "FUNCTIONAL_PASS"
+    },
+    "PUT /routes/:id": {
+      "net": "PUT /api/admin/routes/{id}/status",
+      "status": "IMPLEMENTED_UNVERIFIED"
+    },
     "GET /schedules": {
       "net": "GET /api/admin/schedules",
       "status": "FUNCTIONAL_PASS"
@@ -152,10 +173,6 @@
     },
     "PUT /staff/:id": {
       "net": "PUT /api/admin/staff/{id:long}",
-      "status": "IMPLEMENTED_UNVERIFIED"
-    },
-    "GET /routes": {
-      "net": "GET /api/admin/routes",
       "status": "IMPLEMENTED_UNVERIFIED"
     },
     "GET /trips": {
