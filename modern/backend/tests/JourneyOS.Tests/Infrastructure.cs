@@ -99,6 +99,15 @@ public sealed class GdsFixture : IAsyncLifetime
 
     public static string LegacyDbPath()
     {
+        // CI supplies an isolated synthetic seed. Never use or overwrite a
+        // real operator database merely to make tests reproducible.
+        var explicitFixture = Environment.GetEnvironmentVariable("JOURNEYOS_TEST_LEGACY_DB");
+        if (!string.IsNullOrWhiteSpace(explicitFixture))
+        {
+            if (File.Exists(explicitFixture)) return explicitFixture;
+            throw new FileNotFoundException("Configured synthetic GDS fixture is missing", explicitFixture);
+        }
+
         for (var d = new DirectoryInfo(AppContext.BaseDirectory); d is not null; d = d.Parent)
         {
             var p = Path.Combine(d.FullName, "data", "db.json");
