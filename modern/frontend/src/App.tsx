@@ -9,13 +9,14 @@ import { ModernShell } from "./navigation/ModernShell";
 import { BookingsPanel } from "./features/bookings/BookingsPanel";
 import { DailyOpsPanel } from "./features/dailyops/DailyOpsPanel";
 import { CallsPanel } from "./features/calls/CallsPanel";
+import { CoachEditorPanel } from "./features/coaches/CoachEditorPanel";
 
-type Tab = "redbus" | "outbox" | "trips" | "bookings" | "dailyops" | "calls" | "schedules" | "routes" | "dispatch" | "fleet" | "staff" | "fares" | "recon" | "crm" | "comms" | "reports" | "ledger" | "sarathi" | "users";
+type Tab = "redbus" | "outbox" | "trips" | "bookings" | "dailyops" | "calls" | "schedules" | "routes" | "dispatch" | "fleet" | "coaches" | "staff" | "fares" | "recon" | "crm" | "comms" | "reports" | "ledger" | "sarathi" | "users";
 const ALL = ["owner", "admin", "accounts", "ops", "viewer"];
 const OPS = ["owner", "admin", "ops"];
 const ACC = ["owner", "admin", "accounts"];
 // Mirrors the API authorization policies; the API remains the enforcement point.
-const TABS: [Tab, string, string[]][] = [["redbus", "RedBus", ALL], ["outbox", "Outbox", ALL], ["trips", "Trips", ALL], ["bookings", "Tickets", OPS], ["dailyops", "Daily Ops", OPS], ["schedules", "Schedules", OPS], ["routes", "Routes", OPS], ["dispatch", "Dispatch", OPS], ["fleet", "Fleet", OPS],
+const TABS: [Tab, string, string[]][] = [["redbus", "RedBus", ALL], ["outbox", "Outbox", ALL], ["trips", "Trips", ALL], ["bookings", "Tickets", OPS], ["dailyops", "Daily Ops", OPS], ["schedules", "Schedules", OPS], ["routes", "Routes", OPS], ["dispatch", "Dispatch", OPS], ["fleet", "Fleet", OPS], ["coaches", "Coaches", OPS],
   ["staff", "Staff", OPS], ["fares", "Fares", OPS], ["recon", "Reconciliation", ACC], ["crm", "CRM", ALL], ["comms", "Chats", OPS], ["calls", "Calls", OPS], ["reports", "Reports", ALL],
   ["ledger", "Ledger", [...ACC, "agent"]], ["sarathi", "Sarathi", ALL], ["users", "Users", ["owner", "admin"]]];
 
@@ -63,6 +64,7 @@ export default function App() {
         {tab === "routes" && <RoutesPanel />}
         {tab === "dispatch" && <DispatchPanel />}
         {tab === "fleet" && <FleetPanel />}
+        {tab === "coaches" && <CoachEditorPanel />}
         {tab === "staff" && <StaffPanel />}
         {tab === "fares" && <FaresPanel />}
         {tab === "recon" && <ReconciliationPanel />}
