@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { addSeatAtVacancy, buildReferenceCoach, checkCoachDraft, coachCount,
   defaultAmenities, formatPosition, structuralSignature,
-  type CoachDraft, type CoachFixtureDraft, type CoachListItem,
+  type CoachDraft, type CoachListItem,
   type CoachSeatDraft, type Deck, type FullCoach, type SeatKind } from "./coachModel";
 import "./coaches.css";
 
