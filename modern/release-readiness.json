@@ -47,7 +47,9 @@
       "status": "partial",
       "visualParity": "unverified",
       "workflowEvidence": [
-        "modern/backend/tests/JourneyOS.Tests/PassengerBookingShareTests.cs: route/date Share only; no deep-link/booking certification"
+        "modern/backend/tests/JourneyOS.Tests/PassengerBookingShareTests.cs: route/date Share only; no deep-link/booking certification",
+        "modern/frontend/e2e/bookings-dailyops.spec.ts: exact PNR lookup, private passenger detail, booking cancellation and ticket actions",
+        "modern/backend/tests/JourneyOS.Tests/BookingDeskTests.cs: real HTTP/PostgreSQL cancellation policy, refund obligation, audit, provider and tenant guard"
       ],
       "screenshotEvidence": []
     },
@@ -55,7 +57,9 @@
       "id": "payments-and-refunds",
       "status": "partial",
       "visualParity": "unverified",
-      "workflowEvidence": [],
+      "workflowEvidence": [
+        "modern/backend/tests/JourneyOS.Tests/BookingDeskTests.cs: refund amount and obligation recorded; payment payout NOT integrated"
+      ],
       "screenshotEvidence": []
     },
     {
@@ -97,7 +101,10 @@
       "id": "daily-ops",
       "status": "partial",
       "visualParity": "unverified",
-      "workflowEvidence": [],
+      "workflowEvidence": [
+        "modern/frontend/e2e/bookings-dailyops.spec.ts: operator-facing fleet filter, compliance view, PNR drill-through",
+        "modern/backend/src/JourneyOS.Api/Reports/ReportsService.cs: PostgreSQL daily operations report"
+      ],
       "screenshotEvidence": []
     },
     {

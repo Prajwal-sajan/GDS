@@ -11,6 +11,7 @@ public sealed record ProviderConfigInput(string OperatorCode, string? CallbackUr
 public sealed record ResyncInput(DateOnly From, DateOnly To);
 public sealed record ShiftInput(long TripId, List<string> Seats);
 public sealed record BoardingInput(string Seat, string Status);
+public sealed record OperatorCancellationInput(List<string> Seats, string? Notes);
 
 public static class AdminEndpoints
 {
@@ -135,6 +136,31 @@ public static class AdminEndpoints
         {
             var b = await inv.ShiftAsync(pnr, input.TripId, input.Seats, http.User.Identity!.Name!);
             return Results.Ok(new { b.Pnr, b.TripId, seats = b.Passengers.Where(p => p.Status == "CONFIRMED").Select(p => p.SeatCode) });
+        }).RequireAuthorization(Policies.Operations);
+
+        // PNR read is policy-restricted separately from generic reports. Quote does
+        // not mutate; cancellation revalidates under PostgreSQL transaction locks.
+        // OTA-issued bookings are intentionally not cancellable from this desk.
+        g.MapPost("/bookings/{pnr}/cancellation-quote", async (string pnr,
+            OperatorCancellationInput input, InventoryService inv, HttpContext http) =>
+        {
+            http.Response.Headers.CacheControl = "private, no-store";
+            return Results.Ok(await inv.QuoteCancellationAsync(pnr, input.Seats ?? []));
+        }).RequireAuthorization(Policies.Operations);
+
+        g.MapPost("/bookings/{pnr}/cancel", async (string pnr,
+            OperatorCancellationInput input, InventoryService inv, HttpContext http) =>
+        {
+            // Same checks also run inside CancelAsync under lock. Do not bypass the
+            // provider ownership gate or imply that creating a refund pays it.
+            await inv.QuoteCancellationAsync(pnr, input.Seats ?? []);
+            var result = await inv.CancelAsync(pnr, input.Seats ?? [], input.Notes, actor: http.User.Identity!.Name!);
+            http.Response.Headers.CacheControl = "private, no-store";
+            return Results.Ok(new {
+                pnr = result.Booking.Pnr, status = result.Booking.Status, result.Charge,
+                result.Refund, at = result.At, settlementStatus = "PENDING_EXTERNAL_SETTLEMENT",
+                notice = "Inventory and refund obligation updated; no payment-gateway payout has been made."
+            });
         }).RequireAuthorization(Policies.Operations);
 
         g.MapPost("/bookings/{pnr}/boarding", async (string pnr, BoardingInput input, InventoryService inv, HttpContext http) =>

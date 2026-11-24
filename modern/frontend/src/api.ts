@@ -126,6 +126,18 @@ export const api = {
 
   saveFares: (routeId: number, fares: Fare[]) => call<{ updated: number }>("PUT", `/api/admin/routes/${routeId}/fares`, fares),
   counterBook: (body: unknown) => call<CounterResult>("POST", "/api/admin/bookings/counter", body),
+  bookingDetail: (pnr: string) =>
+    call<BookingDeskDetail>("GET", "/api/admin/bookings/" + encodeURIComponent(pnr)),
+  cancellationQuote: (pnr: string, seats: string[]) =>
+    call<BookingCancellationQuote>("POST", "/api/admin/bookings/" + encodeURIComponent(pnr) + "/cancellation-quote", { seats }),
+  cancelBooking: (pnr: string, seats: string[], notes: string) =>
+    call<BookingCancellationResult>("POST", "/api/admin/bookings/" + encodeURIComponent(pnr) + "/cancel", { seats, notes }),
+  shiftBooking: (pnr: string, tripId: number, seats: string[]) =>
+    call<{ pnr: string; tripId: number; seats: string[] }>("POST",
+      "/api/admin/bookings/" + encodeURIComponent(pnr) + "/shift", { tripId, seats }),
+  markBoarding: (pnr: string, seat: string, status: "Boarded" | "No-Show" | "Yet-To-Board") =>
+    call<void>("POST", "/api/admin/bookings/" + encodeURIComponent(pnr) + "/boarding", { seat, status }),
+
   invoices: () => call<InvoiceRow[]>("GET", "/api/admin/reconciliation/invoices"),
   uploadInvoice: (body: unknown) => call<{ id: number; duplicate: boolean }>("POST", "/api/admin/reconciliation/invoices", body),
   invoice: (id: number) => call<{ id: number; invoiceNumber: string; status: string; warningsJson: string | null; totals: Record<string, unknown> }>("GET", `/api/admin/reconciliation/invoices/${id}`),
@@ -249,3 +261,36 @@ export interface TripPnlReport { rows:TripPnlRow[]; summary:{
   trips:number;netSales:number;expense:number;expenseActual:number;
   expenseEstimated:number;profit:number;lossTrips:number;expenseBasis:string;
 } }
+
+/** PNR detail is permission-restricted by Policies.BookingDetail; never cache customer records. */
+export interface BookingDeskDetail {
+  pnr: string; status: string; channel: string; totalFare: number; tripId: number;
+  passengers: { seatCode: string; name: string; status: string; boardingStatus: string }[];
+  payments: { id: number; method: string; amount: number; status: string; createdAt: string; reference: string | null }[];
+  finance: { netFare: number; gst: number; otaCommission: number | null; otaTakeHome: number | null } | null;
+}
+export interface BookingCancellationQuote {
+  pnr: string; seats: string[]; fare: number; chargePercent: number; charge: number; refund: number;
+  boardingAtUtc: string; quotedAtUtc: string; settlementNotice: string;
+}
+export interface BookingCancellationResult {
+  pnr: string; status: string; charge: number; refund: number; at: string;
+  settlementStatus: string; notice: string;
+}
+export interface DailyOpsReport {
+  date: string;
+  fleet: {
+    trips: { tripId: number; service: string; route: string; status: string; vehicle: string | null;
+      crew: { role: string; name: string; phone: string }[]; seats: number; capacity: number;
+      occupancyPct: number; netSales: number }[];
+    summary: { trips: number; running: number; withoutBus: number; seats: number; capacity: number };
+  };
+  earnings: { bookings: number; seats: number; amount: number; cancelledToday: number;
+    byChannel: { channel: string; bookings: number; amount: number }[];
+    next7: { date: string; trips: number; seats: number; capacity: number; occupancyPct: number }[] };
+  passengers: { noShowsYesterday: { pnr: string; service: string; seat: string; passenger: string; contact: string | null }[] };
+  compliance: { vehicleDocuments: { vehicle: string | null; document: string; expiryDate: string; state: string }[];
+    licences: { name: string; role: string; phone: string; licenseExpiry: string; state: string }[] };
+  ratings: { average: number | null; count: number; low: { id: number; ota: string; pnr: string | null;
+    rating: number; review: string | null; ratedAt: string; operatorReply: string | null }[] };
+}

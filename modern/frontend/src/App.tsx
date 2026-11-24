@@ -6,14 +6,17 @@ import { CommsPanel, CrmPanel, LedgerPanel, ReportsPanel, SarathiPanel, UsersPan
 import { SchedulesPanel } from "./features/schedules/SchedulesPanel";
 import { RoutesPanel } from "./features/routes/RoutesPanel";
 import { ModernShell } from "./navigation/ModernShell";
+import { BookingsPanel } from "./features/bookings/BookingsPanel";
+import { DailyOpsPanel } from "./features/dailyops/DailyOpsPanel";
+import { CallsPanel } from "./features/calls/CallsPanel";
 
-type Tab = "redbus" | "outbox" | "trips" | "schedules" | "routes" | "dispatch" | "fleet" | "staff" | "fares" | "recon" | "crm" | "comms" | "reports" | "ledger" | "sarathi" | "users";
+type Tab = "redbus" | "outbox" | "trips" | "bookings" | "dailyops" | "calls" | "schedules" | "routes" | "dispatch" | "fleet" | "staff" | "fares" | "recon" | "crm" | "comms" | "reports" | "ledger" | "sarathi" | "users";
 const ALL = ["owner", "admin", "accounts", "ops", "viewer"];
 const OPS = ["owner", "admin", "ops"];
 const ACC = ["owner", "admin", "accounts"];
 // Mirrors the API authorization policies; the API remains the enforcement point.
-const TABS: [Tab, string, string[]][] = [["redbus", "RedBus", ALL], ["outbox", "Outbox", ALL], ["trips", "Trips", ALL], ["schedules", "Schedules", OPS], ["routes", "Routes", OPS], ["dispatch", "Dispatch", OPS], ["fleet", "Fleet", OPS],
-  ["staff", "Staff", OPS], ["fares", "Fares", OPS], ["recon", "Reconciliation", ACC], ["crm", "CRM", ALL], ["comms", "Chats & calls", OPS], ["reports", "Reports", ALL],
+const TABS: [Tab, string, string[]][] = [["redbus", "RedBus", ALL], ["outbox", "Outbox", ALL], ["trips", "Trips", ALL], ["bookings", "Tickets", OPS], ["dailyops", "Daily Ops", OPS], ["schedules", "Schedules", OPS], ["routes", "Routes", OPS], ["dispatch", "Dispatch", OPS], ["fleet", "Fleet", OPS],
+  ["staff", "Staff", OPS], ["fares", "Fares", OPS], ["recon", "Reconciliation", ACC], ["crm", "CRM", ALL], ["comms", "Chats", OPS], ["calls", "Calls", OPS], ["reports", "Reports", ALL],
   ["ledger", "Ledger", [...ACC, "agent"]], ["sarathi", "Sarathi", ALL], ["users", "Users", ["owner", "admin"]]];
 
 function useLoad<T>(fn: () => Promise<T>, deps: unknown[]) {
@@ -36,6 +39,7 @@ const today = () => new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0,
 export default function App() {
   const [key, setKeyState] = useState(getKey());
   const [tab, setTab] = useState<Tab>();
+  const [ticketPnr, setTicketPnr] = useState<string>();
   const [me, setMe] = useState<Me>();
   const signOut = useCallback(() => { void logout(); setKey(""); setKeyState(""); setMe(undefined); setTab(undefined); }, []);
   useEffect(() => {
@@ -53,6 +57,8 @@ export default function App() {
         {tab === "redbus" && <RedBusPanel onUnauthorized={signOut} />}
         {tab === "outbox" && <OutboxPanel />}
         {tab === "trips" && <TripsPanel />}
+        {tab === "bookings" && <BookingsPanel initialPnr={ticketPnr} />}
+        {tab === "dailyops" && <DailyOpsPanel onOpenBooking={(pnr) => { setTicketPnr(pnr); setTab("bookings"); }} />}
         {tab === "schedules" && <SchedulesPanel />}
         {tab === "routes" && <RoutesPanel />}
         {tab === "dispatch" && <DispatchPanel />}
@@ -62,6 +68,7 @@ export default function App() {
         {tab === "recon" && <ReconciliationPanel />}
         {tab === "crm" && <CrmPanel me={me} />}
         {tab === "comms" && <CommsPanel />}
+        {tab === "calls" && <CallsPanel onOpenBooking={(pnr) => { setTicketPnr(pnr); setTab("bookings"); }} />}
         {tab === "reports" && <ReportsPanel me={me} />}
         {tab === "ledger" && <LedgerPanel me={me} />}
         {tab === "sarathi" && <SarathiPanel />}

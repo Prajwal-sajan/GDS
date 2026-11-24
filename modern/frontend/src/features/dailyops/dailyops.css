@@ -1,0 +1,18 @@
+.dailyops-page{background:#fff;border:1px solid #dde7f0;border-radius:12px;padding:20px}
+.dailyops-page .dailyops-head{display:flex;align-items:start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.dailyops-page .dailyops-head h2{font-size:22px;margin:0;color:#16344f}
+.dailyops-page .dailyops-head .row{margin:0}
+.dailyops-page .dailyops-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin:20px 0}
+.dailyops-page .dailyops-kpi{background:#f8fafc;border:1px solid #e0e8f0;border-radius:9px;padding:14px;display:flex;flex-direction:column;gap:9px}
+.dailyops-page .dailyops-kpi small{font-size:12px;color:#677789}
+.dailyops-page .dailyops-kpi strong{font-size:23px;line-height:1.2;color:#183e5c;overflow-wrap:anywhere}
+.dailyops-page .dailyops-tabs{display:flex;gap:8px;flex-wrap:wrap;padding-bottom:12px;border-bottom:1px solid #e0e8f0;margin-bottom:18px}
+.dailyops-page .dailyops-tabs button.active{background:#123e65;color:#fff}
+.dailyops-page .dailyops-filters{flex-wrap:wrap}
+.dailyops-page table small{display:block;color:#778494}
+.dailyops-page table{min-width:640px}
+.dailyops-page .dailyops-attention{background:#fff3d6}
+.dailyops-page .dailyops-inline{display:flex;flex-wrap:wrap;gap:20px;padding:16px;background:#f6f9fc;border:1px solid #e0e8f0;border-radius:8px}
+.dailyops-page h3{margin:20px 0 10px;font-size:16px}
+.dailyops-page :is(.dailyops-filters,table){max-width:100%}
+@media(max-width:640px){.dailyops-page{padding:12px}.dailyops-page .dailyops-head .row{width:100%}.dailyops-page .dailyops-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.dailyops-page .dailyops-tabs button{flex-grow:1}}
