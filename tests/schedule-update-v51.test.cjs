@@ -148,6 +148,8 @@ test('update assignment persists schedule-only config, disables sync, displays e
  assert.equal(schedule.sync_with_route,false);
  assert.equal(schedule.assignment_override_v51,true);
  assert.equal(JSON.stringify(route),oldRoute,'Route template must stay unchanged');
+ assert.equal((schedule.seat_blocks||[]).filter(x=>x.route_snapshot_v51).length,(route.seat_blocks||[]).length,
+  'Route seat blocks remain effective when sync is disabled');
  const reloaded=await call('GET','/schedules/'+schedule.id+'/update-v51');
  assert.equal(reloaded.body.cab_mode,'Drops');
 });
@@ -160,10 +162,27 @@ test('enabling route sync restores valid assignment/calls/coach, clears schedule
  assert.equal(out.body.assignment_source,'Route');
  assert.deepEqual(schedule.update_v51,{});
  assert.equal(schedule.assignment_override_v51,false);
+ assert.equal((schedule.seat_blocks||[]).filter(x=>x.route_snapshot_v51).length,0,
+  'Snapshot blocks are removed once the route blocks become effective again');
  assert.equal(schedule.departure_time,route.departure_time);
  const off=await call('PUT','/schedules/'+schedule.id+'/update-v51/sync',{enabled:false});
  assert.equal(off.status,200);
  assert.equal(schedule.sync_with_route,false);
+});
+test('turning sync off preserves configured route seat blocks and turning it on clears only frozen copies',async()=>{
+ const start=JSON.stringify(route.seat_blocks||[]);
+ const off=await call('PUT','/schedules/'+schedule.id+'/update-v51/sync',{enabled:false});
+ assert.equal(off.status,200);
+ assert.equal(JSON.stringify(route.seat_blocks||[]),start);
+ const snapshots=(schedule.seat_blocks||[]).filter(x=>x.route_snapshot_v51);
+ assert.equal(snapshots.length,(route.seat_blocks||[]).length);
+ const again=await call('PUT','/schedules/'+schedule.id+'/update-v51/sync',{enabled:false});
+ assert.equal(again.status,200);
+ assert.equal((schedule.seat_blocks||[]).filter(x=>x.route_snapshot_v51).length,snapshots.length,
+  'Repeated disabled update does not duplicate frozen blocks');
+ const on=await call('PUT','/schedules/'+schedule.id+'/update-v51/sync',{enabled:true});
+ assert.equal(on.status,200,JSON.stringify(on.body));
+ assert.equal((schedule.seat_blocks||[]).filter(x=>x.route_snapshot_v51).length,0);
 });
 test('unconnected OTA push always fails closed without broadcasting or booking mutations',async()=>{
  const orig=JSON.stringify(db.col('bookings').filter(b=>b.schedule_id==schedule.id));
