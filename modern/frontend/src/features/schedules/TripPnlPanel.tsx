@@ -7,7 +7,7 @@ const err = (e:unknown) => e instanceof Error ? e.message : String(e);
 const provenance = (b:string) => b === "estimate" ? "Estimated" : b === "actual" ? "Recorded" : b === "mixed" ? "Mixed" : "None";
 const csvCell = (x:unknown) => {
   let s=String(x??"");
-  if(/^[\t\r\n ]*[=+\-@]/.test(s))s="'"+s;
+  if(typeof x!=="number" && /^[\t\r\n ]*[=+\-@]/.test(s))s="'"+s;
   return '"'+s.replace(/"/g,'""')+'"';
 };
 export function tripPnlCsv(row:TripPnlRow):string {
