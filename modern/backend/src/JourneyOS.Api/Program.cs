@@ -43,6 +43,7 @@ builder.Services.AddScoped<OutboxWriter>();
 builder.Services.AddScoped<RedBusNotifier>();
 builder.Services.AddScoped<LegacyImporter>();
 builder.Services.AddScoped<JourneyOS.Api.Operations.OperationsService>();
+ builder.Services.AddScoped<JourneyOS.Api.Operations.RouteManagementService>();
 builder.Services.AddScoped<JourneyOS.Api.Accounts.ReconciliationService>();
 builder.Services.AddScoped<JourneyOS.Api.Crm.CrmService>();
 builder.Services.AddScoped<JourneyOS.Api.Reports.ReportsService>();
@@ -172,6 +173,7 @@ app.MapGet("/health/ready", async (GdsDbContext db, IGdsCache cache) =>
 app.MapRedBus(redbusPrefix).RequireRateLimiting("redbus");
 app.MapAdmin();
 JourneyOS.Api.Admin.OperationsEndpoints.MapOperations(app);
+JourneyOS.Api.Admin.RouteManagementEndpoints.MapRouteManagement(app);
 JourneyOS.Api.Admin.BusinessEndpoints.MapBusiness(app);
 app.MapHub<JourneyOS.Api.Realtime.OpsHub>("/hubs/ops");
 
