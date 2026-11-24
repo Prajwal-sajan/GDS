@@ -1,0 +1,687 @@
+Integration APIs
+List Of APIs
+
+Below are the mandatory APIs for integrating.
+
+Search
+Source Destination and DOJ based API to give all active inventory for the DOJ 
+
+SeatlayoutSeatlayout Details for a particular service
+
+Tentative Booking
+Tentative seat blocking API for a service 
+
+Confirm Booking
+Confirm Seats API
+
+Cancel Ticket
+Cancel ticket API to cancel seats, it can be full cancellation or partial cancellation 
+
+Cities and Source-Destinations
+API that List Cities and API that lists active Source Destinations for an operator
+
+Ticket Details
+Given a PNR return ticket details
+
+Check PNR
+In case the Confirm Booking API fails we will call this API to check if PNR is booked at GDS end.
+
+Update Booking
+Post booking customer is given an option to update Phone No, Boarding Point and Dropping Point
+
+Trip Status
+To check if the customer has boarded or not boarded the bus. 
+
+Release Seats
+If is customer does only tentative booking and does not do a confirm booking we will release seats for the blocked seats 
+1. Search
+Search API 
+
+API to get inventory based on SourceIdDestinationId and Date of Journey. 
+Method : Get 
+Url :http://apidns/search?source=sourceid&destination=destinationid&doj=yyyy-mm-dd Response 
+{
+"availableTrips": [{
+"id": "number",
+"travels": "string",
+"vehicleType": "string",
+"busType": "string”, //Leyland A/C Sleeper Executive Luxury (2+1)
+"operator": "number", //number
+"routeId": "number", //unique reference to the bus & number type
+"doj": "yyyy-mm-dd",
+"departureTime": “yyyy - mm - dd HH: MM: SS”,
+"arrivalTime": “yyyy - mm - dd HH: MM: SS”,
+"boardingTimes": [{
+"bpId": "boardingpoint identifier", //number type
+"bpName": "boarding point name", //string
+"location": "locationname-if not same as bpName",
+//string
+"time": “yyyy - mm - dd HH: MM: SS”,
+"prime": boolean, //true - prime boarding point
+"address": "address", //string
+"contactNumber": "contact no", //number or string
+"landmark": "landmark", //string
+"latitude": "latitude", //decimal
+"longitude": "longitude" //decimal
+},
+{
+"bpId": "boardingpoint identifier",
+"bpName": "boarding point name",
+"location": "locationname-if not same as bpName",
+"time": “yyyy - mm - dd HH: MM: SS”,
+"prime": true,
+"address": "address",
+"contactNumber": "contact no",
+"landmark": "landmark",
+"latitude": "latitude",
+"longitude": "longitude"
+}
+],
+"droppingTimes": [{
+"bpId": "boardingpoint identifier",
+"bpName": "boarding point name",
+"location": "locationname-if not same as bpName",
+"time": “yyyy - mm - dd HH: MM: SS”,
+"prime": true,
+"address": "address",
+"contactNumber": "contact no",
+"landmark": "landmark",
+"latitude": "latitude",
+"longitude": "longitude"
+}],
+"availableSeats": 26,
+"fares": [
+"Decimal"
+],
+"fareDetails": [{
+"baseFare": "decimal",
+"totalFare": "decimal",
+},
+{
+"baseFare": "decimal",
+"totalFare": "decimal",
+}
+],
+"cancellationPolicy": “string”, //0:12:100:0;12:24:50:0;24:-1:10:0",example
+policy
+"partialCancellationAllowed": boolean, //true partial cancellation allowed
+"source": "number", //sourceid
+"destination": "number", //destinationid
+"bookable": boolean, //if false, no booking allowed true : booking allowed
+"serviceId": "number/string", //serviceid
+"maxSeatsPerTicket": "number", //max seats allow per transaction,
+//Example 6, means 6 seats can book in single transasction
+"avlWindowSeats": "number" //how many window seats,
+"busRoutes": "string", // example chennai-salem-coimbatore
+"singleLadies": boolean,
+"ac":boolean,
+"nonAC": boolean,
+"seater": boolean,
+"sleeper": boolean,
+"primaryPaxCancellable": boolean,
+"AC": boolean
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+2. Seat Layout
+Seat Layout Call
+Method : Get
+Url :http://apidns/seatlayout?id=inventory-id&doj=yyyy-mm-dd 
+Response
+{
+"seats": [{
+"name": "seat no", //string
+"row": 1, //row of the seat in the layout matric
+"column": 2, //col of the seat in the layout matric
+"zIndex": 1,
+"length": 2, // size of seat icon
+"width": 1, // size of seat icon
+"fare": "decimal",
+"baseFare": "decimal",
+"available": boolean, //true means seat is available
+"ladiesSeat": boolean, //false means no gender restriction"malesSeat": boolean //false means no gender restriction}],
+"travels": "string",
+"busType": "string",
+"operator": "number",
+"routeId": "number", //unique reference to the bus & number type"doj": "yyyy-mm-dd",
+"departureTime": “yyyy - mm - dd HH: MM: SS”,
+"arrivalTime": “yyyy - mm - dd HH: MM: SS”,
+"boardingTimes": [{
+"bpId": "number",
+"bpName": "boarding point name", //string
+"location": "locationname-if not same as bpName", //string"time": “yyyy - mm - dd HH: MM: SS”,
+"prime": boolean,
+"address": "string",
+"contactNumber": "string",
+"landmark": "string",
+"latitude": "latitude",
+"longitude": "longitude"
+},
+{
+"bpId": "number",
+"bpName": "boarding point name",
+"location": "locationname-if not same as bpName",
+"time": “yyyy - mm - dd HH: MM: SS”,
+"prime": boolean,
+"address": "string",
+"contactNumber": "string",
+"landmark": "string",
+"latitude": "latitude",
+"longitude": "longitude"
+}
+],
+"droppingTimes": [{
+"bpId": "number",
+"bpName": "boarding point name",
+"location": "locationname-if not same as bpName",
+"time": “yyyy - mm - dd HH: MM: SS”,
+"prime": boolean,
+"address": "string",
+"contactNumber": "string",
+"landmark": "string",
+"latitude": "latitude",
+"longitude": "longitude"
+}],
+"cancellationPolicy": “string”, // "0:12:100:0;12:24:50:0;24:-1:10:0" example policy"maxSeatsPerTicket": "number" //max seats allow per transaction, //Example 6, means 6 seatscanbook in single transasction
+"avlWindowSeats": "number" //how many window seats,
+"busRoutes": "string", // example chennai-salem-coimbatore
+"ac": boolean,
+"nonAC": boolean,
+"seater": boolean,
+"sleeper": boolean,
+"primaryPaxCancellable": boolean,
+"AC": boolean
+}
+
+3. Tentative Booking
+Tentative Booking
+
+Method : POST
+Url :http://apidns/blockticket
+Request 
+{
+"Inventoryid": number,
+"boardingPointId": number,
+"droppingPointId": number,
+"source": number,
+"destination": number,
+"inventoryItems": [{
+"seatName": "string",
+"fare": decimal,
+"ladiesSeat": boolean,
+"passenger": {
+"name": "string",
+"mobile": "string,
+"title": "string",
+"email": "string",
+"age": number,
+"gender": "string",
+"address": "string,
+"idType": "string,
+"idNumber": "string",
+"primary": boolean
+}
+}]
+}
+Response
+{
+"blockKey": "string",
+"currency": "string",
+"totalFare": "string",
+"fareBreakupList": [{
+"fare": 0,
+"baseFare": 0,
+"gst": 0 
+"passenger_type": "ALL"
+}]
+}
+
+4. Confirm Booking
+Confirm Booking
+
+Method : POST
+Url :http://apidns/confirmticket
+Request
+{
+“Blockkey”: “string”,
+“Fare”: decimal
+}
+Response
+{
+"pnr": "string",
+"status": "string",
+"dateOfIssue": "yyyy-mm-dd HH:MM:SS”,"travels": "string",
+"busType": "string",
+"refundAmount": 0,
+"cancellationCharges": 0,
+“cancellationPolicy”: “string”
+}
+
+5. Cancel Ticket
+Cancel Ticket
+
+Method : POST
+Url :http://apidns/cancelticket
+Request
+{
+"pnr": "string",
+"seatsToCancel": [
+"string"
+],
+"notes": "string"
+}
+Response
+{
+"cancellationCharge": “decimal”,
+"refundAmount": "decimal",
+"pnr": "string",
+“Dateofcancel”: "yyyy-mm-dd HH:MM:SS”,“cancellationPolicy”: “string”
+}
+
+6. Cities and SD
+Cities
+
+Method : GET
+Url :http://apidns/cities
+Response
+{
+"cities": [{
+"id": 0,
+"name": "string",
+"countryId": 0,
+"countryName": "string",
+"locationType": "COUNTRY"
+}]
+}
+
+
+DestinationsByGivenSource
+
+Method : GET
+Url :http://apidns/destinationBySource?source=sourceidResponse :
+{
+"cities": [{
+"id": 0,
+"name": "string",
+"countryId": 0,
+"countryName": "string",
+"locationType": "COUNTRY"
+}]
+}
+
+7. Ticket Details
+Ticket
+
+Method : GET
+Url :http://apidns/ticket?pnr=
+Response
+{
+"pnr": "string",
+"inventoryItems": [{
+"seatName": "string",
+"fare": 0,
+"ladiesSeat": false,
+"passenger": {
+"name": "string",
+"mobile": "string",
+"title": "string",
+"email": "string",
+"age": 0,
+"gender": "string",
+"idType": "string",
+"idNumber": "string",
+"address": "string",
+"primary": false
+],
+"nationality": "string",
+"passengerType": "ALL"
+}
+}
+],
+"inventoryId": 0,
+"doj": "2019-06-14T10:38:49.653Z",
+"sourceCityId": 0,
+"pickupLocationId": 0,
+"pickupLocation": "string",
+"pickUpLocationAddress": "string",
+"pickupLocationLandmark": "string",
+"pickUpContactNo": "string",
+"pickupTime": 0,
+"dropLocationId": 0,
+"dropLocation": "string",
+"dropLocationAddress": "string",
+"dropLocationLandmark": "string",
+"dropTime": 0,
+"destinationCityId": 0,
+"cancellationPolicy": "string",
+"partialCancellationAllowed": false,
+"status": "string",
+"dateOfIssue": "2019-06-14T10:38:49.653Z","travels": "string",
+"busType": "string",
+"refundAmount": 0,
+"cancellationCharges": 0,
+"dateOfCancellation": "2019-06-14T10:38:49.653Z","primeDepartureTime": 0,
+"sourceCity": "string","destinationCity": "string","totalFare": 0
+}
+
+8. Check PNR
+Check PNR
+In case the Confirm API fails as a fallback we will call Check PNR to try to get the booked PNR.
+Method : GET
+Url :http://apidns/checkpnr?blockkey=
+
+Response
+{
+"pnr": "string",
+"status": "string",
+"dateOfIssue": "yyyy-mm-dd HH:MM:SS”,"travels": "string",
+"busType": "string",
+"refundAmount": 0,
+"cancellationCharges": 0,
+“cancellationPolicy”: “string”
+}
+
+9. Update Booking
+Update Booking
+Post Booking we allow customers to update Mobile Number, Boarding Point and Dropping Point. There is a cutoff up until which it is allowed. 
+Method : POST
+Url :http://apidns/updateticket
+Request
+{
+"pnr": "string",
+"mobile_number":"9876543210",
+"boarding_at": 123121,
+"drop_off" : 799
+}
+Response
+{
+"status": “boolean”,
+"message": "string"
+}
+
+10. Trip Status
+Trip Status
+API to check if the passenger has boarded or not boarded. 
+Method : POST
+Url :http://apidns/tripstatus
+
+Request:
+{
+"pnr": "PNR",
+"Operator_id":"Unique identifier", // Optional,
+}
+Response:
+[
+{
+"pnr_number": "UNQ1218073",
+"status": "Boarded/No-Show/Yet-To-Board",
+"seat_number": "2G",
+"time": "2025-10-18 05:30:23"
+},
+{
+"pnr_number": "UNQ1218073",
+"status": "Boarded",
+"seat_number": "2F",
+"time": "2025-10-18 05:30:23"
+}
+]
+Definition of Status
+Boarded: Customer boarded the bus
+No-Show: The customer didn’t board the bus for sure.
+Yet-To-Board: Not sure about boarding status, bus operators didn’t mark for sure.
+
+11. Release Seats
+Release Seats
+In case the customer does only block seats then does not pay and confirm, on going back to the search page we will call release seats to make them available again.
+
+Method : GET
+Url :http://apidns/tentativerelease
+
+Response
+{
+"blockKey": "string",
+“seatNos”: [“1A”, “2B”]
+}
+Response
+{
+"status": "boolean",
+“message”: “string”
+}
+
+Callback APIs
+List OfCallback APIs
+
+Below are the APIs where the GDS will call Redbus APIs to send events on inventory updates and post booking updates.
+
+Cities/SD
+For any New addition of city or a source destination combination for an operator. It’s a one time addition. 
+
+SearchFor any inventory addition or update happening at an Source Destination DOJ level.
+Inventory Update
+For any inventory update happening at a single bus level.
+
+Inactive Services
+To remove any inactive inventory or any soldout inventory.
+
+Bus Cancellation
+To update tickets and refund customer when bus is cancelled
+
+Bus Shift
+Ticket Update events done by the operator, includes events like if any bus is shifted or DOJ is changed or boarding point change, boarding time change.
+
+
+1. Cities/SD
+CITIES/SD
+
+URL :http://redbus-domain-name?action_type=NEW_CITY_VSD
+Action type: NEW_CITY_VSDMethod : POST
+
+Request :
+
+{
+    "action_type": "NEW_CITY_VSD",
+    "operatorSDs": [
+        {
+            "operatorcode": "ABCD",
+            "sd": [
+                {
+                    "source": "12132",
+                    "sourceName": "Meensurity",
+                    "destination": "8989",
+                    "destinationName": "Chennai"
+                },
+                {
+                    "source": "12132",
+                    "sourceName": "Meensurity",
+                    "destination": "7777",
+                    "destinationName": "Pondicherry"
+                }
+ ]
+        }
+    ]
+}
+
+Sample Response : 200 
+{
+   "status": "ok",
+   "message": "success"
+}  
+
+2. Search
+SEARCH
+
+URL :http://redbus-domain-name?action_type=SEARCH
+Action type: SEARCHMethod : POST
+
+Request :
+
+{
+    "action_type": "SEARCH",
+    "data":
+        {
+            "doj": "2025-11-19",
+            "source": "123121",
+            "destination": "77877",
+            "operatorcode": "ABCD"
+        }
+}
+
+Sample Response : 200 
+{
+   "status": "ok",
+   "message": "success"
+}  
+3. Inventory Update
+Service Update
+
+URL :http://redbus-domain-name?action_type=UPDATE_SERVICE
+Action type: UPDATE_SERVICEMethod : POST
+
+Request :
+
+{
+    "action_type": "UPDATE_SERVICE",
+    "data":
+        {
+            "doj": "2025-11-19",
+            "source": "123121",
+            "destination": "77877",
+"service_id": "54",
+            "operatorcode": "ABCD"
+        }
+}
+
+Sample Response : 200 
+{
+   "status": "ok",
+   "message": "success"
+}  
+
+4. Inactive Services
+SERVICE INACTIVE
+
+URL :http://redbus-domain-name?action_type=REMOVE_SERVICE
+Action type: REMOVE_SERVICEMethod : POST
+
+Request :
+
+{
+    "action_type": "REMOVE_SERVICE",
+    "data":
+        {
+            "doj": "2025-11-19",
+            "source": "123121",
+            "destination": "77877",
+"service_id": "54",
+            "operatorcode": "ABCD"
+        }
+}
+
+Sample Response : 200 
+{
+   "status": "ok",
+   "message": "success"
+}  
+5. Bus Cancellation
+BUS CANCELLATION
+
+URL :http://redbus-domain-name?action_type=MANUAL_BUS_CANCELLATION
+Action type: MANUAL_BUS_CANCELLATIONMethod : POST
+
+
+Request :
+{
+                "email": "noemail@gmail.com",
+                "mobileNo": 9999999999,
+                "PNR": "TSXXXXXXXXXXXX",
+                "operator_pnr_number": "TG25052023521670WDN2",
+                "operatorId": "17",
+                "doj": "2024-01-19",
+                "origin": "52",
+                "destination": "21",
+                "cancel_percent": 0.0,
+                "seats": [
+                    "T3",
+                    "T4"
+                ],
+                "flag": "refund"
+   }
+
+ Response: SUCCESS
+6. Bus Shift
+BUS SHIFT
+
+This feature addresses the Bus Shift process, where bus operators move passengers from one service to another in cases like low occupancy or bus breakdowns. Today, this happens manually with refunds, calls, and ad-hoc arrangements, leading to inefficiencies and poor customer experience. The API-based solution will standardize and automate this shifting workflow within the GDS, ensuring smoother operations for operators and transparency for customers. 
+Purpose: Facilitate automated bus shifting through GDS alerts
+Method: POST
+
+URL :http://redbus-domain-name?action_type=SHIFT
+Action type: SHIFT
+Method : POST
+
+Sample POST Curl:
+curl --location 'http://redbus-domain-name?action_type=SHIFT' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "action_type": "SHIFT",
+    "data": [
+        {
+            "PNR": "APJ2345678",
+            "email": "johndoe@gmail.com",
+     "phoneNo": "903456789",
+            "doj": "2025-09-29",         //new doj
+
+   //details of new bus
+            "operatorcode": "skbuses",
+            "schedule": {
+                "code": "SCH5A88932M",
+                "serviceNumber": "SKCHE-204"
+            },
+            "busType": "2+1 A/C BharatBenz Sleeper ",
+            "cancellationReferenceTime": "2025-09-29 21: 15: 00",
+            "sourceCode": "STF17D51",
+            "sourceName": "Chennai",
+            "destinationCode": "STF1TI93",
+            "destinationName": "Coimbatore",
+            "boardingPoint": {
+                "code": "STP2789566D",
+                "name": "Koyambedu",
+                "number": "9150622422",
+                "dateTime": "2025-09-29 18:15:00",
+            },
+            "droppingPoint": {
+                "code": "STP378522I",
+                "name": "Koyambedu",
+                "number": "9150622422",
+                "dateTime": "2025-09-29 18:15:00"
+            },
+    "oldSeatNumbers": [
+                "U01",
+                "U09"
+            ],
+            "newSeatNumbers": [
+                "U05",
+                "U06"
+            ]
+        }
+    ]'
+
+
+Sample Response : 200 
+{
+   "status": "ok",
+   "message": "success"
+}   
+
