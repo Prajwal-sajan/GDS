@@ -23,6 +23,18 @@ jobs:
       - run: npm ci
       - name: Image geometry and actual clipboard/download acceptance
         run: node --test tests/schedule-seat-layout-copy-v49.test.cjs
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+      - name: Verify native browser SVG to PNG rasterization and pixel colors
+        env:
+          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
+        run: |
+          "$CHROME_BIN" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=12000 --dump-dom "file://$PWD/tests/schedule-seat-layout-copy-v49-browser.html" > /tmp/v49-browser.html 2>/tmp/v49-chrome.log
+          if ! grep -q 'SL49_BROWSER_PASS' /tmp/v49-browser.html; then
+            cat /tmp/v49-browser.html
+            tail -50 /tmp/v49-chrome.log
+            exit 1
+          fi
       - name: Keep Manage Bookings API and popup behavior intact
         run: node --test tests/schedule-manage-v48.test.cjs
       - name: Keep existing Manage Bookings popup UI intact
