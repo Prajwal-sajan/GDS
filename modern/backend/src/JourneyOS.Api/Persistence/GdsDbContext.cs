@@ -18,6 +18,7 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
     public long CurrentTenantId => tenant.TenantId;
 
     public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<PublicBookingSite> PublicBookingSites => Set<PublicBookingSite>();
     public DbSet<City> Cities => Set<City>();
     public DbSet<CoachTemplate> CoachTemplates => Set<CoachTemplate>();
     public DbSet<CoachSeat> CoachSeats => Set<CoachSeat>();
@@ -103,6 +104,11 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
         b.Entity<SarathiConversation>(e => { e.Property(x => x.MessagesJson).HasColumnType("jsonb"); e.HasIndex(x => new { x.TenantId, x.Owner }); });
 
         b.Entity<Tenant>(e => { e.HasIndex(x => x.Code).IsUnique(); e.Property(x => x.GstPercent).HasPrecision(5, 2); });
+        b.Entity<PublicBookingSite>(e =>
+        {
+            e.HasKey(x => x.TenantId);
+            e.Property(x => x.CityMapJson).HasColumnType("jsonb");
+        });
 
         b.Entity<City>(e => { e.Property(x => x.Id).ValueGeneratedNever(); e.HasIndex(x => new { x.TenantId, x.Name }); });
         b.Entity<CoachTemplate>(e =>
