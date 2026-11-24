@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, type Assignment, type RouteRow, type ScheduleBookingChart, type Staff, type TripRow, type TripHistoryEvent, type Vehicle } from "../../api";
 import { SeatLayoutView } from "./SeatLayoutView";
+import { BookingDetailsPanel } from "../bookings/BookingsPanel";
 import { TripPnlPanel } from "./TripPnlPanel";
 import { copyBookingMessage } from "./bookingShare";
 import { copySeatPoster, formatDate, titleFor, type ScheduleSeatLayout, type SeatCell } from "./seatLayoutModel";
@@ -112,6 +113,7 @@ function Manage({ trip, close, changed }: { trip: TripRow; close: () => void; ch
   const [historyError, setHistoryError] = useState("");
   const [historyFilter, setHistoryFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [openPnr, setOpenPnr] = useState("");
   const [manualShare, setManualShare] = useState("");
   const manualRef = useRef<HTMLTextAreaElement>(null);
   const [selected, setSelected] = useState<string[]>([]);
@@ -311,6 +313,7 @@ function Manage({ trip, close, changed }: { trip: TripRow; close: () => void; ch
                   <summary><b>{b.pnr}</b><small>{b.status} · {b.channel} · {currency(b.totalFare)}</small></summary>
                   {b.passengers.map((p, i) => <p key={i}><b>{p.seatCode}</b> · {p.name}
                     <span> {p.status} / {p.boardingStatus}</span></p>)}
+                  <button className="sm-btn-outline" type="button" onClick={()=>setOpenPnr(b.pnr)}>Open PNR ticket &amp; actions</button>
                 </details>)}
                 {!filtered.length && <p className="sm-muted">No booking records match this search.</p>}
               </div>
@@ -373,6 +376,8 @@ function Manage({ trip, close, changed }: { trip: TripRow; close: () => void; ch
         </section>}
       </div>
       <footer className="sm-modal-footer"><button onClick={close}>✕ Close</button></footer>
+      {openPnr&&<BookingDetailsPanel pnr={openPnr} onClose={()=>setOpenPnr("")}
+        onChanged={()=>{refresh();changed();}}/>}
     </section>
   </div>;
 }
