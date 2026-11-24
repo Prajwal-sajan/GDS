@@ -92,6 +92,7 @@ export const api = {
   vehicles: () => call<Vehicle[]>("GET", "/api/admin/vehicles"),
   vehicleDocuments: (id:number)=>call<ComplianceDocument[]>("GET","/api/admin/vehicles/"+id+"/documents"),
   staffDocuments: (id:number)=>call<ComplianceDocument[]>("GET","/api/admin/staff/"+id+"/documents"),
+  staffDuties: (id:number)=>call<StaffDuty[]>("GET","/api/admin/staff/"+id+"/duties"),
   saveVehicle: (v: Partial<Vehicle>, id?: number) => call<Vehicle>(id ? "PUT" : "POST", `/api/admin/vehicles${id ? `/${id}` : ""}`, { gpsEnabled: false, ...v }),
   staff: () => call<Staff[]>("GET", "/api/admin/staff"),
   saveStaff: (s: Partial<Staff>, id?: number) => call<Staff>(id ? "PUT" : "POST", `/api/admin/staff${id ? `/${id}` : ""}`, s),
@@ -343,3 +344,8 @@ export interface DailyOpsReport {
 export interface ComplianceDocument { id:number;documentType:string;documentName:string;
   expiryDate:string|null;category:string|null;verificationStatus:string|null;
   source:"metadata_only";downloadAvailable:false }
+
+export interface StaffDuty {
+  id:number;tripId:number;travelDate:string;status:string;role:string;serviceNumber:string;routeName:string;
+  isActive:boolean;assignedAt:string;replacedAt:string|null;replacedReason:string|null;
+}
