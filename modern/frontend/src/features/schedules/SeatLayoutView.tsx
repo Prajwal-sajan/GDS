@@ -33,6 +33,14 @@ export function SeatLayoutView({
           gridTemplateColumns: "repeat(" + deck.cols + ", minmax(45px, 1fr))",
           gridTemplateRows: "repeat(" + deck.rows + ", 44px)",
         }}>
+          {deck.fixtures.map((fixture, i) => <div key={"fixture:" + i}
+            role="img" aria-label={"Non-bookable: " + fixture.label}
+            className="sm-cabin-fixture"
+            title={fixture.kind.replace(/_/g, " ") + ": " + fixture.label}
+            style={{gridColumn:(fixture.col+1)+" / span "+fixture.width,
+              gridRow:(fixture.row+1)+" / span "+fixture.length}}>
+            <span>{fixture.label}</span>
+          </div>)}
           {deck.seats.map((seat) => {
             const visual = visualStatus(seat);
             const interactive = !busy && Boolean(onSeat) && (seat.state === "available" || seat.state === "blocked");
@@ -60,7 +68,7 @@ export function SeatLayoutView({
             </button>;
           })}
         </div>
-        {deck.name === "LOWER" && <div className="sm-deck-exit">
+        {deck.name === "LOWER" && deck.fixtures.length === 0 && <div className="sm-deck-exit">
           <svg role="img" aria-label="Emergency exit" width="44" height="47" viewBox="0 0 44 47"
             fill="none" stroke="#e8243c" strokeWidth="3" strokeLinecap="round">
             <circle cx="12" cy="7" r="3" fill="#e8243c" stroke="none"/>
