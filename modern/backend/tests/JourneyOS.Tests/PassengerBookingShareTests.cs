@@ -73,6 +73,18 @@ public sealed class PassengerBookingShareTests(GdsFixture fixture)
         Assert.Equal("route_date_search",text.LinkType);
         Assert.Equal(text.TripId,id);
         Assert.DoesNotContain("PNR",text.Message);
+        // Full ASP.NET Core integration path, no mocked public URL and no
+        // invented city values: route is read from the seeded PostgreSQL.
+        using var configured = new GdsFactory(fixture.Pg.GetConnectionString(),
+            fixture.Redis.GetConnectionString(), options);
+        using var configuredAdmin = configured.Admin();
+        var served = await configuredAdmin.GetJson($"/api/admin/trips/{id}/share-link?fromSequence={first}&toSequence={second}");
+        Assert.Equal(text.Message,(string)served["message"]!);
+        Assert.Equal("route_date_search",(string)served["linkType"]!);
+        Assert.False((bool)served["preselectsService"]!);
+        using var other = configured.Admin(GdsFactory.OtherTenantKey);
+        using var forbidden = await other.GetAsync($"/api/admin/trips/{id}/share-link");
+        Assert.Equal(HttpStatusCode.NotFound,forbidden.StatusCode);
     }
 
     [Fact]
