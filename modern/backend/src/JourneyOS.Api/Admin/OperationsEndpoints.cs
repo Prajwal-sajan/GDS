@@ -192,7 +192,7 @@ public static class OperationsEndpoints
                 .FirstOrDefaultAsync(f => f.BookingId == b.Id) : null;
             return Results.Ok(new {
                 b.Pnr, b.Status, b.Channel, b.TotalFare, b.TripId,
-                passengers = b.Passengers.Select(p => new { p.SeatCode, p.Name, p.Status }),
+                passengers = b.Passengers.Select(p => new { p.SeatCode, p.Name, p.Status, p.BoardingStatus }),
                 payments = pay.Select(p => new { p.Id, p.BookingId, p.Method, p.Amount, p.Status, p.CreatedAt,
                     reference = accounting ? p.Reference : null }),
                 finance = fin is null ? null : new {
