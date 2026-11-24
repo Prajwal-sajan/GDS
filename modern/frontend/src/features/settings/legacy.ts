@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect } from "react";
 import { api } from "../../api";
-import { toast } from "../../components/ui/feedback";
+import { confirmDialog, toast, toastError } from "../../components/ui/feedback";
 
 // Shared runtime for the Settings screens. Legacy settings layers render HTML strings straight into the page element
 // (`el` = main[data-content]) and set its className (e.g. "lv34-container"); the ported builders do the same so the DOM
@@ -15,6 +15,8 @@ export const G = {
   post: <T = any>(p: string, b?: unknown) => api.admin<T>(p, "POST", b ?? {}),
   del: <T = any>(p: string, b?: unknown) => api.admin<T>(p, "DELETE", b),
   toast: (m: string, kind?: string) => toast(m, (kind as any) || "ok"),
+  err: (e: unknown) => toastError(e),
+  confirm: (m: string, o?: { ok?: string; danger?: boolean }) => confirmDialog(m, o),
 };
 
 let perms: Promise<string[]> | null = null;

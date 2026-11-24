@@ -80,6 +80,7 @@ export default function App() {
 import { AboutPage } from "./features/settings/AboutPage";
 import { resetPermissions } from "./features/settings/legacy";
 import { WhatsAppPage } from "./features/settings/WhatsAppPage";
+import { ConfigurationPage } from "./features/settings/ConfigurationPage";
 import { LoyaltyProgramPage, SwitchUserPage } from "./features/settings/LoyaltySwitchPages";
 
 function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Element; redirect?: string } {
@@ -126,6 +127,7 @@ function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Ele
     [/^(chats|calls)(\/.*)?$/, OPS_R, () => <CommsPanel />],
     [/^settings\/about$/, [...ALL_R, "agent"], () => <AboutPage />, true],
     [/^settings\/loyalty-program(\/.*)?$/, ["owner", "admin"], () => <LoyaltyProgramPage key={location.hash} />, true],
+    [/^settings\/configuration(\/[^/]+)?$/, ["owner", "admin"], () => <ConfigurationPage key={path} section={seg[2]} />, true],
     [/^settings\/whatsapp$/, ["owner", "admin"], () => <WhatsAppPage />, true],
     [/^settings\/switch-user$/, ALL_R, () => <SwitchUserPage />, true],
     [/^settings(\/team-access(\/.*)?)?$/, ["owner", "admin"], () => <UsersPanel me={me} />],
