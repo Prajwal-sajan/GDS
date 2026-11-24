@@ -6,7 +6,9 @@ const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'gds-schedule-manage-v48-'));
 process.env.GDS_DATA_DIR=tmp;
 process.env.GDS_RESEED='1';
-const app=require('../server/index');
+const express=require('express');
+const app=express();
+app.use(express.json({limit:'15mb'}));
 const db=require('../server/db');
 const D=require('../server/domain'),U=require('../server/util');
 const Auth=require('../server/auth');
@@ -19,10 +21,17 @@ const chart=read('public/js/schedule-bookings-v38.js');
 const css=read('public/css/schedule-manage-v48.css');
 const html=read('public/index.html');
 const ops=read('server/api/ops.js');
+require('../server/seed').seed();
+app.use('/api',Auth.middleware);
+app.use('/api',require('../server/api/schedule-manage-v48'));
+app.use('/api',require('../server/api/ops'));
 const owner=db.col('users').find(x=>x.role==='owner');
 assert.ok(owner);
-const server=app.listen(0,'127.0.0.1');
-const base='http://127.0.0.1:'+server.address().port+'/api';
+let server,base;
+test.before(async()=>{
+ server=await new Promise(resolve=>{const x=app.listen(0,'127.0.0.1',()=>resolve(x))});
+ base='http://127.0.0.1:'+server.address().port+'/api';
+});
 const req=async(method,url,body,user=owner)=>{
  const token=Auth.sign({uid:user.id,exp:Date.now()+900000});
  const response=await fetch(base+url,{method,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
@@ -33,7 +42,7 @@ const req=async(method,url,body,user=owner)=>{
 };
 const get=(url,user)=>req('GET',url,undefined,user);
 test.after(async()=>{
- await new Promise(resolve=>server.close(resolve));
+ if(server)await new Promise(resolve=>server.close(resolve));
  await new Promise(resolve=>setTimeout(resolve,430));
  fs.rmSync(tmp,{recursive:true,force:true});
 });
