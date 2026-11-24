@@ -77,8 +77,9 @@ public sealed class RouteManagementTests(GdsFixture fx)
         var (againStatus,again)=await admin.Post($"/api/admin/routes/{routeId}/generate",new {from=date.ToString("yyyy-MM-dd"),to=date.ToString("yyyy-MM-dd")});
         Assert.Equal(HttpStatusCode.OK,againStatus);
         Assert.Equal(0,(int)again!["created"]!);
-        var (lockedStatus,locked)=await admin.Put($"/api/admin/routes/{routeId}",Payload("Unsafe mutation","active"));
-        Assert.Equal(HttpStatusCode.Conflict,lockedStatus);
+        using var lockedResponse=await admin.PutAsJsonAsync($"/api/admin/routes/{routeId}",Payload("Unsafe mutation","active"));
+        Assert.Equal(HttpStatusCode.Conflict,lockedResponse.StatusCode);
+        var locked=JsonNode.Parse(await lockedResponse.Content.ReadAsStringAsync());
         Assert.Equal("ROUTE_HAS_TRIPS",(string)locked!["errorCode"]!);
         detail=await admin.GetJson($"/api/admin/routes/{routeId}/full");
         Assert.True((bool)detail["structuralLocked"]!);
