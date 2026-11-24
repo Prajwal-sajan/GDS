@@ -50,7 +50,8 @@ public sealed class BookingDeskTests(GdsFixture fx)
         Assert.Equal("CANCELLED", (string)result!["status"]!);
         Assert.Equal("PENDING_EXTERNAL_SETTLEMENT", (string)result["settlementStatus"]!);
         Assert.Equal(refunded, (decimal)result["refund"]!);
-        Assert.True(await fx.Sql(db => db.Cancellations.AnyAsync(c => c.Booking!.Pnr == pnr && c.Notes == "Verified passenger request")));
+        var bookingId = await fx.Sql(db => db.Bookings.Where(b => b.Pnr == pnr).Select(b => b.Id).SingleAsync());
+        Assert.True(await fx.Sql(db => db.Cancellations.AnyAsync(c => c.BookingId == bookingId && c.Notes == "Verified passenger request")));
         Assert.True(await fx.Sql(db => db.AuditLogs.AnyAsync(a => a.Action == "CANCEL" && a.Entity == "booking" && a.EntityId == pnr)));
 
         var (again, _) = await admin.Post($"/api/admin/bookings/{pnr}/cancel", new { seats = new[] { seat }, notes = "retry" });
