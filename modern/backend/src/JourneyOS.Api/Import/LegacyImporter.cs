@@ -1,5 +1,6 @@
 using System.Text.Json;
 using JourneyOS.Api.Persistence;
+using JourneyOS.Api.Operations;
 using Microsoft.EntityFrameworkCore;
 
 namespace JourneyOS.Api.Import;
@@ -54,6 +55,34 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
                 Id = id, TenantId = tenant.Id, Name = Str(c, "name") ?? "", BusType = busType, Pattern = Str(c, "pattern") ?? "",
                 IsAc = busType.Contains("A/C", StringComparison.OrdinalIgnoreCase) && !busType.Contains("Non", StringComparison.OrdinalIgnoreCase),
             };
+            // Preserve original coach fixture positions and optional visual
+            // metadata instead of discarding them when importing into .NET.
+            var layout = c.GetProperty("layout");
+            var meta = new CoachMeta {
+                AlternativeName = Str(c, "alt_name"),
+                NominalSeaterPositions = Int(layout, "nominal_seater_positions")
+            };
+            if (c.TryGetProperty("amenities", out var amenities) && amenities.ValueKind == JsonValueKind.Array)
+                meta.Amenities = amenities.EnumerateArray()
+                    .Where(a => a.ValueKind == JsonValueKind.String).Select(a => a.GetString()!)
+                    .Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            foreach (var part in layout.GetProperty("decks").EnumerateArray())
+            {
+                var deckName = Str(part, "deck") ?? "LOWER";
+                if (!part.TryGetProperty("fixtures", out var fixtures) || fixtures.ValueKind != JsonValueKind.Array)
+                    continue;
+                foreach (var f in fixtures.EnumerateArray())
+                {
+                    var code = Str(f, "code") ?? Str(f, "name") ?? Str(f, "type");
+                    if (string.IsNullOrWhiteSpace(code)) continue;
+                    meta.Fixtures.Add(new CoachFixtureDraft(
+                        code, Str(f, "display_name"), Str(f, "type") ?? "BACK_EXIT",
+                        deckName, Int(f, "row") ?? 0, Int(f, "col") ?? 0,
+                        Int(f, "w") ?? 1, Int(f, "h") ?? 1, Str(f, "orientation")));
+                }
+            }
+            t.LayoutMetaJson = JsonSerializer.Serialize(meta,
+                new JsonSerializerOptions(JsonSerializerDefaults.Web));
             foreach (var deck in c.GetProperty("layout").GetProperty("decks").EnumerateArray())
             {
                 var deckName = Str(deck, "deck") ?? "LOWER";
@@ -64,7 +93,7 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
                     var col = s.GetProperty("col").GetInt32();
                     t.Seats.Add(new CoachSeat
                     {
-                        Code = Str(s, "code")!, Deck = deckName, Row = s.GetProperty("row").GetInt32(), Col = col,
+                        Code = Str(s, "code")!, DisplayName = Str(s, "display_name"), Deck = deckName, Row = s.GetProperty("row").GetInt32(), Col = col,
                         Width = Int(s, "w") ?? 1, Length = Int(s, "h") ?? 1, SeatType = Str(s, "type") ?? "seater", IsWindow = col == 0 || col == maxCol,
                     });
                 }
