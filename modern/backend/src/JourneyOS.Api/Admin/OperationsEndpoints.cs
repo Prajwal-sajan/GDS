@@ -108,6 +108,25 @@ public static class OperationsEndpoints
             });
         }).RequireAuthorization(ops);
 
+        // Audit-backed operator History. Historical events are only displayed
+        // when an actual audit row exists; never backfill invented actions or
+        // timestamps to imitate the legacy screenshots.
+        g.MapGet("/trips/{id:long}/history", async (long id, GdsDbContext db) =>
+        {
+            if (!await db.Trips.AsNoTracking().AnyAsync(t => t.Id == id))
+                return Results.NotFound(new { message = "Service not found" });
+            var key = id.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            return Results.Ok(await db.AuditLogs.AsNoTracking()
+                .Where(e => e.Entity == "trip" && e.EntityId == key)
+                .OrderByDescending(e => e.At).ThenByDescending(e => e.Id)
+                .Take(300)
+                .Select(e => new
+                {
+                    id = e.Id, at = e.At, action = e.Action, actor = e.Actor
+                })
+                .ToArrayAsync());
+        }).RequireAuthorization(ops);
+
         g.MapGet("/trips/{id:long}/booking-chart", async (long id, GdsDbContext db) =>
         {
             if (!await db.Trips.AsNoTracking().AnyAsync(t => t.Id == id))
