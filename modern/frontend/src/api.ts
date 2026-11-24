@@ -1,3 +1,4 @@
+import type { ScheduleSeatLayout } from "./features/schedules/seatLayoutModel";
 // Typed client for the JourneyOS admin API. The admin key is kept in sessionStorage only.
 export type OutboxStatus = "Pending" | "Delivering" | "Acknowledged" | "Failed" | "Blocked" | "Superseded";
 
@@ -95,6 +96,18 @@ export const api = {
   assign: (tripId: number, body: { role: string; vehicleId?: number; staffId?: number; reason?: string }) =>
     call<Assignment>("POST", `/api/admin/trips/${tripId}/assignments`, body),
   seats: (tripId: number) => call<SeatRow[]>("GET", `/api/admin/trips/${tripId}/seats`),
+  scheduleLayout: (tripId: number, fromSequence?: number, toSequence?: number) =>
+    call<ScheduleSeatLayout>("GET", "/api/admin/trips/" + tripId + "/seat-layout?" +
+      new URLSearchParams([...(fromSequence === undefined ? [] : [["fromSequence", String(fromSequence)]]),
+        ...(toSequence === undefined ? [] : [["toSequence", String(toSequence)]]),
+        ["refresh", String(Date.now())]]).toString()),
+  bookingChart: (tripId: number) =>
+    call<ScheduleBookingChart[]>("GET", "/api/admin/trips/" + tripId + "/booking-chart"),
+  blockSegment: (tripId: number, seats: string[], reason: string, fromSequence: number, toSequence: number) =>
+    call<{ blocked: string[] }>("POST", "/api/admin/trips/" + tripId + "/blocks", {
+      seats, reason, fromSequence, toSequence
+    }),
+
   block: (tripId: number, seats: string[], reason: string) => call<{ blocked: string[] }>("POST", `/api/admin/trips/${tripId}/blocks`, { seats, reason }),
   unblock: (tripId: number, seat: string) => call<{ released: number }>("DELETE", `/api/admin/trips/${tripId}/blocks/${encodeURIComponent(seat)}`),
   routes: () => call<RouteRow[]>("GET", "/api/admin/routes"),
@@ -177,3 +190,11 @@ export interface InvoiceRow { id: number; invoiceNumber: string; fileName: strin
 export interface InvoiceLine { id: number; pnr: string; section: string; status: string; differences: string[]; why: string; fare: number | null;
   expectedFare: number | null; takeHome: number | null; expectedTakeHome: number | null; delta: number | null; doj: string | null; expectedDoj: string | null;
   resolutionAction: string | null; resolutionNote: string | null }
+
+export interface ScheduleBookingChart {
+  pnr: string;
+  status: string;
+  channel: string;
+  totalFare: number;
+  passengers: { seatCode: string; name: string; status: string; boardingStatus: string }[];
+}

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using JourneyOS.Api.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -40,7 +41,17 @@ public sealed class BusinessTests(GdsFixture fx)
     {
         var (customers, users, msgs, calls, ratings, ledger, docs) = await fx.Sql(async db => (await db.Customers.CountAsync(), await db.Users.Where(u => u.LegacyRole != null).ToListAsync(),
             await db.ChatMessages.CountAsync(), await db.CallLogs.CountAsync(), await db.OtaRatings.CountAsync(), await db.LedgerEntries.CountAsync(), await db.ComplianceDocuments.CountAsync()));
-        Assert.Equal(895, customers);
+        // Synthetic fixtures are deterministically generated per CI run and
+        // may contain a different customer count than one operator's data.
+        // Verify preservation of every *source* phone instead of assuming 895.
+        using var original = JsonDocument.Parse(await File.ReadAllTextAsync(GdsFixture.LegacyDbPath()));
+        var sourcePhones = original.RootElement.GetProperty("customers").EnumerateArray()
+            .Where(c => c.TryGetProperty("phone", out var phone) && phone.ValueKind == JsonValueKind.String)
+            .Select(c => c.GetProperty("phone").GetString()!)
+            .ToHashSet(StringComparer.Ordinal);
+        var importedPhones = await fx.Sql(async db => await db.Customers.Select(c => c.Phone).ToArrayAsync());
+        Assert.True(customers >= sourcePhones.Count, "No source customer may be lost during migration");
+        Assert.All(sourcePhones, phone => Assert.Contains(phone, importedPhones));
         // other tests in the collection append messages/calls/ledger rows; legacy rows are a lower bound
         Assert.InRange(msgs, 60, 1000);
         Assert.InRange(calls, 40, 1000);
