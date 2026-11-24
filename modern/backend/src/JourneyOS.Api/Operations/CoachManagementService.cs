@@ -85,7 +85,31 @@ public sealed class CoachManagementService(
                 if (!cells.Add($"{deck}:{r}:{c}"))
                     throw new GdsException("LAYOUT_OVERLAP", $"Overlapping physical seat or fixture at {deck} R{r+1}C{c+1}");
         }
-        foreach (var s in draft.Seats)
+        // Some imported v1 2+1 coaches use the pre-v46 physical-coordinate
+        // convention (lower 1L at C4, lower seat 1 at C1, upper 1U at C1).
+        // Project into physical left-single/right-pair geometry for collision
+        // validation only. Always persist the original codes and coordinates
+        // unchanged so active assignments and booking IDs stay stable.
+        var lowerSleeper = draft.Seats.FirstOrDefault(x => x.Code == "1L" && x.Deck == "LOWER");
+        var lowerChair = draft.Seats.FirstOrDefault(x => x.Code == "1" && x.Deck == "LOWER");
+        var upperOne = draft.Seats.FirstOrDefault(x => x.Code == "1U" && x.Deck == "UPPER");
+        var upperThree = draft.Seats.FirstOrDefault(x => x.Code == "3U" && x.Deck == "UPPER");
+        var legacy = draft.Pattern == "2+1" && lowerSleeper?.Col == 3 && lowerChair?.Col == 0 &&
+                     upperOne?.Col == 0 && upperThree?.Col == 3;
+        var physical = draft.Seats.Select(s => {
+            if (!legacy) return s;
+            if (s.Deck == "LOWER")
+            {
+                if (s.SeatType == "sleeper" && s.Code.EndsWith("L", StringComparison.OrdinalIgnoreCase))
+                    return s with { Col = 0 };
+                if (s.SeatType == "seater" && s.Col is 0 or 1)
+                    return s with { Col = s.Col + 2 };
+            }
+            if (s.Deck == "UPPER" && s.Code.EndsWith("U", StringComparison.OrdinalIgnoreCase))
+                return s with { Col = s.Col switch { 3 => 0, 1 => 2, 0 => 3, _ => s.Col } };
+            return s;
+        }).ToList();
+        foreach (var s in physical)
         {
             CheckCode(s.Code, "seat code");
             var alias = string.IsNullOrWhiteSpace(s.DisplayName) ? s.Code : s.DisplayName.Trim();
