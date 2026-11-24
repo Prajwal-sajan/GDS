@@ -44,6 +44,7 @@ builder.Services.AddScoped<RedBusNotifier>();
 builder.Services.AddScoped<LegacyImporter>();
 builder.Services.AddScoped<JourneyOS.Api.Operations.OperationsService>();
  builder.Services.AddScoped<JourneyOS.Api.Operations.RouteManagementService>();
+builder.Services.AddScoped<JourneyOS.Api.Operations.PassengerBookingShareService>();
 builder.Services.AddScoped<JourneyOS.Api.Accounts.ReconciliationService>();
 builder.Services.AddScoped<JourneyOS.Api.Crm.CrmService>();
 builder.Services.AddScoped<JourneyOS.Api.Reports.ReportsService>();
