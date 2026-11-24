@@ -13,9 +13,22 @@ const errorText=(e:unknown)=>e instanceof Error?e.message:String(e);
 const dateLabel=(date:string)=>date?new Date(date.slice(0,10)+"T12:00:00Z")
   .toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric",timeZone:"UTC"}):"—";
 const label=(s:string)=>s.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase());
+function OpsIcon({kind}:{kind:string}){
+  const paths:Record<string,string>={
+    fleet:"M4 6h16v12H4zM4 12h16M7 18v2m10-2v2M7 15h.01M17 15h.01",
+    users:"M12 11a4 4 0 100-8 4 4 0 000 8zM4 21v-2a8 8 0 0116 0v2",
+    rupee:"M5 4h14M5 9h14M9 4c10 0 10 10 0 10l6 7",
+    warn:"M12 2 22 21H2L12 2zM12 9v5m0 3h.01",
+    star:"m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.7 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z",
+    down:"M8 4v12m-5-5 5 5 5-5M17 6v13"
+  };
+  return <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor"
+    fill="none" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d={paths[kind]||paths.star}/></svg>;
+}
 function Metric({icon,title,value,caption,className=""}:{icon:string;title:string;value:string|number;
   caption?:string;className?:string}){
-  return <div className={"do-metric "+className}><span className="do-metric-icon" aria-hidden="true">{icon}</span>
+  return <div className={"do-metric "+className}><span className="do-metric-icon" aria-hidden="true"><OpsIcon kind={icon}/></span>
     <small>{title}</small><b>{value}</b>{caption&&<span>{caption}</span>}</div>;
 }
 function Report({date,setDate,refreshKey,openPnr}:{date:string;setDate:(s:string)=>void;
@@ -47,12 +60,12 @@ function Report({date,setDate,refreshKey,openPnr}:{date:string;setDate:(s:string
     {loading&&<p role="status" className="do-muted">Loading actual operator daily report…</p>}
     {data&&<>
       <div className="do-metrics">
-        <Metric icon="🚌" title="RUNNING / TOTAL" value={(s?.running??0)+" / "+(s?.trips??0)} className="do-blue"/>
-        <Metric icon="♙" title="PASSENGERS / AVAILABLE SEATS"
+        <Metric icon="fleet" title="RUNNING / TOTAL" value={(s?.running??0)+" / "+(s?.trips??0)} className="do-blue"/>
+        <Metric icon="users" title="PASSENGERS / AVAILABLE SEATS"
           value={(s?.seats??0)+" / "+(s?.capacity??0)} className="do-purple"/>
-        <Metric icon="₹" title="TODAY'S BOOKING COLLECTION" value={money(data.earnings.amount)}
+        <Metric icon="rupee" title="TODAY'S BOOKING COLLECTION" value={money(data.earnings.amount)}
           caption={data.earnings.bookings+" bookings"} className="do-green"/>
-        <Metric icon="!" title="ACTIVE SERVICES WITHOUT BUS"
+        <Metric icon="warn" title="ACTIVE SERVICES WITHOUT BUS"
           value={s?.withoutBus??0} className="do-red"/>
       </div>
       <nav className="do-secondary-nav" aria-label="Daily report categories">
@@ -89,7 +102,7 @@ function Report({date,setDate,refreshKey,openPnr}:{date:string;setDate:(s:string
           <span className="do-pill">{data.earnings.cancelledToday} cancelled today</span></header>
         <div className="do-earning-kpis">
           <Metric icon="₹" title="COLLECTED" value={money(data.earnings.amount)}/>
-          <Metric icon="◎" title="ISSUED PNRs" value={data.earnings.bookings}/>
+          <Metric icon="users" title="ISSUED PNRs" value={data.earnings.bookings}/>
           <Metric icon="♙" title="CONFIRMED PASSENGERS" value={data.earnings.seats}/>
         </div>
         <div className="do-earning-columns">
@@ -226,9 +239,9 @@ function Ratings({refreshKey}:{refreshKey:number}){
         <button key={x.v} className={tab===x.v?"active":""} onClick={()=>setTab(x.v)}>{x.name}</button>)}
     </nav>
     <div className="do-metrics">
-      <Metric icon="★" title="AVERAGE GDS RATING" value={average(filtered)}
+      <Metric icon="star" title="AVERAGE GDS RATING" value={average(filtered)}
         caption={filtered.length+" submitted reviews"}/>
-      <Metric icon="↓" title="1–2★ LAST 14 DAYS" value={low14.length}
+      <Metric icon="down" title="1–2★ LAST 14 DAYS" value={low14.length}
         caption="Needs operator follow-up" className="do-red"/>
       <Metric icon="◎" title="RATED" value={filtered.length}
         caption="Actual submitted reviews only"/>
