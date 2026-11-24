@@ -1860,6 +1860,37 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.ToTable("refund_slabs");
                 });
 
+            modelBuilder.Entity("JourneyOS.Api.Persistence.PublicBookingSite", b =>
+                {
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("SearchUrl")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("search_url");
+
+                    b.Property<string>("CityMapJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("city_map_json");
+
+                    b.Property<string>("UpdatedBy")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("updated_by");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("TenantId")
+                        .HasName("pk_public_booking_sites");
+
+                    b.ToTable("public_booking_sites");
+                });
+
             modelBuilder.Entity("JourneyOS.Api.Persistence.Route", b =>
                 {
                     b.Property<long>("Id")
@@ -2830,6 +2861,16 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_ota_invoice_lines_ota_invoices_invoice_id");
+                });
+
+            modelBuilder.Entity("JourneyOS.Api.Persistence.PublicBookingSite", b =>
+                {
+                    b.HasOne("JourneyOS.Api.Persistence.Tenant", null)
+                        .WithOne()
+                        .HasForeignKey("JourneyOS.Api.Persistence.PublicBookingSite", "TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_public_booking_sites_tenants_tenant_id");
                 });
 
             modelBuilder.Entity("JourneyOS.Api.Persistence.RefundSlab", b =>
