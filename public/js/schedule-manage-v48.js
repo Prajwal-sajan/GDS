@@ -88,7 +88,7 @@ function overlay(title,icon,color,subtitle,body,{wide=false,search=false,refresh
   if(!event.target.matches('[data-sx48-search]'))return;
   const q=event.target.value.trim().toLowerCase();
   for(const item of node.querySelectorAll('[data-sx48-filter]'))
-   item.hidden=!item.textContent.toLowerCase().includes(q);
+   item.hidden=!(item.textContent+' '+(item.dataset.sx48SearchTerms||'')).toLowerCase().includes(q);
  });
  node.querySelector('[data-sx48-close]')?.focus();
  return{el:node,close,body:node.querySelector('.sx48-content')};
@@ -116,7 +116,7 @@ function summary(S,type){
    ['#','PNR','ROUTE','SEATS','FARE','BOOKED BY','SOURCE','BOOKED ON'].map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+
    history.map((b,i)=>{
     const pax=(b.passengers||[]).filter(p=>p.status!=='cancelled').map(p=>({seat:p.seat,pnr:b.pnr}));
-    return '<tr data-sx48-filter><td class="muted">'+(i+1)+'</td>'+
+    return '<tr data-sx48-filter data-sx48-search-terms="'+E([b.pnr,b.ticket_number,b.contact_name,b.source,(b.passengers||[]).map(x=>x.seat).join(' '),S.detail?.origin,S.detail?.destination].join(' '))+'"><td class="muted">'+(i+1)+'</td>'+
      '<td><button class="sx48-booklink" data-sx48-pnr="'+E(b.pnr)+'">'+E(b.ticket_number||b.pnr)+'</button>'+
      (b.status==='hold'?'<span class="sx48-hold">HOLD</span>':'')+'</td>'+
      '<td>'+E(S.detail?.origin||'')+' → '+E(S.detail?.destination||'')+'</td>'+
