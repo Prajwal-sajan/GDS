@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/JourneyOS.Api/JourneyOS.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/JourneyOS.Tests/JourneyOS.Tests.csproj" />
+  </Folder>
+</Solution>

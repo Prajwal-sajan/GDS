@@ -1,0 +1,47 @@
+name: journeyos
+
+# Local development / integration infrastructure for the modernised GDS.
+# Ports are offset (5433/6380) to avoid clashing with locally installed services.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: journeyos
+      POSTGRES_USER: journeyos
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-journeyos_dev}
+    ports: ["5433:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U journeyos -d journeyos"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    # Bounded memory with LRU eviction: Redis only holds derived, re-computable data.
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru", "--save", ""]
+    ports: ["6380:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    profiles: ["app"]
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Postgres: Host=postgres;Database=journeyos;Username=journeyos;Password=${POSTGRES_PASSWORD:-journeyos_dev}
+      ConnectionStrings__Redis: redis:6379
+      Database__MigrateOnStartup: "true"
+      # Empty ⇒ the API refuses RedBus inbound calls in Production (fail closed).
+      RedBus__InboundSecret: ${REDBUS_INBOUND_SECRET:-}
+    ports: ["8080:8080"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+volumes:
+  pgdata:

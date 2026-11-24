@@ -1,0 +1,162 @@
+using System.Text;
+using Microsoft.EntityFrameworkCore;
+
+namespace JourneyOS.Api.Persistence;
+
+public interface ITenantContext
+{
+    long TenantId { get; }
+}
+
+public sealed class TenantContext : ITenantContext
+{
+    public long TenantId { get; set; }
+}
+
+public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenantContext tenant) : DbContext(options)
+{
+    public long CurrentTenantId => tenant.TenantId;
+
+    public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<City> Cities => Set<City>();
+    public DbSet<CoachTemplate> CoachTemplates => Set<CoachTemplate>();
+    public DbSet<CoachSeat> CoachSeats => Set<CoachSeat>();
+    public DbSet<Route> Routes => Set<Route>();
+    public DbSet<RouteStop> RouteStops => Set<RouteStop>();
+    public DbSet<RouteStage> RouteStages => Set<RouteStage>();
+    public DbSet<RouteFare> RouteFares => Set<RouteFare>();
+    public DbSet<RefundSlab> RefundSlabs => Set<RefundSlab>();
+    public DbSet<SeatFareRule> SeatFareRules => Set<SeatFareRule>();
+    public DbSet<Trip> Trips => Set<Trip>();
+    public DbSet<SeatAllocation> SeatAllocations => Set<SeatAllocation>();
+    public DbSet<SeatHold> SeatHolds => Set<SeatHold>();
+    public DbSet<HoldPassenger> HoldPassengers => Set<HoldPassenger>();
+    public DbSet<Booking> Bookings => Set<Booking>();
+    public DbSet<BookingPassenger> BookingPassengers => Set<BookingPassenger>();
+    public DbSet<Cancellation> Cancellations => Set<Cancellation>();
+    public DbSet<Refund> Refunds => Set<Refund>();
+    public DbSet<OtaInventory> OtaInventories => Set<OtaInventory>();
+    public DbSet<OtaProviderConfig> OtaProviders => Set<OtaProviderConfig>();
+    public DbSet<OutboxMessage> Outbox => Set<OutboxMessage>();
+    public DbSet<OutboxAttempt> OutboxAttempts => Set<OutboxAttempt>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+
+    protected override void OnModelCreating(ModelBuilder b)
+    {
+        b.HasPostgresExtension("btree_gist");
+
+        b.Entity<Tenant>(e => { e.HasIndex(x => x.Code).IsUnique(); e.Property(x => x.GstPercent).HasPrecision(5, 2); });
+
+        b.Entity<City>(e => { e.Property(x => x.Id).ValueGeneratedNever(); e.HasIndex(x => new { x.TenantId, x.Name }); });
+        b.Entity<CoachTemplate>(e => e.Property(x => x.Id).ValueGeneratedNever());
+        b.Entity<CoachSeat>(e => e.HasIndex(x => new { x.CoachTemplateId, x.Code }).IsUnique());
+
+        b.Entity<Route>(e =>
+        {
+            e.Property(x => x.Id).ValueGeneratedNever();
+            e.HasIndex(x => new { x.TenantId, x.ServiceNumber });
+        });
+        b.Entity<RouteStop>(e => e.HasIndex(x => new { x.RouteId, x.Sequence }).IsUnique());
+        b.Entity<RouteStage>(e => { e.Property(x => x.Id).ValueGeneratedNever(); e.HasIndex(x => x.RouteId); });
+        b.Entity<RouteFare>(e =>
+        {
+            e.HasIndex(x => new { x.RouteId, x.FromSequence, x.ToSequence }).IsUnique();
+            e.ToTable(t => t.HasCheckConstraint("ck_route_fares_order", "from_sequence < to_sequence"));
+        });
+
+        b.Entity<Trip>(e =>
+        {
+            e.Property(x => x.Id).ValueGeneratedNever();
+            e.HasIndex(x => new { x.TenantId, x.TravelDate });
+            e.HasIndex(x => new { x.RouteId, x.TravelDate }).IsUnique();
+        });
+
+        b.Entity<SeatAllocation>(e =>
+        {
+            e.HasIndex(x => new { x.TripId, x.IsActive });
+            e.HasIndex(x => x.HoldId);
+            e.ToTable(t => t.HasCheckConstraint("ck_seat_allocations_segment", "from_seq < to_seq"));
+            // Exclusion constraint (overlapping segment) is created in the migration via raw SQL.
+        });
+
+        b.Entity<SeatHold>(e =>
+        {
+            e.HasIndex(x => x.BlockKey).IsUnique();
+            e.HasIndex(x => new { x.Status, x.ExpiresAt });
+            e.HasMany(x => x.Passengers).WithOne().HasForeignKey(p => p.HoldId);
+        });
+
+        b.Entity<Booking>(e =>
+        {
+            e.HasIndex(x => x.Pnr).IsUnique();
+            e.HasIndex(x => x.HoldId).IsUnique();     // duplicate confirmation guard
+            e.HasIndex(x => x.TripId);
+            e.HasMany(x => x.Passengers).WithOne().HasForeignKey(p => p.BookingId);
+        });
+
+        b.Entity<OtaInventory>(e => e.HasIndex(x => new { x.TripId, x.FromSeq, x.ToSeq }).IsUnique());
+        b.Entity<OtaProviderConfig>(e => e.HasIndex(x => new { x.TenantId, x.Provider }).IsUnique());
+
+        b.Entity<OutboxMessage>(e =>
+        {
+            e.ToTable("outbox_messages");
+            // Coalesce: at most one *pending* message per logical notification. A message already being
+            // delivered does not absorb newer changes, so no update is lost.
+            e.HasIndex(x => new { x.Provider, x.DedupKey }).IsUnique().HasFilter("status = 1");
+            e.HasIndex(x => new { x.Status, x.NextAttemptAt });
+        });
+        b.Entity<OutboxAttempt>(e => e.HasIndex(x => x.OutboxMessageId));
+        b.Entity<AuditLog>(e => e.HasIndex(x => new { x.TenantId, x.Entity, x.EntityId }));
+
+        foreach (var et in b.Model.GetEntityTypes())
+        {
+            foreach (var p in et.GetProperties().Where(p => p.ClrType == typeof(decimal) || p.ClrType == typeof(decimal?)))
+                if (p.GetPrecision() is null) p.SetPrecision(12);
+            foreach (var p in et.GetProperties().Where(p => p.ClrType == typeof(decimal) || p.ClrType == typeof(decimal?)))
+                if (p.GetScale() is null) p.SetScale(p.Name is "Lat" or "Lng" ? 6 : 2);
+
+            // Tenant isolation for every tenant-owned aggregate.
+            if (typeof(ITenantOwned).IsAssignableFrom(et.ClrType))
+            {
+                var method = typeof(GdsDbContext).GetMethod(nameof(ApplyTenantFilter),
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                    .MakeGenericMethod(et.ClrType);
+                method.Invoke(this, [b]);
+            }
+        }
+
+        ApplySnakeCase(b);
+    }
+
+    private void ApplyTenantFilter<T>(ModelBuilder b) where T : class, ITenantOwned =>
+        b.Entity<T>().HasQueryFilter(x => x.TenantId == CurrentTenantId);
+
+    private static void ApplySnakeCase(ModelBuilder b)
+    {
+        foreach (var et in b.Model.GetEntityTypes())
+        {
+            et.SetTableName(Snake(et.GetTableName()!));
+            foreach (var p in et.GetProperties()) p.SetColumnName(Snake(p.Name));
+            foreach (var k in et.GetKeys()) k.SetName(Snake(k.GetName()!));
+            foreach (var fk in et.GetForeignKeys()) fk.SetConstraintName(Snake(fk.GetConstraintName()!));
+            foreach (var ix in et.GetIndexes()) ix.SetDatabaseName(Snake(ix.GetDatabaseName()!));
+        }
+    }
+
+    public static string Snake(string name)
+    {
+        var sb = new StringBuilder();
+        for (var i = 0; i < name.Length; i++)
+        {
+            var c = name[i];
+            if (char.IsUpper(c))
+            {
+                if (i > 0 && name[i - 1] != '_' && (char.IsLower(name[i - 1]) || (i + 1 < name.Length && char.IsLower(name[i + 1]))))
+                    sb.Append('_');
+                sb.Append(char.ToLowerInvariant(c));
+            }
+            else sb.Append(c);
+        }
+        return sb.ToString();
+    }
+}
