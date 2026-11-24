@@ -64,7 +64,7 @@ test("Coach editor detects physical overlap and refuses to submit it",async({pag
   await page.goto("/");
   await page.getByRole("button",{name:"Coaches",exact:true}).click();
   await page.getByRole("button",{name:"+ New Coach"}).click();
-  await page.getByRole("button",{name:"Seat 1"}).click();
+  await page.getByRole("button",{name:"Seat 1",exact:true}).click();
   await page.getByRole("spinbutton",{name:"Selected col"}).fill("1");
   await expect(page.getByRole("alert")).toContainText("Overlapping geometry");
   await expect(page.getByRole("button",{name:"Save Coach"})).toBeDisabled();
