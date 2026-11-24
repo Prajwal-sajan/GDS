@@ -53,4 +53,4 @@ jobs:
       - name: Install Chromium for real browser UI interaction tests
         run: npx playwright install --with-deps chromium
       - name: Test React Schedules interactions with deterministic mocked API
-        run: npx playwright test e2e/schedules-parity.spec.ts e2e/routes-parity.spec.ts e2e/coaches-parity.spec.ts e2e/bookings-parity.spec.ts --reporter=line
+        run: npx playwright test e2e/schedules-parity.spec.ts e2e/routes-parity.spec.ts e2e/coaches-parity.spec.ts e2e/bookings-parity.spec.ts e2e/invoice-verifier-parity.spec.ts --reporter=line
