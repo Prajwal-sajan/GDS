@@ -21,7 +21,7 @@
   const d=new Date(date+'T12:00:00Z');
   return Number.isNaN(+d)?date:new Intl.DateTimeFormat('en-GB',{
    timeZone:'UTC',weekday:'short',day:'2-digit',month:'short',year:'numeric'
-  }).format(d).replace(/, (?=\d{4}$)/,', ');
+  }).format(d).replace(/(\b[A-Za-z]{3}) (\d{4})$/,'$1, $2');
  };
  function status(seat){
   const s=String(seat?.status||'').trim().toLowerCase(),booking=seat?.booking||null;
