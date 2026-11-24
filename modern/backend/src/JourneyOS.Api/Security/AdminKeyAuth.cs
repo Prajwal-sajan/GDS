@@ -69,6 +69,7 @@ public static class Policies
     public const string IntegrationRead = "integration.read";
     public const string IntegrationWrite = "integration.write";
     public const string Operations = "operations";
+    public const string BookingDetail = "booking.detail";
     public const string Accounts = "accounts";
     public const string Crm = "crm";
     public const string Reports = "reports";
