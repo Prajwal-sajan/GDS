@@ -99,4 +99,87 @@ public sealed class SettingsSuiteTests(GdsFixture fx)
         Assert.Equal("not_connected", (string)wa["connection"]!["status"]!);
         Assert.Equal((HttpStatusCode)403, (await Send(HttpMethod.Post, "/api/admin/settings/whatsapp/onboarding/start")).Item1); // service key is not a person
     }
+
+    private async Task<(long Id, string Phone)> User(string role)
+    {
+        var phone = "8" + Random.Shared.NextInt64(100_000_000, 999_999_999);
+        var (s, u) = await Admin.Post("/api/admin/iam/users", new { phone, name = $"Settings {role}", role, status = "ACTIVE" });
+        Assert.True(s == HttpStatusCode.OK, u?.ToJsonString());
+        var id = (long)u!["id"]!;
+        Assert.Equal(HttpStatusCode.NoContent, (await Admin.PostAsJsonAsync($"/api/admin/iam/users/{id}/password", new { password = "correct-horse-1" })).StatusCode);
+        return (id, phone);
+    }
+    private async Task<HttpClient> Login(string phone, string ua = "TestAgent/1")
+    {
+        var c = fx.Factory.CreateClient();
+        c.DefaultRequestHeaders.UserAgent.ParseAdd(ua);
+        var (s, b) = await c.Post("/api/auth/login", new { tenant = "demo", phone, password = "correct-horse-1" });
+        Assert.True(s == HttpStatusCode.OK, b?.ToJsonString());
+        c.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", (string)b!["token"]!);
+        return c;
+    }
+
+    [Fact]
+    public async Task View_as_switches_identity_only_for_eligible_targets_and_keeps_real_user()
+    {
+        var (adminId, adminPhone) = await User("admin");
+        var (viewerId, _) = await User("viewer");
+        var (otherAdminId, _) = await User("admin");
+        var admin = await Login(adminPhone);
+
+        var list = (await admin.GetJson("/api/admin/auth/switchable-users")).AsArray().Select(x => (long)x!["id"]!).ToList();
+        Assert.Contains(viewerId, list);
+        Assert.DoesNotContain(adminId, list);
+        Assert.DoesNotContain(otherAdminId, list); // peers are not switchable
+
+        var self = await admin.GetJson("/api/admin/auth/permissions");
+        Assert.Equal(adminId, (long)self["id"]!);
+
+        admin.DefaultRequestHeaders.Add("X-View-As", viewerId.ToString());
+        var viewed = await admin.GetJson("/api/admin/auth/permissions");
+        Assert.Equal(viewerId, (long)viewed["id"]!);
+        Assert.Equal("viewer", (string)viewed["role"]!);
+        Assert.DoesNotContain("settings.modify", viewed["permissions"]!.AsArray().Select(x => (string)x!));
+        var status = await admin.GetJson("/api/admin/auth/switch-user/v34/status");
+        Assert.True((bool)status["is_viewing_as"]!);
+        Assert.Equal(adminId, (long)status["real"]!["id"]!);
+        Assert.Equal(viewerId, (long)status["target"]!["id"]!);
+        // while viewing as someone, switching again is refused
+        var (rs, _) = await admin.Post("/api/admin/auth/switch-user/v34/resolve", new { phone = "9999999999" });
+        Assert.Equal(HttpStatusCode.Forbidden, rs);
+
+        // ineligible target (peer admin) is ignored: identity stays the signed-in admin
+        admin.DefaultRequestHeaders.Remove("X-View-As");
+        admin.DefaultRequestHeaders.Add("X-View-As", otherAdminId.ToString());
+        Assert.Equal(adminId, (long)(await admin.GetJson("/api/admin/auth/permissions"))["id"]!);
+
+        // a non-admin cannot list or use view-as
+        var (_, viewerPhone) = await User("viewer");
+        var viewer = await Login(viewerPhone);
+        Assert.Empty((await viewer.GetJson("/api/admin/auth/switchable-users")).AsArray());
+        viewer.DefaultRequestHeaders.Add("X-View-As", adminId.ToString());
+        Assert.Equal("viewer", (string)(await viewer.GetJson("/api/admin/auth/permissions"))["role"]!);
+    }
+
+    [Fact]
+    public async Task Sessions_list_own_devices_and_revoke_only_own()
+    {
+        var (_, phone) = await User("ops");
+        var a = await Login(phone, "DeviceA/1");
+        var b = await Login(phone, "DeviceB/1");
+        var rows = (await a.GetJson("/api/admin/auth/sessions"))["sessions"]!.AsArray();
+        Assert.Equal(2, rows.Count);
+        Assert.Single(rows, r => (bool)r!["current"]!);
+        Assert.Contains(rows, r => (string?)r!["user_agent"] == "DeviceA/1");
+        var other = rows.First(r => !(bool)r!["current"]!)!;
+
+        var (_, strangerPhone) = await User("ops");
+        var stranger = await Login(strangerPhone);
+        Assert.Equal(HttpStatusCode.NotFound, (await stranger.DeleteAsync($"/api/admin/auth/sessions/{other["id"]}")).StatusCode);
+
+        var del = await a.DeleteAsync($"/api/admin/auth/sessions/{other["id"]}");
+        Assert.Equal(HttpStatusCode.OK, del.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await b.GetAsync("/api/admin/auth/sessions")).StatusCode);
+        Assert.Single((await a.GetJson("/api/admin/auth/sessions"))["sessions"]!.AsArray());
+    }
 }

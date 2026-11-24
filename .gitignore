@@ -3,3 +3,5 @@ data/
 analysis/
 *.log
 .env
+
+modern/backend/.testout/
