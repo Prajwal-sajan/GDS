@@ -1,0 +1,37 @@
+name: Schedule Booking Share v50
+on:
+  push:
+    branches:
+      - feature/schedule-booking-share-v50
+  pull_request:
+    paths:
+      - "server/api/schedule-booking-share-v50.js"
+      - "server/api/configuration-v30.js"
+      - "server/index.js"
+      - "public/js/schedule-booking-share-v50.js"
+      - "public/js/schedules-screenshot-v6.js"
+      - "public/js/configuration-v30.js"
+      - "public/index.html"
+      - "tests/schedule-booking-share-v50.test.cjs"
+      - ".github/workflows/schedule-booking-share-v50.yml"
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Verify operator booking URL, route/date message, permissions and clipboard
+        run: node --test tests/schedule-booking-share-v50.test.cjs
+      - name: Verify Seat Layout image Copy remains intact
+        run: node --test tests/schedule-seat-layout-copy-v49.test.cjs
+      - name: Verify Schedule Manage Bookings v48
+        run: node --test tests/schedule-manage-v48.test.cjs
+      - name: Verify Schedule Manage Booking popup UI
+        run: node --test tests/schedule-manage-v48-ui.cjs
+      - name: Full GDS regression
+        run: npm test
