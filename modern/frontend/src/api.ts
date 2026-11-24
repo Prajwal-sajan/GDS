@@ -181,6 +181,8 @@ export const api = {
   logCall: (body: unknown) => call<{ notice: string }>("POST", "/api/admin/calls", body),
   ratings: (max?: number) => call<{ rows: Rating[]; avg: number; distribution: number[] }>("GET", `/api/admin/ratings${max ? `?max=${max}` : ""}`),
   reply: (id: number, reply: string) => call<{ notice: string }>("POST", `/api/admin/ratings/${id}/reply`, { reply }),
+  ratingFollowUp: (id: number, status: string, note: string) =>
+    call<unknown>("PUT","/api/admin/ratings/"+id+"/follow-up",{status,note}),
   // reports
   report: <T,>(name: string, qs: string) => call<T>("GET", `/api/admin/reports/${name}?${qs}`),
   addExpense: (tripId: number, category: string, amount: number, note: string) => call<unknown>("POST", `/api/admin/trips/${tripId}/expenses`, { category, amount, note }),
@@ -316,4 +318,20 @@ export interface BookingCancelQuote {
   pnr:string;percent:number;totalFare:number;charge:number;refund:number;
   breakdown:{seatCode:string;name:string;fare:number;charge:number;refund:number}[];
   subjectToRevalidation:boolean;payoutStatus:string;
+}
+
+export interface DailyOpsReport {
+  date:string;
+  fleet:{trips:{tripId:number;service:string;route:string;status:string;
+    vehicle:string|null;crew:{role:string;name:string;phone:string}[];
+    seats:number;capacity:number;occupancyPct:number;netSales:number}[];
+    summary:{trips:number;running:number;withoutBus:number;seats:number;capacity:number}};
+  earnings:{bookings:number;seats:number;amount:number;cancelledToday:number;
+    byChannel:{channel:string;bookings:number;amount:number}[];
+    next7:{date:string;trips:number;seats:number;capacity:number;occupancyPct:number}[]};
+  passengers:{noShowsYesterday:{pnr:string;service:string;seat:string;passenger:string;contact:string|null}[]};
+  compliance:{vehicleDocuments:{vehicle:string|null;document:string;expiryDate:string;state:string}[];
+    licences:{name:string;role:string;phone:string;licenseExpiry:string;state:string}[]};
+  ratings:{average:number|null;count:number;low:{id:number;ota:string;pnr:string|null;
+    rating:number;review:string|null;ratedAt:string;operatorReply:string|null}[]};
 }
