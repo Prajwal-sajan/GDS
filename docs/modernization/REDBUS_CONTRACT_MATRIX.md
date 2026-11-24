@@ -63,3 +63,4 @@ Each item must be answered by RedBus in writing; the interim behaviour is delibe
 | A-13 | Ack body | `{"status":"ok","message":"success"}`; bus cancellation `SUCCESS` | Whether other 2xx bodies mean success | Only those bodies count as acknowledged | Open |
 | A-14 | Fare in confirm | `Fare` | Whether `Fare` is total incl. GST | Must equal blockticket `totalFare` (incl. GST) exactly, else 409 `FARE_MISMATCH` | Open |
 | A-15 | Error format | Not specified | Error body / status codes undocumented | `{status:"FAILED", errorCode, message}` with 4xx/5xx; 503 `STORE_UNAVAILABLE` on DB outage (no partial commit) | Open |
+| A-16 | PDF settlement statement | Layout not specified; only sample PDFs | Operator code in PDF may differ from / be absent vs. upload target | PDF parsed best-effort; operator-code mismatch or unparseable rows → `review_required`, never auto-matched | Open |

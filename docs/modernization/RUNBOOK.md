@@ -47,4 +47,7 @@ Dev admin key: `dev-owner-key` (only its SHA-256 is in `appsettings.Development.
 
 **Reconciliation upload rejected** — `DUPLICATE_INVOICE` (same number, different content): confirm which file is authoritative with accounts before deleting anything. `OPERATOR_MISMATCH`: statement belongs to another operator code.
 
+**Multi-node realtime** — set `Realtime:RedisBackplane=true` (uses the `Redis` connection string). Without it, SignalR updates only reach clients on the same node.
+**User sign-in** — imported legacy users have **no password** and cannot log in until an owner/admin sets one (Users tab or `POST /api/admin/iam/users/{id}/password`). 5 failures lock the account for 15 min (423). Setting a password, changing role or deactivating revokes sessions. The last active owner cannot be demoted or deactivated.
+**Not provided** — no OTP, SMS, WhatsApp or telephony provider. Chat replies are recorded, not delivered; calls are operator-logged; rating replies are not published to OTAs. Sarathi is rule-based over reports, not an LLM.
 **Rollback** — the legacy Node app remains authoritative for every route not marked migrated. Disabling the modern RedBus channel = remove inbound routing at the edge and set provider `OutboundEnabled=false`. Database migration rollback: `dotnet dotnet-ef database update 0` (dev only; destroys data).
