@@ -161,6 +161,9 @@ export const api = {
     URL.revokeObjectURL(a.href);
   },
   // identity
+  bookingSite: () => call<BookingSiteSettings>("GET", "/api/admin/settings/booking-site"),
+  saveBookingSite: (input: { searchUrl: string; cityMappings: { cityId: number; publicCityId: number | null }[] }) =>
+    call<BookingSiteSettings>("PUT", "/api/admin/settings/booking-site", input),
   me: () => call<Me>("GET", "/api/admin/me"),
   // CRM
   passengerSearch: (mode: string, q: string) => call<{ total: number; customers: CustomerHit[] }>("GET", `/api/admin/crm/passenger-search?mode=${mode}&q=${encodeURIComponent(q)}`),
@@ -319,4 +322,11 @@ export interface CoachDraft {
 }
 export interface FullCoach extends CoachDraft {
   id:number;structuralLocked:boolean;routeReferences:number;vehicleReferences:number;seatCount:number;
+}
+
+export interface BookingSiteSettings {
+  operatorCode: string; operatorName: string; searchUrl: string;
+  configured: boolean; source: "database" | "server_configuration";
+  cityMappings: { cityId: number; name: string; publicCityId: number | null }[];
+  updatedBy: string | null; updatedAt: string | null;
 }
