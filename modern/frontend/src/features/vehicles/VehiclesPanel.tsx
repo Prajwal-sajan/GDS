@@ -165,7 +165,7 @@ function VehicleEditor({value,onClose,onSave,coaches}:{value:Vehicle|null;onClos
    try{await onSave(form);}catch(e){setError(msg(e));}finally{setBusy(false);}
  };
  return <div className="vf-overlay">
-   <section className="vf-modal" role="dialog" aria-modal="true" aria-label={value?"Edit vehicle":"Add vehicle"}>
+   <section className="vf-modal" role="dialog" aria-modal="true" aria-label={value?.id?"Edit vehicle":"Add vehicle"}>
      <header className="vf-dialog-head"><span className="vf-modal-bus"><BusIcon name="edit"/></span>
        <div><h2>{value?.id?"Edit Vehicle":"Add Vehicle"}</h2><p>All validated fields are persisted through ASP.NET Core</p></div>
        <button aria-label="Close vehicle editor" onClick={onClose}>✕</button></header>
