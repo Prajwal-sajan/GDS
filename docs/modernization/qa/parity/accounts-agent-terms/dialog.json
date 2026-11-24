@@ -1,0 +1,15 @@
+{
+  "id": "accounts-agent-terms",
+  "region": "dialog",
+  "legacy": [
+    960,
+    569
+  ],
+  "react": [
+    960,
+    569
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

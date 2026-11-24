@@ -1,0 +1,15 @@
+{
+  "id": "ota-verifier-upload-dialog",
+  "region": "dialog",
+  "legacy": [
+    924,
+    391
+  ],
+  "react": [
+    924,
+    391
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

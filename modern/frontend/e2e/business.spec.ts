@@ -71,7 +71,7 @@ test("CRM search validates input and never lists customers without a query", asy
 
 test("reports, Sarathi and users render from live data", async ({ page, request }) => {
   await signInUser(page, await provision(request, "admin"));
-  await page.goto("/#/accounts/reports");
+  await page.goto("/#/dailyops");
   await expect(page.getByTestId("kpi-Seats")).toBeVisible();
   await page.getByLabel("Report").selectOption("daily-ops");
   await expect(page.getByRole("heading", { name: "Fleet" })).toBeVisible();
@@ -115,8 +115,57 @@ test("admin issues invite; user activates with own password; code is single-use"
 
 test("profit report states its expense basis", async ({ page, request }) => {
   await signInUser(page, await provision(request, "admin"));
-  await page.goto("/#/accounts/reports");
+  await page.goto("/#/dailyops");
   await expect(page.getByTestId("expense-basis")).toContainText("route-template estimate");
+});
+
+test("accounts reports: catalogue search filters, a report opens with live sections and Print/PDF behave", async ({ page, request }) => {
+  await signInUser(page, await provision(request, "accounts"));
+  await page.goto("/#/accounts/reports");
+  await expect(page.locator(".ac10-report")).toHaveCount(13);
+  await page.locator("[data-report-find]").fill("cancel");
+  await expect(page.locator(".ac10-report:visible")).toHaveCount(1);
+  await page.locator(".ac10-report:visible").click();
+  await expect(page).toHaveURL(/accounts\/reports\/cancellations/);
+  await expect(page.locator("table").first()).toBeVisible();
+});
+
+test("accounts loyalty: create a coupon, edit keeps the code immutable, deactivate after confirmation", async ({ page, request }) => {
+  await signInUser(page, await provision(request, "admin"));
+  await page.goto("/#/accounts/coupons");
+  await expect(page.locator(".ac10-coupontable tbody tr", { hasText: "OFF100" })).toBeVisible();
+  const code = "E2E" + String(Date.now()).slice(-8);
+  await page.locator('[data-ac10="coupon-new"]').click();
+  const dlg = page.locator(".ac10-overlay");
+  await dlg.locator('input[name="code"]').fill(code.toLowerCase());
+  await dlg.locator('input[name="discount_value"]').fill("50");
+  await dlg.getByRole("button", { name: "Create coupon" }).click();
+  const row = page.locator(".ac10-coupontable tbody tr", { hasText: code });
+  await expect(row).toContainText("₹50 flat");
+  await expect(row).toContainText("Active");
+  await row.locator('[data-ac10="coupon-edit"]').click();
+  await expect(dlg.locator('input[name="code"]')).toHaveAttribute("readonly", "");
+  await dlg.locator("[data-close]").click();
+  await row.locator('[data-ac10="coupon-toggle"]').click();
+  await page.locator("#modal-root [data-y]").click();
+  await expect(row).toContainText("Inactive");
+});
+
+test("accounts agent settings: OTA cards from config, new agent terms are saved and listed", async ({ page, request }) => {
+  await signInUser(page, await provision(request, "accounts"));
+  await page.goto("/#/accounts/agent-settings");
+  await expect(page.locator(".ac10-agentcard", { hasText: "RedBus" })).toContainText("13.00%");
+  await page.locator('[data-ac10="agent-tab"][data-value="agents"]').click();
+  await page.locator('[data-ac10="agent-add"]').click();
+  const phone = "6" + String(Math.floor(Math.random() * 1e9)).padStart(9, "0");
+  const dlg = page.locator(".ac10-overlay");
+  await dlg.locator('input[name="name"]').fill("E2E agent");
+  await dlg.locator('input[name="phone"]').fill(phone);
+  await dlg.locator('input[name="commission_pct"]').fill("5");
+  await dlg.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("Agent terms saved")).toBeVisible();
+  await page.locator('[data-ac10="agent-tab"][data-value="agents"]').click();
+  await expect(page.locator(".ac10-agentcard", { hasText: phone })).toContainText("5%");
 });
 
 test("accounts sales: legacy tabs, KPIs from live data, pivots and filters round-trip through the URL", async ({ page, request }) => {
@@ -190,7 +239,7 @@ test("visual: login screen", async ({ page }) => {
 
 test("visual: reports shell with data masked", async ({ page, request }) => {
   await signInUser(page, await provision(request, "viewer"));
-  await page.goto("/#/accounts/reports");
+  await page.goto("/#/dailyops");
   await expect(page.getByTestId("kpi-Seats")).toBeVisible();
   await expect(page).toHaveScreenshot("reports.png", {
     fullPage: false, maxDiffPixelRatio: 0.02,

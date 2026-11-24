@@ -47,6 +47,7 @@ builder.Services.AddScoped<JourneyOS.Api.Admin.PayrollService>();
 builder.Services.AddScoped<JourneyOS.Api.Accounts.ReconciliationService>();
 builder.Services.AddScoped<JourneyOS.Api.Crm.CrmService>();
 builder.Services.AddScoped<JourneyOS.Api.Reports.ReportsService>();
+builder.Services.AddScoped<JourneyOS.Api.Reports.ReportSuiteService>();
 builder.Services.AddScoped<JourneyOS.Api.Sarathi.SarathiService>();
 builder.Services.AddScoped<IamService>();
 builder.Services.AddSingleton<JourneyOS.Api.Realtime.ITripEvents, JourneyOS.Api.Realtime.SignalRTripEvents>();

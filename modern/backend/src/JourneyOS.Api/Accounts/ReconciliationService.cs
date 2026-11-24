@@ -29,6 +29,7 @@ public sealed class ReconciliationService(GdsDbContext db, TimeProvider clock)
         byte[] content;
         List<OtaInvoiceLine> lines; List<string> warnings;
         string number; string? opCode = u.OperatorCode; DateOnly ps, pe; decimal? stated = u.StatedAmount;
+        PaymentAdvice? parsedAdvice = null;
         if (!string.IsNullOrEmpty(u.PdfBase64))
         {
             if (u.PdfBase64.Length > 28_000_000) throw new GdsException("FILE_TOO_LARGE", "PDF exceeds 20 MB", 413);
@@ -38,6 +39,7 @@ public sealed class ReconciliationService(GdsDbContext db, TimeProvider clock)
             catch (GdsException) { throw; }
             catch (Exception) { throw new GdsException("PDF_UNREADABLE", "The PDF could not be read (corrupt, encrypted or unsupported)"); }
             var advice = PaymentAdviceParser.Parse(pages);
+            parsedAdvice = advice;
             number = advice.InvoiceNumber; opCode = advice.OperatorCode; stated = advice.StatedAmount;
             ps = advice.PeriodStart ?? u.PeriodStart ?? throw new GdsException("VALIDATION", "Billing period not found in PDF; supply periodStart/periodEnd");
             pe = advice.PeriodEnd ?? u.PeriodEnd ?? throw new GdsException("VALIDATION", "Billing period not found in PDF; supply periodStart/periodEnd");
@@ -69,6 +71,9 @@ public sealed class ReconciliationService(GdsDbContext db, TimeProvider clock)
             UploadedBy = actor, UploadedAt = clock.GetUtcNow().UtcDateTime, Lines = lines,
             WarningsJson = warnings.Count > 0 ? System.Text.Json.JsonSerializer.Serialize(warnings) : null,
             Status = warnings.Count > 0 ? "review_required" : "parsed",
+            SummaryJson = parsedAdvice is null ? null : System.Text.Json.JsonSerializer.Serialize(parsedAdvice.Summary),
+            ComputedAmount = parsedAdvice?.ComputedAmount, OperatorGstin = parsedAdvice?.OperatorGstin,
+            SourcePdf = parsedAdvice is null ? null : content,
         };
         var provider = await db.OtaProviders.AsNoTracking().FirstOrDefaultAsync(p => p.Provider == "REDBUS");
         if (provider is not null && !string.IsNullOrEmpty(opCode) && !string.Equals(provider.OperatorCode, opCode, StringComparison.OrdinalIgnoreCase))

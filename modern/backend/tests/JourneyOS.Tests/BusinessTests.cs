@@ -499,11 +499,8 @@ public sealed class BusinessTests(GdsFixture fx)
         var (_, agentPhone) = await CreateUser("agent", commission: 10m);
         var f = await FindTrip(Rb, 1);
         var tripId = await fx.Sql(db => db.OtaInventories.Where(i => i.Id == f.InventoryId).Select(i => i.TripId).FirstAsync());
-        var (bp, dp) = await fx.Sql(async db =>
-        {
-            var st = await db.Trips.Where(t => t.Id == tripId).SelectMany(t => t.Route!.Stages).ToListAsync();
-            return (st.Where(s => s.Kind == "pickup").OrderBy(s => s.StopSequence).First().Id, st.Where(s => s.Kind == "drop").OrderBy(s => s.StopSequence).Last().Id);
-        });
+        // Board at the found segment's own stages: on overnight routes the route origin may already have departed today.
+        var (bp, dp) = (f.Bp, f.Dp);
         var (sc, cb) = await Admin.Post("/api/admin/bookings/counter", new
         {
             tripId, boardingPointId = bp, droppingPointId = dp, paymentMethod = "agent_credit", paymentReference = (string?)null, channel = "agent", agentPhone,

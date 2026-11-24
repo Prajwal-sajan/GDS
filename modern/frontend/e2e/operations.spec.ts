@@ -45,24 +45,20 @@ test("dispatch: realtime connects, seat block then release round-trips", async (
   await expect(page.locator(".seat.s-free", { hasText: new RegExp(`^${code}$`) })).toBeVisible();
 });
 
-test("reconciliation: upload CSV, see missing-in-GDS row, dispute requires reason", async ({ page }) => {
+test("OTA invoice verifier: ledger renders, upload dialog accepts only PDF and the server rejects an unparseable advice", async ({ page }) => {
   await signIn(page);
-  await open(page, "reconciliation");
-  const n = `E2E-${Date.now()}`;
-  await page.getByLabel("Invoice number").fill(n);
-  await page.getByLabel("Period start").fill(day(1));
-  await page.getByLabel("Period end").fill(day(1));
-  const csv = `section,pnr,doj,fare,tax,commission,commission_tax,operator_offer,cancellation_charge,take_home\nsold,${n}-UNKNOWN,${day(1)},500,25,50,9,0,,466\n`;
-  await page.getByLabel("Statement file").setInputFiles({ name: "statement.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
-  await page.getByRole("button", { name: "Upload & compare" }).click();
-  await expect(page.getByRole("status")).toContainText("Invoice uploaded");
-  await expect(page.getByTestId("recon-totals")).toBeVisible();
-  const row = page.locator("tr", { hasText: `${n}-UNKNOWN` });
-  await expect(row).toContainText("Missing in GDS");
-  page.once("dialog", (d) => d.accept(""));
-  await row.getByRole("button", { name: "Dispute" }).click();
-  await expect(row).toContainText("—"); // empty reason → nothing recorded
-  page.once("dialog", (d) => d.accept("Not our PNR"));
-  await row.getByRole("button", { name: "Dispute" }).click();
-  await expect(row).toContainText("dispute: Not our PNR");
+  await page.goto("/#/accounts/reconciliation");
+  await expect(page.locator(".ota43-ledger")).toBeVisible();
+  await page.locator('[data-ota43="upload"]').click();
+  const dlg = page.locator(".ota43-upload-dialog");
+  await dlg.locator("[data-upload-submit]").click();
+  await expect(page.locator("#toasts")).toContainText("Choose a PDF");
+  await dlg.locator("[data-upload-pdf]").setInputFiles({ name: "statement.csv", mimeType: "text/csv", buffer: Buffer.from("pnr,fare\n") });
+  await dlg.locator("[data-upload-submit]").click();
+  await expect(page.locator("#toasts")).toContainText("PDF required, max 7MB");
+  await dlg.locator("[data-upload-pdf]").setInputFiles({ name: "advice.pdf", mimeType: "application/pdf", buffer: Buffer.from("not a pdf") });
+  await dlg.locator("[data-upload-submit]").click();
+  await expect(page.locator("#toasts .toast.bad").last()).toBeVisible();
+  await expect(dlg.locator("[data-upload-submit]")).toHaveText("Upload & Verify"); // re-enabled after the failure
+  await expect(page).toHaveURL(/accounts\/reconciliation$/);
 });

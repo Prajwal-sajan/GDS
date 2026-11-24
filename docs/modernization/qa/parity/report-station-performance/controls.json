@@ -1,0 +1,15 @@
+{
+  "id": "report-station-performance",
+  "region": "controls",
+  "legacy": [
+    1296,
+    124
+  ],
+  "react": [
+    1296,
+    124
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

@@ -32,6 +32,10 @@ namespace JourneyOS.Api.Persistence.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<string>("AgentTermsJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("agent_terms_json");
+
                     b.Property<decimal?>("CommissionPct")
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)")
@@ -921,6 +925,148 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.ToTable("compliance_documents");
                 });
 
+            modelBuilder.Entity("JourneyOS.Api.Persistence.Coupon", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Audience")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("audience");
+
+                    b.PrimitiveCollection<string[]>("Channels")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("channels");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("code");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("DiscountType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("discount_type");
+
+                    b.Property<decimal>("DiscountValue")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("discount_value");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<decimal?>("MaxDiscountAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("max_discount_amount");
+
+                    b.Property<decimal?>("MinFare")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("min_fare");
+
+                    b.Property<int?>("PerUserLimit")
+                        .HasColumnType("integer")
+                        .HasColumnName("per_user_limit");
+
+                    b.Property<bool>("Private")
+                        .HasColumnType("boolean")
+                        .HasColumnName("private");
+
+                    b.Property<bool>("Stackable")
+                        .HasColumnType("boolean")
+                        .HasColumnName("stackable");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<int?>("TotalLimit")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_limit");
+
+                    b.Property<DateOnly?>("ValidFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_from");
+
+                    b.Property<DateOnly?>("ValidUntil")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_until");
+
+                    b.HasKey("Id")
+                        .HasName("pk_coupons");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_coupons_tenant_id_code");
+
+                    b.ToTable("coupons", t =>
+                        {
+                            t.HasCheckConstraint("ck_coupons_value", "discount_value > 0");
+                        });
+                });
+
+            modelBuilder.Entity("JourneyOS.Api.Persistence.CouponRedemption", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTime>("At")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("at");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("code");
+
+                    b.Property<string>("Phone")
+                        .HasColumnType("text")
+                        .HasColumnName("phone");
+
+                    b.Property<string>("Pnr")
+                        .HasColumnType("text")
+                        .HasColumnName("pnr");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_coupon_redemptions");
+
+                    b.HasIndex("TenantId", "Code")
+                        .HasDatabaseName("ix_coupon_redemptions_tenant_id_code");
+
+                    b.ToTable("coupon_redemptions");
+                });
+
             modelBuilder.Entity("JourneyOS.Api.Persistence.CrmNote", b =>
                 {
                     b.Property<long>("Id")
@@ -1175,6 +1321,105 @@ namespace JourneyOS.Api.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("JourneyOS.Api.Persistence.OperatorDocument", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal?>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("label");
+
+                    b.Property<string>("Month")
+                        .HasColumnType("text")
+                        .HasColumnName("month");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_operator_documents");
+
+                    b.HasIndex("TenantId", "Date")
+                        .HasDatabaseName("ix_operator_documents_tenant_id_date");
+
+                    b.ToTable("operator_documents");
+                });
+
+            modelBuilder.Entity("JourneyOS.Api.Persistence.OperatorPayment", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTime>("At")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("at");
+
+                    b.Property<string>("By")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("by");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("reference");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_operator_payments");
+
+                    b.ToTable("operator_payments", t =>
+                        {
+                            t.HasCheckConstraint("ck_operator_payments_amount", "amount > 0");
+                        });
+                });
+
             modelBuilder.Entity("JourneyOS.Api.Persistence.OtaInventory", b =>
                 {
                     b.Property<long>("Id")
@@ -1223,6 +1468,11 @@ namespace JourneyOS.Api.Persistence.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<decimal?>("ComputedAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("computed_amount");
+
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasColumnType("text")
@@ -1236,6 +1486,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.Property<string>("OperatorCode")
                         .HasColumnType("text")
                         .HasColumnName("operator_code");
+
+                    b.Property<string>("OperatorGstin")
+                        .HasColumnType("text")
+                        .HasColumnName("operator_gstin");
 
                     b.Property<DateOnly>("PeriodEnd")
                         .HasColumnType("date")
@@ -1255,6 +1509,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("sha256");
 
+                    b.Property<byte[]>("SourcePdf")
+                        .HasColumnType("bytea")
+                        .HasColumnName("source_pdf");
+
                     b.Property<decimal?>("StatedAmount")
                         .HasPrecision(12, 2)
                         .HasColumnType("numeric(12,2)")
@@ -1264,6 +1522,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("status");
+
+                    b.Property<string>("SummaryJson")
+                        .HasColumnType("text")
+                        .HasColumnName("summary_json");
 
                     b.Property<long>("TenantId")
                         .HasColumnType("bigint")
@@ -1576,6 +1838,98 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.ToTable("ota_ratings");
                 });
 
+            modelBuilder.Entity("JourneyOS.Api.Persistence.OtaSettlementConfig", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("CommissionBase")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("commission_base");
+
+                    b.Property<bool>("CommissionKeptOnPassengerCancel")
+                        .HasColumnType("boolean")
+                        .HasColumnName("commission_kept_on_passenger_cancel");
+
+                    b.Property<decimal>("CommissionPercent")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("commission_percent");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("display_name");
+
+                    b.Property<decimal>("GstOnCommissionPercent")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("gst_on_commission_percent");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<decimal?>("MatchTolerance")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("match_tolerance");
+
+                    b.Property<string>("OtaSlug")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("ota_slug");
+
+                    b.Property<int>("SettlementCycleDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("settlement_cycle_days");
+
+                    b.Property<string>("SettlementMode")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("settlement_mode");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<decimal>("TaxOnFarePercent")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("tax_on_fare_percent");
+
+                    b.Property<bool>("TaxReceivableFromOta")
+                        .HasColumnType("boolean")
+                        .HasColumnName("tax_receivable_from_ota");
+
+                    b.Property<decimal>("TdsPercent")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("tds_percent");
+
+                    b.Property<string>("TdsSection")
+                        .HasColumnType("text")
+                        .HasColumnName("tds_section");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ota_settlement_configs");
+
+                    b.HasIndex("TenantId", "OtaSlug")
+                        .IsUnique()
+                        .HasDatabaseName("ix_ota_settlement_configs_tenant_id_ota_slug");
+
+                    b.ToTable("ota_settlement_configs");
+                });
+
             modelBuilder.Entity("JourneyOS.Api.Persistence.OutboxAttempt", b =>
                 {
                     b.Property<long>("Id")
@@ -1835,6 +2189,11 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.Property<TimeOnly>("DepartureTime")
                         .HasColumnType("time without time zone")
                         .HasColumnName("departure_time");
+
+                    b.Property<decimal?>("DistanceKm")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("distance_km");
 
                     b.Property<int?>("DurationMinutes")
                         .HasColumnType("integer")
@@ -2793,6 +3152,24 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("bookable");
 
+                    b.Property<int?>("DelayMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("delay_minutes");
+
+                    b.Property<TimeOnly?>("DepartureTime")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("departure_time");
+
+                    b.Property<decimal?>("FuelL")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("fuel_l");
+
+                    b.Property<decimal?>("Km")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("km");
+
                     b.Property<long>("RouteId")
                         .HasColumnType("bigint")
                         .HasColumnName("route_id");
@@ -2802,6 +3179,14 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("status");
 
+                    b.Property<string>("StopEventsJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("stop_events_json");
+
+                    b.Property<string>("TelemetryJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("telemetry_json");
+
                     b.Property<long>("TenantId")
                         .HasColumnType("bigint")
                         .HasColumnName("tenant_id");
@@ -2809,6 +3194,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.Property<DateOnly>("TravelDate")
                         .HasColumnType("date")
                         .HasColumnName("travel_date");
+
+                    b.Property<string>("TripStatus")
+                        .HasColumnType("text")
+                        .HasColumnName("trip_status");
 
                     b.HasKey("Id")
                         .HasName("pk_trips");

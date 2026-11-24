@@ -1,0 +1,15 @@
+{
+  "id": "invoices-page",
+  "region": "outstanding",
+  "legacy": [
+    1296,
+    149
+  ],
+  "react": [
+    1296,
+    149
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

@@ -1,0 +1,15 @@
+{
+  "id": "ota-verifier-ledger",
+  "region": "ledger",
+  "legacy": [
+    1296,
+    373
+  ],
+  "react": [
+    1296,
+    373
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { activate, api, ApiError, getKey, login, logout, setKey, type Attempt, type Me, type OutboxRow, type RedBusStatus, type TripRow } from "./api";
 
-import { ReconciliationPanel } from "./Operations";
 import { CommsPanel, CrmPanel, LedgerPanel, ReportsPanel, SarathiPanel, UsersPanel } from "./Business";
 
 import { AppShell } from "./layouts/AppShell";
@@ -9,6 +8,10 @@ import { FeedbackHost } from "./components/ui/feedback";
 import { SchedulesPage } from "./features/schedules/SchedulesPage";
 import { TripsPage } from "./features/trips/TripsPage";
 import { AccountsPage } from "./features/accounts/AccountsPage";
+import { ReportsTab } from "./features/accounts/ReportsTab";
+import { InvoicesTab } from "./features/accounts/InvoicesTab";
+import { ReconciliationTab } from "./features/accounts/ReconciliationTab";
+import { AgentSettingsTab, LoyaltyTab } from "./features/accounts/AgentLoyaltyTabs";
 import { CrmPage } from "./features/crm/CrmPage";
 import { RoutesPage } from "./features/routes/RoutesPage";
 import { RouteEditorPage } from "./features/routes/RouteEditorPage";
@@ -104,14 +107,15 @@ function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Ele
     [/^fleet\/advances$/, OPS_R, () => <AdvancesPage me={me} />, true],
     [/^fleet\/reimbursements$/, OPS_R, () => <ReimbursementsPage me={me} />, true],
     [/^fleet\/payouts$/, OPS_R, () => <PayoutsPage key={location.hash} me={me} />, true],
-    [/^accounts\/reconciliation$/, ACC_R, () => <AccountsPage me={me} tab="reconciliation"><ReconciliationPanel /></AccountsPage>, true],
+    [/^accounts\/reconciliation(\/[^/]+)?$/, ACC_R, () => <AccountsPage key={location.hash} me={me} tab="reconciliation"><ReconciliationTab id={decodeURIComponent(location.hash.split("/")[3] ?? "") || null} /></AccountsPage>, true],
     [/^accounts\/transactions$/, [...ACC_R, "agent"], () => r === "agent" ? <LedgerPanel me={me} /> : <AccountsPage key={location.hash} me={me} tab="transactions" />, true],
     [/^accounts$/, [...ALL_R, "agent"], () => r === "agent" ? <LedgerPanel me={me} /> : <AccountsPage me={me} tab="analytics" />, true],
     [/^accounts\/analytics$/, ALL_R, () => <AccountsPage key={location.hash} me={me} tab="analytics" />, true],
-    [/^accounts\/reports(\/.*)?$/, ALL_R, () => <AccountsPage me={me} tab="reports"><ReportsPanel me={me} /></AccountsPage>, true],
+    [/^accounts\/reports(\/.*)?$/, ALL_R, () => <AccountsPage key={location.hash} me={me} tab="reports"><ReportsTab /></AccountsPage>, true],
     [/^accounts\/receivables$/, ACC_R, () => <AccountsPage key={location.hash} me={me} tab="receivables" />, true],
-    [/^accounts\/(invoices|agent-settings)$/, ACC_R, () => <AccountsPage me={me} tab={seg[1]}><NotMigrated path={path} /></AccountsPage>, true],
-    [/^accounts\/coupons$/, ["owner", "admin"], () => <AccountsPage me={me} tab="coupons"><NotMigrated path={path} /></AccountsPage>, true],
+    [/^accounts\/invoices$/, ACC_R, () => <AccountsPage me={me} tab="invoices"><InvoicesTab /></AccountsPage>, true],
+    [/^accounts\/agent-settings$/, ACC_R, () => <AccountsPage me={me} tab="agent-settings"><AgentSettingsTab /></AccountsPage>, true],
+    [/^accounts\/coupons$/, ["owner", "admin"], () => <AccountsPage me={me} tab="coupons"><LoyaltyTab /></AccountsPage>, true],
     [/^dailyops$/, ALL_R, () => <ReportsPanel me={me} />],
     [/^sarathi$/, ALL_R, () => <SarathiPanel />],
     [/^(chats|calls)(\/.*)?$/, OPS_R, () => <CommsPanel />],

@@ -138,6 +138,8 @@ export type TxRow = { pnr: string; ticket: string; travelDate: string; service: 
 export type Transactions = { rows: TxRow[]; services: { value: string; label: string }[]; totals: { bookings: number; credits: number; debits: number; net: number } };
 export type SalesFacets = { sectors: { value: string; label: string }[]; services: { value: string; sector: string; label: string }[]; channels: string[] };
 export const api = {
+  /** Generic admin JSON call for ported legacy screens whose payload keeps the legacy snake_case contract. */
+  admin: <T = any>(path: string, method = "GET", body?: unknown) => call<T>(method, `/api/admin${path}`, body), // eslint-disable-line @typescript-eslint/no-explicit-any
   sales: (q: Record<string, string>) => call<Sales>("GET", `/api/admin/accounts/sales?${new URLSearchParams(q)}`),
   salesFacets: () => call<SalesFacets>("GET", "/api/admin/accounts/sales-facets"),
   transactions: (q: Record<string, string>) => call<Transactions>("GET", `/api/admin/accounts/transactions?${new URLSearchParams(q)}`),

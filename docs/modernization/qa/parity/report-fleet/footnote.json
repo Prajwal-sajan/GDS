@@ -1,0 +1,15 @@
+{
+  "id": "report-fleet",
+  "region": "footnote",
+  "legacy": [
+    1276,
+    22
+  ],
+  "react": [
+    1276,
+    22
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

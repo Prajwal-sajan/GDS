@@ -168,6 +168,12 @@ public sealed class OtaInvoice : ITenantOwned
     public decimal Tolerance { get; set; } = 1m;
     public string Status { get; set; } = "parsed";       // parsed / review_required
     public string? WarningsJson { get; set; }
+    /// <summary>Payment-advice summary categories a–w + invoice_amount (legacy parsed.summary), JSON.</summary>
+    public string? SummaryJson { get; set; }
+    public decimal? ComputedAmount { get; set; }
+    public string? OperatorGstin { get; set; }
+    /// <summary>Original uploaded document, kept byte-for-byte for "View source PDF".</summary>
+    public byte[]? SourcePdf { get; set; }
     public string UploadedBy { get; set; } = "";
     public DateTime UploadedAt { get; set; }
     public List<OtaInvoiceLine> Lines { get; set; } = [];

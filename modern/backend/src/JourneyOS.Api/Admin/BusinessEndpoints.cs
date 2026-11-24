@@ -97,6 +97,26 @@ public static class BusinessEndpoints
             return Results.Ok(await s.SalesAsync(f, t, basis ?? "travel_date", source ?? "all", sector ?? "all", service ?? "all"));
         }).RequireAuthorization(Policies.Reports);
         g.MapGet("/accounts/sales-facets", async (ReportsService s) => Results.Ok(await s.SalesFacetsAsync())).RequireAuthorization(Policies.Reports);
+        // Accounts → Reports detail suite (legacy reports-suite-v21 / reports-performance-v22 / fleet-operations-v20)
+        InvoicesEndpoints.Map(g);
+        OtaVerifierEndpoints.Map(g);
+        AgentLoyaltyEndpoints.Map(g);
+        g.MapGet("/accounts/reports/v21/options", async (ReportSuiteService s) => Results.Ok(await s.OptionsV21Async())).RequireAuthorization(Policies.Reports);
+        g.MapGet("/accounts/reports/v22/options", async (ReportSuiteService s) => Results.Ok(await s.OptionsV22Async())).RequireAuthorization(Policies.Reports);
+        g.MapGet("/accounts/reports/fleet-operations/options", async (ReportSuiteService s) => Results.Ok(await s.FleetOptionsAsync())).RequireAuthorization(Policies.Reports);
+        g.MapGet("/accounts/reports/{key}", async (string key, HttpContext h, ReportSuiteService s) =>
+        {
+            var data = (Dictionary<string, object?>)await s.ComputeAsync(key, h.Request.Query);
+            if (h.Request.Query["format"] == "csv")
+            {
+                var section = h.Request.Query["section"].ToString() is { Length: > 0 } sec ? sec : "rows";
+                var src = key == "fleet-operations" ? data : (Dictionary<string, object?>)data["sections"]!;
+                if (!src.TryGetValue(section, out var rows) || rows is not List<Dictionary<string, object?>> list) throw new GdsException("VALIDATION", "Unknown section");
+                return Results.File(System.Text.Encoding.UTF8.GetBytes(ReportSuiteService.Csv(list)), "text/csv; charset=utf-8",
+                    key == "fleet-operations" ? $"fleet-operations_{data["from"]}_{data["to"]}.csv" : $"{key}_{section}_{data["from"]}_{data["to"]}.csv");
+            }
+            return Results.Ok(data);
+        }).RequireAuthorization(Policies.Reports);
         // Accounts → Transactions (legacy /accounts/transactions): bookings as credits, cancellation refunds as debits; format=csv downloads
         g.MapGet("/accounts/transactions", async (string? from, string? to, string? basis, string? source, string? service, string? q, string? format, ReportsService s) =>
         {

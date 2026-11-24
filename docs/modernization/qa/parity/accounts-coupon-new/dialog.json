@@ -1,0 +1,15 @@
+{
+  "id": "accounts-coupon-new",
+  "region": "dialog",
+  "legacy": [
+    960,
+    728
+  ],
+  "react": [
+    960,
+    728
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

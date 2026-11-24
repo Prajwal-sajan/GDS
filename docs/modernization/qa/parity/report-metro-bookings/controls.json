@@ -1,0 +1,15 @@
+{
+  "id": "report-metro-bookings",
+  "region": "controls",
+  "legacy": [
+    1296,
+    123
+  ],
+  "react": [
+    1296,
+    123
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

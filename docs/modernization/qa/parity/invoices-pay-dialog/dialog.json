@@ -1,0 +1,15 @@
+{
+  "id": "invoices-pay-dialog",
+  "region": "dialog",
+  "legacy": [
+    550,
+    236
+  ],
+  "react": [
+    550,
+    236
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

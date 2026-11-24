@@ -1,0 +1,15 @@
+{
+  "id": "accounts-agent-agents",
+  "region": "page",
+  "legacy": [
+    1296,
+    699
+  ],
+  "react": [
+    1296,
+    699
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

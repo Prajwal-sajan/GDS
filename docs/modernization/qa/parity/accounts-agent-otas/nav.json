@@ -1,0 +1,15 @@
+{
+  "id": "accounts-agent-otas",
+  "region": "nav",
+  "legacy": [
+    989,
+    51
+  ],
+  "react": [
+    989,
+    51
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

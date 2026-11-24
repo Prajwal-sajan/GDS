@@ -1,0 +1,15 @@
+{
+  "id": "report-van-bookings",
+  "region": "note",
+  "legacy": [
+    1284,
+    65
+  ],
+  "react": [
+    1284,
+    65
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

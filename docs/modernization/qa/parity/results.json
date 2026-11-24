@@ -1,5 +1,80 @@
 [
   {
+    "id": "accounts-agent-agents",
+    "region": "page",
+    "legacy": [
+      1296,
+      699
+    ],
+    "react": [
+      1296,
+      699
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-agent-ota-edit",
+    "region": "dialog",
+    "legacy": [
+      960,
+      461
+    ],
+    "react": [
+      960,
+      461
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-agent-otas",
+    "region": "nav",
+    "legacy": [
+      989,
+      51
+    ],
+    "react": [
+      989,
+      51
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-agent-otas",
+    "region": "page",
+    "legacy": [
+      1296,
+      746
+    ],
+    "react": [
+      1296,
+      746
+    ],
+    "sizeMatch": true,
+    "diffPixels": 3154,
+    "diffRatio": 0.0033
+  },
+  {
+    "id": "accounts-agent-terms",
+    "region": "dialog",
+    "legacy": [
+      960,
+      569
+    ],
+    "react": [
+      960,
+      569
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
     "id": "accounts-booking-basis-sector",
     "region": "grid",
     "legacy": [
@@ -354,6 +429,21 @@
     "react": [
       1296,
       83
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "accounts-coupon-new",
+    "region": "dialog",
+    "legacy": [
+      960,
+      728
+    ],
+    "react": [
+      960,
+      728
     ],
     "sizeMatch": true,
     "diffPixels": 0,
@@ -1209,6 +1299,741 @@
     "react": [
       1349,
       73
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "invoices-page",
+    "region": "footnote",
+    "legacy": [
+      1284,
+      16
+    ],
+    "react": [
+      1284,
+      16
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "invoices-page",
+    "region": "list",
+    "legacy": [
+      1296,
+      99
+    ],
+    "react": [
+      1296,
+      99
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "invoices-page",
+    "region": "nav",
+    "legacy": [
+      987,
+      51
+    ],
+    "react": [
+      987,
+      51
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "invoices-page",
+    "region": "outstanding",
+    "legacy": [
+      1296,
+      149
+    ],
+    "react": [
+      1296,
+      149
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "invoices-page",
+    "region": "toolbar",
+    "legacy": [
+      1296,
+      50
+    ],
+    "react": [
+      1296,
+      50
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "invoices-pay-dialog",
+    "region": "dialog",
+    "legacy": [
+      550,
+      236
+    ],
+    "react": [
+      550,
+      236
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "ota-verifier-ledger",
+    "region": "ledger",
+    "legacy": [
+      1296,
+      373
+    ],
+    "react": [
+      1296,
+      373
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "ota-verifier-ledger",
+    "region": "nav",
+    "legacy": [
+      991,
+      51
+    ],
+    "react": [
+      991,
+      51
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "ota-verifier-upload-dialog",
+    "region": "dialog",
+    "legacy": [
+      924,
+      391
+    ],
+    "react": [
+      924,
+      391
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-cancellations",
+    "region": "controls",
+    "legacy": [
+      1296,
+      63
+    ],
+    "react": [
+      1296,
+      63
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-cancellations",
+    "region": "note",
+    "legacy": [
+      1284,
+      44
+    ],
+    "react": [
+      1284,
+      44
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-cancellations",
+    "region": "top",
+    "legacy": [
+      1296,
+      47
+    ],
+    "react": [
+      1296,
+      47
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-driver-behavior",
+    "region": "controls",
+    "legacy": [
+      1296,
+      123
+    ],
+    "react": [
+      1296,
+      123
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-driver-behavior",
+    "region": "note",
+    "legacy": [
+      1284,
+      65
+    ],
+    "react": [
+      1284,
+      65
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-driver-behavior",
+    "region": "top",
+    "legacy": [
+      1296,
+      47
+    ],
+    "react": [
+      1296,
+      47
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-expenses",
+    "region": "controls",
+    "legacy": [
+      1296,
+      63
+    ],
+    "react": [
+      1296,
+      63
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-expenses",
+    "region": "note",
+    "legacy": [
+      1284,
+      65
+    ],
+    "react": [
+      1284,
+      65
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-expenses",
+    "region": "top",
+    "legacy": [
+      1296,
+      47
+    ],
+    "react": [
+      1296,
+      47
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-fleet",
+    "region": "footnote",
+    "legacy": [
+      1276,
+      22
+    ],
+    "react": [
+      1276,
+      22
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-fleet",
+    "region": "methodology",
+    "legacy": [
+      1286,
+      44
+    ],
+    "react": [
+      1286,
+      44
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-fleet",
+    "region": "title",
+    "legacy": [
+      1296,
+      47
+    ],
+    "react": [
+      1296,
+      47
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-frequent-travellers",
+    "region": "controls",
+    "legacy": [
+      1296,
+      120
+    ],
+    "react": [
+      1296,
+      120
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-frequent-travellers",
+    "region": "note",
+    "legacy": [
+      1286,
+      22
+    ],
+    "react": [
+      1286,
+      22
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-frequent-travellers",
+    "region": "top",
+    "legacy": [
+      1296,
+      47
+    ],
+    "react": [
+      1296,
+      47
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-metro-bookings",
+    "region": "controls",
+    "legacy": [
+      1296,
+      123
+    ],
+    "react": [
+      1296,
+      123
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-metro-bookings",
+    "region": "note",
+    "legacy": [
+      1284,
+      87
+    ],
+    "react": [
+      1284,
+      87
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-metro-bookings",
+    "region": "top",
+    "legacy": [
+      1296,
+      47
+    ],
+    "react": [
+      1296,
+      47
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-no-shows",
+    "region": "controls",
+    "legacy": [
+      1296,
+      63
+    ],
+    "react": [
+      1296,
+      63
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-no-shows",
+    "region": "note",
+    "legacy": [
+      1284,
+      44
+    ],
+    "react": [
+      1284,
+      44
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-no-shows",
+    "region": "top",
+    "legacy": [
+      1296,
+      47
+    ],
+    "react": [
+      1296,
+      47
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-point-performance",
+    "region": "note",
+    "legacy": [
+      1286,
+      64
+    ],
+    "react": [
+      1286,
+      64
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-point-performance",
+    "region": "top",
+    "legacy": [
+      1296,
+      47
+    ],
+    "react": [
+      1296,
+      47
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-point-usage",
+    "region": "controls",
+    "legacy": [
+      1296,
+      63
+    ],
+    "react": [
+      1296,
+      63
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-point-usage",
+    "region": "note",
+    "legacy": [
+      1284,
+      44
+    ],
+    "react": [
+      1284,
+      44
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-point-usage",
+    "region": "top",
+    "legacy": [
+      1296,
+      47
+    ],
+    "react": [
+      1296,
+      47
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-staff-duty",
+    "region": "controls",
+    "legacy": [
+      1296,
+      123
+    ],
+    "react": [
+      1296,
+      123
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-staff-duty",
+    "region": "note",
+    "legacy": [
+      1284,
+      44
+    ],
+    "react": [
+      1284,
+      44
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-staff-duty",
+    "region": "top",
+    "legacy": [
+      1296,
+      47
+    ],
+    "react": [
+      1296,
+      47
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-station-performance",
+    "region": "controls",
+    "legacy": [
+      1296,
+      124
+    ],
+    "react": [
+      1296,
+      124
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-station-performance",
+    "region": "note",
+    "legacy": [
+      1286,
+      22
+    ],
+    "react": [
+      1286,
+      22
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-station-performance",
+    "region": "top",
+    "legacy": [
+      1296,
+      47
+    ],
+    "react": [
+      1296,
+      47
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-trip-pnl",
+    "region": "controls",
+    "legacy": [
+      1296,
+      124
+    ],
+    "react": [
+      1296,
+      124
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-trip-pnl",
+    "region": "note",
+    "legacy": [
+      1286,
+      22
+    ],
+    "react": [
+      1286,
+      22
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-trip-pnl",
+    "region": "top",
+    "legacy": [
+      1296,
+      47
+    ],
+    "react": [
+      1296,
+      47
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-van-bookings",
+    "region": "controls",
+    "legacy": [
+      1296,
+      123
+    ],
+    "react": [
+      1296,
+      123
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-van-bookings",
+    "region": "note",
+    "legacy": [
+      1284,
+      65
+    ],
+    "react": [
+      1284,
+      65
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "report-van-bookings",
+    "region": "top",
+    "legacy": [
+      1296,
+      47
+    ],
+    "react": [
+      1296,
+      47
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "reports-catalogue-search",
+    "region": "catalogue",
+    "legacy": [
+      1296,
+      221
+    ],
+    "react": [
+      1296,
+      221
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "reports-catalogue",
+    "region": "catalogue",
+    "legacy": [
+      1296,
+      688
+    ],
+    "react": [
+      1296,
+      688
     ],
     "sizeMatch": true,
     "diffPixels": 0,

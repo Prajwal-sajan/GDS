@@ -1,0 +1,15 @@
+{
+  "id": "report-point-usage",
+  "region": "top",
+  "legacy": [
+    1296,
+    47
+  ],
+  "react": [
+    1296,
+    47
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

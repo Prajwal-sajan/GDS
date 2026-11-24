@@ -1,0 +1,15 @@
+{
+  "id": "invoices-page",
+  "region": "footnote",
+  "legacy": [
+    1284,
+    16
+  ],
+  "react": [
+    1284,
+    16
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

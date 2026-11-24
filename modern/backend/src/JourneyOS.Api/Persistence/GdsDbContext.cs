@@ -64,6 +64,11 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
     public DbSet<StaffAdvance> StaffAdvances => Set<StaffAdvance>();
     public DbSet<StaffReimbursement> StaffReimbursements => Set<StaffReimbursement>();
     public DbSet<StaffPayout> StaffPayouts => Set<StaffPayout>();
+    public DbSet<Coupon> Coupons => Set<Coupon>();
+    public DbSet<CouponRedemption> CouponRedemptions => Set<CouponRedemption>();
+    public DbSet<OperatorDocument> OperatorDocuments => Set<OperatorDocument>();
+    public DbSet<OperatorPayment> OperatorPayments => Set<OperatorPayment>();
+    public DbSet<OtaSettlementConfig> OtaSettlementConfigs => Set<OtaSettlementConfig>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -110,6 +115,13 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
         b.Entity<SarathiConversation>(e => { e.Property(x => x.MessagesJson).HasColumnType("jsonb"); e.HasIndex(x => new { x.TenantId, x.Owner }); });
         b.Entity<Vehicle>(e => { e.Property(x => x.PositionJson).HasColumnType("jsonb"); e.Property(x => x.HealthJson).HasColumnType("jsonb"); });
         b.Entity<CoachTemplate>(e => e.Property(x => x.AmenitiesJson).HasColumnType("jsonb"));
+        b.Entity<Trip>(e => { e.Property(x => x.TelemetryJson).HasColumnType("jsonb"); e.Property(x => x.StopEventsJson).HasColumnType("jsonb"); });
+        b.Entity<AppUser>(e => e.Property(x => x.AgentTermsJson).HasColumnType("jsonb"));
+        b.Entity<Coupon>(e => { e.HasIndex(x => new { x.TenantId, x.Code }).IsUnique(); e.ToTable(t => t.HasCheckConstraint("ck_coupons_value", "discount_value > 0")); });
+        b.Entity<CouponRedemption>(e => e.HasIndex(x => new { x.TenantId, x.Code }));
+        b.Entity<OperatorDocument>(e => e.HasIndex(x => new { x.TenantId, x.Date }));
+        b.Entity<OperatorPayment>(e => e.ToTable(t => t.HasCheckConstraint("ck_operator_payments_amount", "amount > 0")));
+        b.Entity<OtaSettlementConfig>(e => e.HasIndex(x => new { x.TenantId, x.OtaSlug }).IsUnique());
 
         b.Entity<Tenant>(e => { e.HasIndex(x => x.Code).IsUnique(); e.Property(x => x.GstPercent).HasPrecision(5, 2); });
 

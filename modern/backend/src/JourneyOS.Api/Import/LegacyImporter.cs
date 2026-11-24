@@ -521,6 +521,88 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
                         PaymentMode = Str(p, "payment_mode"), Reference = Str(p, "reference"),
                     });
         await db.SaveChangesAsync();
+        await ImportAccountsSuiteAsync(root, tenantId);
+    }
+
+    /// <summary>
+    /// Daily Ops trip readings (km / fuel / telemetry / stop stamps / trip status), loyalty coupons, operator statements,
+    /// OTA settlement terms and agent terms. Trip readings are backfilled only where still null; collections are imported once.
+    /// </summary>
+    private async Task ImportAccountsSuiteAsync(JsonElement root, long tenantId)
+    {
+        IEnumerable<JsonElement> Col(string name) => root.TryGetProperty(name, out var a) && a.ValueKind == JsonValueKind.Array ? a.EnumerateArray() : [];
+        static DateTime Ts(string? s) => s is not null && DateTime.TryParse(s, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal, out var d) ? d : DateTime.UtcNow;
+        static string? Obj(JsonElement e, string p) => e.TryGetProperty(p, out var v) && v.ValueKind == JsonValueKind.Object && v.EnumerateObject().Any() ? v.GetRawText() : null;
+
+        var trips = await db.Trips.Where(t => t.TripStatus == null && t.Km == null && t.TelemetryJson == null).ToDictionaryAsync(t => t.Id);
+        foreach (var s in Col("schedules"))
+        {
+            if (!s.TryGetProperty("id", out var idEl) || !trips.TryGetValue(idEl.GetInt64(), out var t)) continue;
+            t.DepartureTime = TimeOnly.TryParse(Str(s, "departure_time"), out var dep) ? dep : null;
+            t.TripStatus = Str(s, "trip_status");
+            t.Km = Dec(s, "km");
+            t.FuelL = Dec(s, "fuel_l");
+            t.DelayMinutes = Int(s, "delay_minutes");
+            t.TelemetryJson = Obj(s, "telemetry");
+            t.StopEventsJson = Obj(s, "stop_events");
+        }
+
+        if (!await db.Coupons.AnyAsync())
+            foreach (var c in Col("coupons"))
+            {
+                var code = Str(c, "code")?.Trim().ToUpperInvariant();
+                if (string.IsNullOrEmpty(code) || Dec(c, "discount_value") is not > 0) continue;
+                db.Coupons.Add(new Coupon
+                {
+                    TenantId = tenantId, Code = code, Description = Str(c, "description") ?? "", DiscountType = Str(c, "discount_type") is "percent" or "percentage" ? "percent" : "flat",
+                    DiscountValue = Dec(c, "discount_value")!.Value, MinFare = Dec(c, "min_fare"), MaxDiscountAmount = Dec(c, "max_discount_amount"),
+                    TotalLimit = Int(c, "total_limit"), PerUserLimit = Int(c, "per_user_limit"), ValidFrom = Date(c, "valid_from"), ValidUntil = Date(c, "valid_until"),
+                    Audience = Str(c, "audience") ?? "all", Channels = c.TryGetProperty("channels", out var ch) && ch.ValueKind == JsonValueKind.Array ? ch.EnumerateArray().Select(x => x.ToString()).ToArray() : [],
+                    Stackable = c.TryGetProperty("stackable", out var st) && st.ValueKind == JsonValueKind.True, Private = c.TryGetProperty("private", out var pr) && pr.ValueKind == JsonValueKind.True,
+                    IsActive = !(c.TryGetProperty("is_active", out var ia) && ia.ValueKind == JsonValueKind.False), CreatedAt = Ts(Str(c, "created_at")),
+                });
+            }
+        if (!await db.CouponRedemptions.AnyAsync())
+            foreach (var r in Col("coupon_redemptions"))
+                if (Str(r, "code") is { } code)
+                    db.CouponRedemptions.Add(new CouponRedemption { TenantId = tenantId, Code = code.ToUpperInvariant(), Pnr = Str(r, "pnr"), Phone = Str(r, "phone"), Amount = Dec(r, "amount") ?? 0, At = Ts(Str(r, "at")) });
+        if (!await db.OperatorDocuments.AnyAsync())
+            foreach (var d in Col("invoices"))
+                if (Date(d, "date") is { } date)
+                    db.OperatorDocuments.Add(new OperatorDocument
+                    {
+                        TenantId = tenantId, Kind = Str(d, "kind") ?? "invoice", Label = Str(d, "label") ?? "", Name = Str(d, "name") ?? "", Month = Str(d, "month"),
+                        Date = date, Amount = Dec(d, "amount"), Status = Str(d, "status"), CreatedAt = Ts(Str(d, "created_at")),
+                    });
+        if (!await db.OperatorPayments.AnyAsync())
+            foreach (var p in Col("invoice_payments"))
+                if (Dec(p, "amount") is > 0 and var amt)
+                    db.OperatorPayments.Add(new OperatorPayment { TenantId = tenantId, Amount = amt, Reference = Str(p, "reference") ?? "", By = Str(p, "by") ?? "legacy", At = Ts(Str(p, "at") ?? Str(p, "created_at")) });
+        if (!await db.OtaSettlementConfigs.AnyAsync()
+            && root.GetProperty("_meta").TryGetProperty("reconciliation_config", out var cfg) && cfg.ValueKind == JsonValueKind.Array)
+        {
+            var i = 0;
+            foreach (var c in cfg.EnumerateArray())
+                if (Str(c, "ota_slug") is { Length: > 0 } slug)
+                    db.OtaSettlementConfigs.Add(new OtaSettlementConfig
+                    {
+                        TenantId = tenantId, OtaSlug = slug, DisplayName = Str(c, "ota_display_name") ?? slug, CommissionPercent = Dec(c, "commission_percent") ?? 0,
+                        CommissionBase = Str(c, "commission_base") == "fare_plus_gst" ? "fare_plus_gst" : "fare_only", TdsPercent = Dec(c, "tds_percent") ?? 0,
+                        GstOnCommissionPercent = Dec(c, "gst_on_commission_percent") ?? 18, TaxOnFarePercent = Dec(c, "tax_on_fare_percent") ?? 0,
+                        SettlementMode = Str(c, "settlement_mode") ?? "DOJ", SettlementCycleDays = Int(c, "settlement_cycle_days") ?? 7, TdsSection = Str(c, "tds_section"),
+                        MatchTolerance = Dec(c, "match_tolerance"), TaxReceivableFromOta = c.TryGetProperty("tax_receivable_from_ota", out var tr) && tr.ValueKind == JsonValueKind.True,
+                        CommissionKeptOnPassengerCancel = c.TryGetProperty("commission_kept_on_passenger_cancel", out var ck) && ck.ValueKind == JsonValueKind.True,
+                        IsActive = !(c.TryGetProperty("is_active", out var ia) && ia.ValueKind == JsonValueKind.False), SortOrder = i++,
+                    });
+        }
+        var agents = await db.Users.Where(u => u.Role == "agent" && u.AgentTermsJson == null).ToDictionaryAsync(u => u.Phone);
+        foreach (var u in Col("users"))
+            if (Str(u, "phone") is { } phone && agents.TryGetValue(phone, out var a))
+            {
+                a.CreditLimit ??= Dec(u, "credit_limit");
+                a.AgentTermsJson = Obj(u, "agent_terms");
+            }
+        await db.SaveChangesAsync();
     }
 
     private static string? Str(JsonElement e, string p) => e.TryGetProperty(p, out var v) && v.ValueKind != JsonValueKind.Null ? v.ToString() : null;
@@ -553,6 +635,7 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
         route.ArrivalTime = TimeOnly.TryParse(Str(r, "arrival_time"), out var at) ? at : null;
         route.ArrivalDay = Int(r, "arrival_day");
         route.DurationMinutes = Int(r, "duration_minutes");
+        route.DistanceKm = Dec(r, "distance_km");
         route.StartDate = DateOnly.TryParse(Str(r, "start_date")?[..Math.Min(10, Str(r, "start_date")!.Length)], out var sd) ? sd : null;
         route.EndDate = DateOnly.TryParse(Str(r, "end_date")?[..Math.Min(10, Str(r, "end_date")!.Length)], out var ed) ? ed : null;
     }

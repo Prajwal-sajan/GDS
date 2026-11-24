@@ -22,6 +22,25 @@ const P: Record<string, string> = {
   chevron: '<path d="m6 9 6 6 6-6"/>',
   download: '<path d="M12 3v13m-5-5 5 5 5-5M5 19v3h14v-3"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+  share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.2m-6.6 8.9 6.6 3.9"/>',
+  arrow: '<path d="m5 12 14 0m-6-6 6 6-6 6"/>', back: '<path d="m14 6-6 6 6 6"/>', filter: '<path d="M4 7h16M7 12h10m-7 5h4"/>',
+  edit: '<path d="m15 4 5 5M4 20l5-1L20 8a3 3 0 0 0-4-4L5 15z"/>', trash: '<path d="M4 7h16m-12 0-1 14h10L16 7m-6 4v6m4-6v6M9 7V4h6v3"/>', plus: '<path d="M12 4v16M4 12h16"/>',
+  eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7Z"/><circle cx="12" cy="12" r="3"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-3a8 8 0 0 1 16 0v3"/>',
+  bus: '<rect x="3" y="3" width="18" height="16" rx="3"/><path d="M3 11h18m-13 8v2m8-2v2"/>', location: '<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="2"/>',
+  sparkle: '<path d="m12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5Z"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/>', check: '<path d="m5 12 4 4L19 6"/>',
+  more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+  fleet: '<rect x="2" y="6" width="13" height="11" rx="2"/><path d="M15 9h4l3 3v5h-7M6 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/>',
+  steering: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2"/><path d="M12 14v7M10 12H3M14 12h7"/>',
+  clipboard: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/>',
+  pins: '<path d="M9 10c0 4-5 9-5 9s-5-5-5-9a5 5 0 0 1 10 0Z" transform="translate(5 0)"/><circle cx="9" cy="10" r="1.6"/><path d="M15 21h6M18 18v3"/>',
+  metro: '<rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l-2-4M15 21l2-4"/><circle cx="9" cy="14" r=".8"/><circle cx="15" cy="14" r=".8"/>',
+  van: '<path d="M3 7h11l4 4h3v6H3z"/><path d="M14 7v4h4"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
+  target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+  route: '<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h8a3 3 0 0 0 0-6H8a3 3 0 0 1 0-6h8"/>',
+  userX: '<circle cx="9" cy="8" r="4"/><path d="M2 21v-2a6 6 0 0 1 11-3M16 15l5 5M21 15l-5 5"/>', ban: '<circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/>',
+  repeat: '<path d="m17 2 4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>',
+  pie: '<path d="M21 12a9 9 0 1 1-9-9v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/>',
+  wallet: '<path d="M3 7a2 2 0 0 1 2-2h13v4"/><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M16 13h2"/>',
 };
 export function Ic({ k, s = 17 }: { k: string; s?: number }) {
   return <svg width={s} height={s} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.9"
@@ -31,19 +50,19 @@ const V37: Record<string, string> = { pin: '<path d="M20 10c0 5-8 12-8 12S4 15 4
 const Svg37 = ({ k, s }: { k: string; s: number }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={s} height={s} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: V37[k] }} />;
 
 // legacy core.js formatters
-const inr = (n: number | null | undefined, d = 0) => (n == null || isNaN(n) ? "—" : `₹${Number(n).toLocaleString("en-IN", { maximumFractionDigits: d, minimumFractionDigits: d })}`);
-const num = (n: number | null | undefined) => (n == null ? "—" : Number(n).toLocaleString("en-IN"));
-const fdate = (s: string | null | undefined) => (s ? new Date(`${String(s).slice(0, 10)}T00:00:00`).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—");
-const pct = (x: number | null | undefined) => (x == null ? "—" : `${Number(x).toFixed(1)}%`);
-const fdt = (s: string | null | undefined) => (s ? new Date(s).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—");
-type Kind = "money" | "pct" | "int" | "date" | undefined;
-const fmt = (v: unknown, t: Kind) => t === "money" ? inr(v as number) : t === "pct" ? pct(v as number) : t === "date" ? fdate(v as string) : t === "int" ? num(v as number) : v == null || v === "" ? "—" : String(v);
-const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-const today = () => isoDay(new Date());
-const addDays = (s: string, n: number) => { const d = new Date(`${s}T12:00:00`); d.setDate(d.getDate() + n); return isoDay(d); };
+export const inr = (n: number | null | undefined, d = 0) => (n == null || isNaN(n) ? "—" : `₹${Number(n).toLocaleString("en-IN", { maximumFractionDigits: d, minimumFractionDigits: d })}`);
+export const num = (n: number | null | undefined) => (n == null ? "—" : Number(n).toLocaleString("en-IN"));
+export const fdate = (s: string | null | undefined) => (s ? new Date(`${String(s).slice(0, 10)}T00:00:00`).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—");
+export const pct = (x: number | null | undefined) => (x == null ? "—" : `${Number(x).toFixed(1)}%`);
+export const fdt = (s: string | null | undefined) => (s ? new Date(s).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—");
+export type Kind = "money" | "pct" | "int" | "date" | undefined;
+export const fmt = (v: unknown, t: Kind) => t === "money" ? inr(v as number) : t === "pct" ? pct(v as number) : t === "date" ? fdate(v as string) : t === "int" ? num(v as number) : v == null || v === "" ? "—" : String(v);
+export const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+export const today = () => isoDay(new Date());
+export const addDays = (s: string, n: number) => { const d = new Date(`${s}T12:00:00`); d.setDate(d.getDate() + n); return isoDay(d); };
 
-type Col = { key: string; label: string; type?: Kind; total?: boolean; col?: string };
-function Table<T extends Record<string, unknown>>({ rows, cols, foot, cls = "", cell }: { rows: T[]; cols: Col[]; foot?: boolean; cls?: string; cell?: (r: T, c: Col) => ReactNode }) {
+export type Col = { key: string; label: string; type?: Kind; total?: boolean; col?: string };
+export function Table<T extends Record<string, unknown>>({ rows, cols, foot, cls = "", cell }: { rows: T[]; cols: Col[]; foot?: boolean; cls?: string; cell?: (r: T, c: Col) => ReactNode }) {
   const sum = (k: string) => rows.reduce((v, r) => v + (Number(r[k]) || 0), 0);
   return (
     <div className="ac10-scroll"><table className={`ac10-table ${cls}`}>
@@ -54,8 +73,8 @@ function Table<T extends Record<string, unknown>>({ rows, cols, foot, cls = "", 
     </table></div>
   );
 }
-const Stat = ({ label, value, kind = "" }: { label: string; value: string; kind?: string }) => <div className={`ac10-stat ${kind}`}><span>{label}</span><strong>{value}</strong></div>;
-const Empty = ({ text = "No data for this period" }: { text?: string }) => <div className="ac10-empty"><Ic k="reports" s={28} /><span>{text}</span></div>;
+export const Stat = ({ label, value, kind = "" }: { label: string; value: string; kind?: string }) => <div className={`ac10-stat ${kind}`}><span>{label}</span><strong>{value}</strong></div>;
+export const Empty = ({ text = "No data for this period" }: { text?: string }) => <div className="ac10-empty"><Ic k="reports" s={28} /><span>{text}</span></div>;
 
 const ALL: Role[] = ["owner", "admin", "ops", "accounts", "viewer"];
 const ACC: Role[] = ["owner", "admin", "accounts"];
@@ -82,7 +101,7 @@ export function AccountsPage({ me, tab, children }: { me: Me; tab: string; child
   );
 }
 
-function query() { return Object.fromEntries(new URLSearchParams(location.hash.split("?")[1] ?? "")); }
+export function query() { return Object.fromEntries(new URLSearchParams(location.hash.split("?")[1] ?? "")); }
 
 function SectorDropdown({ facets, sector, onPick }: { facets: SalesFacets; sector: string; onPick: (v: string) => void }) {
   const [open, setOpen] = useState(false);
@@ -295,7 +314,7 @@ function TransactionsTab({ me }: { me: Me }) {
 
 // ---------------- Receivables (legacy accounts-parity-v10.js receivables() + ledgerDialog()) ----------------
 /** Legacy dates(s,{compact:true}): two calendar inputs, period presets (fill the inputs only) and Apply (commits to the URL). */
-function DateFilters({ from, to, onApply }: { from: string; to: string; onApply: (from: string, to: string) => void }) {
+export function DateFilters({ from, to, onApply }: { from: string; to: string; onApply: (from: string, to: string) => void }) {
   const [f, setF] = useState(from);
   const [t, setT] = useState(to);
   const preset = (which: string) => {

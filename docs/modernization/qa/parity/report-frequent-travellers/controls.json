@@ -1,0 +1,15 @@
+{
+  "id": "report-frequent-travellers",
+  "region": "controls",
+  "legacy": [
+    1296,
+    120
+  ],
+  "react": [
+    1296,
+    120
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

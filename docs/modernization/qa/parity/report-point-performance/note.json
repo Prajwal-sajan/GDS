@@ -1,0 +1,15 @@
+{
+  "id": "report-point-performance",
+  "region": "note",
+  "legacy": [
+    1286,
+    64
+  ],
+  "react": [
+    1286,
+    64
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

@@ -1,0 +1,15 @@
+{
+  "id": "reports-catalogue-search",
+  "region": "catalogue",
+  "legacy": [
+    1296,
+    221
+  ],
+  "react": [
+    1296,
+    221
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

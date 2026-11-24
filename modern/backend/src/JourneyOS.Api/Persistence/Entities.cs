@@ -72,6 +72,7 @@ public sealed class Route : ITenantOwned
     public TimeOnly? ArrivalTime { get; set; }
     public int? ArrivalDay { get; set; }
     public int? DurationMinutes { get; set; }
+    public decimal? DistanceKm { get; set; }
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
     public bool PartialCancellationAllowed { get; set; } = true;
@@ -177,6 +178,14 @@ public sealed class Trip : ITenantOwned
     public DateOnly TravelDate { get; set; }
     public string Status { get; set; } = "active";  // active / cancelled / completed
     public bool Bookable { get; set; } = true;
+    // Daily Ops trip record (legacy schedule fields). Null = not recorded; never estimated.
+    public TimeOnly? DepartureTime { get; set; }   // trip-level override of the route departure
+    public string? TripStatus { get; set; }         // scheduled / running / completed
+    public decimal? Km { get; set; }                // GPS km reported for the trip
+    public decimal? FuelL { get; set; }             // fuel litres reported for the trip
+    public int? DelayMinutes { get; set; }
+    public string? TelemetryJson { get; set; }      // driving_score, hard_brake, harsh_accel, over_speed, idling, max_speed_kmh ... as received
+    public string? StopEventsJson { get; set; }     // per-stage GPS stop stamps as received
 }
 
 public enum AllocationKind { Hold = 1, Booked = 2, Blocked = 3 }

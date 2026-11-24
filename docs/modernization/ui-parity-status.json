@@ -221,6 +221,57 @@
         "Ledger note optional like legacy; entries are voided (never deleted) and audited",
         "OTA/website/branch amounts differ by the 154 skipped legacy PNRs"
       ]
+    },
+    "V023": {
+      "status": "VISUAL_PASS",
+      "react": "src/features/accounts/ReportsTab.tsx",
+      "evidence": [
+        "e2e/parity/reports.parity.spec.ts (14/14, pixel <= 1%)",
+        "AccountsSuiteTests; e2e business accounts reports; reports.png self-baseline regenerated"
+      ],
+      "gaps": []
+    },
+    "V024": {
+      "status": "VISUAL_PASS",
+      "react": "src/features/accounts/InvoicesTab.tsx",
+      "evidence": [
+        "e2e/parity/invoices.parity.spec.ts (2/2)",
+        "AccountsSuiteTests (payments set TenantId, invariant-culture amounts)"
+      ],
+      "gaps": []
+    },
+    "V025": {
+      "status": "VISUAL_PASS",
+      "react": "src/features/accounts/ReconciliationTab.tsx (verbatim port of legacy v43 builders)",
+      "evidence": [
+        "e2e/parity/ota-verifier.parity.spec.ts (2/2)",
+        "e2e operations OTA verifier upload validation"
+      ],
+      "gaps": ["Spec deletes leftover modern test imports before comparing"]
+    },
+    "V026": {
+      "status": "VISUAL_PASS",
+      "react": "src/features/accounts/AgentLoyaltyTabs.tsx (AgentSettingsTab)",
+      "evidence": [
+        "e2e/parity/agent-loyalty.parity.spec.ts agent settings tests (pixel <= 1%)",
+        "e2e business agent settings"
+      ],
+      "gaps": [
+        "Deliberate fix: 'Tax on Fare' shows tax_on_fare_percent (legacy showed wrong field)",
+        "E2E-created agents stripped in parity comparison"
+      ]
+    },
+    "V027": {
+      "status": "VISUAL_PASS",
+      "react": "src/features/accounts/AgentLoyaltyTabs.tsx (LoyaltyTab, CouponDialog)",
+      "evidence": [
+        "e2e/parity/agent-loyalty.parity.spec.ts loyalty tests (DOM + text)",
+        "e2e business loyalty"
+      ],
+      "gaps": [
+        "Deliberate fix: percentage coupons show '% off'",
+        "Pixel check skipped (usage counts differ); E2E coupons stripped"
+      ]
     }
   },
   "apiMap": {
