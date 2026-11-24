@@ -61,6 +61,18 @@ test('shared internal city ID selected in the current schedule segment controls 
  assert.ok(!out.booking_url.includes('toCity=102257'));
  assert.ok(out.booking_url.endsWith('journeyDate=2026-11-22'));
 });
+test('via-city boarding on Day 2 moves passenger search date without altering the service start date',()=>{
+ const out=Share.createShare({schedule:exampleSchedule,route,
+  fromCityId:105258,toCityId:102257,bookingBase:base});
+ assert.equal(out.origin,'Kurnool');
+ assert.equal(out.destination,'Bengaluru');
+ assert.equal(out.journey_date,'2026-11-23');
+ assert.equal(out.service_travel_date,'2026-11-22');
+ assert.ok(out.message.startsWith('Kurnool → Bengaluru on Mon, 23 Nov, 2026'));
+ assert.ok(out.booking_url.includes('fromCity=105258'));
+ assert.ok(out.booking_url.includes('journeyDate=2026-11-23'));
+ assert.equal(Share.boardingDate('2026-11-30',2),'2026-12-01');
+});
 test('invalid city pair, disabled schedule, cancelled service and missing operator website rejected',()=>{
  const create=(o={})=>Share.createShare({schedule:exampleSchedule,route,
   fromCityId:107258,toCityId:102257,bookingBase:base,...o});
