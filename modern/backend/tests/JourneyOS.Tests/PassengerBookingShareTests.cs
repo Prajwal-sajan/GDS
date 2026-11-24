@@ -16,6 +16,8 @@ public sealed class PassengerBookingShareTests(GdsFixture fixture)
     [InlineData("https://localhost/bus/search/")]
     [InlineData("https://127.0.0.1/bus/search/")]
     [InlineData("https://internal.local/bus/search/")]
+    [InlineData("https://internal.local./bus/search/")]
+    [InlineData("https://localhost./bus/search/")]
     [InlineData("https://customer:secret@novembertravels.com/bus/search/")]
     [InlineData("https://novembertravels.com/bus/search/?user=abc")]
     [InlineData("https://novembertravels.com/bus/search/#x")]
