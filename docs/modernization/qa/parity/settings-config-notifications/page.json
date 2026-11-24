@@ -1,0 +1,15 @@
+{
+  "id": "settings-config-notifications",
+  "region": "page",
+  "legacy": [
+    1296,
+    2195
+  ],
+  "react": [
+    1296,
+    2195
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

@@ -28,18 +28,20 @@ export function permissions() {
 export const can = (p: string) => !permsNow || permsNow.includes(p);
 export function resetPermissions() { perms = null; permsNow = null; }
 
-/** Mounts a legacy screen into main[data-content]; restores the shell element on unmount. */
+/** Mounts a legacy screen like the legacy router (main.js route()): a fresh box div inside main[data-content]. */
 export function useLegacyPage(mount: (el: HTMLElement, alive: () => boolean) => void | (() => void) | Promise<void>, deps: unknown[]) {
   useEffect(() => {
-    const el = document.querySelector<HTMLElement>("main[data-content]");
-    if (!el) return;
-    const cls = el.className;
+    const main = document.querySelector<HTMLElement>("main[data-content]");
+    if (!main) return;
+    const el = document.createElement("div");
+    el.innerHTML = '<div class="empty">Loading…</div>';
+    main.appendChild(el);
     let on = true, cleanup: void | (() => void);
     void permissions().then(async () => {
       if (!on) return;
       const r = mount(el, () => on);
       if (typeof r === "function") cleanup = r; else await r;
     });
-    return () => { on = false; if (typeof cleanup === "function") cleanup(); el.className = cls; el.innerHTML = ""; el.onkeydown = null; };
+    return () => { on = false; if (typeof cleanup === "function") cleanup(); el.remove(); };
   }, deps); // eslint-disable-line react-hooks/exhaustive-deps
 }

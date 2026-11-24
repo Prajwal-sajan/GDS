@@ -1,0 +1,15 @@
+{
+  "id": "settings-password",
+  "region": "page",
+  "legacy": [
+    1424,
+    424
+  ],
+  "react": [
+    1424,
+    424
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

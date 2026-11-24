@@ -1,0 +1,15 @@
+{
+  "id": "settings-branding",
+  "region": "page",
+  "legacy": [
+    1260,
+    2042
+  ],
+  "react": [
+    1260,
+    2042
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

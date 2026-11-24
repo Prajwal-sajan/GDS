@@ -2610,6 +2610,156 @@
     "diffRatio": 0
   },
   {
+    "id": "settings-about",
+    "region": "page",
+    "legacy": [
+      1296,
+      1092
+    ],
+    "react": [
+      1296,
+      1092
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "settings-branding",
+    "region": "page",
+    "legacy": [
+      1260,
+      2042
+    ],
+    "react": [
+      1260,
+      2042
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "settings-config-business",
+    "region": "page",
+    "legacy": [
+      1296,
+      967
+    ],
+    "react": [
+      1296,
+      967
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "settings-config-notifications",
+    "region": "page",
+    "legacy": [
+      1296,
+      2195
+    ],
+    "react": [
+      1296,
+      2195
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "settings-config-seats",
+    "region": "page",
+    "legacy": [
+      1296,
+      995
+    ],
+    "react": [
+      1296,
+      995
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "settings-password",
+    "region": "page",
+    "legacy": [
+      1424,
+      424
+    ],
+    "react": [
+      1424,
+      424
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "settings-team-branches",
+    "region": "page",
+    "legacy": [
+      1440,
+      675
+    ],
+    "react": [
+      1440,
+      675
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "settings-team-office",
+    "region": "page",
+    "legacy": [
+      1440,
+      802
+    ],
+    "react": [
+      1440,
+      802
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "settings-team-roles",
+    "region": "page",
+    "legacy": [
+      1440,
+      1327
+    ],
+    "react": [
+      1440,
+      1327
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "settings-whatsapp",
+    "region": "page",
+    "legacy": [
+      1296,
+      755
+    ],
+    "react": [
+      1296,
+      755
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
     "id": "shell-accounts",
     "region": "header",
     "legacy": [

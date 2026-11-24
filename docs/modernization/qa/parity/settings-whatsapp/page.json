@@ -1,0 +1,15 @@
+{
+  "id": "settings-whatsapp",
+  "region": "page",
+  "legacy": [
+    1296,
+    755
+  ],
+  "react": [
+    1296,
+    755
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

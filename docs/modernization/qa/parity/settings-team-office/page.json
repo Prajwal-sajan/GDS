@@ -1,0 +1,15 @@
+{
+  "id": "settings-team-office",
+  "region": "page",
+  "legacy": [
+    1440,
+    802
+  ],
+  "react": [
+    1440,
+    802
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

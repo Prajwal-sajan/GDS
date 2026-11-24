@@ -1,0 +1,15 @@
+{
+  "id": "settings-team-branches",
+  "region": "page",
+  "legacy": [
+    1440,
+    675
+  ],
+  "react": [
+    1440,
+    675
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

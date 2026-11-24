@@ -1,0 +1,15 @@
+{
+  "id": "settings-about",
+  "region": "page",
+  "legacy": [
+    1296,
+    1092
+  ],
+  "react": [
+    1296,
+    1092
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

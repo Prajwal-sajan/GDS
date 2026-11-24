@@ -1,0 +1,15 @@
+{
+  "id": "settings-config-business",
+  "region": "page",
+  "legacy": [
+    1296,
+    967
+  ],
+  "react": [
+    1296,
+    967
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

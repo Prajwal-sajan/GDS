@@ -82,6 +82,7 @@ import { resetPermissions } from "./features/settings/legacy";
 import { WhatsAppPage } from "./features/settings/WhatsAppPage";
 import { ConfigurationPage } from "./features/settings/ConfigurationPage";
 import { StpSettingsPage } from "./features/settings/StpSettingsPage";
+import { TeamAccessPage } from "./features/settings/TeamAccessPage";
 import { LoyaltyProgramPage, SwitchUserPage } from "./features/settings/LoyaltySwitchPages";
 
 function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Element; redirect?: string } {
@@ -92,6 +93,8 @@ function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Ele
   const ALL_R: Role[] = ["owner", "admin", "ops", "accounts", "viewer"];
   const path = seg.join("/");
   if (!path) return { redirect: r === "agent" ? "#/accounts" : "#/trips" };
+  const LEGACY_SETTINGS: Record<string, string> = { "": "team-access/office-staff", users: "team-access/office-staff", roles: "team-access/access", branches: "team-access/branches", notifications: "configuration/notifications", calling: "configuration/calling", loyalty: "loyalty-program/miles", upgrades: "loyalty-program/upgrades" };
+  if (seg[0] === "settings" && (seg[1] ?? "") in LEGACY_SETTINGS) return { redirect: "#/settings/" + LEGACY_SETTINGS[seg[1] ?? ""] };
   // Interim in-page links (NOT the legacy Accounts/Settings tab strips, which are not migrated yet).
   const strip = (label: string, items: [string, string, Role[]][]) => (
     <nav className="row" aria-label={label}>
@@ -134,7 +137,8 @@ function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Ele
     [/^settings\/my-devices$/, [...ALL_R, "agent"], () => <StpSettingsPage screen="my-devices" />, true],
     [/^settings\/whatsapp$/, ["owner", "admin"], () => <WhatsAppPage />, true],
     [/^settings\/switch-user$/, ALL_R, () => <SwitchUserPage />, true],
-    [/^settings(\/team-access(\/.*)?)?$/, ["owner", "admin"], () => <UsersPanel me={me} />],
+    [/^settings\/team-access(\/.*)?$/, ["owner", "admin"], () => <TeamAccessPage key={path} parts={seg.slice(2)} />, true],
+    [/^settings\/users-legacy-panel$/, ["owner", "admin"], () => <UsersPanel me={me} />],
     [/^settings\/integrations$/, ALL_R, () => <>{integ}<RedBusPanel onUnauthorized={signOut} /></>],
     [/^settings\/integrations\/outbox$/, ALL_R, () => <>{integ}<OutboxPanel /></>],
   ];

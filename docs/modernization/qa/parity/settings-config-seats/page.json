@@ -1,0 +1,15 @@
+{
+  "id": "settings-config-seats",
+  "region": "page",
+  "legacy": [
+    1296,
+    995
+  ],
+  "react": [
+    1296,
+    995
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}
