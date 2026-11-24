@@ -1,0 +1,20 @@
+name: modern-production-release-gate
+
+# This workflow is deliberately manual and fail-closed.
+# Do not add deployment credentials to it. Completion of development CI does
+# not authorize moving real operator traffic or RedBus callbacks.
+on:
+  workflow_dispatch:
+
+jobs:
+  release-readiness:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Check independently evidenced readiness of every module and platform dependency
+        run: node modern/scripts/check-release-readiness.mjs
