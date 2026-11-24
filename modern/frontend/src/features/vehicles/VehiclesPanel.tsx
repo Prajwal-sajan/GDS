@@ -69,8 +69,8 @@ function VehicleFormFields({form,setForm,coaches}:{form:VehicleForm;setForm:(x:V
        aria-label={key} value={form[key]} onChange={e=>update({[key]:e.target.value})}/></label>)}
  </div>;
 }
-function VehicleDialog({vehicle,coaches,onClose,onSaved,onEdit}:{vehicle:Vehicle;coaches:CoachOption[];
-  onClose:()=>void;onSaved:()=>void;onEdit:()=>void}){
+function VehicleDialog({vehicle,coaches,onClose,onEdit}:{vehicle:Vehicle;coaches:CoachOption[];
+  onClose:()=>void;onEdit:()=>void}){
  const [tab,setTab]=useState<VehicleTab>("details");
  const [docs,setDocs]=useState<ComplianceDocument[]>([]);
  const [error,setError]=useState("");
@@ -167,7 +167,7 @@ function VehicleEditor({value,onClose,onSave,coaches}:{value:Vehicle|null;onClos
  return <div className="vf-overlay">
    <section className="vf-modal" role="dialog" aria-modal="true" aria-label={value?"Edit vehicle":"Add vehicle"}>
      <header className="vf-dialog-head"><span className="vf-modal-bus"><BusIcon name="edit"/></span>
-       <div><h2>{value?"Edit Vehicle":"Add Vehicle"}</h2><p>All validated fields are persisted through ASP.NET Core</p></div>
+       <div><h2>{value?.id?"Edit Vehicle":"Add Vehicle"}</h2><p>All validated fields are persisted through ASP.NET Core</p></div>
        <button aria-label="Close vehicle editor" onClick={onClose}>✕</button></header>
      <form className="vf-dialog-body" onSubmit={e=>{e.preventDefault();void save();}}>
        {error&&<p role="alert" className="vf-alert">{error}</p>}
@@ -279,8 +279,8 @@ export function VehiclesPanel(){
      </table></div>}
    {!loading&&!results.length&&<p className="vf-empty">No buses match the current search and status.</p>}
    {selected&&<VehicleDialog vehicle={selected} coaches={coaches} onClose={()=>setSelected(null)}
-     onSaved={()=>setRevision(x=>x+1)} onEdit={()=>setEditing(selected)}/>}
-   {editing!==undefined&&<VehicleEditor value={editing?.id?editing:null} onClose={()=>setEditing(undefined)}
+     onEdit={()=>setEditing(selected)}/>}
+   {editing!==undefined&&<VehicleEditor value={editing||null} onClose={()=>setEditing(undefined)}
      onSave={onSave} coaches={coaches}/>}
  </section>;
 }
