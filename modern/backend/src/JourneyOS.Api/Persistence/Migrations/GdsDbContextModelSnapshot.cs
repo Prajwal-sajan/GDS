@@ -787,6 +787,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("col");
 
+                    b.Property<string>("DisplayName")
+                        .HasColumnType("text")
+                        .HasColumnName("display_name");
+
                     b.Property<string>("Deck")
                         .IsRequired()
                         .HasColumnType("text")
@@ -837,6 +841,11 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.Property<bool>("IsAc")
                         .HasColumnType("boolean")
                         .HasColumnName("is_ac");
+
+                    b.Property<string>("LayoutMetaJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("layout_meta_json");
 
                     b.Property<string>("Name")
                         .IsRequired()
