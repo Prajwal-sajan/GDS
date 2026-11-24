@@ -44,7 +44,7 @@ export default function App() {
   const [meError, setMeError] = useState<string>();
   const [meTry, setMeTry] = useState(0);
   const { seg } = useHashRoute();
-  const signOut = useCallback(() => { void logout(); setKey(""); setKeyState(""); setMe(undefined); setMeError(undefined); window.location.hash = ""; }, []);
+  const signOut = useCallback(() => { void logout(); resetPermissions(); localStorage.removeItem("viewAs"); setKey(""); setKeyState(""); setMe(undefined); setMeError(undefined); window.location.hash = ""; }, []);
   useEffect(() => {
     if (!key) return;
     setMeError(undefined);
@@ -78,6 +78,8 @@ export default function App() {
  * explicit "not yet migrated" state — never a fake page.
  */
 import { AboutPage } from "./features/settings/AboutPage";
+import { resetPermissions } from "./features/settings/legacy";
+import { WhatsAppPage } from "./features/settings/WhatsAppPage";
 import { LoyaltyProgramPage, SwitchUserPage } from "./features/settings/LoyaltySwitchPages";
 
 function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Element; redirect?: string } {
@@ -124,6 +126,7 @@ function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Ele
     [/^(chats|calls)(\/.*)?$/, OPS_R, () => <CommsPanel />],
     [/^settings\/about$/, [...ALL_R, "agent"], () => <AboutPage />, true],
     [/^settings\/loyalty-program(\/.*)?$/, ["owner", "admin"], () => <LoyaltyProgramPage key={location.hash} />, true],
+    [/^settings\/whatsapp$/, ["owner", "admin"], () => <WhatsAppPage />, true],
     [/^settings\/switch-user$/, ALL_R, () => <SwitchUserPage />, true],
     [/^settings(\/team-access(\/.*)?)?$/, ["owner", "admin"], () => <UsersPanel me={me} />],
     [/^settings\/integrations$/, ALL_R, () => <>{integ}<RedBusPanel onUnauthorized={signOut} /></>],
