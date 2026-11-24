@@ -1,0 +1,38 @@
+name: Schedule Manage Bookings v48
+on:
+  push:
+    branches:
+      - feature/schedule-manage-bookings-v48
+  pull_request:
+    paths:
+      - "public/js/schedule-manage-v48.js"
+      - "public/js/schedules-screenshot-v6.js"
+      - "public/js/schedule-bookings-v38.js"
+      - "public/css/schedule-manage-v48.css"
+      - "server/api/schedule-manage-v48.js"
+      - "server/api/ops.js"
+      - "server/index.js"
+      - "public/index.html"
+      - "tests/schedule-manage-v48.test.cjs"
+      - ".github/workflows/schedule-manage-v48.yml"
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Verify screenshot coverage, real booking timeline, delayed stops and notification semantics
+        run: node --test tests/schedule-manage-v48.test.cjs
+      - name: Verify existing Schedule Bookings v38 API
+        run: node tests/schedule-bookings-v38-api.cjs
+      - name: Verify existing Schedule Bookings v38 UI
+        run: node tests/schedule-bookings-v38-ui.cjs
+      - name: Verify Pickup Chart v40 PDF and import
+        run: node tests/pickup-chart-v40-api.cjs
+      - name: Full GDS regression test
+        run: npm test
