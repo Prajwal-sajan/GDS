@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type DragEvent } from "react";
 import { api, type CoachOption, type CoachDraft, type CoachSeatDraft, type CoachFixtureDraft, type FullCoach } from "../../api";
 import { availableAmenities, cellAt, coachErrors, emptyCoach, fixtureKinds, generateRows,
   layoutMetrics, nextSeatCode, type Deck, type SelectedElement } from "./coachModel";
@@ -124,7 +124,7 @@ export function CoachEditorPanel() {
       setSelected({kind:"fixture",index:draft.fixtures.length});
     }
   };
-  const onMove = (e: React.DragEvent<HTMLDivElement>) => {
+  const onMove = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     if (!draft || !dragged || locked) return;
     const rect=e.currentTarget.getBoundingClientRect();
