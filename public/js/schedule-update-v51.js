@@ -76,7 +76,7 @@
  function readCrew(data){
   return '<div class="u51-read-crew">'+(data.crew.length?data.crew.map(c=>
    '<article class="u51-crew-card">'+square('user',/helper|attendant/i.test(c.role)?'orange':'blue')+
-   '<div><small>'+E(c.role||'Staff').toUpperCase()+'</small><strong>'+E(c.name||'—')+'</strong></div>'+
+   '<div><small>'+E(c.role==='Helper'?'Helper / Attendant':c.role||'Staff').toUpperCase()+'</small><strong>'+E(c.name||'—')+'</strong></div>'+
    phone(c.phone)+'</article>').join(''):'<p class="u51-empty">No crew assigned</p>')+'</div>';
  }
  function staffRows(d,s){
@@ -86,7 +86,7 @@
    const valid=member||d.crew?.find(o=>String(o.staff_id)===String(c.staff_id));
    return '<div class="u51-edit-row" data-u51-row="'+index+'">'+
     '<select aria-label="Role '+(index+1)+'" data-u51-role="'+index+'" class="'+fieldClass+'">'+
-    options(roleList.map(r=>[r,r]),c.role)+'</select>'+
+    options(roleList.map(r=>[r,r==='Helper'?'Helper / Attendant':r]),c.role)+'</select>'+
     '<select aria-label="Staff '+(index+1)+'" data-u51-staff="'+index+'" class="'+fieldClass+'">'+
     options(choices.map(o=>[o.id,o.name]),c.staff_id,'Select staff')+
     (c.staff_id&&!member?'<option selected value="'+E(c.staff_id)+'">'+E(valid?.name||'Assigned staff unavailable')+'</option>':'')+
