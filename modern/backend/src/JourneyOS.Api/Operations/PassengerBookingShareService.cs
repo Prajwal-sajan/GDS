@@ -24,17 +24,19 @@ public sealed class PassengerBookingShareService(
         if (string.IsNullOrWhiteSpace(value))
             throw new GdsException("BOOKING_SITE_NOT_CONFIGURED",
                 "Configure your operator's public HTTPS booking search website before sharing.", 409);
-        if (value.Length > 512 || !Uri.TryCreate(value, UriKind.Absolute, out var url) ||
-            url.Scheme != Uri.UriSchemeHttps || url.HostNameType != UriHostNameType.Dns ||
+        var valid = Uri.TryCreate(value, UriKind.Absolute, out var url);
+        var host = valid ? url!.Host.TrimEnd('.') : "";
+        if (!valid || value.Length > 512 ||
+            url!.Scheme != Uri.UriSchemeHttps || url.HostNameType != UriHostNameType.Dns ||
             !string.IsNullOrEmpty(url.UserInfo) || !string.IsNullOrEmpty(url.Query) ||
             !string.IsNullOrEmpty(url.Fragment) || !url.IsDefaultPort ||
-            url.Host.EndsWith(".local", StringComparison.OrdinalIgnoreCase) ||
-            url.Host.EndsWith(".internal", StringComparison.OrdinalIgnoreCase) ||
-            url.Host.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase) ||
-            url.Host.EndsWith(".test", StringComparison.OrdinalIgnoreCase) ||
-            url.Host.EndsWith(".invalid", StringComparison.OrdinalIgnoreCase) ||
-            url.Host.TrimEnd('.').Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
-            !url.Host.Contains('.') || IPAddress.TryParse(url.Host, out _))
+            host.EndsWith(".local", StringComparison.OrdinalIgnoreCase) ||
+            host.EndsWith(".internal", StringComparison.OrdinalIgnoreCase) ||
+            host.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase) ||
+            host.EndsWith(".test", StringComparison.OrdinalIgnoreCase) ||
+            host.EndsWith(".invalid", StringComparison.OrdinalIgnoreCase) ||
+            host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+            !host.Contains('.') || IPAddress.TryParse(host, out _))
             throw new GdsException("UNSAFE_BOOKING_SITE",
                 "Passenger booking Search URL must be a public HTTPS hostname without credentials, query or fragment.", 409);
         return url;
