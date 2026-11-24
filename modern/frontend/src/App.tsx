@@ -4,13 +4,15 @@ import { activate, api, ApiError, getKey, login, logout, setKey, type Attempt, t
 import { DispatchPanel, FaresPanel, FleetPanel, ReconciliationPanel, StaffPanel } from "./Operations";
 import { CommsPanel, CrmPanel, LedgerPanel, ReportsPanel, SarathiPanel, UsersPanel } from "./Business";
 import { SchedulesPanel } from "./features/schedules/SchedulesPanel";
+import { RoutesPanel } from "./features/routes/RoutesPanel";
+import { ModernShell } from "./navigation/ModernShell";
 
-type Tab = "redbus" | "outbox" | "trips" | "schedules" | "dispatch" | "fleet" | "staff" | "fares" | "recon" | "crm" | "comms" | "reports" | "ledger" | "sarathi" | "users";
+type Tab = "redbus" | "outbox" | "trips" | "schedules" | "routes" | "dispatch" | "fleet" | "staff" | "fares" | "recon" | "crm" | "comms" | "reports" | "ledger" | "sarathi" | "users";
 const ALL = ["owner", "admin", "accounts", "ops", "viewer"];
 const OPS = ["owner", "admin", "ops"];
 const ACC = ["owner", "admin", "accounts"];
 // Mirrors the API authorization policies; the API remains the enforcement point.
-const TABS: [Tab, string, string[]][] = [["redbus", "RedBus", ALL], ["outbox", "Outbox", ALL], ["trips", "Trips", ALL], ["schedules", "Schedules", OPS], ["dispatch", "Dispatch", OPS], ["fleet", "Fleet", OPS],
+const TABS: [Tab, string, string[]][] = [["redbus", "RedBus", ALL], ["outbox", "Outbox", ALL], ["trips", "Trips", ALL], ["schedules", "Schedules", OPS], ["routes", "Routes", OPS], ["dispatch", "Dispatch", OPS], ["fleet", "Fleet", OPS],
   ["staff", "Staff", OPS], ["fares", "Fares", OPS], ["recon", "Reconciliation", ACC], ["crm", "CRM", ALL], ["comms", "Chats & calls", OPS], ["reports", "Reports", ALL],
   ["ledger", "Ledger", [...ACC, "agent"]], ["sarathi", "Sarathi", ALL], ["users", "Users", ["owner", "admin"]]];
 
@@ -45,22 +47,14 @@ export default function App() {
   if (!me) return <p>Loading…</p>;
   const tabs = TABS.filter(([, , roles]) => roles.includes(me.role));
   return (
-    <div className="shell">
-      <header>
-        <strong>JourneyOS</strong> <span className="muted">Operations</span>
-        <nav>
-          {tabs.map(([t, label]) => (
-            <button key={t} className={tab === t ? "active" : ""} onClick={() => setTab(t)}>{label}</button>
-          ))}
-        </nav>
-        <span className="muted" data-testid="whoami">{me.name} · {me.role}</span>
-        <button className="link" onClick={signOut}>Sign out</button>
-      </header>
-      <main>
+    <ModernShell modules={tabs.map(([key, label, roles]) => ({ key, label, roles }))}
+      active={tab ?? ""} role={me.role} user={me.name} onNavigate={(next) => setTab(next as Tab)}
+      signOut={signOut}>
         {tab === "redbus" && <RedBusPanel onUnauthorized={signOut} />}
         {tab === "outbox" && <OutboxPanel />}
         {tab === "trips" && <TripsPanel />}
         {tab === "schedules" && <SchedulesPanel />}
+        {tab === "routes" && <RoutesPanel />}
         {tab === "dispatch" && <DispatchPanel />}
         {tab === "fleet" && <FleetPanel />}
         {tab === "staff" && <StaffPanel />}
@@ -72,8 +66,7 @@ export default function App() {
         {tab === "ledger" && <LedgerPanel me={me} />}
         {tab === "sarathi" && <SarathiPanel />}
         {tab === "users" && <UsersPanel me={me} />}
-      </main>
-    </div>
+    </ModernShell>
   );
 }
 

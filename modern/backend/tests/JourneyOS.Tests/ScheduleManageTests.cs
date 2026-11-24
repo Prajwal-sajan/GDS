@@ -60,6 +60,28 @@ public sealed class ScheduleManageTests(GdsFixture fixture)
     }
 
     [Fact]
+    public async Task History_only_returns_timestamped_trip_events_not_raw_audit_payload()
+    {
+        var tripId = await fixture.Sql(async db =>
+            await db.Trips.AsNoTracking().OrderBy(t => t.Id).Select(t => t.Id).FirstAsync());
+        using var client = fixture.Factory.Admin();
+        using var resp = await client.GetAsync($"/api/admin/trips/{tripId}/history");
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadAsStringAsync();
+        using var json = JsonDocument.Parse(body);
+        Assert.Equal(JsonValueKind.Array, json.RootElement.ValueKind);
+        foreach (var ev in json.RootElement.EnumerateArray())
+        {
+            Assert.True(ev.TryGetProperty("at",out _));
+            Assert.True(ev.TryGetProperty("action",out _));
+            Assert.True(ev.TryGetProperty("actor",out _));
+            Assert.False(ev.TryGetProperty("dataJson",out _));
+        }
+        using var missing = await client.GetAsync("/api/admin/trips/999999999999/history");
+        Assert.Equal(HttpStatusCode.NotFound,missing.StatusCode);
+    }
+
+    [Fact]
     public async Task Booking_chart_returns_pnr_and_seat_status_without_private_contacts()
     {
         var tripId = await fixture.Sql(async db =>

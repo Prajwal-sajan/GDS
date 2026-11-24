@@ -101,6 +101,8 @@ export const api = {
       new URLSearchParams([...(fromSequence === undefined ? [] : [["fromSequence", String(fromSequence)]]),
         ...(toSequence === undefined ? [] : [["toSequence", String(toSequence)]]),
         ["refresh", String(Date.now())]]).toString()),
+  tripHistory: (tripId: number) =>
+    call<TripHistoryEvent[]>("GET", "/api/admin/trips/" + tripId + "/history"),
   bookingChart: (tripId: number) =>
     call<ScheduleBookingChart[]>("GET", "/api/admin/trips/" + tripId + "/booking-chart"),
   blockSegment: (tripId: number, seats: string[], reason: string, fromSequence: number, toSequence: number) =>
@@ -111,6 +113,14 @@ export const api = {
   block: (tripId: number, seats: string[], reason: string) => call<{ blocked: string[] }>("POST", `/api/admin/trips/${tripId}/blocks`, { seats, reason }),
   unblock: (tripId: number, seat: string) => call<{ released: number }>("DELETE", `/api/admin/trips/${tripId}/blocks/${encodeURIComponent(seat)}`),
   routes: () => call<RouteRow[]>("GET", "/api/admin/routes"),
+  cities: () => call<CityOption[]>("GET", "/api/admin/cities"),
+  coaches: () => call<CoachOption[]>("GET", "/api/admin/coaches"),
+  routeFull: (id: number) => call<FullRoute>("GET", "/api/admin/routes/" + id + "/full"),
+  saveRoute: (draft: RouteDraft, id?: number) =>
+    call<{id:number}>(id ? "PUT" : "POST", "/api/admin/routes" + (id ? "/" + id : ""), draft),
+  generateRoute: (id: number, from: string, to: string) =>
+    call<{created:number}>("POST", "/api/admin/routes/" + id + "/generate", {from,to}),
+
   saveFares: (routeId: number, fares: Fare[]) => call<{ updated: number }>("PUT", `/api/admin/routes/${routeId}/fares`, fares),
   counterBook: (body: unknown) => call<CounterResult>("POST", "/api/admin/bookings/counter", body),
   invoices: () => call<InvoiceRow[]>("GET", "/api/admin/reconciliation/invoices"),
@@ -198,3 +208,21 @@ export interface ScheduleBookingChart {
   totalFare: number;
   passengers: { seatCode: string; name: string; status: string; boardingStatus: string }[];
 }
+
+export interface CityOption { id:number;name:string;state:string|null;countryName:string }
+export interface CoachOption { id:number;name:string;pattern:string;busType:string;isAc:boolean;
+  seatCount:number;seaterCount:number;sleeperCount:number }
+export interface RouteStopDraft { cityId:number;day:number;time:string; }
+export interface RouteStageDraft { stopSequence:number;kind:"pickup"|"drop";name:string;day:number;time:string;
+  address:string|null;landmark:string|null;contactNumber:string|null;prime:boolean; }
+export interface RouteDraft { serviceNumber:string;name:string;coachTemplateId:number;departureTime:string;
+  status:"draft"|"active"|"inactive";partialCancellationAllowed:boolean;primaryPaxCancellable:boolean;
+  maxSeatsPerTicket:number;updateCutoffMinutes:number;stops:RouteStopDraft[];
+  stages:RouteStageDraft[];fares:Fare[]; }
+export interface FullRoute extends RouteDraft {
+  id:number;coachName:string|null;structuralLocked:boolean;
+  stops:(RouteStopDraft&{sequence:number;cityName:string})[];
+  stages:(RouteStageDraft&{id:number})[];
+}
+
+export interface TripHistoryEvent { id:number; at:string; action:string; actor:string }

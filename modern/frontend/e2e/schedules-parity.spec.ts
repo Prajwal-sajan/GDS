@@ -50,6 +50,11 @@ async function setup(page:Page) {
         {id:2,kind:"drop",name:"Bengaluru Terminal",stopSequence:2,day:2,time:"07:55"}],
       seats})});
   });
+  await page.route("**/api/admin/trips/101/history",route=>route.fulfill({status:200,contentType:"application/json",
+    body:JSON.stringify([
+      {id:1001,at:"2026-11-22T17:05:00Z",action:"SEAT_BLOCK",actor:"QA Operator"},
+      {id:1000,at:"2026-11-22T17:00:00Z",action:"ASSIGN",actor:"Supervisor"}
+    ])}));
   await page.route("**/api/admin/trips/101/booking-chart",route=>route.fulfill({status:200,contentType:"application/json",
     body:JSON.stringify([{pnr:"PNR-TEST-1",status:"CONFIRMED",channel:"counter",totalFare:750,
       passengers:[{seatCode:"1L",name:"Test Passenger",status:"CONFIRMED",boardingStatus:"YET_TO_BOARD"}]}])}));
@@ -108,6 +113,11 @@ test("Manage Schedules renders reference-shaped lower/upper decks, booking chart
   await expect(page.getByText("Hyderabad Central")).toBeVisible();
   await page.getByRole("dialog").getByRole("button",{name:"Fares",exact:true}).click();
   await expect(page.getByText("₹799")).toBeVisible();
+  await page.getByRole("dialog").getByRole("button",{name:"History",exact:true}).click();
+  await expect(page.getByTestId("schedule-history")).toContainText("SEAT BLOCK");
+  await expect(page.getByTestId("schedule-history")).toContainText("QA Operator");
+  await page.getByRole("combobox",{name:"History event filter"}).selectOption("ASSIGN");
+  await expect(page.getByTestId("schedule-history")).toContainText("ASSIGN");
   await page.getByRole("button",{name:"✕ Close"}).last().click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });

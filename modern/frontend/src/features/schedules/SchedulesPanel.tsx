@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api, type Assignment, type RouteRow, type ScheduleBookingChart, type Staff, type TripRow, type Vehicle } from "../../api";
+import { api, type Assignment, type RouteRow, type ScheduleBookingChart, type Staff, type TripRow, type TripHistoryEvent, type Vehicle } from "../../api";
 import { SeatLayoutView } from "./SeatLayoutView";
 import { copySeatPoster, formatDate, titleFor, type ScheduleSeatLayout, type SeatCell } from "./seatLayoutModel";
 import "./schedules.css";
 
-type ManageTab = "Bookings" | "Block" | "Update" | "Cities" | "Pickups" | "Drops" | "Fares";
+type ManageTab = "Bookings" | "Block" | "Update" | "Cities" | "Pickups" | "Drops" | "Fares" | "History";
 const errorText = (e: unknown) => e instanceof Error ? e.message : String(e);
 const indiaDate = () => new Date(Date.now() + 330 * 60_000).toISOString().slice(0, 10);
 const currency = (value: number) => "₹" + value.toLocaleString("en-IN", { maximumFractionDigits: 2 });
-const tabs: ManageTab[] = ["Bookings", "Block", "Update", "Cities", "Pickups", "Drops", "Fares"];
+const tabs: ManageTab[] = ["Bookings", "Block", "Update", "Cities", "Pickups", "Drops", "Fares", "History"];
 
 function AssignmentEdit({ trip, rows, vehicles, staff, onChange }: {
   trip: TripRow;
@@ -105,6 +105,10 @@ function Manage({ trip, close, changed }: { trip: TripRow; close: () => void; ch
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [routes, setRoutes] = useState<RouteRow[]>([]);
+  const [history, setHistory] = useState<TripHistoryEvent[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState("");
+  const [historyFilter, setHistoryFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [reason, setReason] = useState("Operator seat block");
@@ -146,6 +150,15 @@ function Manage({ trip, close, changed }: { trip: TripRow; close: () => void; ch
     });
     return () => { alive = false; };
   }, [trip.id, reloadKey]);
+  useEffect(() => {
+    if (tab !== "History") return;
+    let current = true;
+    setHistoryLoading(true); setHistoryError("");
+    api.tripHistory(trip.id).then(rows => { if (current) setHistory(rows); })
+      .catch(e => { if (current) setHistoryError(errorText(e)); })
+      .finally(() => { if (current) setHistoryLoading(false); });
+    return () => { current = false; };
+  }, [tab, trip.id, reloadKey]);
   const route = routes.find((r) => r.id === trip.routeId);
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -211,7 +224,7 @@ function Manage({ trip, close, changed }: { trip: TripRow; close: () => void; ch
           {tabs.map((name) => <button type="button" key={name} onClick={() => setTab(name)}
             className={tab === name ? "selected" : ""} aria-current={tab === name ? "page" : undefined}>{name}</button>)}
           <button disabled title="Trip P&L API parity not yet verified">P&amp;L</button>
-          <button disabled title="Schedule event-history API not yet migrated">History</button>
+
         </nav>
         <div className="sm-trip-banner">
           <div className="sm-service-summary"><span className="sm-service-icon">▣</span>
@@ -286,6 +299,34 @@ function Manage({ trip, close, changed }: { trip: TripRow; close: () => void; ch
               .map((s) => <tr key={s.id}><td>{s.name}</td><td>{s.day}</td><td>{s.time}</td>
                 <td>{s.id}</td></tr>)}</tbody></table>
           <p className="sm-muted">Stage editing and changes to already-booked trips are not enabled without the validated API.</p>
+        </section>}
+        {tab === "History" && <section className="sm-data-card" data-testid="schedule-history">
+          <div className="sm-history-toolbar">
+            <div><h3>Service History</h3>
+              <p className="sm-muted">Timestamped operational events recorded for this service. No inferred or fabricated history.</p></div>
+            <label>Event type <select aria-label="History event filter" value={historyFilter}
+              onChange={e=>setHistoryFilter(e.target.value)}>
+              <option value="all">All events</option>
+              <option value="SEAT">Seat blocks/releases</option>
+              <option value="ASSIGN">Assignments</option>
+              <option value="REASSIGN">Reassignments</option>
+            </select></label>
+            <button type="button" className="sm-btn-outline" onClick={refresh}>↻ Refresh history</button>
+          </div>
+          {historyLoading && <p role="status" className="sm-muted">Loading recorded history…</p>}
+          {historyError && <p role="alert" className="sm-error">{historyError}</p>}
+          {!historyLoading && !historyError && <ol className="sm-history-list">
+            {history.filter(x=>historyFilter==="all"||x.action.toUpperCase().includes(historyFilter))
+              .map(event=><li key={event.id} className="sm-history-item">
+                <time dateTime={event.at}>{new Date(event.at).toLocaleString("en-IN",
+                  {dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Kolkata"})}</time>
+                <div><b>{event.action.replace(/_/g," ")}</b>
+                  <span>Recorded by {event.actor}</span></div>
+              </li>)}
+          </ol>}
+          {!historyLoading && !historyError &&
+            !history.some(x=>historyFilter==="all"||x.action.toUpperCase().includes(historyFilter)) &&
+            <p className="sm-muted">No recorded events for this filter. Earlier events without source timestamps cannot be reconstructed.</p>}
         </section>}
         {tab === "Fares" && <section className="sm-data-card"><h3>Segment fares</h3>
           <table><thead><tr><th>From → To</th><th>Seater</th><th>Lower sleeper</th><th>Upper sleeper</th></tr></thead>
