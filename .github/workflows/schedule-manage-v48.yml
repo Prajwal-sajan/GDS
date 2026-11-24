@@ -28,6 +28,8 @@ jobs:
       - run: npm ci
       - name: Verify screenshot coverage, real booking timeline, delayed stops and notification semantics
         run: node --test tests/schedule-manage-v48.test.cjs
+      - name: Verify interactive screenshot popups and controls in a browser DOM
+        run: node --test tests/schedule-manage-v48-ui.cjs
       - name: Verify existing Schedule Bookings v38 API
         run: node tests/schedule-bookings-v38-api.cjs
       - name: Verify existing Schedule Bookings v38 UI
