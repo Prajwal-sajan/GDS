@@ -123,7 +123,7 @@ public sealed class CoachManagementService(
 
     public async Task<object[]> ListAsync()
     {
-        return await db.CoachTemplates.AsNoTracking().OrderBy(x => x.Name)
+        var result = await db.CoachTemplates.AsNoTracking().OrderBy(x => x.Name)
             .Select(x => new {
                 x.Id, x.Name, x.BusType, x.Pattern, x.IsAc,
                 seatCount = x.Seats.Count,
@@ -131,7 +131,8 @@ public sealed class CoachManagementService(
                 sleeperCount = x.Seats.Count(s => s.SeatType == "sleeper"),
                 vehicles = db.Vehicles.Count(v => v.CoachTemplateId == x.Id),
                 routes = db.Routes.Count(r => r.CoachTemplateId == x.Id)
-            }).Cast<object>().ToArrayAsync();
+            }).ToArrayAsync();
+        return result.Cast<object>().ToArray();
     }
 
     public async Task<object> FullAsync(long id)
