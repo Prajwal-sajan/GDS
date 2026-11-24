@@ -101,6 +101,8 @@ export const api = {
       new URLSearchParams([...(fromSequence === undefined ? [] : [["fromSequence", String(fromSequence)]]),
         ...(toSequence === undefined ? [] : [["toSequence", String(toSequence)]]),
         ["refresh", String(Date.now())]]).toString()),
+  tripHistory: (tripId: number) =>
+    call<TripHistoryEvent[]>("GET", "/api/admin/trips/" + tripId + "/history"),
   bookingChart: (tripId: number) =>
     call<ScheduleBookingChart[]>("GET", "/api/admin/trips/" + tripId + "/booking-chart"),
   blockSegment: (tripId: number, seats: string[], reason: string, fromSequence: number, toSequence: number) =>
@@ -222,3 +224,5 @@ export interface FullRoute extends RouteDraft {
   stops:(RouteStopDraft&{sequence:number;cityName:string})[];
   stages:(RouteStageDraft&{id:number})[];
 }
+
+export interface TripHistoryEvent { id:number; at:string; action:string; actor:string }
