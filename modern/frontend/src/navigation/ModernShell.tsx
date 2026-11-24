@@ -15,6 +15,7 @@ const paths:Record<string,string>={
  ledger:"M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
  reports:"M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
  sarathi:"M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z",
+ settings:"M12 8a4 4 0 100 8 4 4 0 000-8zM4 12a8 8 0 0116 0 8 8 0 01-16 0zM12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4",
 };
 function Icon({name}:{name:string}) {
   return <svg className="gds-ico" aria-hidden="true" viewBox="0 0 24 24" fill="none"
@@ -51,7 +52,9 @@ export function ModernShell({ modules, active, role, user, onNavigate, signOut, 
         </button>)}
       </nav>
       <span className="gds-modern-user" data-testid="whoami" title={role}>{user} · {role}</span>
-      <button type="button" className="gds-modern-signout" onClick={signOut}>Sign out</button>
+      {byKey.has("settings") && <button type="button" aria-current={active==="settings"?"page":undefined}
+        className="gds-modern-signout" onClick={()=>onNavigate("settings")}><Icon name="settings"/> Settings</button>}
+    <button type="button" className="gds-modern-signout" onClick={signOut}>Sign out</button>
     </header>
     <div className="gds-modern-subbar">
       <nav aria-label="GDS modules" className="gds-modern-subnav">
