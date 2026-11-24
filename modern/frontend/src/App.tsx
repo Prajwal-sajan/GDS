@@ -5,6 +5,7 @@ import { DispatchPanel, FaresPanel, FleetPanel, ReconciliationPanel, StaffPanel 
 import { CommsPanel, CrmPanel, LedgerPanel, ReportsPanel, SarathiPanel, UsersPanel } from "./Business";
 import { SchedulesPanel } from "./features/schedules/SchedulesPanel";
 import { RoutesPanel } from "./features/routes/RoutesPanel";
+import { ModernShell } from "./navigation/ModernShell";
 
 type Tab = "redbus" | "outbox" | "trips" | "schedules" | "routes" | "dispatch" | "fleet" | "staff" | "fares" | "recon" | "crm" | "comms" | "reports" | "ledger" | "sarathi" | "users";
 const ALL = ["owner", "admin", "accounts", "ops", "viewer"];
@@ -46,18 +47,9 @@ export default function App() {
   if (!me) return <p>Loading…</p>;
   const tabs = TABS.filter(([, , roles]) => roles.includes(me.role));
   return (
-    <div className="shell">
-      <header>
-        <strong>JourneyOS</strong> <span className="muted">Operations</span>
-        <nav>
-          {tabs.map(([t, label]) => (
-            <button key={t} className={tab === t ? "active" : ""} onClick={() => setTab(t)}>{label}</button>
-          ))}
-        </nav>
-        <span className="muted" data-testid="whoami">{me.name} · {me.role}</span>
-        <button className="link" onClick={signOut}>Sign out</button>
-      </header>
-      <main>
+    <ModernShell modules={tabs.map(([key, label, roles]) => ({ key, label, roles }))}
+      active={tab ?? ""} role={me.role} user={me.name} onNavigate={(next) => setTab(next as Tab)}
+      signOut={signOut}>
         {tab === "redbus" && <RedBusPanel onUnauthorized={signOut} />}
         {tab === "outbox" && <OutboxPanel />}
         {tab === "trips" && <TripsPanel />}
@@ -74,8 +66,7 @@ export default function App() {
         {tab === "ledger" && <LedgerPanel me={me} />}
         {tab === "sarathi" && <SarathiPanel />}
         {tab === "users" && <UsersPanel me={me} />}
-      </main>
-    </div>
+    </ModernShell>
   );
 }
 
