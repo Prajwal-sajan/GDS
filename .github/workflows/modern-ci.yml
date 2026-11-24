@@ -48,7 +48,9 @@ jobs:
           echo "PASS: unverified GDS modules cannot authorize a production cutover."
       - name: Verify original coach geometry, screenshot-poster model, status and privacy
         run: node --test tests/seat-layout-model.test.cjs
+      - name: Validate 2+1 and 2+2 coach reference geometry and safe mutations
+        run: node --test tests/coach-model.test.cjs
       - name: Install Chromium for real browser UI interaction tests
         run: npx playwright install --with-deps chromium
       - name: Test React Schedules interactions with deterministic mocked API
-        run: npx playwright test e2e/schedules-parity.spec.ts e2e/routes-parity.spec.ts --reporter=line
+        run: npx playwright test e2e/schedules-parity.spec.ts e2e/routes-parity.spec.ts e2e/coaches-parity.spec.ts --reporter=line
