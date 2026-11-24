@@ -9,5 +9,5 @@ dotnet build "$root/backend/src/JourneyOS.Api" -c Debug -v q --nologo | Select-S
 $env:ASPNETCORE_ENVIRONMENT = "Development"
 Start-Process dotnet -ArgumentList 'run', '--no-build', '--project', "$root/backend/src/JourneyOS.Api", '--urls', "http://localhost:$Port" `
   -RedirectStandardOutput "$root/api.log" -RedirectStandardError "$root/api.err" -WindowStyle Hidden
-foreach ($i in 1..40) { Start-Sleep 1; try { $r = Invoke-RestMethod "http://localhost:$Port/health/ready"; Write-Host "API ready: $($r | ConvertTo-Json -Compress)"; exit 0 } catch {} }
+foreach ($i in 1..40) { Start-Sleep 1; try { $r = Invoke-RestMethod "http://localhost:$Port/health/ready" -TimeoutSec 3; Write-Host "API ready: $($r | ConvertTo-Json -Compress)"; exit 0 } catch {} }
 Write-Host "API did not become ready; see $root/api.log"; exit 1

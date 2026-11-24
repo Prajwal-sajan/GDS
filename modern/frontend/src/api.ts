@@ -103,7 +103,19 @@ export type ScheduleDetail = {
   origin: string; destination: string; departureTime: string; arrivalTime: string; arrivalDay: number;
   stops: ScheduleStop[]; stages: ScheduleStage[]; history: ScheduleHistoryRow[];
 };
+export type CrmMapSeat = { code: string; row: number; col: number; w: number; h: number; type: string; status: string; fare: number | null; reservationCount: number; booking: { isCurrent: boolean } | null };
+export type CrmDeck = { deck: string; rows: number; cols: number; seats: CrmMapSeat[] };
+export type CrmPoint = { name: string; time: string | null; day?: number } | null;
+export type CrmBooking = {
+  pnr: string; ticketNumber: string | null; service: string; source: string; status: string; payment: string; paymentMethod: string | null;
+  travelDate: string; bookedAt: string | null; scheduleId: number; routeId: number;
+  passengers: { seat: string; name: string; gender: string | null; age: number | null; fare: number; status: string }[];
+  fare: { gross: number; discount: number; net: number; gst: number; total: number; commission: number | null; milesDiscount: number };
+  amount: number; from: string; to: string; boarding: CrmPoint; dropping: CrmPoint;
+  contact: { name: string; phone: string | null; email: string | null }; comments: { text: string; by: string; at: string }[];
+};
 export const api = {
+  crmBooking: (pnr: string) => call<{ booking: CrmBooking; map: { coach: { id: number; name: string; capacity: number }; decks: CrmDeck[] } | null }>("GET", `/api/admin/crm/booking/${encodeURIComponent(pnr)}`),
   status: () => call<RedBusStatus>("GET", `${rb}/status`),
   outbox: (status?: string) => call<OutboxRow[]>("GET", `${rb}/outbox${status ? `?status=${status}` : ""}`),
   attempts: (id: number) => call<Attempt[]>("GET", `${rb}/outbox/${id}/attempts`),
@@ -219,7 +231,8 @@ export interface ScheduleRow {
 }
 export interface Me { name: string; role: string; tenant: string; auth: string; phone: string | null }
 export interface BookingView { pnr: string; status: string; channel: string; travelDate: string; service: string; amount: number; from: string | null; to: string | null;
-  contact: string | null; passengers: { seatCode: string; name: string; status: string; boardingStatus: string }[] }
+  contact: string | null; email?: string | null; issuedAt?: string | null; tripId?: number; boardingTime?: string | null;
+  passengers: { seatCode: string; name: string; status: string; boardingStatus: string; age?: number | null; gender?: string | null; fare?: number | null }[] }
 export interface CustomerHit { phone: string; phoneKey: string | null; name: string; tier: string; miles: number; totalTrips: number; totalBookings: number; cancelled: number;
   upcoming: number; cancellationPct: number; spend: number; lastTravel: string | null; bookings: BookingView[] }
 export interface CustomerDetail { phone: string; name: string; loyalty: { tier: string; miles: number }; bookings: BookingView[]; notes: { id: number; text: string; by: string; at: string }[];

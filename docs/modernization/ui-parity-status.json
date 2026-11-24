@@ -7,6 +7,22 @@
     ]
   },
   "views": {
+    "V004": {
+      "status": "VISUAL_PASS",
+      "react": "src/features/crm/CrmPage.tsx, src/features/crm/BookingOverlay.tsx",
+      "evidence": [
+        "e2e/parity/crm.parity.spec.ts — empty / phone 8853429780 / no-match search: search panel, results, countbar, thead, row identical DOM skeleton + text, pixel <= 1%; booking overlay ST261120214051098630: header, actionbar, ticket, contact, fare identical DOM + text + pixels, seat map identical DOM + text (4/4)",
+        "BusinessTests.Crm_booking_detail_returns_passengers_fare_and_seat_map_and_masks_phone_for_viewers; e2e business 'CRM search validates input'",
+        "Data from GET /api/admin/crm/customers and GET /api/admin/crm/booking/{pnr} (full PNR or last 6)"
+      ],
+      "gaps": [
+        "Update Ticket, Cancel Ticket, Shift Passenger (guided), Show History, Comment and Notify have no modern API: rendered like legacy, aria-disabled, explain via toast",
+        "Print Invoice prints a payment statement (no statutory GST invoice); Call is preview-only (no telephony)",
+        "Miles/coupon discounts are not recorded (shown as 0)",
+        "Import skipped 154 legacy PNRs overlapping seats: customer counts/spend and seat reservation counts can differ (normalised in spec)",
+        "Imported snapshot keeps the route 'Crew berth' 6U block that the live legacy store has released (normalised in spec)"
+      ]
+    },
     "V001": {
       "status": "VISUAL_PASS",
       "react": "src/features/trips/TripsPage.tsx",

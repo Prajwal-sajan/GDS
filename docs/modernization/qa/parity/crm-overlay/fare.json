@@ -1,0 +1,15 @@
+{
+  "id": "crm-overlay",
+  "region": "fare",
+  "legacy": [
+    629,
+    360
+  ],
+  "react": [
+    629,
+    360
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

@@ -1,0 +1,15 @@
+{
+  "id": "crm-overlay",
+  "region": "actionbar",
+  "legacy": [
+    629,
+    170
+  ],
+  "react": [
+    629,
+    170
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

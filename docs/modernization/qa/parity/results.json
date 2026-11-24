@@ -90,6 +90,216 @@
     "diffRatio": 0.0003
   },
   {
+    "id": "crm-empty",
+    "region": "results",
+    "legacy": [
+      1296,
+      231
+    ],
+    "react": [
+      1296,
+      231
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "crm-empty",
+    "region": "search",
+    "legacy": [
+      1258,
+      64
+    ],
+    "react": [
+      1258,
+      64
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "crm-none",
+    "region": "results",
+    "legacy": [
+      1296,
+      231
+    ],
+    "react": [
+      1296,
+      231
+    ],
+    "sizeMatch": true,
+    "diffPixels": 5,
+    "diffRatio": 0
+  },
+  {
+    "id": "crm-none",
+    "region": "search",
+    "legacy": [
+      1258,
+      64
+    ],
+    "react": [
+      1258,
+      64
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "crm-overlay",
+    "region": "actionbar",
+    "legacy": [
+      629,
+      170
+    ],
+    "react": [
+      629,
+      170
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "crm-overlay",
+    "region": "contact",
+    "legacy": [
+      629,
+      238
+    ],
+    "react": [
+      629,
+      238
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "crm-overlay",
+    "region": "fare",
+    "legacy": [
+      629,
+      360
+    ],
+    "react": [
+      629,
+      360
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "crm-overlay",
+    "region": "header",
+    "legacy": [
+      1376,
+      128
+    ],
+    "react": [
+      1376,
+      128
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "crm-overlay",
+    "region": "ticket",
+    "legacy": [
+      629,
+      133
+    ],
+    "react": [
+      629,
+      133
+    ],
+    "sizeMatch": true,
+    "diffPixels": 29,
+    "diffRatio": 0.0003
+  },
+  {
+    "id": "crm-phone",
+    "region": "countbar",
+    "legacy": [
+      1258,
+      70
+    ],
+    "react": [
+      1258,
+      70
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "crm-phone",
+    "region": "results",
+    "legacy": [
+      1296,
+      254
+    ],
+    "react": [
+      1296,
+      254
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "crm-phone",
+    "region": "row-0",
+    "legacy": [
+      1349,
+      174
+    ],
+    "react": [
+      1349,
+      174
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "crm-phone",
+    "region": "search",
+    "legacy": [
+      1258,
+      64
+    ],
+    "react": [
+      1258,
+      64
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "crm-phone",
+    "region": "thead",
+    "legacy": [
+      1349,
+      73
+    ],
+    "react": [
+      1349,
+      73
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
     "id": "route-editor-edit",
     "region": "header",
     "legacy": [

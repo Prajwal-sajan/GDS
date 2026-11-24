@@ -1,0 +1,15 @@
+{
+  "id": "crm-empty",
+  "region": "results",
+  "legacy": [
+    1296,
+    231
+  ],
+  "react": [
+    1296,
+    231
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

@@ -1,0 +1,15 @@
+{
+  "id": "crm-phone",
+  "region": "thead",
+  "legacy": [
+    1349,
+    73
+  ],
+  "react": [
+    1349,
+    73
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

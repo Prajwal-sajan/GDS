@@ -205,6 +205,27 @@ public sealed class BusinessTests(GdsFixture fx)
     }
 
     [Fact]
+    public async Task Crm_booking_detail_returns_passengers_fare_and_seat_map_and_masks_phone_for_viewers()
+    {
+        var b = await fx.Sql(db => db.Bookings.Include(x => x.Passengers).Where(x => x.Passengers.Any()).FirstAsync());
+        var d = await Admin.GetJson($"/api/admin/crm/booking/{b.Pnr}");
+        var bk = d["booking"]!;
+        Assert.Equal(b.Pnr, (string)bk["pnr"]!);
+        Assert.Equal(b.Passengers.Count, bk["passengers"]!.AsArray().Count);
+        Assert.Contains((string)bk["status"]!, new[] { "confirmed", "cancelled" });
+        var seats = d["map"]!["decks"]!.AsArray().SelectMany(x => x!["seats"]!.AsArray()).ToList();
+        Assert.All(b.Passengers, p => Assert.Contains(seats, s => (string)s!["code"]! == p.SeatCode));
+        Assert.Contains(seats, s => s!["booking"] is { } x && (bool)x["isCurrent"]!);
+        Assert.Equal(d.ToJsonString(), (await Admin.GetJson($"/api/admin/crm/booking/{b.Pnr[^6..]}")).ToJsonString());
+        Assert.Equal(HttpStatusCode.NotFound, (await Admin.GetAsync("/api/admin/crm/booking/NOPE000000")).StatusCode);
+        var (_, phone) = await CreateUser("viewer");
+        var v = await (await Login(phone)).GetAsync($"/api/admin/crm/booking/{b.Pnr}");
+        Assert.Equal(HttpStatusCode.OK, v.StatusCode);
+        var shown = (string?)System.Text.Json.Nodes.JsonNode.Parse(await v.Content.ReadAsStringAsync())!["booking"]!["contact"]!["phone"];
+        Assert.True(shown is null || shown.Contains("xxxxxx"), $"phone should be masked for viewer: {shown}");
+    }
+
+    [Fact]
     public async Task Fleet_lists_reflect_postgres_and_status_switches_are_audited()
     {
         var vehicles = (await Admin.GetJson("/api/admin/vehicle-list"))["vehicles"]!.AsArray();

@@ -8,6 +8,7 @@ import { AppShell } from "./layouts/AppShell";
 import { FeedbackHost } from "./components/ui/feedback";
 import { SchedulesPage } from "./features/schedules/SchedulesPage";
 import { TripsPage } from "./features/trips/TripsPage";
+import { CrmPage } from "./features/crm/CrmPage";
 import { RoutesPage } from "./features/routes/RoutesPage";
 import { RouteEditorPage } from "./features/routes/RouteEditorPage";
 import { StaffPage } from "./features/staff/StaffPage";
@@ -94,7 +95,8 @@ function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Ele
     [/^gds(\/schedules)?$/, ALL_R, () => <SchedulesPage me={me} />, true],
     [/^gds\/routes$/, ALL_R, () => <RoutesPage me={me} />, true],
     [/^gds\/routes\/\d+$/, ALL_R, () => <RouteEditorPage key={path} me={me} id={Number(seg[2])} />, true],
-    [/^crm(\/.*)?$/, ALL_R, () => <CrmPanel me={me} />],
+    [/^crm(\/.*)?$/, ALL_R, () => <CrmPage me={me} />, true],
+    [/^crm-legacy-panel$/, ALL_R, () => <CrmPanel me={me} />],
     [/^fleet(\/vehicles)?$/, OPS_R, () => <VehiclesPage me={me} />, true],
     [/^fleet\/coaches$/, OPS_R, () => <CoachesPage me={me} />, true],
     [/^fleet\/staff$/, OPS_R, () => <StaffPage me={me} />, true],

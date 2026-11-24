@@ -1,0 +1,15 @@
+{
+  "id": "crm-overlay",
+  "region": "ticket",
+  "legacy": [
+    629,
+    133
+  ],
+  "react": [
+    629,
+    133
+  ],
+  "sizeMatch": true,
+  "diffPixels": 29,
+  "diffRatio": 0.0003
+}

@@ -1,0 +1,15 @@
+{
+  "id": "crm-phone",
+  "region": "countbar",
+  "legacy": [
+    1258,
+    70
+  ],
+  "react": [
+    1258,
+    70
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

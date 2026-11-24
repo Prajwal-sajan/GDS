@@ -54,13 +54,19 @@ test("agent sees only their own ledger", async ({ page, request }) => {
 test("CRM search validates input and never lists customers without a query", async ({ page, request }) => {
   await signInUser(page, await provision(request, "admin"));
   await open(page, "crm");
-  await page.getByLabel("Search mode").selectOption("pnr");
-  await page.getByLabel("Search query").fill("AB");
-  await page.getByRole("button", { name: "Search" }).click();
-  await expect(page.getByRole("alert")).toContainText("at least 4 PNR characters");
-  await page.getByLabel("Search query").fill("");
-  await page.getByRole("button", { name: "Search" }).click();
-  await expect(page.getByTestId("customer-hit")).toHaveCount(0);
+  await page.locator("[data-cv8-mode=pnr]").click();
+  await page.getByLabel("Passenger pnr").fill("AB");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(page.getByText("Enter at least four PNR characters")).toBeVisible();
+  await page.getByLabel("Passenger pnr").fill("");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(page.locator(".cv8-customer")).toHaveCount(0);
+  await expect(page.getByText("Find a passenger")).toBeVisible();
+  await page.locator("[data-cv8-mode=phone]").click();
+  await page.getByLabel("Passenger phone").fill("8853429780");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(page.locator(".cv8-customer")).toHaveCount(1);
+  await expect(page.locator(".cv8-ticketrow").first()).toBeVisible();
 });
 
 test("reports, Sarathi and users render from live data", async ({ page, request }) => {
