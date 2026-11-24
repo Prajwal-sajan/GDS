@@ -41,6 +41,16 @@ public static class OperationsEndpoints
         g.MapPost("/trips/{id:long}/blocks", async (long id, BlockInput i, OperationsService s, HttpContext h) => Results.Ok(new { blocked = await s.BlockSeatsAsync(id, i, Actor(h)) })).RequireAuthorization(ops);
         g.MapDelete("/trips/{id:long}/blocks/{seat}", async (long id, string seat, OperationsService s, HttpContext h) => Results.Ok(new { released = await s.UnblockSeatAsync(id, seat, Actor(h)) })).RequireAuthorization(ops);
 
+        // v50 parity: route/date passenger-site link is configured per operator.
+        // Never advertise an internal GDS URL as a customer-booking link.
+        g.MapGet("/trips/{id:long}/share-link",
+            async (long id, int? fromSequence, int? toSequence,
+                PassengerBookingShareService share, HttpContext h) =>
+            {
+                h.Response.Headers.CacheControl = "private, no-store";
+                return Results.Ok(await share.ForTripAsync(id, fromSequence, toSequence));
+            }).RequireAuthorization(ops);
+
         // Schedule Manage / Bookings: authoritative selected-segment coach geometry.
         // Distinct from the older all-segments /seats endpoint used by Dispatch.
         // Return only what the user is permitted to see, and never derive
