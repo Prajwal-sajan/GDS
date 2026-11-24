@@ -1,5 +1,6 @@
 using System.Net;
 using JourneyOS.Api.Operations;
+using JourneyOS.Api.Inventory;
 using JourneyOS.Api.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
