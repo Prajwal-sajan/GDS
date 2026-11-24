@@ -95,7 +95,24 @@ export function checkCoachDraft(d:CoachDraft):void{
       cells.add(key);
     }
   }
-  for(const s of d.seats){
+  // Legacy imported 2+1 templates may use the pre-v46 seat-coordinate
+  // scheme; project for geometry checks only and preserve original IDs/DB cells.
+  const one=d.seats.find(s=>s.code==="1L"&&s.deck==="LOWER");
+  const chair=d.seats.find(s=>s.code==="1"&&s.deck==="LOWER");
+  const u1=d.seats.find(s=>s.code==="1U"&&s.deck==="UPPER");
+  const u3=d.seats.find(s=>s.code==="3U"&&s.deck==="UPPER");
+  const legacy=d.pattern==="2+1"&&one?.col===3&&chair?.col===0&&u1?.col===0&&u3?.col===3;
+  const physical=d.seats.map(s=>{
+    if(!legacy)return s;
+    if(s.deck==="LOWER"){
+      if(s.seatType==="sleeper"&&s.code.endsWith("L"))return {...s,col:0};
+      if(s.seatType==="seater"&&(s.col===0||s.col===1))return {...s,col:s.col+2};
+    }
+    if(s.deck==="UPPER"&&s.code.endsWith("U"))
+      return {...s,col:s.col===3?0:s.col===1?2:s.col===0?3:s.col};
+    return s;
+  });
+  for(const s of physical){
     if(!/^[\p{L}\p{N}_-]{1,24}$/u.test(s.code)||!["seater","sleeper"].includes(s.seatType)||
       s.width!==1||s.length!==(s.seatType==="seater"?1:2)||s.col===aisle)
       throw Error("Invalid seat code or geometry: "+s.code);
