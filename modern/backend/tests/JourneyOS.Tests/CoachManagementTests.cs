@@ -48,7 +48,7 @@ public sealed class CoachManagementTests(GdsFixture fixture)
         Assert.Equal(4,coach["fixtures"]!.AsArray().Count);
         Assert.False((bool)coach["structuralLocked"]!);
         Assert.Equal("19,20,23,24",string.Join(",",
-            new[]{19,20,23,24}.Where(n=>!coach["seats"]!.AsArray().Any(s=>(string)s!["code"]!==n.ToString()))));
+            new[]{19,20,23,24}.Where(n=>!coach["seats"]!.AsArray().Any(s=>(string)s!["code"]! != n.ToString()))));
 
         // All editor writes are transactional. Alias changes must never alter
         // immutable codes referenced by bookings or FareClass.
