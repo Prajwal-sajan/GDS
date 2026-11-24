@@ -40,6 +40,16 @@ function ensureCoachCompatible(s,r,v){
    fail(409,'Coach transfer changes booked seat inventory. Use an authorized seat migration workflow instead.');
  }
 }
+function freezeRouteBlocks(s,r){
+ // Disabling route sync must not silently release crew-reserved or other
+ // blocked seats. Copy the effective route blocks into the schedule overlay.
+ if(s.sync_with_route===false)return;
+ const snapshots=(r.seat_blocks||[]).map(block=>({...block,route_snapshot_v51:true}));
+ s.seat_blocks=[...(s.seat_blocks||[]),...snapshots];
+}
+function cleanRouteBlockSnapshots(s){
+ s.seat_blocks=(s.seat_blocks||[]).filter(b=>!b.route_snapshot_v51);
+}
 function validateCrew(crew){
  if(!Array.isArray(crew)||crew.length>8)fail(400,'Maximum eight crew assignments');
  const seen=new Set(),result=[];
@@ -135,6 +145,7 @@ router.put('/schedules/:id/update-v51/assignment',can('schedules.modify'),run(re
   settings.cab_mode=body.cab_mode;
  }
  const previous={vehicle_id:s.vehicle_id,crew:s.crew,sync_with_route:s.sync_with_route,update_v51:s.update_v51};
+ freezeRouteBlocks(s,r);
  s.vehicle_id=v?.id||null;s.crew=crew;
  s.update_v51=settings;s.assignment_override_v51=true;s.sync_with_route=false;
  db.persist();
@@ -154,11 +165,16 @@ router.put('/schedules/:id/update-v51/sync',can('schedules.modify'),run(req=>{
   const next=routeAssignment(r,s.travel_date),v=vehicle(next.vehicle_id);
   ensureCoachCompatible(s,r,v);
   validateCrew(next.crew);
+  const live=db.col('bookings').count(b=>String(b.schedule_id)===String(s.id)&&['confirmed','hold'].includes(b.status));
+  if(live&&r.departure_time!==s.departure_time)
+   fail(409,'Cannot reset a booked trip departure time while re-enabling route sync. Review affected passengers and trip timings first.');
+  cleanRouteBlockSnapshots(s);
   s.vehicle_id=v?.id||null;s.crew=next.crew;
   s.departure_time=r.departure_time;s.arrival_time=r.arrival_time;
   s.update_v51={};s.assignment_override_v51=false;
   s.fare_override=null;
  }
+ if(!enabled)freezeRouteBlocks(s,r);
  s.sync_with_route=enabled;
  db.persist();D.audit('schedule',s.id,'sync_with_route',{enabled,source:enabled?'route':'schedule'},req.user);
  return response(s,r,req);
