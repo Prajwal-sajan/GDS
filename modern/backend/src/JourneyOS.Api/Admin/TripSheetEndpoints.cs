@@ -80,6 +80,8 @@ public static class TripSheetEndpoints
                     callStatus = (string?)null,
                     trips = b.ContactMobile is { } m ? tripsByPhone.GetValueOrDefault(m) : (int?)null,
                     boarding = Stage(b.BoardingStageId), dropping = Stage(b.DroppingStageId),
+                    fare = p.Fare, gender = p.Gender, bookedAt = b.DateOfIssue,
+                    from = cities.FirstOrDefault(c => c.Sequence == b.FromSeq)?.City?.Name, to = cities.FirstOrDefault(c => c.Sequence == b.ToSeq)?.City?.Name,
                 })),
                 documents = docs.Select(d => new { d.Id, d.DocumentType, d.DocumentName, d.ExpiryDate, d.VerificationStatus }),
             });

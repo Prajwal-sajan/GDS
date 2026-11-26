@@ -3,10 +3,9 @@ import { PnlTab, pnlConfirmLeave } from "./SchedulePnlTab";
 import { FaresTab } from "./ScheduleFaresTab";
 import { UpdateTab } from "./ScheduleUpdateTab";
 import { BlockTab } from "./ScheduleBlockTab";
-import { api, type ScheduleDetail, type ScheduleRow, type ScheduleStage } from "../../api";
+import { api, type Me, type ScheduleDetail, type ScheduleRow, type ScheduleStage } from "../../api";
 import { toast, toastError } from "../../components/ui/feedback";
 import { inr, shortDate, t12 } from "../../services/format";
-import { DispatchPanel } from "../../Operations";
 
 // React port of the legacy schedule management overlay (public/js/schedules-screenshot-v6.js: openModal(), tabs, bt(),
 // previewNote()). Same DOM/classes so the vendored legacy CSS renders it identically. Data comes from
@@ -53,7 +52,7 @@ const TABS: [string, IconName, string][] = [
 /** legacy fdt: 23 Nov, 07:36 pm */
 const fdt = (s: string) => new Date(s).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
-export function ScheduleOverlay({ row, tab: initialTab, onClose: close }: { row: ScheduleRow; tab: string; onClose: () => void }) {
+export function ScheduleOverlay({ row, tab: initialTab, onClose: close, me }: { row: ScheduleRow; tab: string; onClose: () => void; me?: Me }) {
   const [tab, setTabRaw] = useState(TABS.some(([k]) => k === initialTab) ? initialTab : "bookings");
   const modal = useRef<HTMLDivElement>(null);
   const [min, setMin] = useState(false);
@@ -77,15 +76,11 @@ export function ScheduleOverlay({ row, tab: initialTab, onClose: close }: { row:
 
   let body: ReactNode;
   if (tab === "update") body = <UpdateTab row={row} overlay={modal} />;
-  else if (tab === "bookings") body = (
-    <div data-testid="schedule-workspace" data-tab={tab}>
-      <DispatchPanel initial={{ date: row.travelDate, tripId: row.id }} />
-    </div>
-  );
   else if (error) body = <div className="sx-empty">{error}</div>;
   else if (!detail) body = <div className="sx-loading">Loading schedule…</div>;
   else if (tab === "history") body = <HistoryTab d={detail} />;
   else if (tab === "block") body = <BlockTab row={row} detail={detail} />;
+  else if (tab === "bookings") body = <BlockTab key="bookings" row={row} detail={detail} mode="bookings" me={me} />;
   else if (tab === "pickups" || tab === "drops") body = <StopsTab key={tab} d={detail} kind={tab === "pickups" ? "pickup" : "drop"} />;
   else if (tab === "cities") body = <CitiesTab d={detail} />;
   else if (tab === "pnl") body = <PnlTab sid={row.id} overlay={modal} />;

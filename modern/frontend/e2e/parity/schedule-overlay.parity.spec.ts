@@ -131,3 +131,17 @@ test("block: legacy Block panel, legend and footer match", async ({ browser, bas
     expect.soft(await R.locator(sel).first().innerText(), `${sel} text`).toBe(await L.locator(sel).first().innerText());
   }
 });
+
+// Bookings tab (legacy schedule-bookings-v38 chart()). Passenger counts differ per store, so static chrome is compared
+// by skeleton + text and the dynamic toolbar by skeleton only.
+test("bookings: legacy Pickup Chart toolbar, grouping and footer match", async ({ browser, baseURL }) => {
+  const L = await legacyPage(browser), R = await reactPage(browser, baseURL!);
+  await open(L, R, "bookings");
+  for (const p of [L, R]) await expect(p.locator(".sx38-toolbar")).toBeVisible({ timeout: 15000 });
+  for (const sel of [".sx38-right-tabs", ".sx38-groupcontrols", ".sx-modal-footer"]) {
+    expect.soft(await R.evaluate(skeleton, sel), `${sel} skeleton`).toBe(await L.evaluate(skeleton, sel));
+    expect.soft(await R.locator(sel).first().innerText(), `${sel} text`).toBe(await L.locator(sel).first().innerText());
+  }
+  for (const sel of [".sx38-toolbar", ".sx38-stats"]) expect.soft(await R.evaluate(skeleton, sel), `${sel} skeleton`).toBe(await L.evaluate(skeleton, sel));
+  expect.soft(await R.locator(".sx38-selection input[type=search]").getAttribute("placeholder")).toBe("Search passenger / PNR / seat");
+});

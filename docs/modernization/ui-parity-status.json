@@ -50,11 +50,12 @@
         "e2e/parity/schedule-overlay.parity.spec.ts update — verbatim legacy schedule-update-v51 module: assignment header, sync card, OTA card skeleton + labels + footer identical; backed by GET/PUT /schedules/{id}/update-v51(/assignment|/sync), sync-ota 501 (no connector), TripOpsTests",
         "e2e/parity/schedule-overlay.parity.spec.ts fares — legacy faresTab() port: pricing-top skeleton, table/control labels, footer identical; Save trip fares / Follow route fares via PUT /schedules/{id}/fares",
         "e2e/parity/schedule-overlay.parity.spec.ts block — legacy bookingTab()+blockPanel() port: book-head, station tools, legend, seat-bottom, control grid, hint, footer skeleton + text identical; block/unblock via /trips/{id}/blocks; Delay (POST /trips/{id}/delay) and Notify (POST /trips/{id}/notify, recorded, delivery_verified=false)",
-        "schedule list Delete button wired to DELETE /schedules/{id} with legacy confirm text; operator ticket cancel POST /bookings/{pnr}/cancel (full refund when by=operator)"
+        "schedule list Delete button wired to DELETE /schedules/{id} with legacy confirm text; operator ticket cancel POST /bookings/{pnr}/cancel (full refund when by=operator)",
+        "e2e/parity/schedule-overlay.parity.spec.ts bookings — legacy schedule-bookings-v38 chart() port: right tabs, group controls, footer skeleton + text, toolbar/stats skeleton identical; seat/passenger click opens BookingOverlay; bulk Cancel per PNR, Notify via /trips/{id}/notify, search, group-by, History panel"
       ],
       "gaps": [
         "P&L schedule-list expense/profit columns still use the reports cost model (P&L tab now includes commission + cancellation charges like legacy)",
-        "overlay Bookings tab still renders the DispatchPanel, not the legacy schedule-bookings-v38 / schedule-manage-v48 pickup-chart workspace (operator cancel/notify/delay APIs now exist for it)",
+        "Bookings pickup chart: Import Pickup Chart has no importer (explains via toast); passenger rows not pixel-compared (store data differs)",
         "Block tab gender restriction is recorded in the block reason only (backend blocks have no gender field); Follow route blocks: routes have no seat-block template",
         "Fares tab Auto Pricing / guard rails / seat rules are route-level and preview-only (legacy also)",
         "stop edits, history edit, via toggles and sub-routes are aria-disabled preview-only (legacy also preview-only)",

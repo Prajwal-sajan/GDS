@@ -91,6 +91,7 @@ export type TripStageRef = { id: number; name: string; time: string; day: number
 export type TripSheetPassenger = {
   pnr: string; seat: string; name: string; phone: string | null; source: string; status: string; callStatus: string | null; trips: number | null;
   boarding: TripStageRef | null; dropping: TripStageRef | null;
+  fare?: number | null; gender?: string | null; bookedAt?: string | null; from?: string | null; to?: string | null;
 };
 export type TripSheetStop = TripStageRef & { type: string; lat: number | null; lng: number | null; arrivedAt: string | null; departedAt: string | null };
 export type TripSheet = {

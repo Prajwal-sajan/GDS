@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { api, type ScheduleDetail, type ScheduleRow } from "../../api";
+import { api, type Me, type ScheduleDetail, type ScheduleRow, type TripSheet, type TripSheetPassenger } from "../../api";
+import { BookingOverlay } from "../crm/BookingOverlay";
 import { confirmDialog, toast, toastError } from "../../components/ui/feedback";
 import { can, permissions } from "../settings/legacy";
 
@@ -25,7 +26,9 @@ const groupOf = (s: Seat) => /^[0-9]+[LU]$/.test(s.seatCode) ? (s.seatCode.endsW
 const color = (s: Seat, chosen: boolean) => chosen ? "selected" : s.state === "blocked" ? "blocked" : s.state === "held" ? "hold"
   : s.state === "booked" ? ((s.gender ?? "").toLowerCase().startsWith("f") ? "female" : "male") : "available";
 
-export function BlockTab({ row, detail }: { row: ScheduleRow; detail: ScheduleDetail }) {
+export function BlockTab({ row, detail, mode = "block", me }: { row: ScheduleRow; detail: ScheduleDetail; mode?: "block" | "bookings"; me?: Me }) {
+  const [sheet, setSheet] = useState<TripSheet>();
+  const [ticket, setTicket] = useState<string>();
   const [seats, setSeats] = useState<Seat[]>();
   const [fares, setFares] = useState<Fares>();
   const [sel, setSel] = useState<Set<string>>(new Set());
@@ -35,8 +38,8 @@ export function BlockTab({ row, detail }: { row: ScheduleRow; detail: ScheduleDe
   const [panel, setPanel] = useState<"" | "delay" | "notify">("");
   const [busy, setBusy] = useState(false);
   const [pair, setPair] = useState<[number, number]>();
-  const load = () => Promise.all([api.admin<Seat[]>(`/trips/${row.id}/seats`), api.admin<Fares>(`/schedules/${row.id}/fares`).catch(() => undefined), permissions()])
-    .then(([s, f]) => { setSeats(s); setFares(f); }).catch(toastError);
+  const load = () => Promise.all([api.admin<Seat[]>(`/trips/${row.id}/seats`), api.admin<Fares>(`/schedules/${row.id}/fares`).catch(() => undefined), api.tripSheet(row.id).catch(() => undefined), permissions()])
+    .then(([s, f, t]) => { setSeats(s); setFares(f); setSheet(t); }).catch(toastError);
   useEffect(() => { void load(); }, [row.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cities = fares?.cities ?? [];
@@ -47,6 +50,10 @@ export function BlockTab({ row, detail }: { row: ScheduleRow; detail: ScheduleDe
   const decks = [...new Set((seats ?? []).map((s) => s.deck))];
 
   const pick = (s: Seat) => {
+    if (mode === "bookings") {
+      const p = sheet?.passengers.find((x) => x.seat === s.seatCode && x.status !== "cancelled");
+      if (p) { if (me) setTicket(p.pnr); return; }
+    }
     if (!["free", "blocked"].includes(s.state)) return toast("Choose an available or blocked seat to modify.", "warn");
     setSel((x) => { const n = new Set(x); if (n.has(s.seatCode)) n.delete(s.seatCode); else n.add(s.seatCode); return n; });
   };
@@ -68,13 +75,13 @@ export function BlockTab({ row, detail }: { row: ScheduleRow; detail: ScheduleDe
     } catch (e) { toastError(e); } finally { setBusy(false); }
   };
 
-  if (!seats) return <div className="sx-loading">Loading block…</div>;
+  if (!seats) return <div className="sx-loading">Loading {mode}…</div>;
   return (
     <div className="sx-book-columns">
       <section className="sx-book-left">
         <header className="sx-book-head"><strong><I n="layout" /> Seat Layout</strong>
           <div><Bt n="copy" label="Copy" cls="mini" attrs={{ "data-sx-copy": "", title: "Copy seat layout image" }} onClick={() => void copyLayout()} /><Bt n="link" label="Share" cls="mini" attrs={{ "data-sx-share": "" }} onClick={() => void share(row)} /></div></header>
-        <div className="sx-book-ident"><I n="bus" s={13} /> {row.coach ? "Vehicle per assignment" : "Unassigned vehicle"} <span><I n="user" s={13} /> Crew per Update tab</span><span>{row.serviceNumber}</span></div>
+        <div className="sx-book-ident"><I n="bus" s={13} /> {sheet?.vehicle?.registration || "Unassigned vehicle"} <span><I n="user" s={13} /> {sheet?.crew[0]?.name || "Crew pending"}</span><span>{row.serviceNumber}</span></div>
         <div className="sx-book-location"><I n="pin" s={13} /> No verified live position <small></small></div>
         <div className="sx-station-tools">{([["stations", "Stations", "map"], ["pickups", "Pickups", "arrowUp"], ["drops", "Drops", "arrowDown"], ["bookedby", "Booked by", "credit"], ["bookings", "Bookings", "file"]] as const).map(([k, l, ic]) =>
           <button key={k} data-sx-summary={k} onClick={() => toast(summary(k, detail))}><I n={ic} s={15} /><small>{l}</small></button>)}</div>
@@ -106,6 +113,9 @@ export function BlockTab({ row, detail }: { row: ScheduleRow; detail: ScheduleDe
         {panel === "delay" && <DelayForm tripId={row.id} onDone={() => setPanel("")} />}
         {panel === "notify" && <NotifyForm tripId={row.id} pnrs={[...new Set(detail.history.filter((h) => h.status.toLowerCase() === "confirmed").map((h) => h.pnr))]} onDone={() => setPanel("")} />}
       </section>
+      {mode === "bookings" ? <section className="sx-book-right sx38-right">
+        <PickupChart tripId={row.id} sheet={sheet} detail={detail} seats={seats} onTicket={(pnr) => (me ? setTicket(pnr) : toast("Booking details permission is required", "bad"))} reload={load} />
+      </section> :
       <section className="sx-book-right">
         <header className="sx-side-top"><I n="shield" /> Block <span className="sx-muted">({counts.blocked} blocked)</span></header>
         <div className="sx-block-hint"><h3>{sel.size ? `Selected seats: ${[...sel].join(", ")}` : "Select seats from the layout below"}</h3><p>Click seats to block or unblock them. Only available or already blocked seats may be changed.</p></div>
@@ -117,9 +127,107 @@ export function BlockTab({ row, detail }: { row: ScheduleRow; detail: ScheduleDe
         <Bt n="check" label="Unblock selected seats" attrs={{ "data-sx-block": "unblock" }} onClick={() => void apply("unblock")} />
         <Bt n="refresh" label="Follow route blocks" attrs={{ "data-sx-block": "follow_route" }} onClick={() => void apply("follow_route")} />
         <div className="sx-preview-note"><I n="shield" s={15} /> Seat block changes use the existing authorized schedule API after confirmation.</div>
-      </section>
+      </section>}
+      {ticket && me && <BookingOverlay me={me} pnr={ticket} onClose={() => { setTicket(undefined); void load(); }} />}
     </div>
   );
+}
+
+const T = { ticket: "M3 6h18v12H3zM8 6v3m0 6v3M16 6v3m0 6v3", print: "M6 9V3h12v6M6 18H3V9h18v9h-3M6 15h12v7H6z", upload: "M12 16V3m-5 5 5-5 5 5M4 16v4h16v-4",
+  trash: "M4 7h16m-12 0-1 14h10L16 7m-6 4v6m4-6v6M9 7V4h6v3", bell: "M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Zm-8 12a2 2 0 0 0 4 0",
+  history: "M3 12a9 9 0 1 0 3-6.7M3 3v5h5m4-1v5l3 2", pin: "M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 0 1 16 0Z", phone: "M22 17v3a2 2 0 0 1-2.2 2A20 20 0 0 1 2 4.2 2 2 0 0 1 4 2h3l2 5-3 2a16 16 0 0 0 9 9l2-3 5 2Z" };
+/** legacy schedule-bookings-v38 icon(): sx38-svg */
+const I38 = ({ n, s = 19 }: { n: keyof typeof T; s?: number }) => <svg className="sx38-svg" viewBox="0 0 24 24" width={s} height={s} fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={T[n]} />{n === "pin" && <circle cx="12" cy="10" r="2" />}</svg>;
+const B38 = ({ label, n, cls = "", disabled, onClick }: { label: string; n: keyof typeof T; cls?: string; disabled?: boolean; onClick: () => void }) =>
+  <button type="button" className={`sx38-btn ${cls}`} disabled={disabled} onClick={onClick}><I38 n={n} s={18} /> <span>{label}</span></button>;
+const t12 = (s?: string | null) => s && /^\d\d:\d\d/.test(s) ? `${Number(s.slice(0, 2)) % 12 || 12}:${s.slice(3, 5)} ${Number(s.slice(0, 2)) >= 12 ? "PM" : "AM"}` : "—";
+const GROUPS = ["Pickup", "Drop", "City", "Source", "Booked On", "Fare", "Trips"] as const;
+const keyOf = (p: TripSheetPassenger) => `${p.pnr}\u001f${p.seat}`;
+const labelOf = (p: TripSheetPassenger, g: string) => g === "Drop" ? p.dropping?.name || "Drop not assigned" : g === "City" ? p.from || "City unavailable" : g === "Source" ? p.source || "Unknown"
+  : g === "Booked On" ? (p.bookedAt ? p.bookedAt.slice(0, 10) : "Booking date unavailable") : g === "Fare" ? `₹${Number(p.fare ?? 0).toLocaleString("en-IN")}` : g === "Trips" ? `${p.trips ?? 0} Trips` : p.boarding?.name || "Pickup not assigned";
+
+/** legacy schedule-bookings-v38 chart()/historyChart()/bulkCancel(): Pickup Chart and History panels. */
+function PickupChart({ tripId, sheet, detail, seats, onTicket, reload }: { tripId: number; sheet?: TripSheet; detail: ScheduleDetail; seats: Seat[]; onTicket: (pnr: string) => void; reload: () => Promise<unknown> }) {
+  const [panel, setPanel] = useState<"chart" | "history">("chart");
+  const [group, setGroup] = useState<string>("Pickup");
+  const [sel, setSel] = useState<Set<string>>(new Set());
+  const [q, setQ] = useState("");
+  const [notify, setNotify] = useState(false);
+  const people = (sheet?.passengers ?? []).filter((p) => !["cancelled", "released", "expired"].includes(p.status));
+  const total = people.length;
+  const counts = { available: seats.filter((s) => s.state === "free").length, booked: seats.filter((s) => s.state === "booked" || s.state === "held").length, blocked: seats.filter((s) => s.state === "blocked").length };
+  const groups = useMemo(() => {
+    const m = new Map<string, TripSheetPassenger[]>();
+    for (const p of people) { const l = labelOf(p, group); if (!m.has(l)) m.set(l, []); m.get(l)!.push(p); }
+    return [...m.entries()].sort((a, b) => group === "Pickup" || group === "Drop"
+      ? ((group === "Pickup" ? a[1][0].boarding?.time : a[1][0].dropping?.time) ?? "").localeCompare((group === "Pickup" ? b[1][0].boarding?.time : b[1][0].dropping?.time) ?? "")
+      : a[0].localeCompare(b[0]));
+  }, [people, group]);
+  const toggle = (list: TripSheetPassenger[], on: boolean) => setSel((x) => { const n = new Set(x); for (const p of list) if (on) n.add(keyOf(p)); else n.delete(keyOf(p)); return n; });
+  const chosen = people.filter((p) => sel.has(keyOf(p)));
+  const pnrs = [...new Set(chosen.map((p) => p.pnr))];
+
+  const cancel = async () => {
+    if (!chosen.length || !can("bookings.cancel") && !can("schedules.modify")) return;
+    const byPnr = new Map<string, string[]>();
+    for (const p of chosen) byPnr.set(p.pnr, [...(byPnr.get(p.pnr) ?? []), p.seat]);
+    const operator = await confirmDialog("Who initiated this cancellation? Choose Operator for a full refund override, or Cancel to apply the passenger refund policy.", { ok: "Operator (full refund)" });
+    const summary = [...byPnr].map(([pnr, s]) => `PNR ${pnr} · seats ${s.join(", ")}`).join("\n");
+    if (!(await confirmDialog(`Cancellation cannot be undone. Review:\n${summary}\nRefunds follow the ${operator ? "operator override (full refund)" : "passenger refund policy"}.`, { ok: "Cancel selected tickets", danger: true }))) return;
+    let done = 0; const failed: string[] = [];
+    for (const [pnr, s] of byPnr) {
+      try { await api.admin(`/bookings/${encodeURIComponent(pnr)}/cancel`, "POST", { seats: s, by: operator ? "operator" : "passenger", reason: "Operator cancellation", notify: true }); done++; }
+      catch (e) { failed.push(`${pnr}: ${(e as Error).message}`); }
+    }
+    setSel(new Set()); await reload();
+    toast(`${done} PNR cancellation(s) applied${failed.length ? `; ${failed.length} failed: ${failed.join("; ")}` : ""}`, failed.length ? "warn" : "ok");
+  };
+
+  return <>
+    <nav className="sx38-right-tabs" aria-label="Bookings right panel">
+      <button type="button" data-v38="chart" className={panel === "chart" ? "active" : ""} onClick={() => setPanel("chart")}><I38 n="pin" /> Pickup Chart</button>
+      <button type="button" data-v38="chart-history" className={panel === "history" ? "active" : ""} onClick={() => setPanel("history")}><I38 n="history" /> History</button>
+    </nav>
+    <div className="sx38-panel-body">{panel === "history" ? (
+      <div className="sx38-history-list"><h3>Booking History</h3><p>{detail.history.length} booking records</p>
+        {detail.history.slice(0, 150).map((x) => <button key={x.pnr + x.bookedAt} type="button" className="sx38-history-item" onClick={() => onTicket(x.pnr)}><b>PNR {x.pnr}</b><span>{x.contactName || "Passenger"} · {x.status}</span><span>{x.source}</span></button>)}
+        {!detail.history.length && <p>No booking records on this service.</p>}</div>
+    ) : <>
+      <div className="sx38-stats"><span className="available"><i></i> Available <b>{counts.available}</b></span><span className="booked"><i></i> Booked <b>{counts.booked}</b></span><span className="blocked"><i></i> Blocked <b>{counts.blocked}</b></span></div>
+      <div className="sx38-toolbar">
+        <B38 label="Print Pickup Chart" n="print" cls="primary" onClick={() => window.print()} />
+        <B38 label="Import Pickup Chart" n="upload" onClick={() => toast("Pickup chart import needs an operator-provided file format; no importer is configured.", "warn")} />
+        <span className="sx38-toolbar-divider"></span>
+        <B38 label={`Cancel (${chosen.length})`} n="trash" cls="danger" disabled={!chosen.length} onClick={() => void cancel()} />
+        <div className="sx48-notify-holder"><B38 label={`Notify (${chosen.length}) ▾`} n="bell" disabled={!chosen.length} onClick={() => setNotify((o) => !o)} /></div>
+        <B38 label="History" n="history" onClick={() => setPanel("history")} />
+      </div>
+      {notify && pnrs.length > 0 && <NotifyForm tripId={tripId} pnrs={pnrs} onDone={() => setNotify(false)} />}
+      <div className="sx38-groupcontrols"><span>Group by:</span>{GROUPS.map((g) => <button key={g} type="button" data-v38="group" data-group={g} className={group === g ? "active" : ""} aria-pressed={group === g} onClick={() => setGroup(g)}>{g}{g === "Pickup" ? " ↑" : ""}</button>)}</div>
+      <div className="sx38-selection"><label><input type="checkbox" data-v38-all="" checked={total > 0 && chosen.length === total} onChange={(e) => toggle(people, e.target.checked)} /> {chosen.length} of {total} passengers selected</label>
+        <button type="button" data-v38="select-all" onClick={() => toggle(people, true)}>Select All</button><button type="button" data-v38="clear" onClick={() => setSel(new Set())}>Clear</button>
+        <input data-v38-search="" type="search" placeholder="Search passenger / PNR / seat" value={q} aria-label="Search pickup chart" onChange={(e) => setQ(e.target.value)} /></div>
+      <div className="sx38-pick-scroll">{groups.map(([label, ps]) => {
+        const m = ps.filter((p) => !q || [p.name, p.pnr, p.seat, p.phone].join(" ").toLowerCase().includes(q.toLowerCase()));
+        if (!m.length) return null;
+        const f = m[0], tm = group === "Drop" ? f.dropping?.time : f.boarding?.time, day = (group === "Drop" ? f.dropping?.day : f.boarding?.day) || 1;
+        return <section key={label} className="sx38-pick-group"><header className="sx38-pick-head">
+          <input type="checkbox" aria-label={`Select all at ${label}`} checked={m.every((p) => sel.has(keyOf(p)))} onChange={(e) => toggle(m, e.target.checked)} />
+          <span className="sx38-pin"><I38 n="pin" s={22} /></span><b title={label}>{label}</b>
+          {tm && <span className="sx38-time">Day {day} - {t12(tm)}</span>}<span className="sx38-seat-count">{m.length} seat(s)</span></header>
+          {m.map((p) => <div key={keyOf(p)} className="sx38-pick-person" data-v38-person={p.pnr}>
+            <input type="checkbox" aria-label={`Select passenger ${p.name} seat ${p.seat}`} checked={sel.has(keyOf(p))} onChange={(e) => toggle([p], e.target.checked)} />
+            <span className="sx38-seat-pill">{p.seat}</span>
+            <div className="sx38-person-data"><button type="button" className="sx38-pnr-link" onClick={() => onTicket(p.pnr)}>{p.name || "Passenger"}</button>
+              <div className="sx38-person-metas"><span className="sx38-phone"><I38 n="phone" s={14} /> {p.phone || "—"}</span>
+                <button type="button" className="sx38-pnr-number" onClick={() => onTicket(p.pnr)}>{p.pnr}</button>
+                <strong>{p.fare != null ? `₹${Number(p.fare).toLocaleString("en-IN")}` : "—"}</strong><span className="sx38-trip-pill">Trips {p.trips ?? 0}</span></div>
+              <div className="sx38-person-sub">→ {p.dropping?.name || "Drop not assigned"}{p.dropping?.time ? ` (Day ${p.dropping.day || 1} - ${t12(p.dropping.time)})` : ""}<span className="sx38-source">{p.source || "GDS"}</span></div></div>
+            <span className={`sx38-gender ${String(p.gender ?? "").toUpperCase().startsWith("F") ? "female" : "male"}`}>{String(p.gender ?? "").toUpperCase().startsWith("F") ? "F" : "M"}</span></div>)}
+        </section>;
+      })}{!groups.length && <div className="sx38-no-data">No passengers match these filters.</div>}</div>
+    </>}</div>
+  </>;
 }
 
 /** legacy ScheduleManageV48.summary(): short real-data summaries for the station tool buttons. */

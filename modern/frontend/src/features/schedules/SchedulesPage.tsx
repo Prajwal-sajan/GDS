@@ -115,7 +115,7 @@ export function SchedulesPage({ me }: { me: Me }) {
         </div>
       </div>
       {workspace && (
-        <ScheduleOverlay row={workspace.row} tab={workspace.tab} onClose={closeWorkspace} />
+        <ScheduleOverlay row={workspace.row} tab={workspace.tab} onClose={closeWorkspace} me={me} />
       )}
     </div>
   );
