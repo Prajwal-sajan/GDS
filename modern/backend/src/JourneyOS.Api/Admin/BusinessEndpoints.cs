@@ -99,6 +99,7 @@ public static class BusinessEndpoints
         g.MapGet("/accounts/sales-facets", async (ReportsService s) => Results.Ok(await s.SalesFacetsAsync())).RequireAuthorization(Policies.Reports);
         // Accounts → Reports detail suite (legacy reports-suite-v21 / reports-performance-v22 / fleet-operations-v20)
         InvoicesEndpoints.Map(g);
+        LegacyCompatEndpoints.Map(g);
         OtaVerifierEndpoints.Map(g);
         AgentLoyaltyEndpoints.Map(g);
         JourneyOS.Api.Settings.TeamAccessEndpoints.Map(g);

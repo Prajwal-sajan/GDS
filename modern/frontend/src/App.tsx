@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { activate, api, ApiError, getKey, login, logout, setKey, type Attempt, type Me, type OutboxRow, type RedBusStatus, type TripRow } from "./api";
 
 import { CommsPanel, CrmPanel, LedgerPanel, ReportsPanel, SarathiPanel, UsersPanel } from "./Business";
+import { LegacyScreen } from "./features/legacyScreens/LegacyScreen";
 
 import { AppShell } from "./layouts/AppShell";
 import { FeedbackHost } from "./components/ui/feedback";
@@ -127,9 +128,12 @@ function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Ele
     [/^accounts\/invoices$/, ACC_R, () => <AccountsPage me={me} tab="invoices"><InvoicesTab /></AccountsPage>, true],
     [/^accounts\/agent-settings$/, ACC_R, () => <AccountsPage me={me} tab="agent-settings"><AgentSettingsTab /></AccountsPage>, true],
     [/^accounts\/coupons$/, ["owner", "admin"], () => <AccountsPage me={me} tab="coupons"><LoyaltyTab /></AccountsPage>, true],
-    [/^dailyops$/, ALL_R, () => <ReportsPanel me={me} />],
-    [/^sarathi$/, ALL_R, () => <SarathiPanel />],
-    [/^(chats|calls)(\/.*)?$/, OPS_R, () => <CommsPanel />],
+    [/^dailyops$/, ALL_R, () => <LegacyScreen name="dailyops" seg={seg} />, true],
+    [/^sarathi$/, ALL_R, () => <LegacyScreen name="sarathi" seg={seg} />, true],
+    [/^(chats|calls)(\/.*)?$/, OPS_R, () => <LegacyScreen name={seg[0]} seg={seg} />, true],
+    [/^(dailyops-panel)$/, ALL_R, () => <ReportsPanel me={me} />],
+    [/^(sarathi-panel)$/, ALL_R, () => <SarathiPanel />],
+    [/^(comms-panel)$/, OPS_R, () => <CommsPanel />],
     [/^settings\/about$/, [...ALL_R, "agent"], () => <AboutPage />, true],
     [/^settings\/loyalty-program(\/.*)?$/, ["owner", "admin"], () => <LoyaltyProgramPage key={location.hash} />, true],
     [/^settings\/configuration(\/[^/]+)?$/, ["owner", "admin"], () => <ConfigurationPage key={path} section={seg[2]} />, true],

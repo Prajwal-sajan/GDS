@@ -1,0 +1,15 @@
+{
+  "id": "sarathi",
+  "region": "chat",
+  "legacy": [
+    958,
+    579
+  ],
+  "react": [
+    958,
+    579
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

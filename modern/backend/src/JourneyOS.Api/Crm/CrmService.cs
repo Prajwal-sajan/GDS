@@ -136,7 +136,8 @@ public sealed partial class CrmService(GdsDbContext db, TimeProvider clock)
             return new
             {
                 conversationId = g.Key, name = firstIn?.By is { } by && by != "system" ? by : parts[0], phone = last.Phone,
-                service = parts.ElementAtOrDefault(1), travelDate = parts.ElementAtOrDefault(2), lastMessage = last.Text, lastTs = last.Ts, channel = last.Channel,
+                service = parts.ElementAtOrDefault(1), travelDate = parts.ElementAtOrDefault(2), ticket = parts.ElementAtOrDefault(4), seat = parts.ElementAtOrDefault(5),
+                lastMessage = last.Text, lastTs = last.Ts, channel = last.Channel,
                 unread = g.Count(m => m.Direction == "in" && !m.Read), blocked = blocked.Contains(last.Phone),
             };
         });

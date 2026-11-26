@@ -1,0 +1,15 @@
+{
+  "id": "dailyops",
+  "region": "thead",
+  "legacy": [
+    1973,
+    57
+  ],
+  "react": [
+    1984,
+    57
+  ],
+  "sizeMatch": false,
+  "diffPixels": 1103,
+  "diffRatio": 0.0098
+}

@@ -1,0 +1,15 @@
+{
+  "id": "chats",
+  "region": "toolbar",
+  "legacy": [
+    1292,
+    59
+  ],
+  "react": [
+    1292,
+    59
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}
