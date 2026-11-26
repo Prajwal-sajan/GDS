@@ -1,0 +1,15 @@
+{
+  "id": "settings-team-access",
+  "region": "page",
+  "legacy": [
+    1440,
+    1327
+  ],
+  "react": [
+    1440,
+    1327
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

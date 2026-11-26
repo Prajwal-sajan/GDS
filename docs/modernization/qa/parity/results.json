@@ -2715,7 +2715,82 @@
     "diffRatio": 0
   },
   {
+    "id": "settings-team-access",
+    "region": "page",
+    "legacy": [
+      1440,
+      1327
+    ],
+    "react": [
+      1440,
+      1327
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "settings-team-advanced",
+    "region": "page",
+    "legacy": [
+      1440,
+      717
+    ],
+    "react": [
+      1440,
+      717
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "settings-team-agents",
+    "region": "page",
+    "legacy": [
+      1440,
+      711
+    ],
+    "react": [
+      1440,
+      711
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
     "id": "settings-team-branches",
+    "region": "page",
+    "legacy": [
+      1440,
+      675
+    ],
+    "react": [
+      1440,
+      675
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "settings-team-bus",
+    "region": "page",
+    "legacy": [
+      1440,
+      2531
+    ],
+    "react": [
+      1440,
+      2531
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "settings-team-groups",
     "region": "page",
     "legacy": [
       1440,
@@ -2754,6 +2829,21 @@
     "react": [
       1440,
       1327
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "settings-team-test-access",
+    "region": "page",
+    "legacy": [
+      1440,
+      804
+    ],
+    "react": [
+      1440,
+      804
     ],
     "sizeMatch": true,
     "diffPixels": 0,

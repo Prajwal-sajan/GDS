@@ -287,18 +287,18 @@
       "gaps": ["Spec strips modern-only e2e users, copies tab counts and LAST LOGIN cells (session history differs per backend)"]
     },
     "V029": {
-      "status": "IMPLEMENTED_UNVERIFIED",
+      "status": "VISUAL_PASS",
       "legacy_hash": "#/settings/team-access/bus-staff",
       "react": "same vendored team-access code as V028",
-      "evidence": [],
-      "gaps": ["No parity spec yet"]
+      "evidence": ["e2e/parity/settings.parity.spec.ts settings-team-bus (DOM skeleton + text identical, pixel <= 1%)"],
+      "gaps": ["Spec strips modern-only e2e users and copies tab counts / LAST LOGIN cells like V028"]
     },
     "V030": {
-      "status": "IMPLEMENTED_UNVERIFIED",
+      "status": "VISUAL_PASS",
       "legacy_hash": "#/settings/team-access/agents",
       "react": "same vendored team-access code as V028",
-      "evidence": [],
-      "gaps": ["No parity spec yet"]
+      "evidence": ["e2e/parity/settings.parity.spec.ts settings-team-agents (DOM skeleton + text identical, pixel <= 1%)"],
+      "gaps": ["Spec strips modern-only e2e agents and copies tab counts / LAST LOGIN cells like V028"]
     },
     "V031": {
       "status": "VISUAL_PASS",
@@ -314,9 +314,23 @@
       "evidence": ["e2e/parity/settings.parity.spec.ts settings-team-roles (pixel <= 1%)"],
       "gaps": []
     },
-    "V047": { "status": "IMPLEMENTED_UNVERIFIED", "legacy_hash": "#/settings/team-access/access/test-access/viewer", "react": "vendored v28", "evidence": ["e2e/settings.spec.ts renders with no failing API calls"], "gaps": ["No pixel parity spec yet"] },
-    "V048": { "status": "IMPLEMENTED_UNVERIFIED", "legacy_hash": "#/settings/team-access/access/groups/viewer", "react": "vendored v28", "evidence": ["e2e/settings.spec.ts group create/rename/delete"], "gaps": ["No pixel parity spec yet"] },
-    "V049": { "status": "IMPLEMENTED_UNVERIFIED", "legacy_hash": "#/settings/team-access/access/advanced/viewer", "react": "vendored v28", "evidence": ["e2e/settings.spec.ts renders with no failing API calls"], "gaps": ["No pixel parity spec yet"] },
+    "V032": { "status": "VISUAL_PASS", "legacy_hash": "#/settings/team-access/access", "react": "vendored v28", "evidence": ["e2e/parity/settings.parity.spec.ts settings-team-access (DOM skeleton + text identical, pixel <= 1%)"], "gaps": [] },
+    "V047": { "status": "VISUAL_PASS", "legacy_hash": "#/settings/team-access/access/test-access/viewer", "react": "vendored v28", "evidence": ["e2e/parity/settings.parity.spec.ts settings-team-test-access (pixel <= 1%)", "e2e/settings.spec.ts renders with no failing API calls"], "gaps": [] },
+    "V048": { "status": "VISUAL_PASS", "legacy_hash": "#/settings/team-access/access/groups/viewer", "react": "vendored v28", "evidence": ["e2e/parity/settings.parity.spec.ts settings-team-groups (pixel <= 1%)", "e2e/settings.spec.ts group create/rename/delete"], "gaps": [] },
+    "V049": { "status": "VISUAL_PASS", "legacy_hash": "#/settings/team-access/access/advanced/viewer", "react": "vendored v28", "evidence": ["e2e/parity/settings.parity.spec.ts settings-team-advanced (pixel <= 1%)"], "gaps": [] },
+    "V033": { "status": "VISUAL_PASS", "legacy_hash": "#/accounts/reports/fleet-operations", "react": "src/features/accounts/ReportsTab.tsx", "evidence": ["e2e/parity/reports.parity.spec.ts fleet-operations: title, methodology, footnote pixel <= 1%; controls DOM + text", "AccountsSuiteTests"], "gaps": ["Report figures not pixel-compared (PostgreSQL holds e2e data)"] },
+    "V034": { "status": "VISUAL_PASS", "legacy_hash": "#/accounts/reports/driver-behavior", "react": "src/features/accounts/ReportsTab.tsx", "evidence": ["e2e/parity/reports.parity.spec.ts driver-behavior: top, controls, note pixel <= 1%"], "gaps": ["Report body figures not pixel-compared"] },
+    "V035": { "status": "VISUAL_PASS", "legacy_hash": "#/accounts/reports/staff-duty", "react": "src/features/accounts/ReportsTab.tsx", "evidence": ["e2e/parity/reports.parity.spec.ts staff-duty: top, controls, note pixel <= 1%; body DOM + text"], "gaps": [] },
+    "V036": { "status": "VISUAL_PASS", "legacy_hash": "#/accounts/reports/point-usage", "react": "src/features/accounts/ReportsTab.tsx", "evidence": ["e2e/parity/reports.parity.spec.ts point-usage: top, controls, note pixel <= 1%"], "gaps": ["Report body figures not pixel-compared"] },
+    "V037": { "status": "VISUAL_PASS", "legacy_hash": "#/accounts/reports/metro-bookings", "react": "src/features/accounts/ReportsTab.tsx", "evidence": ["e2e/parity/reports.parity.spec.ts metro-bookings: top, controls, note pixel <= 1%"], "gaps": ["Report body figures not pixel-compared"] },
+    "V038": { "status": "VISUAL_PASS", "legacy_hash": "#/accounts/reports/van-bookings", "react": "src/features/accounts/ReportsTab.tsx", "evidence": ["e2e/parity/reports.parity.spec.ts van-bookings: top, controls, note pixel <= 1%; body DOM + text"], "gaps": [] },
+    "V039": { "status": "VISUAL_PASS", "legacy_hash": "#/accounts/reports/point-performance", "react": "src/features/accounts/ReportsTab.tsx", "evidence": ["e2e/parity/reports.parity.spec.ts point-performance: top, note pixel <= 1%"], "gaps": ["Report body figures not pixel-compared"] },
+    "V040": { "status": "VISUAL_PASS", "legacy_hash": "#/accounts/reports/station-performance", "react": "src/features/accounts/ReportsTab.tsx", "evidence": ["e2e/parity/reports.parity.spec.ts station-performance: top, controls, note pixel <= 1%"], "gaps": ["Report body figures not pixel-compared"] },
+    "V041": { "status": "VISUAL_PASS", "legacy_hash": "#/accounts/reports/no-shows", "react": "src/features/accounts/ReportsTab.tsx", "evidence": ["e2e/parity/reports.parity.spec.ts no-shows: top, controls, note pixel <= 1%"], "gaps": ["Report body figures not pixel-compared"] },
+    "V042": { "status": "VISUAL_PASS", "legacy_hash": "#/accounts/reports/cancellations", "react": "src/features/accounts/ReportsTab.tsx", "evidence": ["e2e/parity/reports.parity.spec.ts cancellations: top, controls, note pixel <= 1%"], "gaps": ["Report body figures not pixel-compared"] },
+    "V043": { "status": "VISUAL_PASS", "legacy_hash": "#/accounts/reports/frequent-travellers", "react": "src/features/accounts/ReportsTab.tsx", "evidence": ["e2e/parity/reports.parity.spec.ts frequent-travellers: top, controls, note pixel <= 1%"], "gaps": ["Report body figures not pixel-compared"] },
+    "V044": { "status": "VISUAL_PASS", "legacy_hash": "#/accounts/reports/trip-pnl", "react": "src/features/accounts/ReportsTab.tsx", "evidence": ["e2e/parity/reports.parity.spec.ts trip-pnl: top, controls, note pixel <= 1%"], "gaps": ["Report body figures not pixel-compared"] },
+    "V045": { "status": "VISUAL_PASS", "legacy_hash": "#/accounts/reports/expenses", "react": "src/features/accounts/ReportsTab.tsx", "evidence": ["e2e/parity/reports.parity.spec.ts expenses: top, controls, note pixel <= 1%"], "gaps": ["Report body figures not pixel-compared"] },
     "S-config": {
       "status": "VISUAL_PASS",
       "legacy_hash": "#/settings/configuration/*",

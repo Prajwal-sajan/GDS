@@ -1,0 +1,15 @@
+{
+  "id": "settings-team-bus",
+  "region": "page",
+  "legacy": [
+    1440,
+    2531
+  ],
+  "react": [
+    1440,
+    2531
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

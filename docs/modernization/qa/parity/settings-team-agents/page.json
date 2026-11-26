@@ -1,0 +1,15 @@
+{
+  "id": "settings-team-agents",
+  "region": "page",
+  "legacy": [
+    1440,
+    711
+  ],
+  "react": [
+    1440,
+    711
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}
