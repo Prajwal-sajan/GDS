@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { PnlTab, pnlConfirmLeave } from "./SchedulePnlTab";
+import { FaresTab } from "./ScheduleFaresTab";
 import { api, type ScheduleDetail, type ScheduleRow, type ScheduleStage } from "../../api";
 import { toast, toastError } from "../../components/ui/feedback";
 import { inr, shortDate, t12 } from "../../services/format";
@@ -85,11 +86,7 @@ export function ScheduleOverlay({ row, tab: initialTab, onClose: close }: { row:
   else if (tab === "pickups" || tab === "drops") body = <StopsTab key={tab} d={detail} kind={tab === "pickups" ? "pickup" : "drop"} />;
   else if (tab === "cities") body = <CitiesTab d={detail} />;
   else if (tab === "pnl") body = <PnlTab sid={row.id} overlay={modal} />;
-  else body = (
-    <div className="sx-empty" aria-disabled="true">
-      {tab === "fares" ? "Seat-wise fare editing" : "Trip P&L"} is not available yet: the backend has no {tab === "fares" ? "per-trip fare override" : "trip expense ledger"} API, so no figures are shown rather than estimated ones.
-    </div>
-  );
+  else body = <FaresTab sid={row.id} />;
 
   return (
     <div className={`sx-backdrop sx38-workspace${min ? " sx-minimized" : ""}`} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
