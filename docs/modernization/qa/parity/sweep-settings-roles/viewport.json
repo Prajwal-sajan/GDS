@@ -1,0 +1,15 @@
+{
+  "id": "sweep-settings-roles",
+  "region": "viewport",
+  "legacy": [
+    1440,
+    900
+  ],
+  "react": [
+    1440,
+    900
+  ],
+  "sizeMatch": true,
+  "diffPixels": 10399,
+  "diffRatio": 0.008
+}

@@ -2249,6 +2249,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("service_number");
 
+                    b.Property<string>("SettingsJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("settings_json");
+
                     b.Property<DateOnly?>("StartDate")
                         .HasColumnType("date")
                         .HasColumnName("start_date");

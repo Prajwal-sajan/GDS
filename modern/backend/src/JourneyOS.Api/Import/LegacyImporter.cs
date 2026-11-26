@@ -701,6 +701,7 @@ public sealed class LegacyImporter(GdsDbContext db, TenantContext tenantCtx, ILo
         route.ArrivalDay = Int(r, "arrival_day");
         route.DurationMinutes = Int(r, "duration_minutes");
         route.DistanceKm = Dec(r, "distance_km");
+        route.SettingsJson ??= JourneyOS.Api.Operations.RouteSettings.FromLegacy(r);   // backfill only: never overwrite operator edits
         route.StartDate = DateOnly.TryParse(Str(r, "start_date")?[..Math.Min(10, Str(r, "start_date")!.Length)], out var sd) ? sd : null;
         route.EndDate = DateOnly.TryParse(Str(r, "end_date")?[..Math.Min(10, Str(r, "end_date")!.Length)], out var ed) ? ed : null;
     }

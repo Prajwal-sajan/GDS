@@ -1,0 +1,15 @@
+{
+  "id": "sweep-dailyops",
+  "region": "viewport",
+  "legacy": [
+    1440,
+    900
+  ],
+  "react": [
+    1440,
+    900
+  ],
+  "sizeMatch": true,
+  "diffPixels": 3804,
+  "diffRatio": 0.0029
+}

@@ -212,6 +212,8 @@ export const api = {
   saveFares: (routeId: number, fares: Fare[]) => call<{ updated: number }>("PUT", `/api/admin/routes/${routeId}/fares`, fares),
   saveRouteSettings: (routeId: number, body: RouteSettingsInput) => call<{ id: number }>("PUT", `/api/admin/routes/${routeId}/settings`, body),
   cityList: () => call<{ cities: { id: number; name: string; state: string | null }[] }>("GET", "/api/admin/city-list"),
+  deletedTrips: () => call<{ deleted: { id: number; routeId: number; serviceNumber: string; travelDate: string; deletedAt: string | null; deletedBy: string | null }[] }>("GET", "/api/admin/schedules-deleted"),
+  restoreTrip: (tripId: number) => call<{ success: boolean }>("POST", `/api/admin/schedules/${tripId}/restore`, {}),
   changeRouteCoach: (routeId: number, coachTemplateId: number) => call<{ changed: boolean; coach?: string; remappedSeats: number }>("PUT", `/api/admin/routes/${routeId}/coach`, { coachTemplateId }),
   saveRouteStops: (routeId: number, stops: RouteStopInput[]) => call<{ stops: number; added: number; removed: number; pairsWithoutFare: { from: string; to: string }[] }>("PUT", `/api/admin/routes/${routeId}/stops`, stops),
   saveRouteStage: (routeId: number, stageId: number | null, body: RouteStageInput) =>
@@ -333,7 +335,13 @@ export interface RouteStageRow { id: number; kind: string; name: string; address
   lat: number | null; lng: number | null; day: number; time: string; prime: boolean; cityId: number; city: string | null;
   pickupType: string | null; exchangePoint: string | null; exchangeTime: string | null; metroDescription: string | null }
 export type RouteSettingsInput = Partial<{ name: string; altName: string; departureTime: string; arrivalTime: string; arrivalDay: number; startDate: string; endDate: string;
-  partialCancellationAllowed: boolean; maxSeatsPerTicket: number; updateCutoffMinutes: number; refundSlabs: { hoursBefore: number; refundPercent: number }[] }>;
+  partialCancellationAllowed: boolean; maxSeatsPerTicket: number; updateCutoffMinutes: number; refundSlabs: { hoursBefore: number; refundPercent: number }[];
+  distanceKm: number | null; settings: Partial<Record<keyof RouteSettingsJson, unknown>> }>;
+export interface RouteCrewMember { staff_id?: number | null; role: string; name?: string; phone?: string }
+export interface RouteAssignment { vehicle_id?: number | null; crew?: RouteCrewMember[]; pickup_vans?: { label?: string; name?: string }[] }
+/** Legacy route General-tab settings (routes-screenshot-v5 general()), stored as-is. */
+export interface RouteSettingsJson { hub?: string; business_rules?: Record<string, string | boolean>; call_settings?: Record<string, unknown>;
+  escalation_contacts?: string; cabs?: string; assignments?: RouteAssignment[]; tags?: Record<string, string> | { name: string; value: string }[]; run_pattern?: unknown }
 export interface RouteStopInput { id: number | null; cityId: number; day: number; time: string }
 export interface RouteStageInput { kind: string; cityId: number; name: string; address: string | null; landmark: string | null; contactNumber: string | null;
   lat: number | null; lng: number | null; day: number; time: string; prime: boolean; pickupType: string | null; exchangePoint: string | null; exchangeTime: string | null; metroDescription: string | null }
@@ -347,7 +355,7 @@ export interface RouteDetail {
   id: number; serviceNumber: string; name: string; altName: string | null; status: string; departureTime: string; arrivalTime: string | null;
   arrivalDay: number | null; startDate: string | null; endDate: string | null; partialCancellationAllowed: boolean; maxSeatsPerTicket: number; updateCutoffMinutes: number;
   coach: { id: number; name: string; pattern: string; capacity: number; seaters: number; sleepers: number; seats: RouteCoachSeat[] } | null;
-  coachTemplateId: number; seatBlocks: RouteSeatBlockRow[];
+  coachTemplateId: number; seatBlocks: RouteSeatBlockRow[]; distanceKm: number | null; settings: RouteSettingsJson;
   stops: { id: number; sequence: number; cityId: number; city: string | null; state: string | null; lat: number | null; lng: number | null; day: number; time: string }[];
   stages: RouteStageRow[];
   fares: { fromSequence: number; toSequence: number; from: string | null; to: string | null; seater: number; sleeperLower: number; sleeperUpper: number }[];

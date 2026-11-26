@@ -1,0 +1,15 @@
+{
+  "id": "sweep-gds-schedules",
+  "region": "viewport",
+  "legacy": [
+    1440,
+    900
+  ],
+  "react": [
+    1440,
+    900
+  ],
+  "sizeMatch": true,
+  "diffPixels": 1369,
+  "diffRatio": 0.0011
+}

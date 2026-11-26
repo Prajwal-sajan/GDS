@@ -1,0 +1,15 @@
+{
+  "id": "sweep-fleet-payouts",
+  "region": "viewport",
+  "legacy": [
+    1440,
+    900
+  ],
+  "react": [
+    1440,
+    900
+  ],
+  "sizeMatch": true,
+  "diffPixels": 182,
+  "diffRatio": 0.0001
+}

@@ -73,25 +73,39 @@ test("route editor: fares edit persists to PostgreSQL and is restored", async ({
 
 test("route editor: general and cancellation settings persist to PostgreSQL and are restored", async ({ browser, baseURL, request }) => {
   const R = await reactPage(browser, baseURL!);
-  const detail = async () => (await (await request.get(`${API}/api/admin/route-detail/1`, { headers: H })).json()) as { updateCutoffMinutes: number; refundSlabs: { hoursBefore: number; refundPercent: number }[] };
+  type D = { updateCutoffMinutes: number; distanceKm: number | null; settings: Record<string, any>; refundSlabs: { hoursBefore: number; refundPercent: number }[] };
+  const detail = async () => (await (await request.get(`${API}/api/admin/route-detail/1`, { headers: H })).json()) as D;
   const before = await detail();
   try {
     await R.goto("/#/gds/routes/1?rvtab=general&rvmode=edit");
-    const cutoff = R.getByLabel("Update cut-off (minutes before boarding)");
-    await expect(cutoff).toBeEditable();
-    await cutoff.fill(String(before.updateCutoffMinutes + 15));
+    for (const t of ["Hub*", "KMs", "Allow Gents Next to Ladies", "Seat Sharing", "Boarding Check", "Call Routing", "Autos & Cabs", "Staff & Vehicle Assignment", "PICKUP VANS", "Tags"])
+      await expect(R.locator("[data-rv-tab-body]")).toContainText(t);
+    await R.getByLabel("Hub*").fill("Test Hub");
+    await R.getByLabel("KMs").fill("777");
+    await R.locator('[data-rv-rule="seat_sharing"]').selectOption("Full Journey");
+    await R.locator(".rv-segment button", { hasText: "Both" }).click();
+    await R.getByPlaceholder("Name, e.g. corridor").fill("corridor");
+    await R.getByPlaceholder("Value, e.g. mumbai").fill("mumbai");
+    await R.locator(".rv-inline-add button").click();
     await R.locator('[data-rv="save"]').click();
     await expect(R.locator("#toasts")).toContainText("Route saved");
-    expect((await detail()).updateCutoffMinutes).toBe(before.updateCutoffMinutes + 15);
+    const g = await detail();
+    expect(g.distanceKm).toBe(777);
+    expect(g.settings).toMatchObject({ hub: "Test Hub", cabs: "Both", tags: { corridor: "mumbai" }, business_rules: { seat_sharing: "Full Journey" } });
 
+    await R.waitForLoadState("networkidle");
     await R.locator('[data-rv-tab="cancellation"]').click();
-    const pct = R.locator(".rv-slab").first().getByLabel("Refund percentage");
-    await pct.fill("85");
+    await R.getByLabel("Update cut-off (minutes before boarding)").fill(String(before.updateCutoffMinutes + 15));
+    await R.locator(".rv-slab").first().getByLabel("Refund percentage").fill("85");
     await R.locator('[data-rv="save"]').click();
     await expect(R.locator("#toasts")).toContainText("Cancellation policy saved");
-    expect((await detail()).refundSlabs[0].refundPercent).toBe(85);
+    const c = await detail();
+    expect(c.refundSlabs.find((x) => x.hoursBefore === before.refundSlabs[0].hoursBefore)?.refundPercent, JSON.stringify(c.refundSlabs)).toBe(85);
+    expect(c.updateCutoffMinutes).toBe(before.updateCutoffMinutes + 15);
   } finally {
-    const res = await request.put(`${API}/api/admin/routes/1/settings`, { headers: H, data: { updateCutoffMinutes: before.updateCutoffMinutes, refundSlabs: before.refundSlabs } });
+    const s = before.settings ?? {};
+    const res = await request.put(`${API}/api/admin/routes/1/settings`, { headers: H, data: { updateCutoffMinutes: before.updateCutoffMinutes, refundSlabs: before.refundSlabs, distanceKm: before.distanceKm,
+      settings: { hub: s.hub ?? null, cabs: s.cabs ?? null, tags: s.tags ?? {}, business_rules: s.business_rules ?? {}, call_settings: s.call_settings ?? null, assignments: s.assignments ?? null, escalation_contacts: s.escalation_contacts ?? null } } });
     expect(res.ok()).toBeTruthy();
   }
   expect(await detail()).toMatchObject({ updateCutoffMinutes: before.updateCutoffMinutes, refundSlabs: before.refundSlabs });

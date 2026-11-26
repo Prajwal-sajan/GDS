@@ -310,6 +310,9 @@ WHERE hold_id IN (SELECT id FROM expired) AND is_active");
         if (targets.Count != seats.Count)
             throw new GdsException("SEAT_NOT_CANCELLABLE", "One or more seats are not confirmed on this PNR", 409);
         var partial = targets.Count < active.Count;
+        // Legacy business_rules.allow_cancellation = false: passengers/OTAs cannot cancel; operator cancellations (trip cancelled, refunds) still run.
+        if (reason == "customer" && !fullRefund && JourneyOS.Api.Operations.RouteSettings.CancellationAllowed(route.SettingsJson) is false)
+            throw new GdsException("CANCELLATION_NOT_ALLOWED", "Cancellation is not allowed on this service", 409);
         if (partial && !route.PartialCancellationAllowed) throw new GdsException("PARTIAL_NOT_ALLOWED", "Partial cancellation is not allowed", 409);
         if (partial && targets.Any(t => t.IsPrimary) && !route.PrimaryPaxCancellable)
             throw new GdsException("PRIMARY_NOT_CANCELLABLE", "Primary passenger cannot be cancelled alone", 409);

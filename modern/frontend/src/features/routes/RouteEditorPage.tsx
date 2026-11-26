@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { api, type CoachListRow, type Me, type RouteCoachSeat, type RouteDetail, type RouteShiftPreview, type RouteStageInput, type RouteStageRow } from "../../api";
+import { api, type CoachListRow, type Me, type RouteAssignment, type RouteCoachSeat, type RouteDetail, type RouteSettingsJson, type RouteShiftPreview, type RouteStageInput, type RouteStageRow, type Staff, type Vehicle } from "../../api";
 import { confirmDialog, toast, toastError } from "../../components/ui/feedback";
 
 // React port of the legacy route editor (public/js/routes-screenshot-v5.js editor(): render(), general(), citiesTab(),
@@ -89,11 +89,40 @@ const Field = ({ label, value, type = "text", onChange, ...p }: { label: string;
     ? <input type={type} value={value ?? ""} onChange={(e) => onChange(e.currentTarget.value)} {...p} />
     : <input type={type} value={value ?? ""} disabled readOnly />}</label>
 );
-type Settings = { name: string; altName: string; maxSeatsPerTicket: number; updateCutoffMinutes: number; partialCancellationAllowed: boolean;
+type Gen = { hub: string; rules: Record<string, string>; call: Record<string, boolean>; escalation: string; cabs: string; assignments: Required<Pick<RouteAssignment, "vehicle_id" | "crew" | "pickup_vans">>[]; tags: Record<string, string> };
+const RULES: [string, string, string[], string?][] = [
+  ["gents_next_to_ladies", "Allow Gents Next to Ladies", ["No", "Yes"]],
+  ["ladies_next_to_gents", "Allow Ladies Next to Gents", ["No", "Yes"]],
+  ["ladies_fill_doubles_first", "Ladies Fill Half-Booked Doubles First", ["Yes", "No"], "A lady travelling alone must take a free seat next to another lady before opening a new double. Stops ladies-only seats piling up."],
+  ["seat_sharing", "Seat Sharing", ["City Based", "Disabled", "Full Journey"], "Seat is free for the next passenger as soon as the bus reaches the city."],
+  ["boarding_check", "Boarding Check", ["Passenger OTP", "Manual Check"], "Drivers and conductors enter a passenger's 4-digit OTP to mark boarded. Managers can board without it."],
+];
+const CALLS: [string, string, boolean][] = [["cloud_calling", "Cloud Calling", true], ["number_masking", "Passenger Number Masking", true], ["direct_to_vehicle", "Direct to Vehicle", true], ["driver_gps", "Driver Mobile GPS", false]];
+const CREW_ROLES = ["Driver", "Helper", "Conductor", "Attendant"];
+const yn = (v: unknown, d: string) => (v === true ? "Yes" : v === false ? "No" : typeof v === "string" && v ? v : d);
+const toGen = (s: RouteSettingsJson | null | undefined): Gen => {
+  const br = s?.business_rules ?? {}, cs = (s?.call_settings ?? {}) as Record<string, unknown>;
+  const rules: Record<string, string> = { allow_cancellation: yn(br.allow_cancellation, "Yes") };
+  RULES.forEach(([k, , o]) => { rules[k] = yn(br[k], o[0]); });
+  const call: Record<string, boolean> = {}; CALLS.forEach(([k, , d]) => { call[k] = typeof cs[k] === "boolean" ? (cs[k] as boolean) : d; });
+  const a = (s?.assignments ?? []).slice(0, 2);
+  while (a.length < 2) a.push({});
+  const tags: Record<string, string> = Array.isArray(s?.tags) ? Object.fromEntries(s!.tags.map((t) => [t.name, t.value])) : { ...(s?.tags ?? {}) };
+  return { hub: s?.hub ?? "", rules, call, escalation: s?.escalation_contacts ?? "", cabs: s?.cabs ?? "Off", tags,
+    assignments: a.map((x) => ({ vehicle_id: x.vehicle_id ?? null, crew: x.crew?.length ? x.crew.map((c) => ({ ...c })) : [{ role: "Driver", staff_id: null }], pickup_vans: x.pickup_vans ?? [] })) };
+};
+const genPatch = (g: Gen, orig: RouteSettingsJson | null | undefined) => ({
+  hub: g.hub.trim() || null, escalation_contacts: g.escalation.trim() || null, cabs: g.cabs, tags: g.tags,
+  business_rules: { ...(orig?.business_rules ?? {}), ...g.rules },
+  call_settings: { ...((orig?.call_settings ?? {}) as Record<string, unknown>), ...g.call },
+  assignments: g.assignments.map((a) => ({ ...a, crew: a.crew.filter((c) => c.staff_id || c.name) })),
+});
+type Settings = { name: string; altName: string; maxSeatsPerTicket: number; updateCutoffMinutes: number; partialCancellationAllowed: boolean; distanceKm: string; gen: Gen;
   departureTime: string; arrivalTime: string; arrivalDay: number; startDate: string; endDate: string; refundSlabs: RouteDetail["refundSlabs"] };
 const hhmm = (t: string | null | undefined) => String(t ?? "").slice(0, 5);
 const toSettings = (r: RouteDetail): Settings => ({
   name: r.name, altName: r.altName ?? "", maxSeatsPerTicket: r.maxSeatsPerTicket, updateCutoffMinutes: r.updateCutoffMinutes, partialCancellationAllowed: r.partialCancellationAllowed,
+  distanceKm: r.distanceKm == null ? "" : String(r.distanceKm), gen: toGen(r.settings),
   departureTime: hhmm(r.departureTime), arrivalTime: hhmm(r.arrivalTime), arrivalDay: r.arrivalDay ?? 1, startDate: r.startDate ?? "", endDate: r.endDate ?? "", refundSlabs: r.refundSlabs,
 });
 const Region = ({ title, children, cls = "" }: { title?: ReactNode; children: ReactNode; cls?: string }) => (
@@ -124,7 +153,11 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
   const [blk, setBlk] = useState<{ id: number | null; reason: string; fromDate: string; toDate: string; autoReleaseHours: string }>({ id: null, reason: "", fromDate: "", toDate: "", autoReleaseHours: "" });
   const [shift, setShift] = useState<{ direction: "delay" | "advance"; hours: number; minutes: number }>({ direction: "delay", hours: 0, minutes: 15 });
   const [preview, setPreview] = useState<{ key: string; data: RouteShiftPreview }>();
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [staff, setStaff] = useState<Staff[]>([]);
+  const [tagIn, setTagIn] = useState({ name: "", value: "" });
   const upd = <K extends keyof Settings>(k: K, v: Settings[K]) => setSt((s) => (s ? { ...s, [k]: v } : s));
+  const updGen = (f: (g: Gen) => Gen) => setSt((s) => (s ? { ...s, gen: f(s.gen) } : s));
 
   const load = useCallback(async (live: () => boolean = () => true) => {
     try { const r = await api.routeDetail(id); if (!live()) return; setRoute(r); setFares(r.fares); setExpenses(r.expenses); setSt(toSettings(r)); setCoachId(r.coachTemplateId); setVias(toVias(r)); setError(undefined); }
@@ -132,6 +165,10 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
   }, [id]);
   // Only the live effect applies its result: a stale response (StrictMode double effect, fast id change) must not overwrite edits in progress.
   useEffect(() => { let alive = true; void load(() => alive); return () => { alive = false; }; }, [load]);
+  useEffect(() => {
+    api.vehicles().then(setVehicles).catch(() => setVehicles([]));
+    api.staff().then(setStaff).catch(() => setStaff([]));
+  }, []);
   useEffect(() => {
     if (mode !== "edit") return;
     api.coachList().then((x) => setCoaches(x.coaches)).catch(toastError);
@@ -151,15 +188,16 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
     try {
       if (tab === "general") {
         if (!st.name.trim()) return toast("Name is required", "warn");
-        if (!(st.maxSeatsPerTicket >= 1)) return toast("Max seats per ticket must be at least 1", "warn");
-        if (!(st.updateCutoffMinutes >= 0)) return toast("Update cut-off must be zero or more", "warn");
+        if (!st.gen.hub.trim()) return toast("Hub is required", "warn");
+        const km = st.distanceKm.trim() === "" ? null : Number(st.distanceKm);
+        if (km != null && !(km >= 0 && km <= 10000)) return toast("KMs must be between 0 and 10000", "warn");
         if (coachId !== route.coachTemplateId) {
           const name = coaches.find((c) => c.id === coachId)?.name ?? `coach ${coachId}`;
           if (!(await confirmDialog(`Change the coach of every upcoming departure to ${name}? Sold, held and blocked seats move to the same seat number in the new layout.`, { ok: "Change coach" }))) return;
           const r = await api.changeRouteCoach(id, coachId);
           toast(`Coach changed to ${r.coach ?? name}${r.remappedSeats ? ` · ${r.remappedSeats} seat allocation(s) moved` : ""}`, "ok");
         }
-        await api.saveRouteSettings(id, { name: st.name.trim(), altName: st.altName.trim(), maxSeatsPerTicket: st.maxSeatsPerTicket, updateCutoffMinutes: st.updateCutoffMinutes, partialCancellationAllowed: st.partialCancellationAllowed });
+        await api.saveRouteSettings(id, { name: st.name.trim(), altName: st.altName.trim(), distanceKm: km, settings: genPatch(st.gen, route.settings) });
         toast("Route saved", "ok");
       } else if (tab === "cities") {
         if (!st.startDate) return toast("Complete the mandatory fields", "warn");
@@ -180,7 +218,10 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
       } else if (tab === "cancellation") {
         if (st.refundSlabs.some((s) => !(s.hoursBefore >= 0) || !(s.refundPercent >= 0 && s.refundPercent <= 100))) return toast("Hours must be zero or more and refund 0-100%", "warn");
         if (new Set(st.refundSlabs.map((s) => s.hoursBefore)).size !== st.refundSlabs.length) return toast("Each slab needs different hours", "warn");
-        await api.saveRouteSettings(id, { refundSlabs: st.refundSlabs });
+        if (!(st.maxSeatsPerTicket >= 1)) return toast("Max seats per ticket must be at least 1", "warn");
+        if (!(st.updateCutoffMinutes >= 0)) return toast("Update cut-off must be zero or more", "warn");
+        await api.saveRouteSettings(id, { refundSlabs: st.refundSlabs, maxSeatsPerTicket: st.maxSeatsPerTicket, updateCutoffMinutes: st.updateCutoffMinutes, partialCancellationAllowed: st.partialCancellationAllowed,
+          settings: { business_rules: { ...(route.settings?.business_rules ?? {}), allow_cancellation: st.gen.rules.allow_cancellation } } });
         toast("Cancellation policy saved", "ok");
       } else if (tab === "fares") {
         if (fares.some((f) => [f.seater, f.sleeperLower, f.sleeperUpper].some((v) => !(v >= 0)))) return toast("Fares must be zero or more", "warn");
@@ -298,11 +339,76 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
               : <label className="rv-field"><span>Coach*</span><select data-rv="coach" value={coachId} onChange={(e) => setCoachId(Number(e.currentTarget.value))}>
                 {!coaches.some((c) => c.id === route.coachTemplateId) && <option value={route.coachTemplateId}>{route.coach?.name ?? `Coach ${route.coachTemplateId}`}</option>}
                 {coaches.filter((c) => c.status === "active" || c.id === route.coachTemplateId).map((c) => <option key={c.id} value={c.id}>{c.name} · {c.capacity} seats{c.pattern ? ` · ${c.pattern}` : ""}</option>)}</select></label>}
+            <Field label="Hub*" value={st.gen.hub} onChange={ro ? undefined : (v) => updGen((g) => ({ ...g, hub: v }))} /><Field label="KMs" type="number" min={0} value={st.distanceKm} onChange={ed("distanceKm")} />
             <Field label="Total Seats" value={route.coach?.capacity} type="number" /><Field label="Total Sleeper" value={route.coach?.sleepers} type="number" /><Field label="Total Seater" value={route.coach?.seaters} type="number" />
-            <Field label="Max seats per ticket" value={st.maxSeatsPerTicket} type="number" min={1} onChange={ed("maxSeatsPerTicket", Number)} /><Field label="Update cut-off (minutes before boarding)" value={st.updateCutoffMinutes} type="number" min={0} onChange={ed("updateCutoffMinutes", Number)} />
-            {ro ? <Field label="Partial cancellation" value={route.partialCancellationAllowed ? "Yes" : "No"} />
-              : <label className="rv-field"><span>Partial cancellation</span><select value={st.partialCancellationAllowed ? "yes" : "no"} onChange={(e) => upd("partialCancellationAllowed", e.currentTarget.value === "yes")}><option value="yes">Yes</option><option value="no">No</option></select></label>}
+            {RULES.map(([k, label, opts, help]) => (
+              <div key={k}><label className="rv-field"><span>{label}</span><select data-rv-rule={k} disabled={ro} value={st.gen.rules[k]} onChange={(e) => { const v = e.currentTarget.value; updGen((g) => ({ ...g, rules: { ...g.rules, [k]: v } })); }}>
+                {opts.map((o) => <option key={o}>{o}</option>)}</select></label>{help && <p className="rv-help">{help}</p>}</div>
+            ))}
           </div>
+          <div className="rv-ruleline"><h3>Call Routing</h3><div className="rv-two rv-callrouting">
+            {CALLS.map(([k, label]) => (
+              <div key={k} className="rv-toggle-row"><span>{label}</span><label className="rv-switch"><input type="checkbox" aria-label={label} disabled={ro} checked={st.gen.call[k]} onChange={(e) => { const v = e.currentTarget.checked; updGen((g) => ({ ...g, call: { ...g.call, [k]: v } })); }} /><span /></label></div>
+            ))}
+            <Field label="Escalation Contacts" value={st.gen.escalation} onChange={ro ? undefined : (v) => updGen((g) => ({ ...g, escalation: v }))} />
+          </div></div>
+          <div className="rv-ruleline rv-cabs"><div><h3>Autos &amp; Cabs</h3><p>Pickups: a ride to the boarding point. Drops: a ride from the drop point. Booked from the passenger's tracking link.</p></div>
+            <div className="rv-segment">{["Off", "Pickups", "Drops", "Both"].map((c) => <button key={c} type="button" disabled={ro} className={st.gen.cabs === c ? "selected" : ""} onClick={() => updGen((g) => ({ ...g, cabs: c }))}>{c}</button>)}</div></div>
+          <Region title="Staff & Vehicle Assignment">
+            <p className="rv-subtext">The two assignments alternate every trip, on the days this route runs.</p>
+            <div className="rv-two rv-crew-wrap">{st.gen.assignments.map((a, ai) => {
+              const setA = (p: Partial<Gen["assignments"][number]>) => updGen((g) => ({ ...g, assignments: g.assignments.map((x, j) => (j === ai ? { ...x, ...p } : x)) }));
+              const today = new Date().toLocaleDateString("en-GB", { weekday: "short", month: "short", day: "2-digit", year: "numeric" }).toUpperCase();
+              const v = vehicles.find((x) => x.id === a.vehicle_id);
+              return (
+                <section key={ai} className={`rv-crew-panel ${ai ? "green" : "blue"}`}>
+                  <p className="rv-crew-kicker">{ai ? "NEXT TRIP" : `THIS TRIP · ${today}`}</p>
+                  <div className="rv-crew-inner">
+                    <label className="rv-field"><span>Vehicle</span><select disabled={ro} aria-label={`Vehicle ${ai + 1}`} value={a.vehicle_id ?? ""} onChange={(e) => setA({ vehicle_id: e.currentTarget.value ? Number(e.currentTarget.value) : null })}>
+                      <option value="">Select vehicle</option>{a.vehicle_id && !v && <option value={a.vehicle_id}>Vehicle {a.vehicle_id}</option>}
+                      {vehicles.map((x) => <option key={x.id} value={x.id}>{x.registrationNumber}</option>)}</select></label>
+                    <div className="rv-vehicle-place"><I k="pin" size={15} /> <span>Vehicle location not connected · No verified update</span></div>
+                    <div className="rv-crew-rows">{a.crew.map((c, ci) => {
+                      const setC = (p: Partial<typeof c>) => setA({ crew: a.crew.map((x, j) => (j === ci ? { ...x, ...p } : x)) });
+                      const s = staff.find((x) => x.id === c.staff_id);
+                      return (
+                        <div key={ci} className="rv-staffrow">
+                          <select disabled={ro} aria-label="Role" value={c.role} onChange={(e) => setC({ role: e.currentTarget.value })}>{CREW_ROLES.map((r) => <option key={r}>{r}</option>)}</select>
+                          <select disabled={ro} aria-label="Staff" value={c.staff_id ?? ""} onChange={(e) => { const sid = e.currentTarget.value ? Number(e.currentTarget.value) : null; const x = staff.find((y) => y.id === sid); setC({ staff_id: sid, name: x?.name, phone: x?.phone }); }}>
+                            <option value="">Select staff</option>{c.staff_id && !s && <option value={c.staff_id}>{c.name ?? `Staff ${c.staff_id}`}</option>}
+                            {staff.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
+                          <input aria-label="Phone" value={s?.phone ?? c.phone ?? ""} disabled readOnly placeholder="Phone" />
+                          {ci > 0 && !ro && <Btn cls="icon danger" aria-label="Remove staff" onClick={() => setA({ crew: a.crew.filter((_, j) => j !== ci) })}><I k="trash" size={16} /></Btn>}
+                        </div>
+                      );
+                    })}</div>
+                    {!ro && a.crew.length < 8 && <Btn cls="link" onClick={() => setA({ crew: [...a.crew, { role: "Helper", staff_id: null }] })}><I k="plus" size={15} /> Add Staff</Btn>}
+                    <p className="rv-van-title">PICKUP VANS</p>
+                    {a.pickup_vans.map((pv, pi) => (
+                      <div key={pi} className="rv-vanitem"><input disabled={ro} aria-label={`Pickup van ${pi + 1}`} value={pv.label ?? pv.name ?? ""} onChange={(e) => { const val = e.currentTarget.value; setA({ pickup_vans: a.pickup_vans.map((x, j) => (j === pi ? { label: val } : x)) }); }} />
+                        {!ro && <Btn cls="icon danger" aria-label="Remove pickup van" onClick={() => setA({ pickup_vans: a.pickup_vans.filter((_, j) => j !== pi) })}><I k="trash" size={16} /></Btn>}</div>
+                    ))}
+                    {!ro && a.pickup_vans.length < 10 && <Btn cls="link" onClick={() => setA({ pickup_vans: [...a.pickup_vans, { label: "" }] })}><I k="plus" size={15} /> Add Pickup Van</Btn>}
+                  </div>
+                </section>
+              );
+            })}</div>
+          </Region>
+          <Region title={<><I k="tag" size={17} /> Tags</>} cls="rv-tags-panel">
+            {Object.keys(st.gen.tags).length ? <div className="rv-tags">{Object.entries(st.gen.tags).map(([n, v]) => (
+              <span key={n}>{n} = {v}{!ro && <button type="button" aria-label={`Remove tag ${n}`} onClick={() => updGen((g) => { const t = { ...g.tags }; delete t[n]; return { ...g, tags: t }; })}>×</button>}</span>
+            ))}</div> : <p className="rv-muted">No tags</p>}
+            {!ro && <div className="rv-inline-add">
+              <input placeholder="Name, e.g. corridor" value={tagIn.name} onChange={(e) => { const v = e.currentTarget.value; setTagIn((t) => ({ ...t, name: v })); }} /><b>=</b>
+              <input placeholder="Value, e.g. mumbai" value={tagIn.value} onChange={(e) => { const v = e.currentTarget.value; setTagIn((t) => ({ ...t, value: v })); }} />
+              <Btn cls="primary" onClick={() => {
+                const n = tagIn.name.trim().toLowerCase(), v = tagIn.value.trim().toLowerCase();
+                if (!n || !v) return toast("Enter a tag name and value", "warn");
+                if (Object.keys(st.gen.tags).length >= 30 && !(n in st.gen.tags)) return toast("At most 30 tags", "warn");
+                updGen((g) => ({ ...g, tags: { ...g.tags, [n]: v } })); setTagIn({ name: "", value: "" });
+              }}>Add</Btn></div>}
+            <p className="rv-help">Labels like corridor = mumbai. A branch or a person set to “routes with this tag” covers this route automatically.</p>
+          </Region>
           {mode === "edit" && coachId !== route.coachTemplateId && <p className="rv-notice">Changing the coach moves every sold, held and blocked seat on upcoming departures to the same seat number in the new layout. It is refused if a seat number does not exist there or a bus with a different layout is assigned.</p>}
         </>
       );
@@ -435,6 +541,12 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
       }
       case "cancellation": return (
         <>
+          <div className="rv-two">
+            <label className="rv-field"><span>Allow Cancellation</span><select data-rv-rule="allow_cancellation" disabled={ro} value={st.gen.rules.allow_cancellation} onChange={(e) => { const v = e.currentTarget.value; updGen((g) => ({ ...g, rules: { ...g.rules, allow_cancellation: v } })); }}><option>Yes</option><option>No</option></select></label>
+            {ro ? <Field label="Partial cancellation" value={route.partialCancellationAllowed ? "Yes" : "No"} />
+              : <label className="rv-field"><span>Partial cancellation</span><select value={st.partialCancellationAllowed ? "yes" : "no"} onChange={(e) => upd("partialCancellationAllowed", e.currentTarget.value === "yes")}><option value="yes">Yes</option><option value="no">No</option></select></label>}
+            <Field label="Max seats per ticket" value={st.maxSeatsPerTicket} type="number" min={1} onChange={ed("maxSeatsPerTicket", Number)} /><Field label="Update cut-off (minutes before boarding)" value={st.updateCutoffMinutes} type="number" min={0} onChange={ed("updateCutoffMinutes", Number)} />
+          </div>
           <h2>Cancellation Policy</h2><p className="rv-subtext">Refund percentages by time before departure, as enforced by the booking engine.</p>
           <div className="rv-cancel-rows">{st.refundSlabs.map((s, i) => {
             const set = (k: "hoursBefore" | "refundPercent", v: number) => upd("refundSlabs", st.refundSlabs.map((x, j) => (j === i ? { ...x, [k]: v } : x)));

@@ -1,0 +1,15 @@
+{
+  "id": "sweep-settings-team-access-office-staff",
+  "region": "viewport",
+  "legacy": [
+    1440,
+    900
+  ],
+  "react": [
+    1440,
+    900
+  ],
+  "sizeMatch": true,
+  "diffPixels": 38235,
+  "diffRatio": 0.0295
+}

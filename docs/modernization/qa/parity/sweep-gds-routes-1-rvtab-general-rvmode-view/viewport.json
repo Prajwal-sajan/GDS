@@ -1,0 +1,15 @@
+{
+  "id": "sweep-gds-routes-1-rvtab-general-rvmode-view",
+  "region": "viewport",
+  "legacy": [
+    1440,
+    900
+  ],
+  "react": [
+    1440,
+    900
+  ],
+  "sizeMatch": true,
+  "diffPixels": 6308,
+  "diffRatio": 0.0049
+}

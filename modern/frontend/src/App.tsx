@@ -7,6 +7,7 @@ import { LegacyScreen } from "./features/legacyScreens/LegacyScreen";
 import { AppShell } from "./layouts/AppShell";
 import { FeedbackHost } from "./components/ui/feedback";
 import { SchedulesPage } from "./features/schedules/SchedulesPage";
+import { DeletedTripsPage } from "./features/schedules/DeletedTripsPage";
 import { TripsPage } from "./features/trips/TripsPage";
 import { AccountsPage } from "./features/accounts/AccountsPage";
 import { ReportsTab } from "./features/accounts/ReportsTab";
@@ -108,6 +109,7 @@ function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Ele
     [/^trips$/, ALL_R, () => <TripsPage me={me} />, true],
     [/^trips\/services$/, OPS_R, () => <TripsPanel />],
     [/^gds(\/schedules)?$/, ALL_R, () => <SchedulesPage me={me} />, true],
+    [/^gds\/deleted$/, ALL_R, () => <DeletedTripsPage canRestore={OPS_R.includes(r)} />, true],
     [/^gds\/routes$/, ALL_R, () => <RoutesPage me={me} />, true],
     [/^gds\/routes\/\d+$/, ALL_R, () => <RouteEditorPage key={path} me={me} id={Number(seg[2])} />, true],
     [/^crm(\/.*)?$/, ALL_R, () => <CrmPage me={me} />, true],

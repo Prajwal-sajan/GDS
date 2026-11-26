@@ -130,6 +130,8 @@ public static class RouteEndpoints
                         .Select(s => new { s.Code, s.Deck, s.Row, s.Col, s.Width, s.Length, s.SeatType }),
                 },
                 coachTemplateId = r.CoachTemplateId,
+                distanceKm = r.DistanceKm,
+                settings = r.SettingsJson is null ? new System.Text.Json.Nodes.JsonObject() : System.Text.Json.Nodes.JsonNode.Parse(r.SettingsJson),
                 seatBlocks = r.SeatBlocks.OrderBy(b => b.Id).Select(b => new { b.Id, b.Seats, b.Reason, b.FromDate, b.ToDate, b.AutoReleaseHours, b.CreatedBy, b.CreatedAt }),
                 stops = stops.Select(s => new { s.Id, s.Sequence, cityId = s.CityId, city = s.City?.Name, state = s.City?.State, lat = s.City?.Lat, lng = s.City?.Lng, s.Day, s.Time }),
                 stages = r.Stages.OrderBy(s => s.Day).ThenBy(s => s.Time).Select(s => new

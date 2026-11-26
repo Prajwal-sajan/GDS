@@ -230,5 +230,24 @@ public static class ScheduleManageEndpoints
             await ops.DeleteTripAsync(id, Actor(h));
             return Results.Ok(new { success = true });
         }).RequireAuthorization(Policies.Operations);
+
+        // ---------------------------------------------------------------- legacy GDS → Deleted trips (GET /schedules/deleted, POST /schedules/restore)
+        g.MapGet("/schedules-deleted", async (GdsDbContext db) =>
+        {
+            var rows = await (from t in db.Trips.IgnoreQueryFilters().Where(t => t.TenantId == db.CurrentTenantId && t.DeletedAt != null)
+                              join r in db.Routes on t.RouteId equals r.Id
+                              orderby t.TravelDate descending, r.ServiceNumber
+                              select new { id = t.Id, routeId = r.Id, serviceNumber = r.ServiceNumber, travelDate = t.TravelDate, deletedAt = t.DeletedAt, tripId = t.Id.ToString() }).ToListAsync();
+            var ids = rows.Select(x => x.tripId).ToList();
+            var by = (await db.AuditLogs.AsNoTracking().Where(a => a.Entity == "schedule" && ids.Contains(a.EntityId) && a.DataJson.Contains("delete"))
+                .OrderByDescending(a => a.Id).Select(a => new { a.EntityId, a.Actor }).ToListAsync())
+                .GroupBy(a => a.EntityId).ToDictionary(g => g.Key, g => g.First().Actor);
+            return Results.Ok(new { deleted = rows.Select(x => new { x.id, x.routeId, x.serviceNumber, x.travelDate, x.deletedAt, deletedBy = by.GetValueOrDefault(x.tripId) }) });
+        }).RequireAuthorization(Policies.Reports);
+        g.MapPost("/schedules/{id:long}/restore", async (long id, HttpContext h, Operations.OperationsService ops) =>
+        {
+            await ops.RestoreTripAsync(id, Actor(h));
+            return Results.Ok(new { success = true });
+        }).RequireAuthorization(Policies.Operations);
     }
 }

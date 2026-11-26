@@ -1,0 +1,15 @@
+{
+  "id": "sweep-fleet-vehicles",
+  "region": "viewport",
+  "legacy": [
+    1440,
+    900
+  ],
+  "react": [
+    1440,
+    900
+  ],
+  "sizeMatch": true,
+  "diffPixels": 61,
+  "diffRatio": 0
+}

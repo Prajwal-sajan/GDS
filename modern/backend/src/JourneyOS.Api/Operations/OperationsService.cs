@@ -19,7 +19,8 @@ public sealed record GenerateInput(DateOnly From, DateOnly To);
 public sealed record RefundSlabInput(int HoursBefore, decimal RefundPercent);
 public sealed record RouteSettingsInput(string? Name = null, string? AltName = null, TimeOnly? DepartureTime = null,
     TimeOnly? ArrivalTime = null, int? ArrivalDay = null, DateOnly? StartDate = null, DateOnly? EndDate = null, bool? PartialCancellationAllowed = null,
-    bool? PrimaryPaxCancellable = null, int? MaxSeatsPerTicket = null, int? UpdateCutoffMinutes = null, List<RefundSlabInput>? RefundSlabs = null);
+    bool? PrimaryPaxCancellable = null, int? MaxSeatsPerTicket = null, int? UpdateCutoffMinutes = null, List<RefundSlabInput>? RefundSlabs = null,
+    decimal? DistanceKm = null, System.Text.Json.Nodes.JsonObject? Settings = null);
 public sealed record CounterPassenger(string Seat, string Name, int Age, string Gender, string? Mobile, string? Email, bool Primary);
 public sealed record CounterBookingInput(long TripId, long BoardingPointId, long DroppingPointId, List<CounterPassenger> Passengers,
     string PaymentMethod, string? PaymentReference, string Channel = "counter", string? AgentPhone = null);
@@ -245,6 +246,24 @@ public sealed class OperationsService(GdsDbContext db, InventoryService inventor
         await inventory.InvalidateTripAsync(tripId);
     }
 
+    /// <summary>Legacy POST /schedules/restore: brings a deleted departure back on sale (standing route seat blocks re-applied).</summary>
+    public async Task RestoreTripAsync(long tripId, string actor)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync();
+        var trip = await db.Trips.FromSqlInterpolated($"SELECT * FROM trips WHERE id = {tripId} AND tenant_id = {T} FOR UPDATE").IgnoreQueryFilters().FirstOrDefaultAsync(t => t.DeletedAt != null)
+                   ?? throw new GdsException("NOT_FOUND", "Deleted trip not found", 404);
+        var route = await db.Routes.FirstAsync(r => r.Id == trip.RouteId);
+        if (route.Status != "active") throw new GdsException("ROUTE_INACTIVE", "Activate the route before restoring its trips", 409);
+        trip.Status = "active"; trip.Bookable = true; trip.DeletedAt = null;
+        await notifier.ServiceChangedAsync(trip, 0, int.MaxValue);
+        Audit(actor, "block", "schedule", tripId.ToString(), new { op = "restore" });
+        await db.SaveChangesAsync();
+        await routeEdit.ApplyBlocksToNewTripsAsync(trip.RouteId);
+        await tx.CommitAsync();
+        await inventory.InvalidateTripAsync(tripId);
+        await cache.BumpAsync(CacheKeys.SearchScope(T));
+    }
+
     /// <summary>Legacy "Disable / Activate schedule" switch: opens or closes sales for one departure. Existing bookings are untouched.</summary>
     public async Task<bool> SetBookableAsync(long tripId, bool active, string actor)
     {
@@ -305,6 +324,14 @@ public sealed class OperationsService(GdsDbContext db, InventoryService inventor
         Set("primary_pax_cancellable", i.PrimaryPaxCancellable, route.PrimaryPaxCancellable, () => route.PrimaryPaxCancellable = i.PrimaryPaxCancellable!.Value);
         Set("max_seats_per_ticket", i.MaxSeatsPerTicket, route.MaxSeatsPerTicket, () => route.MaxSeatsPerTicket = i.MaxSeatsPerTicket!.Value);
         Set("update_cutoff_minutes", i.UpdateCutoffMinutes, route.UpdateCutoffMinutes, () => route.UpdateCutoffMinutes = i.UpdateCutoffMinutes!.Value);
+        if (i.DistanceKm is < 0 or > 10000) throw new GdsException("VALIDATION", "KMs must be 0-10000");
+        Set("distance_km", i.DistanceKm, route.DistanceKm, () => route.DistanceKm = i.DistanceKm);
+        if (i.Settings is not null)
+        {
+            var merged = RouteSettings.Merge(route.SettingsJson, i.Settings, out var settingErrors);
+            if (settingErrors.Count > 0) throw new GdsException("VALIDATION", string.Join("; ", settingErrors));
+            if (merged != route.SettingsJson) { changes["settings"] = new { changed = i.Settings.Select(p => p.Key).ToList() }; route.SettingsJson = merged; }
+        }
         if (i.RefundSlabs is not null)
         {
             if (i.RefundSlabs.Any(s => s.HoursBefore < 0 || s.RefundPercent is < 0 or > 100)) throw new GdsException("VALIDATION", "Refund slabs need hours >= 0 and refund 0-100%");

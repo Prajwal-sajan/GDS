@@ -1,0 +1,15 @@
+{
+  "id": "sweep-accounts-reports-fleet-operations",
+  "region": "viewport",
+  "legacy": [
+    1440,
+    900
+  ],
+  "react": [
+    1440,
+    900
+  ],
+  "sizeMatch": true,
+  "diffPixels": 4129,
+  "diffRatio": 0.0032
+}

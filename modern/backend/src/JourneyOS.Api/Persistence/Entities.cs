@@ -80,6 +80,10 @@ public sealed class Route : ITenantOwned
     public int MaxSeatsPerTicket { get; set; } = 6;
     /// <summary>Update-ticket cutoff, minutes before boarding time.</summary>
     public int UpdateCutoffMinutes { get; set; } = 120;
+    /// <summary>Legacy route General-tab settings kept in their legacy shape (jsonb): hub, business_rules {gents_next_to_ladies,
+    /// ladies_next_to_gents, ladies_fill_doubles_first, seat_sharing, boarding_check}, call_settings, escalation_contacts, cabs,
+    /// assignments [{vehicle_id, crew:[{staff_id, role}], pickup_vans}], tags {name: value}, run_pattern. Null = legacy defaults.</summary>
+    public string? SettingsJson { get; set; }
     public List<RouteStop> Stops { get; set; } = [];
     public List<RouteStage> Stages { get; set; } = [];
     public List<RouteFare> Fares { get; set; } = [];

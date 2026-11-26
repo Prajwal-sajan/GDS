@@ -1,0 +1,858 @@
+[
+  {
+    "id": "sweep-settings-team-access-office-staff",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 38235,
+    "diffRatio": 0.0295,
+    "route": "#/settings/team-access/office-staff",
+    "onlyLegacy": [],
+    "onlyReact": [
+      "EO",
+      "EA",
+      "EV",
+      "Viewer",
+      "EI",
+      "PV",
+      "Parity viewer",
+      "ES",
+      "DA",
+      "Demo Admin",
+      "LO",
+      "Local Owner"
+    ]
+  },
+  {
+    "id": "sweep-settings-users",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 38290,
+    "diffRatio": 0.0295,
+    "route": "#/settings/users",
+    "onlyLegacy": [],
+    "onlyReact": [
+      "EO",
+      "EA",
+      "EV",
+      "Viewer",
+      "EI",
+      "PV",
+      "Parity viewer",
+      "ES",
+      "DA",
+      "Demo Admin",
+      "LO",
+      "Local Owner"
+    ]
+  },
+  {
+    "id": "sweep-settings-my-devices",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 15243,
+    "diffRatio": 0.0118,
+    "route": "#/settings/my-devices",
+    "onlyLegacy": [
+      "Unknown browser",
+      "Sign out device",
+      "Unknown browser · This device",
+      "Sign out here"
+    ],
+    "onlyReact": [
+      "No tracked sessions. Sign in again to register this device."
+    ]
+  },
+  {
+    "id": "sweep-fleet-staff",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 13302,
+    "diffRatio": 0.0103,
+    "route": "#/fleet/staff",
+    "onlyLegacy": [],
+    "onlyReact": [
+      "SR"
+    ]
+  },
+  {
+    "id": "sweep-accounts",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 12729,
+    "diffRatio": 0.0098,
+    "route": "#/accounts",
+    "onlyLegacy": [],
+    "onlyReact": [
+      "COUNTER"
+    ]
+  },
+  {
+    "id": "sweep-accounts-analytics",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 12729,
+    "diffRatio": 0.0098,
+    "route": "#/accounts/analytics",
+    "onlyLegacy": [],
+    "onlyReact": [
+      "COUNTER"
+    ]
+  },
+  {
+    "id": "sweep-trips",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 11999,
+    "diffRatio": 0.0093,
+    "route": "#/trips",
+    "onlyLegacy": [
+      "Ravi",
+      "Helper:"
+    ],
+    "onlyReact": [
+      ":",
+      "Smoke",
+      "Helper",
+      "pax",
+      "PNR",
+      "Passengers",
+      "Smoke Counter",
+      "Seats:",
+      "counter",
+      ", —"
+    ]
+  },
+  {
+    "id": "sweep-chats",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 11670,
+    "diffRatio": 0.009,
+    "route": "#/chats",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-settings-branches",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 10505,
+    "diffRatio": 0.0081,
+    "route": "#/settings/branches",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-settings-roles",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 10399,
+    "diffRatio": 0.008,
+    "route": "#/settings/roles",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-gds-deleted",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 8496,
+    "diffRatio": 0.0066,
+    "route": "#/gds/deleted",
+    "onlyLegacy": [
+      "Deleted trips",
+      "No deleted trips"
+    ],
+    "onlyReact": [
+      "#/",
+      "gds/deleted"
+    ]
+  },
+  {
+    "id": "sweep-gds-routes-1-rvtab-general-rvmode-view",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 6308,
+    "diffRatio": 0.0049,
+    "route": "#/gds/routes/1?rvtab=general&rvmode=view",
+    "onlyLegacy": [
+      "Hub*",
+      "KMs",
+      "Allow Gents Next to Ladies",
+      "Allow Ladies Next to Gents",
+      "Ladies Fill Half-Booked Doubles First",
+      "Seat Sharing",
+      "Boarding Check",
+      "Call Routing",
+      "Cloud Calling",
+      "Passenger Number Masking",
+      "Direct to Vehicle",
+      "Driver Mobile GPS",
+      "Escalation Contacts",
+      "Autos & Cabs",
+      "Off",
+      "Both",
+      "Staff & Vehicle Assignment",
+      "Vehicle",
+      "Vehicle location not connected · GPS update available",
+      "Add Staff",
+      "PICKUP VANS",
+      "Add Pickup Van",
+      "Tags",
+      "No tags",
+      "=",
+      "Add"
+    ],
+    "onlyReact": [
+      "Max seats per ticket",
+      "Update cut-off (minutes before boarding)",
+      "Partial cancellation"
+    ]
+  },
+  {
+    "id": "sweep-accounts-transactions",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 4126,
+    "diffRatio": 0.0032,
+    "route": "#/accounts/transactions",
+    "onlyLegacy": [],
+    "onlyReact": [
+      "rows",
+      "counter",
+      "counter · Operator",
+      "PPJDCP",
+      "ota_receivable",
+      "redbus · Operator",
+      "ADZCMA"
+    ]
+  },
+  {
+    "id": "sweep-accounts-reports-fleet-operations",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 4129,
+    "diffRatio": 0.0032,
+    "route": "#/accounts/reports/fleet-operations",
+    "onlyLegacy": [
+      "Kiran Kumar, Ravi Reddy"
+    ],
+    "onlyReact": [
+      "·"
+    ]
+  },
+  {
+    "id": "sweep-accounts-receivables",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 3851,
+    "diffRatio": 0.003,
+    "route": "#/accounts/receivables",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-dailyops",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 3804,
+    "diffRatio": 0.0029,
+    "route": "#/dailyops",
+    "onlyLegacy": [
+      "Ravi Reddy"
+    ],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-sarathi",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 2161,
+    "diffRatio": 0.0017,
+    "route": "#/sarathi",
+    "onlyLegacy": [],
+    "onlyReact": [
+      "No conversations yet"
+    ]
+  },
+  {
+    "id": "sweep-settings-about",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 1763,
+    "diffRatio": 0.0014,
+    "route": "#/settings/about",
+    "onlyLegacy": [
+      "LOCAL"
+    ],
+    "onlyReact": [
+      "DEV"
+    ]
+  },
+  {
+    "id": "sweep-gds-schedules",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 1369,
+    "diffRatio": 0.0011,
+    "route": "#/gds/schedules",
+    "onlyLegacy": [
+      "SERVICE ⇅",
+      "DEPARTURE ↑",
+      "ARRIVAL ⇅",
+      "COLLECTION ⇅"
+    ],
+    "onlyReact": [
+      "SERVICE",
+      "⇅",
+      "DEPARTURE",
+      "↑",
+      "ARRIVAL",
+      "COLLECTION",
+      "·",
+      "→",
+      "seat",
+      "s",
+      "sold",
+      "%",
+      "/",
+      "booked",
+      "Book (",
+      ")",
+      "Block ("
+    ]
+  },
+  {
+    "id": "sweep-fleet-coaches",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 65,
+    "diffRatio": 0.0001,
+    "route": "#/fleet/coaches",
+    "onlyLegacy": [],
+    "onlyReact": [
+      "Showing",
+      "of",
+      "·",
+      "Seater",
+      "Sleeper"
+    ]
+  },
+  {
+    "id": "sweep-fleet-payouts",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 182,
+    "diffRatio": 0.0001,
+    "route": "#/fleet/payouts",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-gds-routes",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 38,
+    "diffRatio": 0,
+    "route": "#/gds/routes",
+    "onlyLegacy": [
+      "via Kurnool, Ananthapur",
+      "via Ananthapur, Kurnool"
+    ],
+    "onlyReact": [
+      "via",
+      "Kurnool, Ananthapur",
+      "→",
+      "∞",
+      "Ananthapur, Kurnool"
+    ]
+  },
+  {
+    "id": "sweep-crm",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0,
+    "route": "#/crm",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-calls",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0,
+    "route": "#/calls",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-fleet-vehicles",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 61,
+    "diffRatio": 0,
+    "route": "#/fleet/vehicles",
+    "onlyLegacy": [],
+    "onlyReact": [
+      "Showing",
+      "of",
+      "ISSUES",
+      "·",
+      "km/h"
+    ]
+  },
+  {
+    "id": "sweep-fleet-attendance",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0,
+    "route": "#/fleet/attendance",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-accounts-reports",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0,
+    "route": "#/accounts/reports",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-accounts-invoices",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0,
+    "route": "#/accounts/invoices",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-accounts-reconciliation",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0,
+    "route": "#/accounts/reconciliation",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-settings-configuration-office",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0,
+    "route": "#/settings/configuration/office",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-settings-configuration-seats",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0,
+    "route": "#/settings/configuration/seats",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-settings-configuration-vehicle",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0,
+    "route": "#/settings/configuration/vehicle",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-settings-configuration-expenses",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0,
+    "route": "#/settings/configuration/expenses",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-settings-configuration-notifications",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0,
+    "route": "#/settings/configuration/notifications",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-settings-configuration-monitoring",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0,
+    "route": "#/settings/configuration/monitoring",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-settings-configuration-bot",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0,
+    "route": "#/settings/configuration/bot",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-settings-loyalty-program-miles",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0,
+    "route": "#/settings/loyalty-program/miles",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-settings-whatsapp",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0,
+    "route": "#/settings/whatsapp",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
+    "id": "sweep-settings-change-password",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0,
+    "route": "#/settings/change-password",
+    "onlyLegacy": [],
+    "onlyReact": []
+  }
+]
