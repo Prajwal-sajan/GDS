@@ -16,6 +16,10 @@ public sealed record AssignInput(string Role, long? VehicleId, long? StaffId, st
 public sealed record FareInput(int FromSequence, int ToSequence, decimal Seater, decimal SleeperLower, decimal SleeperUpper);
 public sealed record BlockInput(List<string> Seats, int? FromSequence, int? ToSequence, string? Reason);
 public sealed record GenerateInput(DateOnly From, DateOnly To);
+public sealed record RefundSlabInput(int HoursBefore, decimal RefundPercent);
+public sealed record RouteSettingsInput(string? Name = null, string? AltName = null, long? CoachTemplateId = null, TimeOnly? DepartureTime = null,
+    TimeOnly? ArrivalTime = null, int? ArrivalDay = null, DateOnly? StartDate = null, DateOnly? EndDate = null, bool? PartialCancellationAllowed = null,
+    bool? PrimaryPaxCancellable = null, int? MaxSeatsPerTicket = null, int? UpdateCutoffMinutes = null, List<RefundSlabInput>? RefundSlabs = null);
 public sealed record CounterPassenger(string Seat, string Name, int Age, string Gender, string? Mobile, string? Email, bool Primary);
 public sealed record CounterBookingInput(long TripId, long BoardingPointId, long DroppingPointId, List<CounterPassenger> Passengers,
     string PaymentMethod, string? PaymentReference, string Channel = "counter", string? AgentPhone = null);
@@ -274,6 +278,48 @@ public sealed class OperationsService(GdsDbContext db, InventoryService inventor
         await db.SaveChangesAsync();
         foreach (var t in trips) await inventory.InvalidateTripAsync(t.Id);
         return status;
+    }
+
+    /// <summary>Legacy route editor General / Update / Cancellation sections (PUT /routes/:id with those fields). Only the supplied
+    /// fields change. Refund slabs replace the route's slab set. Future trips are invalidated so the OTA sees the new policy / times.</summary>
+    public async Task<Route> UpdateRouteSettingsAsync(long routeId, RouteSettingsInput i, string actor)
+    {
+        var route = await db.Routes.Include(r => r.RefundSlabs).FirstOrDefaultAsync(r => r.Id == routeId) ?? throw new GdsException("ROUTE_NOT_FOUND", "Route not found", 404);
+        var changes = new Dictionary<string, object?>();
+        void Set(string k, object? v, object? cur, Action apply) { if (v is null || Equals(cur, v)) return; changes[k] = new { from = cur, to = v }; apply(); }
+        if (i.Name is not null && string.IsNullOrWhiteSpace(i.Name)) throw new GdsException("VALIDATION", "Route name is required");
+        if (i.MaxSeatsPerTicket is < 1 or > 50) throw new GdsException("VALIDATION", "Max seats per ticket must be 1-50");
+        if (i.UpdateCutoffMinutes is < 0 or > 10080) throw new GdsException("VALIDATION", "Update cutoff must be 0-10080 minutes");
+        if (i.ArrivalDay is < 1 or > 7) throw new GdsException("VALIDATION", "Arrival day must be 1-7");
+        if ((i.StartDate ?? route.StartDate) is DateOnly sd && (i.EndDate ?? route.EndDate) is DateOnly ed && ed < sd) throw new GdsException("VALIDATION", "End date is before start date");
+        if (i.CoachTemplateId is long cid && !await db.CoachTemplates.AnyAsync(c => c.Id == cid)) throw new GdsException("VALIDATION", "Unknown coach");
+        Set("name", i.Name?.Trim(), route.Name, () => route.Name = i.Name!.Trim());
+        Set("alt_name", i.AltName, route.AltName ?? "", () => route.AltName = i.AltName == "" ? null : i.AltName);
+        Set("coach_template_id", i.CoachTemplateId, route.CoachTemplateId, () => route.CoachTemplateId = i.CoachTemplateId!.Value);
+        Set("departure_time", i.DepartureTime, route.DepartureTime, () => route.DepartureTime = i.DepartureTime!.Value);
+        Set("arrival_time", i.ArrivalTime, route.ArrivalTime, () => route.ArrivalTime = i.ArrivalTime);
+        Set("arrival_day", i.ArrivalDay, route.ArrivalDay, () => route.ArrivalDay = i.ArrivalDay);
+        Set("start_date", i.StartDate, route.StartDate, () => route.StartDate = i.StartDate);
+        Set("end_date", i.EndDate, route.EndDate, () => route.EndDate = i.EndDate);
+        Set("partial_cancellation_allowed", i.PartialCancellationAllowed, route.PartialCancellationAllowed, () => route.PartialCancellationAllowed = i.PartialCancellationAllowed!.Value);
+        Set("primary_pax_cancellable", i.PrimaryPaxCancellable, route.PrimaryPaxCancellable, () => route.PrimaryPaxCancellable = i.PrimaryPaxCancellable!.Value);
+        Set("max_seats_per_ticket", i.MaxSeatsPerTicket, route.MaxSeatsPerTicket, () => route.MaxSeatsPerTicket = i.MaxSeatsPerTicket!.Value);
+        Set("update_cutoff_minutes", i.UpdateCutoffMinutes, route.UpdateCutoffMinutes, () => route.UpdateCutoffMinutes = i.UpdateCutoffMinutes!.Value);
+        if (i.RefundSlabs is not null)
+        {
+            if (i.RefundSlabs.Any(s => s.HoursBefore < 0 || s.RefundPercent is < 0 or > 100)) throw new GdsException("VALIDATION", "Refund slabs need hours >= 0 and refund 0-100%");
+            if (i.RefundSlabs.GroupBy(s => s.HoursBefore).Any(g => g.Count() > 1)) throw new GdsException("VALIDATION", "Duplicate refund slab hours");
+            db.RefundSlabs.RemoveRange(route.RefundSlabs);
+            route.RefundSlabs = i.RefundSlabs.Select(s => new RefundSlab { RouteId = routeId, HoursBefore = s.HoursBefore, RefundPercent = s.RefundPercent }).ToList();
+            changes["refund_slabs"] = new { changed = true };
+        }
+        if (changes.Count == 0) return route;
+        Audit(actor, "ROUTE_UPDATE", "route", routeId.ToString(), changes);
+        await db.SaveChangesAsync();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(5.5));
+        foreach (var id in await db.Trips.Where(t => t.RouteId == routeId && t.TravelDate >= today).Select(t => t.Id).ToListAsync())
+            await inventory.InvalidateTripAsync(id);
+        return route;
     }
 
     public async Task<int> UnblockSeatAsync(long tripId, string seat, string actor)

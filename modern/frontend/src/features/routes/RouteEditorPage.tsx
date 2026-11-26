@@ -29,9 +29,18 @@ const OPS = ["owner", "admin", "ops"];
 const NOT_PERSISTED = "Not available yet: the modern backend does not store this route setting (tracked in UI_MIGRATION_GAPS.md)";
 const NO_GPS = "Not available: no verified GPS halt observations are stored, so pins and times cannot be corrected from evidence";
 
-const Field = ({ label, value, type = "text" }: { label: string; value: string | number | null | undefined; type?: string }) => (
-  <label className="rv-field"><span>{label}</span><input type={type} value={value ?? ""} disabled readOnly /></label>
+const Field = ({ label, value, type = "text", onChange, ...p }: { label: string; value: string | number | null | undefined; type?: string; onChange?: (v: string) => void } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "value">) => (
+  <label className="rv-field"><span>{label}</span>{onChange
+    ? <input type={type} value={value ?? ""} onChange={(e) => onChange(e.currentTarget.value)} {...p} />
+    : <input type={type} value={value ?? ""} disabled readOnly />}</label>
 );
+type Settings = { name: string; altName: string; maxSeatsPerTicket: number; updateCutoffMinutes: number; partialCancellationAllowed: boolean;
+  departureTime: string; arrivalTime: string; arrivalDay: number; startDate: string; endDate: string; refundSlabs: RouteDetail["refundSlabs"] };
+const hhmm = (t: string | null | undefined) => String(t ?? "").slice(0, 5);
+const toSettings = (r: RouteDetail): Settings => ({
+  name: r.name, altName: r.altName ?? "", maxSeatsPerTicket: r.maxSeatsPerTicket, updateCutoffMinutes: r.updateCutoffMinutes, partialCancellationAllowed: r.partialCancellationAllowed,
+  departureTime: hhmm(r.departureTime), arrivalTime: hhmm(r.arrivalTime), arrivalDay: r.arrivalDay ?? 1, startDate: r.startDate ?? "", endDate: r.endDate ?? "", refundSlabs: r.refundSlabs,
+});
 const Region = ({ title, children, cls = "" }: { title?: ReactNode; children: ReactNode; cls?: string }) => (
   <section className={`rv-region ${cls}`}>{title && <h3>{title}</h3>}{children}</section>
 );
@@ -49,9 +58,11 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
   const [haltDays, setHaltDays] = useState(15);
   const [fares, setFares] = useState<RouteDetail["fares"]>([]);
   const [expenses, setExpenses] = useState<RouteDetail["expenses"]>([]);
+  const [st, setSt] = useState<Settings>();
+  const upd = <K extends keyof Settings>(k: K, v: Settings[K]) => setSt((s) => (s ? { ...s, [k]: v } : s));
 
   const load = useCallback(async () => {
-    try { const r = await api.routeDetail(id); setRoute(r); setFares(r.fares); setExpenses(r.expenses); setError(undefined); }
+    try { const r = await api.routeDetail(id); setRoute(r); setFares(r.fares); setExpenses(r.expenses); setSt(toSettings(r)); setError(undefined); }
     catch (e) { setError(e instanceof Error ? e.message : String(e)); }
   }, [id]);
   useEffect(() => { void load(); }, [load]);
@@ -60,12 +71,28 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
     setTab(t); setStopCity(undefined);
     q.set("rvtab", t); window.history.replaceState(null, "", `#/gds/routes/${id}?${q.toString()}`);
   };
-  const dirty = !!route && (JSON.stringify(fares) !== JSON.stringify(route.fares) || JSON.stringify(expenses) !== JSON.stringify(route.expenses));
+  const dirty = !!route && (JSON.stringify(fares) !== JSON.stringify(route.fares) || JSON.stringify(expenses) !== JSON.stringify(route.expenses) || JSON.stringify(st) !== JSON.stringify(toSettings(route)));
   const cancel = async () => { if (dirty && !(await confirmDialog("Discard unsaved changes?", { ok: "Discard", danger: true }))) return; window.location.hash = "#/gds/routes"; };
   const save = async () => {
-    if (!route) return;
+    if (!route || !st) return;
     try {
-      if (tab === "fares") {
+      if (tab === "general") {
+        if (!st.name.trim()) return toast("Name is required", "warn");
+        if (!(st.maxSeatsPerTicket >= 1)) return toast("Max seats per ticket must be at least 1", "warn");
+        if (!(st.updateCutoffMinutes >= 0)) return toast("Update cut-off must be zero or more", "warn");
+        await api.saveRouteSettings(id, { name: st.name.trim(), altName: st.altName.trim(), maxSeatsPerTicket: st.maxSeatsPerTicket, updateCutoffMinutes: st.updateCutoffMinutes, partialCancellationAllowed: st.partialCancellationAllowed });
+        toast("Route saved", "ok");
+      } else if (tab === "cities") {
+        if (!st.departureTime || !st.startDate) return toast("Complete the mandatory fields", "warn");
+        if (st.endDate && st.endDate < st.startDate) return toast("End date is before start date", "warn");
+        await api.saveRouteSettings(id, { departureTime: st.departureTime, ...(st.arrivalTime ? { arrivalTime: st.arrivalTime } : {}), arrivalDay: st.arrivalDay, startDate: st.startDate, ...(st.endDate ? { endDate: st.endDate } : {}) });
+        toast("Route saved", "ok");
+      } else if (tab === "cancellation") {
+        if (st.refundSlabs.some((s) => !(s.hoursBefore >= 0) || !(s.refundPercent >= 0 && s.refundPercent <= 100))) return toast("Hours must be zero or more and refund 0-100%", "warn");
+        if (new Set(st.refundSlabs.map((s) => s.hoursBefore)).size !== st.refundSlabs.length) return toast("Each slab needs different hours", "warn");
+        await api.saveRouteSettings(id, { refundSlabs: st.refundSlabs });
+        toast("Cancellation policy saved", "ok");
+      } else if (tab === "fares") {
         if (fares.some((f) => [f.seater, f.sleeperLower, f.sleeperUpper].some((v) => !(v >= 0)))) return toast("Fares must be zero or more", "warn");
         await api.saveFares(id, fares.map(({ fromSequence, toSequence, seater, sleeperLower, sleeperUpper }) => ({ fromSequence, toSequence, seater, sleeperLower, sleeperUpper })));
         toast("Fares saved", "ok");
@@ -79,9 +106,9 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
   };
 
   if (error) return <div className="rv-root rv-editor"><div className="rv-empty" role="alert">Could not load route: {error}</div></div>;
-  if (!route) return <div className="rv-root rv-editor"><div className="rv-empty">Loading…</div></div>;
+  if (!route || !st) return <div className="rv-root rv-editor"><div className="rv-empty">Loading…</div></div>;
 
-  const savable = tab === "fares" || tab === "expenses";
+  const savable = ["general", "cities", "cancellation", "fares", "expenses"].includes(tab);
   const stops = (kind: string) => route.stages.filter((s) => s.kind === kind);
   const stopPanel = (kind: "pickup" | "drop" | "break") => {
     const arr = stops(kind), heading = { pickup: "Pickup Points", drop: "Drop Points", break: "Break Points" }[kind];
@@ -117,31 +144,34 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
   };
 
   const ro = mode === "view";
+  const ed = <K extends keyof Settings>(k: K, conv: (v: string) => Settings[K] = (v) => v as Settings[K]) => (ro ? undefined : (v: string) => upd(k, conv(v)));
   const body = (() => {
     switch (tab) {
       case "general": return (
         <>
           <div className="rv-two rv-general">
-            <Field label="Service No. *" value={route.serviceNumber} /><Field label="Name*" value={route.name} /><Field label="Alt Name / Nickname" value={route.altName} />
+            <Field label="Service No. *" value={route.serviceNumber} /><Field label="Name*" value={st.name} onChange={ed("name")} /><Field label="Alt Name / Nickname" value={ro ? route.altName : st.altName} onChange={ed("altName")} />
             <Field label="Coach*" value={route.coach ? `${route.coach.name} · ${route.coach.capacity} seats` : "Coach not assigned"} />
             <Field label="Total Seats" value={route.coach?.capacity} type="number" /><Field label="Total Sleeper" value={route.coach?.sleepers} type="number" /><Field label="Total Seater" value={route.coach?.seaters} type="number" />
-            <Field label="Max seats per ticket" value={route.maxSeatsPerTicket} type="number" /><Field label="Update cut-off (minutes before boarding)" value={route.updateCutoffMinutes} type="number" />
-            <Field label="Partial cancellation" value={route.partialCancellationAllowed ? "Yes" : "No"} />
+            <Field label="Max seats per ticket" value={st.maxSeatsPerTicket} type="number" min={1} onChange={ed("maxSeatsPerTicket", Number)} /><Field label="Update cut-off (minutes before boarding)" value={st.updateCutoffMinutes} type="number" min={0} onChange={ed("updateCutoffMinutes", Number)} />
+            {ro ? <Field label="Partial cancellation" value={route.partialCancellationAllowed ? "Yes" : "No"} />
+              : <label className="rv-field"><span>Partial cancellation</span><select value={st.partialCancellationAllowed ? "yes" : "no"} onChange={(e) => upd("partialCancellationAllowed", e.currentTarget.value === "yes")}><option value="yes">Yes</option><option value="no">No</option></select></label>}
           </div>
-          {mode === "edit" && <p className="rv-notice">{NOT_PERSISTED}. Assign vehicles and crew per departure from Schedules → Manage.</p>}
+          {mode === "edit" && <p className="rv-notice">Coach changes are not supported here yet. Assign vehicles and crew per departure from Schedules → Manage.</p>}
         </>
       );
       case "cities": return (
         <>
           <div className="rv-two rv-timings">
-            <div><h3>Origin Departure Time*</h3><div className="rv-time-entry"><Field label="Day" value={1} type="number" /><Field label="Time" value={fmtTime(route.departureTime)} /></div></div>
-            <div><h3>Destination Arrival Time*</h3><div className="rv-time-entry"><Field label="Day" value={route.arrivalDay} type="number" /><Field label="Time" value={fmtTime(route.arrivalTime)} /></div></div>
+            <div><h3>Origin Departure Time*</h3><div className="rv-time-entry"><Field label="Day" value={1} type="number" />{ro ? <Field label="Time" value={fmtTime(route.departureTime)} /> : <Field label="Time" type="time" value={st.departureTime} onChange={ed("departureTime")} />}</div></div>
+            <div><h3>Destination Arrival Time*</h3><div className="rv-time-entry">{ro ? <><Field label="Day" value={route.arrivalDay} type="number" /><Field label="Time" value={fmtTime(route.arrivalTime)} /></>
+              : <><Field label="Day" value={st.arrivalDay} type="number" min={1} max={7} onChange={ed("arrivalDay", Number)} /><Field label="Time" type="time" value={st.arrivalTime} onChange={ed("arrivalTime")} /></>}</div></div>
           </div>
           <Region title="Cities" cls="rv-vias">
             <div className="rv-scroll"><table className="rv-table rv-via"><thead><tr><th>#</th><th>State</th><th>City</th><th>Lat</th><th>Lng</th><th>Day</th><th>Time</th></tr></thead>
               <tbody>{route.stops.map((s) => <tr key={s.sequence}><td>{s.sequence + 1}</td><td>{s.state ?? "—"}</td><td>{s.city}</td><td>{s.lat ?? "—"}</td><td>{s.lng ?? "—"}</td><td>D{s.day}</td><td>{fmtTime(s.time)}</td></tr>)}</tbody></table></div>
           </Region>
-          <div className="rv-two rv-dates"><Field label="Start Date*" value={route.startDate} type="date" /><Field label="End Date" value={route.endDate} type="date" /></div>
+          <div className="rv-two rv-dates"><Field label="Start Date*" value={st.startDate} type="date" onChange={ed("startDate")} /><Field label="End Date" value={st.endDate} type="date" onChange={ed("endDate")} /></div>
         </>
       );
       case "update": return <p className="rv-notice">{NOT_PERSISTED}. Shifting route timings is not supported by the modern backend yet.</p>;
@@ -171,9 +201,14 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
       case "cancellation": return (
         <>
           <h2>Cancellation Policy</h2><p className="rv-subtext">Refund percentages by time before departure, as enforced by the booking engine.</p>
-          <div className="rv-cancel-rows">{route.refundSlabs.map((s, i) => (
-            <div key={i} className="rv-slab"><label>Before departure (hours)<input type="number" value={s.hoursBefore} disabled readOnly /></label><label>Refund percentage<input type="number" value={s.refundPercent} disabled readOnly /></label></div>
-          ))}</div>
+          <div className="rv-cancel-rows">{st.refundSlabs.map((s, i) => {
+            const set = (k: "hoursBefore" | "refundPercent", v: number) => upd("refundSlabs", st.refundSlabs.map((x, j) => (j === i ? { ...x, [k]: v } : x)));
+            return ro
+              ? <div key={i} className="rv-slab"><label>Before departure (hours)<input type="number" value={s.hoursBefore} disabled readOnly /></label><label>Refund percentage<input type="number" value={s.refundPercent} disabled readOnly /></label></div>
+              : <div key={i} className="rv-slab"><label>Before departure (hours)<input type="number" min={0} value={s.hoursBefore} onChange={(e) => set("hoursBefore", e.currentTarget.valueAsNumber)} /></label><label>Refund percentage<input type="number" min={0} max={100} value={s.refundPercent} onChange={(e) => set("refundPercent", e.currentTarget.valueAsNumber)} /></label>
+                <Btn cls="icon danger" aria-label={`Remove slab ${i + 1}`} onClick={() => upd("refundSlabs", st.refundSlabs.filter((_, j) => j !== i))}><I k="trash" size={17} /></Btn></div>;
+          })}</div>
+          {!ro && <Btn onClick={() => upd("refundSlabs", [...st.refundSlabs, { hoursBefore: 0, refundPercent: 0 }])}><I k="plus" size={17} /> Add slab</Btn>}
         </>
       );
       case "expenses": {

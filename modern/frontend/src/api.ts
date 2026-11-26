@@ -210,6 +210,7 @@ export const api = {
     call<unknown>("PUT", `/api/admin/routes/${id}/expense-template`, items),
   setRouteStatus: (id: number, status: "active" | "inactive") => call<{ status: string }>("PUT", `/api/admin/routes/${id}/status`, { status }),
   saveFares: (routeId: number, fares: Fare[]) => call<{ updated: number }>("PUT", `/api/admin/routes/${routeId}/fares`, fares),
+  saveRouteSettings: (routeId: number, body: RouteSettingsInput) => call<{ id: number }>("PUT", `/api/admin/routes/${routeId}/settings`, body),
   counterBook: (body: unknown) => call<CounterResult>("POST", "/api/admin/bookings/counter", body),
   invoices: () => call<InvoiceRow[]>("GET", "/api/admin/reconciliation/invoices"),
   uploadInvoice: (body: unknown) => call<{ id: number; duplicate: boolean }>("POST", "/api/admin/reconciliation/invoices", body),
@@ -320,6 +321,8 @@ export interface RouteListRow {
 export interface RouteStageRow { id: number; kind: string; name: string; address: string | null; landmark: string | null; contactNumber: string | null;
   lat: number | null; lng: number | null; day: number; time: string; prime: boolean; cityId: number; city: string | null;
   pickupType: string | null; exchangePoint: string | null; exchangeTime: string | null; metroDescription: string | null }
+export type RouteSettingsInput = Partial<{ name: string; altName: string; departureTime: string; arrivalTime: string; arrivalDay: number; startDate: string; endDate: string;
+  partialCancellationAllowed: boolean; maxSeatsPerTicket: number; updateCutoffMinutes: number; refundSlabs: { hoursBefore: number; refundPercent: number }[] }>;
 export interface RouteDetail {
   id: number; serviceNumber: string; name: string; altName: string | null; status: string; departureTime: string; arrivalTime: string | null;
   arrivalDay: number | null; startDate: string | null; endDate: string | null; partialCancellationAllowed: boolean; maxSeatsPerTicket: number; updateCutoffMinutes: number;

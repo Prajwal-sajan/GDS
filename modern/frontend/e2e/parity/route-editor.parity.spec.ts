@@ -71,6 +71,32 @@ test("route editor: fares edit persists to PostgreSQL and is restored", async ({
   expect((await fares())[0].seater).toBe(before);
 });
 
+test("route editor: general and cancellation settings persist to PostgreSQL and are restored", async ({ browser, baseURL, request }) => {
+  const R = await reactPage(browser, baseURL!);
+  const detail = async () => (await (await request.get(`${API}/api/admin/route-detail/1`, { headers: H })).json()) as { updateCutoffMinutes: number; refundSlabs: { hoursBefore: number; refundPercent: number }[] };
+  const before = await detail();
+  try {
+    await R.goto("/#/gds/routes/1?rvtab=general&rvmode=edit");
+    const cutoff = R.getByLabel("Update cut-off (minutes before boarding)");
+    await expect(cutoff).toBeEditable();
+    await cutoff.fill(String(before.updateCutoffMinutes + 15));
+    await R.locator('[data-rv="save"]').click();
+    await expect(R.locator("#toasts")).toContainText("Route saved");
+    expect((await detail()).updateCutoffMinutes).toBe(before.updateCutoffMinutes + 15);
+
+    await R.locator('[data-rv-tab="cancellation"]').click();
+    const pct = R.locator(".rv-slab").first().getByLabel("Refund percentage");
+    await pct.fill("85");
+    await R.locator('[data-rv="save"]').click();
+    await expect(R.locator("#toasts")).toContainText("Cancellation policy saved");
+    expect((await detail()).refundSlabs[0].refundPercent).toBe(85);
+  } finally {
+    const res = await request.put(`${API}/api/admin/routes/1/settings`, { headers: H, data: { updateCutoffMinutes: before.updateCutoffMinutes, refundSlabs: before.refundSlabs } });
+    expect(res.ok()).toBeTruthy();
+  }
+  expect(await detail()).toMatchObject({ updateCutoffMinutes: before.updateCutoffMinutes, refundSlabs: before.refundSlabs });
+});
+
 test("route editor: view mode is read-only; viewer cannot open edit", async ({ browser, baseURL }) => {
   const R = await reactPage(browser, baseURL!);
   await R.goto("/#/gds/routes/1?rvtab=fares&rvmode=view");

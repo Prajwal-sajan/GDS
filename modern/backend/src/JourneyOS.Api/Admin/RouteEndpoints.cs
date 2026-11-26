@@ -58,6 +58,12 @@ public static class RouteEndpoints
         g.MapPut("/routes/{id:long}/status", async (long id, RouteStatusInput i, OperationsService s, HttpContext h) =>
             Results.Ok(new { status = await s.SetRouteStatusAsync(id, i.Status, h.User.Identity!.Name!) })).RequireAuthorization(Policies.Operations);
 
+        g.MapPut("/routes/{id:long}/settings", async (long id, RouteSettingsInput i, OperationsService s, HttpContext h) =>
+        {
+            var r = await s.UpdateRouteSettingsAsync(id, i, h.User.Identity!.Name!);
+            return Results.Ok(new { id = r.Id, name = r.Name, status = r.Status });
+        }).RequireAuthorization(Policies.Operations);
+
         // Route editor read model (legacy GET /api/routes/:id): every tab's data in one call, PostgreSQL only.
         g.MapGet("/route-detail/{id:long}", async (long id, GdsDbContext db) =>
         {
