@@ -67,7 +67,7 @@ public static class CrmBookingEndpoints
                 seats = g.OrderBy(s => s.Id).Select(s =>
                 {
                     var st = SeatState(s, out var current);
-                    var fare = FareCalculator.ListedFare(route, s, b.FromSeq, b.ToSeq, trip.TravelDate);
+                    var fare = FareCalculator.ListedFare(route, s, b.FromSeq, b.ToSeq, trip.TravelDate, trip);
                     return new
                     {
                         code = s.Code, row = s.Row, col = s.Col, w = s.Width, h = s.Length, type = s.SeatType, status = st, fare,

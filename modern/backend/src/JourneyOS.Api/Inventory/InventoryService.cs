@@ -90,7 +90,7 @@ public sealed class InventoryService(GdsDbContext db, IGdsCache cache, RedBusNot
                     if (occ.Any(o => o.Gender == "M")) males = true;
                 }
             }
-            var listed = FareCalculator.ListedFare(route, s, fromSeq, toSeq, trip.TravelDate);
+            var listed = FareCalculator.ListedFare(route, s, fromSeq, toSeq, trip.TravelDate, trip);
             result.Add(new SeatState(s, !taken && listed is not null, ladies, males, listed is null ? null : FareCalculator.Price(listed.Value, gstPct)));
         }
         return result;

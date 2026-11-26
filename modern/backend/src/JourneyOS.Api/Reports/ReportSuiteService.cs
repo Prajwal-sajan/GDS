@@ -132,7 +132,7 @@ public sealed class ReportSuiteService(GdsDbContext db, ReportsService reports)
                 DistanceKm = r.DistanceKm, Capacity = caps.GetValueOrDefault(r.Id), Exp = r.ExpenseItems.OrderBy(x => x.Type == "fixed" ? 0 : 1).ThenBy(x => x.Id).ToList(),
             };
         }
-        var trips = await db.Trips.AsNoTracking().Where(x => x.TravelDate >= f && x.TravelDate <= t).OrderBy(x => x.TravelDate).ThenBy(x => x.Id).ToListAsync();
+        var trips = await db.Trips.AsNoTracking().Where(x => x.TravelDate >= f && x.TravelDate <= t && x.DeletedAt == null).OrderBy(x => x.TravelDate).ThenBy(x => x.Id).ToListAsync();
         var tids = trips.Select(x => x.Id).ToList();
         var asg = (await db.TripAssignments.AsNoTracking().Where(a => tids.Contains(a.TripId) && a.IsActive).OrderBy(a => a.Id).ToListAsync()).GroupBy(a => a.TripId).ToDictionary(g => g.Key, g => g.ToList());
         foreach (var x in trips)
@@ -194,12 +194,15 @@ public sealed class ReportSuiteService(GdsDbContext db, ReportsService reports)
         var conf = (c.BkBySch.GetValueOrDefault(s.Id) ?? []).Where(b => b.Status == "confirmed").ToList();
         decimal PaxNet(Bk b) { var tot = b.Pax.Sum(p => p.Fare); if (tot == 0) tot = 1; return b.Pax.Where(p => p.Status != "cancelled").Sum(p => p.Fare) / tot * b.Net; }
         decimal PaxComm(Bk b) => b.Net == 0 ? 0 : PaxNet(b) * b.Commission / b.Net;
-        var items = r.Exp.Where(x => x.Type == "fixed" || active).Select(x => new ExpItem(x.Type, x.Key, x.Label, x.PerTrip, false, false)).ToList();
-        if (active) items.AddRange((c.TripExp.GetValueOrDefault(s.Id) ?? []).Select(e => new ExpItem("running", e.Category, e.Category, e.Amount, true, false)));
+        var recorded = c.TripExp.GetValueOrDefault(s.Id) ?? [];
+        var ov = recorded.Where(e => e.Kind == "override").GroupBy(e => (e.Type, e.Category)).ToDictionary(g => g.Key, g => g.Last().Amount);
+        var items = r.Exp.Where(x => x.Type == "fixed" || active)
+            .Select(x => new ExpItem(x.Type, x.Key, x.Label, ov.TryGetValue((x.Type, x.Key), out var o) ? o : x.PerTrip, false, false)).ToList();
+        items.AddRange(recorded.Where(e => e.Kind != "override" && (active || e.Type == "fixed")).Select(e => new ExpItem(e.Type == "fixed" ? "fixed" : "running", e.Category, e.Category, e.Amount, true, false)));
         var diesel = s.TripStatus == "completed" && active ? TNum(s.Tel, "diesel_cost") : null;
         if (diesel is >= 0)
         {
-            var i = items.FindIndex(x => x.Type == "running" && !x.Manual && Regex.IsMatch(x.Key + x.Label, "diesel|fuel", RegexOptions.IgnoreCase));
+            var i = items.FindIndex(x => x.Type == "running" && !x.Manual && !ov.ContainsKey((x.Type, x.Key)) && Regex.IsMatch(x.Key + x.Label, "diesel|fuel", RegexOptions.IgnoreCase));
             if (i >= 0) items[i] = items[i] with { PerDay = diesel.Value, TelemetryDiesel = true };
         }
         var commission = active ? R(conf.Sum(PaxComm)) : 0;

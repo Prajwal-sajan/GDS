@@ -186,7 +186,16 @@ public sealed class Trip : ITenantOwned
     public int? DelayMinutes { get; set; }
     public string? TelemetryJson { get; set; }      // driving_score, hard_brake, harsh_accel, over_speed, idling, max_speed_kmh ... as received
     public string? StopEventsJson { get; set; }     // per-stage GPS stop stamps as received
+    /// <summary>Legacy schedule.fare_override: per-trip segment fare matrix (JSON list of TripFare). Null = follow route fares.</summary>
+    public string? FareOverrideJson { get; set; }
+    public DateTime? FareOverrideAt { get; set; }
+    /// <summary>Legacy schedule.pnl_expense_version: optimistic-concurrency counter for the Trip P&amp;L expense editor.</summary>
+    public int PnlExpenseVersion { get; set; }
+    public DateTime? DeletedAt { get; set; }
 }
+
+/// <summary>One per-trip segment fare (legacy fare_override row), keyed by route stop sequence.</summary>
+public sealed record TripFare(int FromSequence, int ToSequence, decimal Seater, decimal SleeperLower, decimal SleeperUpper);
 
 public enum AllocationKind { Hold = 1, Booked = 2, Blocked = 3 }
 

@@ -22,7 +22,7 @@ public static class ScheduleEndpoints
         g.MapGet("/schedules", async (DateOnly from, DateOnly to, GdsDbContext db, ReportsService reports) =>
         {
             if (to < from || to.DayNumber - from.DayNumber > 31) throw new GdsException("VALIDATION", "Choose a date range of at most 31 days");
-            var trips = await db.Trips.AsNoTracking().Where(t => t.TravelDate >= from && t.TravelDate <= to).ToListAsync();
+            var trips = await db.Trips.AsNoTracking().Where(t => t.TravelDate >= from && t.TravelDate <= to && t.DeletedAt == null).ToListAsync();
             var routeIds = trips.Select(t => t.RouteId).Distinct().ToList();
             var routes = await db.Routes.AsNoTracking().AsSplitQuery().Where(r => routeIds.Contains(r.Id))
                 .Include(r => r.Stops).ThenInclude(s => s.City).Include(r => r.Stages).Include(r => r.Fares).Include(r => r.CoachTemplate).ThenInclude(c => c!.Seats)
@@ -68,7 +68,7 @@ public static class ScheduleEndpoints
         // Schedule management overlay read model (legacy GET /api/schedules/:id + /trips/:id passengers + /schedules/:id/booking-history).
         g.MapGet("/schedule-detail/{id:long}", async (long id, GdsDbContext db) =>
         {
-            var t = await db.Trips.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id) ?? throw new GdsException("SERVICE_NOT_FOUND", "Schedule not found", 404);
+            var t = await db.Trips.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.DeletedAt == null) ?? throw new GdsException("SERVICE_NOT_FOUND", "Schedule not found", 404);
             var r = await db.Routes.AsNoTracking().AsSplitQuery().Include(x => x.Stops).ThenInclude(s => s.City).Include(x => x.Stages).Include(x => x.CoachTemplate)
                 .FirstAsync(x => x.Id == t.RouteId);
             var stops = r.Stops.OrderBy(s => s.Sequence).ToList();

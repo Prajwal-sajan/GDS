@@ -95,7 +95,7 @@ public sealed class ReportsService(GdsDbContext db, TimeProvider clock)
 
     private async Task<Dictionary<long, (DateOnly Date, int Capacity, string Service, string Route, string Status, long RouteId)>> TripsAsync(DateOnly from, DateOnly to)
     {
-        var trips = await db.Trips.AsNoTracking().Where(t => t.TravelDate >= from && t.TravelDate <= to)
+        var trips = await db.Trips.AsNoTracking().Where(t => t.TravelDate >= from && t.TravelDate <= to && t.DeletedAt == null)
             .Select(t => new { t.Id, t.TravelDate, t.Status, t.RouteId, t.Route!.ServiceNumber, t.Route.Name, Capacity = t.Route.CoachTemplate!.Seats.Count }).ToListAsync();
         return trips.ToDictionary(t => t.Id, t => (t.TravelDate, t.Capacity, t.ServiceNumber, t.Name, t.Status, t.RouteId));
     }

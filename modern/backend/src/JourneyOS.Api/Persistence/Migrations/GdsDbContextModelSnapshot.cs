@@ -3217,9 +3217,21 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("delay_minutes");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
                     b.Property<TimeOnly?>("DepartureTime")
                         .HasColumnType("time without time zone")
                         .HasColumnName("departure_time");
+
+                    b.Property<DateTime?>("FareOverrideAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fare_override_at");
+
+                    b.Property<string>("FareOverrideJson")
+                        .HasColumnType("text")
+                        .HasColumnName("fare_override_json");
 
                     b.Property<decimal?>("FuelL")
                         .HasPrecision(12, 2)
@@ -3230,6 +3242,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasPrecision(12, 2)
                         .HasColumnType("numeric(12,2)")
                         .HasColumnName("km");
+
+                    b.Property<int>("PnlExpenseVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("pnl_expense_version");
 
                     b.Property<long>("RouteId")
                         .HasColumnType("bigint")
@@ -3366,9 +3382,18 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("category");
 
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("kind");
+
                     b.Property<string>("Note")
                         .HasColumnType("text")
                         .HasColumnName("note");
+
+                    b.Property<string>("Source")
+                        .HasColumnType("text")
+                        .HasColumnName("source");
 
                     b.Property<long>("TenantId")
                         .HasColumnType("bigint")
@@ -3377,6 +3402,11 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.Property<long>("TripId")
                         .HasColumnType("bigint")
                         .HasColumnName("trip_id");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("type");
 
                     b.HasKey("Id")
                         .HasName("pk_trip_expenses");

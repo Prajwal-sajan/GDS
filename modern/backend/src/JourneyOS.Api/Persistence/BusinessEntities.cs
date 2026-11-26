@@ -118,6 +118,10 @@ public sealed class TripExpense : ITenantOwned
     public string? Note { get; set; }
     public string By { get; set; } = "";
     public DateTime At { get; set; }
+    /// <summary>manual = extra trip expense (legacy trip_expenses); override = replaces the route template item whose key is <see cref="Category"/>.</summary>
+    public string Kind { get; set; } = "manual";
+    public string Type { get; set; } = "running";   // fixed / running
+    public string? Source { get; set; }             // funding source: Cash / Bank / Office / Driver / Helper / Agent / Other
 }
 
 public sealed class ComplianceDocument : ITenantOwned

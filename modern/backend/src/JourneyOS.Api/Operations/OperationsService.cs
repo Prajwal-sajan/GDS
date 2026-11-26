@@ -206,6 +206,39 @@ public sealed class OperationsService(GdsDbContext db, InventoryService inventor
         return i.Seats;
     }
 
+    /// <summary>Legacy PUT /schedules/:id/fares: per-trip fare override (null = follow route). Holds keep their quoted fare.</summary>
+    public async Task SetTripFaresAsync(long tripId, List<TripFare>? fares, string actor)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync();
+        var trip = await db.Trips.FromSqlInterpolated($"SELECT * FROM trips WHERE id = {tripId} AND tenant_id = {T} FOR UPDATE").IgnoreQueryFilters().FirstOrDefaultAsync(t => t.DeletedAt == null)
+                   ?? throw new GdsException("NOT_FOUND", "Schedule not found", 404);
+        trip.FareOverrideJson = fares is null ? null : System.Text.Json.JsonSerializer.Serialize(fares);
+        trip.FareOverrideAt = fares is null ? null : Now;
+        if (trip.Status == "active") await notifier.ServiceChangedAsync(trip, 0, int.MaxValue);
+        Audit(actor, "fares", "schedule", tripId.ToString(), new { sync_fares_with_route = fares is null, fares });
+        await db.SaveChangesAsync();
+        await tx.CommitAsync();
+        await inventory.InvalidateTripAsync(tripId);
+    }
+
+    /// <summary>Legacy DELETE /schedules/:id: refused while live bookings exist; otherwise the departure is withdrawn (kept for audit).</summary>
+    public async Task DeleteTripAsync(long tripId, string actor)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync();
+        var trip = await db.Trips.FromSqlInterpolated($"SELECT * FROM trips WHERE id = {tripId} AND tenant_id = {T} FOR UPDATE").IgnoreQueryFilters().FirstOrDefaultAsync(t => t.DeletedAt == null)
+                   ?? throw new GdsException("NOT_FOUND", "Schedule not found", 404);
+        if (await db.Bookings.AnyAsync(b => b.TripId == tripId && b.Status != "CANCELLED"))
+            throw new GdsException("CONFLICT", "Schedule has confirmed bookings — cancel or shift them first", 409);
+        foreach (var a in await db.SeatAllocations.Where(a => a.TripId == tripId && a.IsActive).ToListAsync()) { a.IsActive = false; a.ReleasedAt = Now; }
+        var wasActive = trip.Status == "active";
+        trip.Status = "deleted"; trip.Bookable = false; trip.DeletedAt = Now;
+        if (wasActive) await notifier.ServiceChangedAsync(trip, 0, int.MaxValue);
+        Audit(actor, "block", "schedule", tripId.ToString(), new { op = "delete" });
+        await db.SaveChangesAsync();
+        await tx.CommitAsync();
+        await inventory.InvalidateTripAsync(tripId);
+    }
+
     /// <summary>Legacy "Disable / Activate schedule" switch: opens or closes sales for one departure. Existing bookings are untouched.</summary>
     public async Task<bool> SetBookableAsync(long tripId, bool active, string actor)
     {

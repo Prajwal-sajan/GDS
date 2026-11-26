@@ -14,9 +14,17 @@ public static class FareCalculator
 {
     private static readonly string[] DayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-    public static decimal? ListedFare(Route route, CoachSeat seat, int fromSeq, int toSeq, DateOnly travelDate)
+    /// <summary>Trip fare override (legacy schedule.fare_override) when set, otherwise the route fare matrix.</summary>
+    public static IReadOnlyList<RouteFare> FaresFor(Route route, Trip? trip)
     {
-        var f = route.Fares.FirstOrDefault(x => x.FromSequence == fromSeq && x.ToSequence == toSeq);
+        if (string.IsNullOrEmpty(trip?.FareOverrideJson)) return route.Fares;
+        var o = System.Text.Json.JsonSerializer.Deserialize<List<TripFare>>(trip.FareOverrideJson) ?? [];
+        return o.Select(x => new RouteFare { RouteId = route.Id, FromSequence = x.FromSequence, ToSequence = x.ToSequence, Seater = x.Seater, SleeperLower = x.SleeperLower, SleeperUpper = x.SleeperUpper }).ToList();
+    }
+
+    public static decimal? ListedFare(Route route, CoachSeat seat, int fromSeq, int toSeq, DateOnly travelDate, Trip? trip = null)
+    {
+        var f = FaresFor(route, trip).FirstOrDefault(x => x.FromSequence == fromSeq && x.ToSequence == toSeq);
         if (f is null) return null;
         var fare = seat.FareClass switch
         {
