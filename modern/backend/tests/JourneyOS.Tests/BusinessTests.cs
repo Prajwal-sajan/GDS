@@ -589,7 +589,7 @@ public sealed class BusinessTests(GdsFixture fx)
     [Fact]
     public async Task Accounts_transactions_list_credits_and_debits_with_csv_and_role_guard()
     {
-        const string from = "2026-11-18", to = "2026-11-24";
+        string from = GdsFixture.Today.ToString("yyyy-MM-dd"), to = GdsFixture.Today.AddDays(14).ToString("yyyy-MM-dd"); // fixture bookings fall 114 days ahead
         var (s, tx) = await Admin.Get($"/api/admin/accounts/transactions?from={from}&to={to}");
         Assert.True(s == HttpStatusCode.OK, tx?.ToJsonString());
         var rows = tx!["rows"]!.AsArray();
@@ -619,7 +619,7 @@ public sealed class BusinessTests(GdsFixture fx)
     [Fact]
     public async Task Accounts_receivables_split_by_channel_and_ledger_credit_reduces_receivable()
     {
-        const string from = "2026-11-18", to = "2026-11-24";
+        string from = GdsFixture.Today.ToString("yyyy-MM-dd"), to = GdsFixture.Today.AddDays(14).ToString("yyyy-MM-dd"); // fixture bookings fall 114 days ahead
         var (s, rec) = await Admin.Get($"/api/admin/accounts/receivables?from={from}&to={to}");
         Assert.True(s == HttpStatusCode.OK, rec?.ToJsonString());
         var rows = rec!["rows"]!.AsArray();

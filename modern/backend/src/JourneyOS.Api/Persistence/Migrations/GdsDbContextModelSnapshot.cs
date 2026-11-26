@@ -3217,6 +3217,11 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("delay_minutes");
 
+                    b.Property<string>("DelayReason")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("delay_reason");
+
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
@@ -3260,6 +3265,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("stop_events_json");
 
+                    b.Property<bool>("SyncWithRoute")
+                        .HasColumnType("boolean")
+                        .HasColumnName("sync_with_route");
+
                     b.Property<string>("TelemetryJson")
                         .HasColumnType("jsonb")
                         .HasColumnName("telemetry_json");
@@ -3275,6 +3284,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.Property<string>("TripStatus")
                         .HasColumnType("text")
                         .HasColumnName("trip_status");
+
+                    b.Property<string>("UpdateSettingsJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("update_settings_json");
 
                     b.HasKey("Id")
                         .HasName("pk_trips");

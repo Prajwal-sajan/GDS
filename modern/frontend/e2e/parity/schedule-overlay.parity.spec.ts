@@ -42,7 +42,7 @@ const open = async (L: Page, R: Page, tab: string) => {
     await p.locator(`[data-sx-open="${TRIP}"][data-sx-open-tab]`).first().click({ timeout: 20000 });
     await p.locator(`.sx-modal [data-sx-tab="${tab}"]`).click();
     await expect(p.locator(".sx-modal [data-sx-modal-body] > *").first()).toBeVisible({ timeout: 15000 });
-    await expect(p.locator(".sx-modal [data-sx-modal-body] .sx-loading")).toHaveCount(0);
+    await expect(p.locator(".sx-modal [data-sx-modal-body] .sx-loading")).toHaveCount(0, { timeout: 15000 });
     await settle(p);
     await normalise(p);
   }
@@ -91,4 +91,43 @@ test("pnl: legacy P&L layout, labels and footer match", async ({ browser, baseUR
   const r = compare("schedule-overlay-pnl", "banner-title", await shot(L.locator(".sxp-banner-title")), await shot(R.locator(".sxp-banner-title")));
   results.push(r);
   expect.soft(r.diffRatio, "banner pixel diff").toBeLessThanOrEqual(0.01);
+});
+
+// Update tab (legacy schedule-update-v51.js, vendored verbatim). Crew / vehicle values come from each store, so structure
+// and fixed labels of the cards are compared, plus header/tabs/footer.
+test("update: legacy Update layout, labels and footer match", async ({ browser, baseURL }) => {
+  const L = await legacyPage(browser), R = await reactPage(browser, baseURL!);
+  await open(L, R, "update");
+  for (const p of [L, R]) await expect(p.locator(".u51-root")).toBeVisible({ timeout: 15000 });
+  for (const sel of ["[data-sx-modal-head]", "[data-sx-modal-tabs]", ".u51-assignment > header", ".u51-sync", ".u51-ota", ".sx-modal-footer"]) {
+    expect.soft(await R.evaluate(skeleton, sel), `${sel} skeleton`).toBe(await L.evaluate(skeleton, sel));
+  }
+  const labels = (p: Page) => p.locator(".u51-section-label, .u51-cardhead h3, .u51-call-row > span:not(.u51-icon):not(.u51-chip-state), .u51-summary-item small").allInnerTexts();
+  expect.soft(await labels(R), "Update labels").toEqual(await labels(L));
+  expect.soft(await R.locator(".sx-modal-footer").innerText(), "footer text").toBe(await L.locator(".sx-modal-footer").innerText());
+});
+
+// Fares tab (legacy faresTab()). Seat groups / prices come from each store; layout blocks and labels are compared.
+test("fares: legacy Fares layout, labels and footer match", async ({ browser, baseURL }) => {
+  const L = await legacyPage(browser), R = await reactPage(browser, baseURL!);
+  await open(L, R, "fares");
+  for (const p of [L, R]) await expect(p.locator(".sx-fares-ui")).toBeVisible({ timeout: 15000 });
+  for (const sel of ["[data-sx-modal-head]", "[data-sx-modal-tabs]", ".sx-pricing-top", ".sx-modal-footer"]) {
+    expect.soft(await R.evaluate(skeleton, sel), `${sel} skeleton`).toBe(await L.evaluate(skeleton, sel));
+  }
+  const labels = (p: Page) => p.locator(".sx-fares-ui th, .sx-fare-controlbar button, .sx-fare-route > span, .sx-fare-rules h3").allInnerTexts();
+  expect.soft(await labels(R), "Fares labels").toEqual(await labels(L));
+  expect.soft(await R.locator(".sx-modal-footer").innerText(), "footer text").toBe(await L.locator(".sx-modal-footer").innerText());
+});
+
+// Block tab (legacy bookingTab() + blockPanel()). Seat states differ per store (e2e bookings), so the right-hand block panel
+// and the legend / layout header structure and text are compared.
+test("block: legacy Block panel, legend and footer match", async ({ browser, baseURL }) => {
+  const L = await legacyPage(browser), R = await reactPage(browser, baseURL!);
+  await open(L, R, "block");
+  for (const p of [L, R]) await expect(p.locator(".sx-book-right")).toBeVisible({ timeout: 15000 });
+  for (const sel of [".sx-book-head", ".sx-station-tools", ".sx-legend", ".sx-seat-bottom", ".sx-control-grid", ".sx-block-hint", ".sx-modal-footer"]) {
+    expect.soft(await R.evaluate(skeleton, sel), `${sel} skeleton`).toBe(await L.evaluate(skeleton, sel));
+    expect.soft(await R.locator(sel).first().innerText(), `${sel} text`).toBe(await L.locator(sel).first().innerText());
+  }
 });

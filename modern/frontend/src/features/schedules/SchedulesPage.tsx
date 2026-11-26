@@ -59,6 +59,12 @@ export function SchedulesPage({ me }: { me: Me }) {
     try { await api.toggleSchedule(s.id, next); toast("Schedule status updated", "ok"); await refresh(); } catch (e) { toastError(e); }
   };
 
+  const remove = async (s: ScheduleRow) => {
+    if (!canOperate) return;
+    if (!(await confirmDialog(`Delete schedule ${s.serviceNumber} on ${shortDate(s.travelDate)}? Confirmed bookings must be cancelled or shifted first.`, { ok: "Delete schedule", danger: true }))) return;
+    try { await api.admin(`/schedules/${s.id}`, "DELETE"); toast("Schedule deleted", "ok"); await refresh(); } catch (e) { toastError(e); }
+  };
+
   const strip = Array.from({ length: 7 }, (_, i) => addDays(start, i));
   const nice = (d: string) => { const dt = new Date(`${d}T12:00:00`); return [dt.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }), dt.toLocaleDateString("en-GB", { weekday: "short" })]; };
 
@@ -100,7 +106,7 @@ export function SchedulesPage({ me }: { me: Me }) {
                   ) : label}</th>
                 ))}</tr></thead>
                 <tbody>
-                  {rows.map((s) => <Row key={s.id} s={s} canOperate={canOperate} onToggle={() => void toggle(s)} onOpen={(tab) => setWorkspace({ row: s, tab })} />)}
+                  {rows.map((s) => <Row key={s.id} s={s} canOperate={canOperate} onToggle={() => void toggle(s)} onDelete={() => void remove(s)} onOpen={(tab) => setWorkspace({ row: s, tab })} />)}
                   {rows.length === 0 && <tr><td colSpan={8} className="sx-empty">No schedules on {shortDate(selected)}. Choose another date or adjust search.</td></tr>}
                 </tbody>
               </table>
@@ -115,7 +121,7 @@ export function SchedulesPage({ me }: { me: Me }) {
   );
 }
 
-function Row({ s, canOperate, onToggle, onOpen }: { s: ScheduleRow; canOperate: boolean; onToggle: () => void; onOpen: (tab: string) => void }) {
+function Row({ s, canOperate, onToggle, onDelete, onOpen }: { s: ScheduleRow; canOperate: boolean; onToggle: () => void; onDelete: () => void; onOpen: (tab: string) => void }) {
   const active = s.status === "active" && s.bookable;
   const fares = s.mainFare ? [...new Set([s.mainFare.seater, s.mainFare.sleeperLower, s.mainFare.sleeperUpper].map((v) => inr(v)))].join(" / ") : "Fare not set";
   const open = (tab: string) => ({ "data-sx-open": s.id, "data-sx-open-tab": tab, onClick: () => onOpen(tab), disabled: !canOperate, title: canOperate ? undefined : "Your role cannot manage schedules" });
@@ -153,8 +159,8 @@ function Row({ s, canOperate, onToggle, onOpen }: { s: ScheduleRow; canOperate: 
         <label className="sx-switch" title={`${active ? "Disable" : "Enable"} schedule`}>
           <input data-sx-toggle={s.id} type="checkbox" checked={active} disabled={!canOperate || s.status !== "active"} onChange={onToggle} aria-label={`${active ? "Disable" : "Enable"} ${s.serviceNumber} schedule`} /><span />
         </label>
-        <button data-sx-delete={s.id} className="sx-tiny sx-delete-schedule" disabled aria-label={`Delete ${s.serviceNumber} schedule`}
-          title="Deleting a schedule is not available in the new backend yet. Disable it with the switch, or cancel the service from Trips."><I name="trash" size={18} /></button>
+        <button data-sx-delete={s.id} className="sx-tiny sx-delete-schedule" disabled={!canOperate} aria-label={`Delete ${s.serviceNumber} schedule`}
+          title="Delete schedule" onClick={onDelete}><I name="trash" size={18} /></button>
       </td>
       <td><div className="sx-triple">
         <button className="blue" {...open("bookings")}>Manage</button>

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { PnlTab, pnlConfirmLeave } from "./SchedulePnlTab";
 import { FaresTab } from "./ScheduleFaresTab";
+import { UpdateTab } from "./ScheduleUpdateTab";
+import { BlockTab } from "./ScheduleBlockTab";
 import { api, type ScheduleDetail, type ScheduleRow, type ScheduleStage } from "../../api";
 import { toast, toastError } from "../../components/ui/feedback";
 import { inr, shortDate, t12 } from "../../services/format";
@@ -48,7 +50,6 @@ const TABS: [string, IconName, string][] = [
   ["bookings", "users", "Bookings"], ["block", "shield", "Block"], ["update", "settings", "Update"], ["cities", "pin", "Cities"],
   ["pickups", "arrowUp", "Pickups"], ["drops", "arrowDown", "Drops"], ["fares", "rupee", "Fares"], ["pnl", "chart", "P&L"], ["history", "history", "History"],
 ];
-const OPERATIONAL = new Set(["bookings", "block", "update"]);
 /** legacy fdt: 23 Nov, 07:36 pm */
 const fdt = (s: string) => new Date(s).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
@@ -75,7 +76,8 @@ export function ScheduleOverlay({ row, tab: initialTab, onClose: close }: { row:
   }, [onClose]);
 
   let body: ReactNode;
-  if (OPERATIONAL.has(tab)) body = (
+  if (tab === "update") body = <UpdateTab row={row} overlay={modal} />;
+  else if (tab === "bookings") body = (
     <div data-testid="schedule-workspace" data-tab={tab}>
       <DispatchPanel initial={{ date: row.travelDate, tripId: row.id }} />
     </div>
@@ -83,6 +85,7 @@ export function ScheduleOverlay({ row, tab: initialTab, onClose: close }: { row:
   else if (error) body = <div className="sx-empty">{error}</div>;
   else if (!detail) body = <div className="sx-loading">Loading schedule…</div>;
   else if (tab === "history") body = <HistoryTab d={detail} />;
+  else if (tab === "block") body = <BlockTab row={row} detail={detail} />;
   else if (tab === "pickups" || tab === "drops") body = <StopsTab key={tab} d={detail} kind={tab === "pickups" ? "pickup" : "drop"} />;
   else if (tab === "cities") body = <CitiesTab d={detail} />;
   else if (tab === "pnl") body = <PnlTab sid={row.id} overlay={modal} />;
@@ -111,9 +114,9 @@ export function ScheduleOverlay({ row, tab: initialTab, onClose: close }: { row:
         </nav>
         <main data-sx-modal-body="">{body}</main>
         {tab === "pnl" ? <footer key="pnl" className="sx-modal-footer" /> : <footer key="std" className="sx-modal-footer">
-          <span data-sx-footer-info="" className="sx-muted">Operator data shown where available · unsupported controls are preview-only</span>
+          <span data-sx-footer-info="" className="sx-muted">{tab === "update" ? "" : tab === "fares" ? "Fare and seat-rule changes apply to this trip only" : "Operator data shown where available · unsupported controls are preview-only"}</span>
           <div>
-            {OPERATIONAL.has(tab)
+            {tab === "bookings" || tab === "update"
               ? <Bt icon="x" label="Close" cls="primary" attrs={{ "data-sx-close": "" }} onClick={onClose} />
               : <><Bt icon="x" label="Close" attrs={{ "data-sx-close": "" }} onClick={onClose} /><Bt icon="check" label="Save changes" cls="primary" attrs={{ "data-sx-save": "" }} disabled /></>}
           </div>

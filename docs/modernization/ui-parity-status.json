@@ -46,15 +46,19 @@
       "evidence": [
         "e2e/parity/schedules.parity.spec.ts — date-controls 0, table-head 0, table 0.0018; identical DOM skeleton; toggle persisted + viewer 403",
         "e2e/parity/schedule-overlay.parity.spec.ts — overlay head/tabs/footer + History, Pickups, Drops, Cities bodies: identical DOM skeleton and text, pixel regions <= 1% (8/8); data from GET /api/admin/schedule-detail/{id}",
-        "e2e/parity/schedule-overlay.parity.spec.ts pnl — verbatim legacy schedule-pnl-v18 module: header/tabs/banner/cost footer/income header skeleton, labels and route expense lines identical, banner pixels <= 1%; GET /schedules/{id}/pnl + PUT /pnl-expenses (versioned)"
+        "e2e/parity/schedule-overlay.parity.spec.ts pnl — verbatim legacy schedule-pnl-v18 module: header/tabs/banner/cost footer/income header skeleton, labels and route expense lines identical, banner pixels <= 1%; GET /schedules/{id}/pnl + PUT /pnl-expenses (versioned)",
+        "e2e/parity/schedule-overlay.parity.spec.ts update — verbatim legacy schedule-update-v51 module: assignment header, sync card, OTA card skeleton + labels + footer identical; backed by GET/PUT /schedules/{id}/update-v51(/assignment|/sync), sync-ota 501 (no connector), TripOpsTests",
+        "e2e/parity/schedule-overlay.parity.spec.ts fares — legacy faresTab() port: pricing-top skeleton, table/control labels, footer identical; Save trip fares / Follow route fares via PUT /schedules/{id}/fares",
+        "e2e/parity/schedule-overlay.parity.spec.ts block — legacy bookingTab()+blockPanel() port: book-head, station tools, legend, seat-bottom, control grid, hint, footer skeleton + text identical; block/unblock via /trips/{id}/blocks; Delay (POST /trips/{id}/delay) and Notify (POST /trips/{id}/notify, recorded, delivery_verified=false)",
+        "schedule list Delete button wired to DELETE /schedules/{id} with legacy confirm text; operator ticket cancel POST /bookings/{pnr}/cancel (full refund when by=operator)"
       ],
       "gaps": [
         "P&L schedule-list expense/profit columns still use the reports cost model (P&L tab now includes commission + cancellation charges like legacy)",
-        "schedule delete: API done (DELETE /schedules/{id}), no UI button yet",
-        "overlay Bookings/Block/Update tabs render the existing DispatchPanel, not the legacy seat-layout markup",
-        "overlay Fares tab: API done (GET/PUT /schedules/{id}/fares), UI still an explanatory empty state",
-        "stop edits, history edit, delay/advance, via toggles and sub-routes are aria-disabled preview-only (legacy also preview-only)",
-        "copy image / share not migrated",
+        "overlay Bookings tab still renders the DispatchPanel, not the legacy schedule-bookings-v38 / schedule-manage-v48 pickup-chart workspace (operator cancel/notify/delay APIs now exist for it)",
+        "Block tab gender restriction is recorded in the block reason only (backend blocks have no gender field); Follow route blocks: routes have no seat-block template",
+        "Fares tab Auto Pricing / guard rails / seat rules are route-level and preview-only (legacy also)",
+        "stop edits, history edit, via toggles and sub-routes are aria-disabled preview-only (legacy also preview-only)",
+        "Copy layout image / Share implemented client-side (canvas + clipboard, Web Share); not pixel-compared",
         "P&L amounts not pixel-compared (PostgreSQL also holds e2e bookings)"
       ]
     },

@@ -192,6 +192,12 @@ public sealed class Trip : ITenantOwned
     /// <summary>Legacy schedule.pnl_expense_version: optimistic-concurrency counter for the Trip P&amp;L expense editor.</summary>
     public int PnlExpenseVersion { get; set; }
     public DateTime? DeletedAt { get; set; }
+    /// <summary>Legacy schedule.delay_reason (operator-entered reason for the current timing change).</summary>
+    public string? DelayReason { get; set; }
+    /// <summary>Legacy schedule.sync_with_route. False once the trip carries its own assignment / call / cab overrides.</summary>
+    public bool SyncWithRoute { get; set; } = true;
+    /// <summary>Legacy schedule.update_v51 (call_settings / escalation_contacts / cab_mode overrides), jsonb. Null = follow route.</summary>
+    public string? UpdateSettingsJson { get; set; }
 }
 
 /// <summary>One per-trip segment fare (legacy fare_override row), keyed by route stop sequence.</summary>
