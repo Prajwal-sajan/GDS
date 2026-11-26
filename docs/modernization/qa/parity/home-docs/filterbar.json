@@ -1,0 +1,15 @@
+{
+  "id": "home-docs",
+  "region": "filterbar",
+  "legacy": [
+    1296,
+    96
+  ],
+  "react": [
+    1296,
+    96
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

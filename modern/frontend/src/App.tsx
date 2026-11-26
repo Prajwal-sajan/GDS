@@ -92,7 +92,8 @@ function resolveView(seg: string[], me: Me, signOut: () => void): { el?: JSX.Ele
   const ACC_R: Role[] = ["owner", "admin", "accounts"];
   const ALL_R: Role[] = ["owner", "admin", "ops", "accounts", "viewer"];
   const path = seg.join("/");
-  if (!path) return { redirect: r === "agent" ? "#/accounts" : "#/trips" };
+  // legacy main.js: an empty hash renders the trips screen in place (URL stays #/); agents land on their ledger
+  if (!path) return r === "agent" ? { redirect: "#/accounts" } : { el: <TripsPage me={me} /> };
   const LEGACY_SETTINGS: Record<string, string> = { "": "team-access/office-staff", users: "team-access/office-staff", roles: "team-access/access", branches: "team-access/branches", notifications: "configuration/notifications", calling: "configuration/calling", loyalty: "loyalty-program/miles", upgrades: "loyalty-program/upgrades" };
   if (seg[0] === "settings" && (seg[1] ?? "") in LEGACY_SETTINGS) return { redirect: "#/settings/" + LEGACY_SETTINGS[seg[1] ?? ""] };
   // Interim in-page links (NOT the legacy Accounts/Settings tab strips, which are not migrated yet).

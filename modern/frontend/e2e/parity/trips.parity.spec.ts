@@ -50,8 +50,8 @@ const pick = async (p: Page) => {
   await expect(p.locator(".tp13-date-display")).toHaveText("24-11-2026");
   await expect(p.locator("[data-trip-main] .tp13-crew")).toBeVisible({ timeout: 20000 });
 };
-const open = async (L: Page, R: Page, tab: string) => {
-  await L.goto(`${LEGACY}/#/trips`); await R.goto(`/#/trips`);
+const open = async (L: Page, R: Page, tab: string, hash = "#/trips") => {
+  await L.goto(`${LEGACY}/${hash}`); await R.goto(`/${hash}`);
   for (const p of [L, R]) {
     await pick(p);
     await p.locator(`[data-trip-tab="${tab}"]`).click();
@@ -62,6 +62,24 @@ const open = async (L: Page, R: Page, tab: string) => {
 };
 
 for (const tab of ["pickup", "drop", "timings", "docs"]) {
+  test(`home #/ ${tab}: renders the trips screen in place like legacy`, async ({ browser, baseURL }) => {
+    const L = await legacyPage(browser), R = await reactPage(browser, baseURL!);
+    await open(L, R, tab, "#/");
+    // The closed date popup keeps stale day classes in legacy on its first render from #/ (hidden markup, not visible UI).
+    for (const p of [L, R]) await p.evaluate(() => document.querySelectorAll(".tp13-cal-grid").forEach((g) => g.remove()));
+    expect(new URL(R.url()).hash).toBe("#/");
+    for (const sel of [".tp13-filterbar", ".tp13-crew", ".tp13-tabs", ".tp13-summary", ".tp13-body"]) {
+      if (!(await L.locator(sel).count())) continue;
+      const [sr, sl] = [await R.evaluate(skeleton, sel), await L.evaluate(skeleton, sel)];
+      if (sr !== sl) { let i = 0; while (sr[i] === sl[i]) i++; console.log(`[home ${sel}]@${i}\n L: ${sl.slice(i - 100, i + 120)}\n R: ${sr.slice(i - 100, i + 120)}`); }
+      expect.soft(sr, `${sel} skeleton`).toBe(sl);
+      expect.soft(await R.locator(sel).innerText(), `${sel} text`).toBe(await L.locator(sel).innerText());
+    }
+    const r = compare(`home-${tab}`, "filterbar", await shot(L.locator(".tp13-filterbar")), await shot(R.locator(".tp13-filterbar")));
+    results.push(r);
+    expect.soft(r.diffRatio, "filterbar pixel diff").toBeLessThanOrEqual(0.01);
+  });
+
   test(`${tab}: filterbar, crew, tabs and body match legacy DOM and text`, async ({ browser, baseURL }) => {
     const L = await legacyPage(browser), R = await reactPage(browser, baseURL!);
     await open(L, R, tab);

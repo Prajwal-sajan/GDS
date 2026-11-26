@@ -1305,6 +1305,66 @@
     "diffRatio": 0
   },
   {
+    "id": "home-docs",
+    "region": "filterbar",
+    "legacy": [
+      1296,
+      96
+    ],
+    "react": [
+      1296,
+      96
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "home-drop",
+    "region": "filterbar",
+    "legacy": [
+      1296,
+      96
+    ],
+    "react": [
+      1296,
+      96
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "home-pickup",
+    "region": "filterbar",
+    "legacy": [
+      1296,
+      96
+    ],
+    "react": [
+      1296,
+      96
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "home-timings",
+    "region": "filterbar",
+    "legacy": [
+      1296,
+      96
+    ],
+    "react": [
+      1296,
+      96
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
     "id": "invoices-page",
     "region": "footnote",
     "legacy": [
