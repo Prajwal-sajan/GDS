@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { api, type CoachListRow, type Me, type RouteAssignment, type RouteCoachSeat, type RouteDetail, type RouteSettingsJson, type RouteShiftPreview, type RouteStageInput, type RouteStageRow, type Staff, type Vehicle } from "../../api";
+import { api, type CoachListRow, type Me, type RouteAssignment, type RouteCoachSeat, type RouteDetail, type RouteSettingsJson, type RouteShiftPreview, type RouteStageInput, type RouteStageRow, type Staff, type VehicleListRow } from "../../api";
 import { confirmDialog, toast, toastError } from "../../components/ui/feedback";
 
 // React port of the legacy route editor (public/js/routes-screenshot-v5.js editor(): render(), general(), citiesTab(),
@@ -153,9 +153,10 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
   const [blk, setBlk] = useState<{ id: number | null; reason: string; fromDate: string; toDate: string; autoReleaseHours: string }>({ id: null, reason: "", fromDate: "", toDate: "", autoReleaseHours: "" });
   const [shift, setShift] = useState<{ direction: "delay" | "advance"; hours: number; minutes: number }>({ direction: "delay", hours: 0, minutes: 15 });
   const [preview, setPreview] = useState<{ key: string; data: RouteShiftPreview }>();
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [vehicles, setVehicles] = useState<VehicleListRow[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [tagIn, setTagIn] = useState({ name: "", value: "" });
+  const [vanAdd, setVanAdd] = useState<{ i: number; label: string }>();
   const upd = <K extends keyof Settings>(k: K, v: Settings[K]) => setSt((s) => (s ? { ...s, [k]: v } : s));
   const updGen = (f: (g: Gen) => Gen) => setSt((s) => (s ? { ...s, gen: f(s.gen) } : s));
 
@@ -166,7 +167,7 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
   // Only the live effect applies its result: a stale response (StrictMode double effect, fast id change) must not overwrite edits in progress.
   useEffect(() => { let alive = true; void load(() => alive); return () => { alive = false; }; }, [load]);
   useEffect(() => {
-    api.vehicles().then(setVehicles).catch(() => setVehicles([]));
+    api.vehicleList().then((x) => setVehicles(x.vehicles)).catch(() => setVehicles([]));
     api.staff().then(setStaff).catch(() => setStaff([]));
   }, []);
   useEffect(() => {
@@ -358,16 +359,16 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
             <p className="rv-subtext">The two assignments alternate every trip, on the days this route runs.</p>
             <div className="rv-two rv-crew-wrap">{st.gen.assignments.map((a, ai) => {
               const setA = (p: Partial<Gen["assignments"][number]>) => updGen((g) => ({ ...g, assignments: g.assignments.map((x, j) => (j === ai ? { ...x, ...p } : x)) }));
-              const today = new Date().toLocaleDateString("en-GB", { weekday: "short", month: "short", day: "2-digit", year: "numeric" }).toUpperCase();
+              const day = new Date(Date.now() + ai * 86400000).toLocaleDateString("en-GB", { weekday: "short", month: "short", day: "2-digit", year: "numeric" }).toUpperCase();
               const v = vehicles.find((x) => x.id === a.vehicle_id);
               return (
                 <section key={ai} className={`rv-crew-panel ${ai ? "green" : "blue"}`}>
-                  <p className="rv-crew-kicker">{ai ? "NEXT TRIP" : `THIS TRIP · ${today}`}</p>
+                  <p className="rv-crew-kicker">{ai ? "NEXT TRIP" : "THIS TRIP"} · {day}</p>
                   <div className="rv-crew-inner">
                     <label className="rv-field"><span>Vehicle</span><select disabled={ro} aria-label={`Vehicle ${ai + 1}`} value={a.vehicle_id ?? ""} onChange={(e) => setA({ vehicle_id: e.currentTarget.value ? Number(e.currentTarget.value) : null })}>
                       <option value="">Select vehicle</option>{a.vehicle_id && !v && <option value={a.vehicle_id}>Vehicle {a.vehicle_id}</option>}
                       {vehicles.map((x) => <option key={x.id} value={x.id}>{x.registrationNumber}</option>)}</select></label>
-                    <div className="rv-vehicle-place"><I k="pin" size={15} /> <span>Vehicle location not connected · No verified update</span></div>
+                    <div className="rv-vehicle-place"><I k="pin" size={15} /> <span>Vehicle location not connected · {v?.position?.ts ? "GPS update available" : "No verified update"}</span></div>
                     <div className="rv-crew-rows">{a.crew.map((c, ci) => {
                       const setC = (p: Partial<typeof c>) => setA({ crew: a.crew.map((x, j) => (j === ci ? { ...x, ...p } : x)) });
                       const s = staff.find((x) => x.id === c.staff_id);
@@ -382,31 +383,31 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
                         </div>
                       );
                     })}</div>
-                    {!ro && a.crew.length < 8 && <Btn cls="link" onClick={() => setA({ crew: [...a.crew, { role: "Helper", staff_id: null }] })}><I k="plus" size={15} /> Add Staff</Btn>}
-                    <p className="rv-van-title">PICKUP VANS</p>
+                    <Btn cls="link" disabled={ro || a.crew.length >= 8} onClick={() => setA({ crew: [...a.crew, { role: "Helper", staff_id: null }] })}><I k="plus" size={15} /> Add Staff</Btn>
+                    <div className="rv-van-title">PICKUP VANS</div>
                     {a.pickup_vans.map((pv, pi) => (
-                      <div key={pi} className="rv-vanitem"><input disabled={ro} aria-label={`Pickup van ${pi + 1}`} value={pv.label ?? pv.name ?? ""} onChange={(e) => { const val = e.currentTarget.value; setA({ pickup_vans: a.pickup_vans.map((x, j) => (j === pi ? { label: val } : x)) }); }} />
-                        {!ro && <Btn cls="icon danger" aria-label="Remove pickup van" onClick={() => setA({ pickup_vans: a.pickup_vans.filter((_, j) => j !== pi) })}><I k="trash" size={16} /></Btn>}</div>
+                      <div key={pi} className="rv-vanitem">{pv.label || pv.name || "Pickup Van"} <Btn cls="danger" aria-label="Remove pickup van" disabled={ro} onClick={() => setA({ pickup_vans: a.pickup_vans.filter((_, j) => j !== pi) })}><I k="trash" size={13} /></Btn></div>
                     ))}
-                    {!ro && a.pickup_vans.length < 10 && <Btn cls="link" onClick={() => setA({ pickup_vans: [...a.pickup_vans, { label: "" }] })}><I k="plus" size={15} /> Add Pickup Van</Btn>}
+                    <Btn cls="link" disabled={ro || a.pickup_vans.length >= 10} onClick={() => setVanAdd({ i: ai, label: "" })}><I k="plus" size={15} /> Add Pickup Van</Btn>
                   </div>
                 </section>
               );
             })}</div>
           </Region>
           <Region title={<><I k="tag" size={17} /> Tags</>} cls="rv-tags-panel">
-            {Object.keys(st.gen.tags).length ? <div className="rv-tags">{Object.entries(st.gen.tags).map(([n, v]) => (
-              <span key={n}>{n} = {v}{!ro && <button type="button" aria-label={`Remove tag ${n}`} onClick={() => updGen((g) => { const t = { ...g.tags }; delete t[n]; return { ...g, tags: t }; })}>×</button>}</span>
-            ))}</div> : <p className="rv-muted">No tags</p>}
-            {!ro && <div className="rv-inline-add">
-              <input placeholder="Name, e.g. corridor" value={tagIn.name} onChange={(e) => { const v = e.currentTarget.value; setTagIn((t) => ({ ...t, name: v })); }} /><b>=</b>
-              <input placeholder="Value, e.g. mumbai" value={tagIn.value} onChange={(e) => { const v = e.currentTarget.value; setTagIn((t) => ({ ...t, value: v })); }} />
-              <Btn cls="primary" onClick={() => {
+            <p className="rv-muted">{Object.keys(st.gen.tags).length ? "" : "No tags"}</p>
+            <div className="rv-tags">{Object.entries(st.gen.tags).map(([n, v]) => (
+              <span key={n}>{n} = {v} {!ro && <Btn cls="tiny" aria-label={`Remove tag ${n}`} onClick={() => updGen((g) => { const t = { ...g.tags }; delete t[n]; return { ...g, tags: t }; })}>×</Btn>}</span>
+            ))}</div>
+            <div className="rv-inline-add">
+              <input placeholder="Name, e.g. corridor" disabled={ro} value={tagIn.name} onChange={(e) => { const v = e.currentTarget.value; setTagIn((t) => ({ ...t, name: v })); }} /><b>=</b>
+              <input placeholder="Value, e.g. mumbai" disabled={ro} value={tagIn.value} onChange={(e) => { const v = e.currentTarget.value; setTagIn((t) => ({ ...t, value: v })); }} />
+              <Btn cls="primary" disabled={ro} onClick={() => {
                 const n = tagIn.name.trim().toLowerCase(), v = tagIn.value.trim().toLowerCase();
                 if (!n || !v) return toast("Enter a tag name and value", "warn");
                 if (Object.keys(st.gen.tags).length >= 30 && !(n in st.gen.tags)) return toast("At most 30 tags", "warn");
                 updGen((g) => ({ ...g, tags: { ...g.tags, [n]: v } })); setTagIn({ name: "", value: "" });
-              }}>Add</Btn></div>}
+              }}><I k="plus" size={16} /> Add</Btn></div>
             <p className="rv-help">Labels like corridor = mumbai. A branch or a person set to “routes with this tag” covers this route automatically.</p>
           </Region>
           {mode === "edit" && coachId !== route.coachTemplateId && <p className="rv-notice">Changing the coach moves every sold, held and blocked seat on upcoming departures to the same seat number in the new layout. It is refused if a seat number does not exist there or a bus with a different layout is assigned.</p>}
@@ -599,6 +600,17 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
         <Btn data-rv="cancel" onClick={cancel}>Cancel</Btn>
         {!ro && <Btn cls="primary" data-rv="save" aria-disabled={!savable || undefined} title={savable ? undefined : OWN_BUTTONS} onClick={save}><I k="save" size={16} /> {tab === "cities" ? "Save Cities & Schedule" : tab === "fares" ? "Save Fares" : tab === "general" ? "Continue" : "Save Changes"}</Btn>}
       </footer>
+      {vanAdd && (() => {
+        const add = () => {
+          const label = vanAdd.label.trim(); if (!label) return toast("Enter a vehicle / van label", "warn");
+          updGen((g) => ({ ...g, assignments: g.assignments.map((x, j) => (j === vanAdd.i ? { ...x, pickup_vans: [...x.pickup_vans, { label }] } : x)) })); setVanAdd(undefined);
+        };
+        return (
+          <RvModal title="Add Pickup Van" onClose={() => setVanAdd(undefined)} foot={<><Btn onClick={() => setVanAdd(undefined)}>Cancel</Btn><Btn cls="primary" onClick={add}>Add van</Btn></>}>
+            <Field label="Vehicle / van label" value={vanAdd.label} maxLength={60} autoFocus onChange={(v) => setVanAdd((x) => (x ? { ...x, label: v } : x))} />
+          </RvModal>
+        );
+      })()}
       {stageEdit && (() => {
         const f = stageEdit, set = (p: Partial<StageForm>) => setStageEdit((x) => (x ? { ...x, ...p } : x));
         const lastSeq = Math.max(...route.stops.map((s) => s.sequence)), firstSeq = Math.min(...route.stops.map((s) => s.sequence));

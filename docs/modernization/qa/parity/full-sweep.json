@@ -11,8 +11,8 @@
       900
     ],
     "sizeMatch": true,
-    "diffPixels": 38235,
-    "diffRatio": 0.0295,
+    "diffPixels": 38555,
+    "diffRatio": 0.0297,
     "route": "#/settings/team-access/office-staff",
     "onlyLegacy": [],
     "onlyReact": [
@@ -42,8 +42,8 @@
       900
     ],
     "sizeMatch": true,
-    "diffPixels": 38290,
-    "diffRatio": 0.0295,
+    "diffPixels": 38468,
+    "diffRatio": 0.0297,
     "route": "#/settings/users",
     "onlyLegacy": [],
     "onlyReact": [
@@ -147,38 +147,6 @@
     ]
   },
   {
-    "id": "sweep-trips",
-    "region": "viewport",
-    "legacy": [
-      1440,
-      900
-    ],
-    "react": [
-      1440,
-      900
-    ],
-    "sizeMatch": true,
-    "diffPixels": 11999,
-    "diffRatio": 0.0093,
-    "route": "#/trips",
-    "onlyLegacy": [
-      "Ravi",
-      "Helper:"
-    ],
-    "onlyReact": [
-      ":",
-      "Smoke",
-      "Helper",
-      "pax",
-      "PNR",
-      "Passengers",
-      "Smoke Counter",
-      "Seats:",
-      "counter",
-      ", —"
-    ]
-  },
-  {
     "id": "sweep-chats",
     "region": "viewport",
     "legacy": [
@@ -195,6 +163,36 @@
     "route": "#/chats",
     "onlyLegacy": [],
     "onlyReact": []
+  },
+  {
+    "id": "sweep-trips",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 10993,
+    "diffRatio": 0.0085,
+    "route": "#/trips",
+    "onlyLegacy": [
+      "Helper:"
+    ],
+    "onlyReact": [
+      ":",
+      "Helper",
+      "pax",
+      "PNR",
+      "Passengers",
+      "Smoke Counter",
+      "Seats:",
+      "counter",
+      ", —"
+    ]
   },
   {
     "id": "sweep-settings-branches",
@@ -233,79 +231,6 @@
     "onlyReact": []
   },
   {
-    "id": "sweep-gds-deleted",
-    "region": "viewport",
-    "legacy": [
-      1440,
-      900
-    ],
-    "react": [
-      1440,
-      900
-    ],
-    "sizeMatch": true,
-    "diffPixels": 8496,
-    "diffRatio": 0.0066,
-    "route": "#/gds/deleted",
-    "onlyLegacy": [
-      "Deleted trips",
-      "No deleted trips"
-    ],
-    "onlyReact": [
-      "#/",
-      "gds/deleted"
-    ]
-  },
-  {
-    "id": "sweep-gds-routes-1-rvtab-general-rvmode-view",
-    "region": "viewport",
-    "legacy": [
-      1440,
-      900
-    ],
-    "react": [
-      1440,
-      900
-    ],
-    "sizeMatch": true,
-    "diffPixels": 6308,
-    "diffRatio": 0.0049,
-    "route": "#/gds/routes/1?rvtab=general&rvmode=view",
-    "onlyLegacy": [
-      "Hub*",
-      "KMs",
-      "Allow Gents Next to Ladies",
-      "Allow Ladies Next to Gents",
-      "Ladies Fill Half-Booked Doubles First",
-      "Seat Sharing",
-      "Boarding Check",
-      "Call Routing",
-      "Cloud Calling",
-      "Passenger Number Masking",
-      "Direct to Vehicle",
-      "Driver Mobile GPS",
-      "Escalation Contacts",
-      "Autos & Cabs",
-      "Off",
-      "Both",
-      "Staff & Vehicle Assignment",
-      "Vehicle",
-      "Vehicle location not connected · GPS update available",
-      "Add Staff",
-      "PICKUP VANS",
-      "Add Pickup Van",
-      "Tags",
-      "No tags",
-      "=",
-      "Add"
-    ],
-    "onlyReact": [
-      "Max seats per ticket",
-      "Update cut-off (minutes before boarding)",
-      "Partial cancellation"
-    ]
-  },
-  {
     "id": "sweep-accounts-transactions",
     "region": "viewport",
     "legacy": [
@@ -332,7 +257,7 @@
     ]
   },
   {
-    "id": "sweep-accounts-reports-fleet-operations",
+    "id": "sweep-gds-routes-1-rvtab-general-rvmode-view",
     "region": "viewport",
     "legacy": [
       1440,
@@ -343,14 +268,19 @@
       900
     ],
     "sizeMatch": true,
-    "diffPixels": 4129,
-    "diffRatio": 0.0032,
-    "route": "#/accounts/reports/fleet-operations",
+    "diffPixels": 4021,
+    "diffRatio": 0.0031,
+    "route": "#/gds/routes/1?rvtab=general&rvmode=view",
     "onlyLegacy": [
-      "Kiran Kumar, Ravi Reddy"
+      "Vehicle location not connected · GPS update available",
+      "Add Staff",
+      "Add Pickup Van",
+      "=",
+      "Add"
     ],
     "onlyReact": [
-      "·"
+      "Vehicle location not connected · No verified update",
+      "NEXT TRIP"
     ]
   },
   {
@@ -369,26 +299,6 @@
     "diffRatio": 0.003,
     "route": "#/accounts/receivables",
     "onlyLegacy": [],
-    "onlyReact": []
-  },
-  {
-    "id": "sweep-dailyops",
-    "region": "viewport",
-    "legacy": [
-      1440,
-      900
-    ],
-    "react": [
-      1440,
-      900
-    ],
-    "sizeMatch": true,
-    "diffPixels": 3804,
-    "diffRatio": 0.0029,
-    "route": "#/dailyops",
-    "onlyLegacy": [
-      "Ravi Reddy"
-    ],
     "onlyReact": []
   },
   {
@@ -412,6 +322,24 @@
     ]
   },
   {
+    "id": "sweep-dailyops",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 1737,
+    "diffRatio": 0.0013,
+    "route": "#/dailyops",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
     "id": "sweep-settings-about",
     "region": "viewport",
     "legacy": [
@@ -423,15 +351,11 @@
       900
     ],
     "sizeMatch": true,
-    "diffPixels": 1763,
-    "diffRatio": 0.0014,
+    "diffPixels": 1574,
+    "diffRatio": 0.0012,
     "route": "#/settings/about",
-    "onlyLegacy": [
-      "LOCAL"
-    ],
-    "onlyReact": [
-      "DEV"
-    ]
+    "onlyLegacy": [],
+    "onlyReact": []
   },
   {
     "id": "sweep-gds-schedules",
@@ -544,6 +468,24 @@
     ]
   },
   {
+    "id": "sweep-gds-deleted",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0,
+    "route": "#/gds/deleted",
+    "onlyLegacy": [],
+    "onlyReact": []
+  },
+  {
     "id": "sweep-crm",
     "region": "viewport",
     "legacy": [
@@ -638,6 +580,26 @@
     "route": "#/accounts/reports",
     "onlyLegacy": [],
     "onlyReact": []
+  },
+  {
+    "id": "sweep-accounts-reports-fleet-operations",
+    "region": "viewport",
+    "legacy": [
+      1440,
+      900
+    ],
+    "react": [
+      1440,
+      900
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0,
+    "route": "#/accounts/reports/fleet-operations",
+    "onlyLegacy": [],
+    "onlyReact": [
+      "·"
+    ]
   },
   {
     "id": "sweep-accounts-invoices",

@@ -102,7 +102,7 @@ export function SchedulesPage({ me }: { me: Me }) {
                 <thead><tr>{HEADS.map(([key, label]) => (
                   <th key={label}>{key ? (
                     <button type="button" className="sx-sort-head" data-sx-sort={key} aria-label={`Sort by ${label}`} aria-pressed={sort.key === key}
-                      onClick={() => setSort((s) => ({ key, dir: s.key === key ? (-s.dir as 1 | -1) : 1 }))}>{label} {sort.key === key ? (sort.dir === 1 ? "↑" : "↓") : "⇅"}</button>
+                      onClick={() => setSort((s) => ({ key, dir: s.key === key ? (-s.dir as 1 | -1) : 1 }))}>{`${label} ${sort.key === key ? (sort.dir === 1 ? "↑" : "↓") : "⇅"}`}</button>
                   ) : label}</th>
                 ))}</tr></thead>
                 <tbody>

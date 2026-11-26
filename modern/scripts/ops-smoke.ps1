@@ -32,7 +32,9 @@ Step 'driver replacement' {
     $after = G "/trips/$($t.id)/assignments"
     $old = $after | Where-Object { $_.staffId -eq $active.staffId -and $_.role -eq 'Driver' } | Select-Object -First 1
     if ($old.isActive) { throw 'old driver still active' }
-    "Driver $($active.staffId) -> $($r.staffId)"
+    # put the original driver back so the smoke run leaves operational data unchanged
+    if ($active.staffId) { P Post "/trips/$($t.id)/assignments" @{ role = 'Driver'; staffId = $active.staffId; reason = 'smoke restore' } | Out-Null }
+    "Driver $($active.staffId) -> $($r.staffId) -> restored"
 }
 Step 'invalid seat rejected' {
     try { P Post "/trips/$($t.id)/blocks" @{ seats = @('ZZ_INVALID'); reason = 'x' }; throw 'accepted invalid seat' }

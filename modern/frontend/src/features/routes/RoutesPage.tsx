@@ -48,8 +48,8 @@ function RouteRowView({ r, i, canOperate, onToggle, onMap }: { r: RouteListRow; 
         <div className="rv-routegraph">
           <small className="rv-duration"><I k="clock" size={14} /> {m ? `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, "0")}m` : "—"}</small>
           <div className="rv-line"><i></i><i></i><i></i><i></i></div>
-          <span>via {line || "direct"}</span>
-          <small><I k="calendar" size={13} /> {dmy(r.startDate) ?? "—"} → {dmy(r.endDate) ?? "∞"}</small>
+          <span>{`via ${line || "direct"}`}</span>
+          <small><I k="calendar" size={13} />{` ${dmy(r.startDate) ?? "—"} → ${dmy(r.endDate) ?? "∞"}`}</small>
         </div>
         <div className="rv-location"><strong>{hm(r.arrivalTime)}<sup>{r.arrivalDay > 1 ? `+${r.arrivalDay - 1}` : ""}</sup></strong><b>{z}</b><small>{r.destination?.state ?? ""}</small></div>
       </div>
