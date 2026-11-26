@@ -45,16 +45,17 @@
       "react": "src/features/schedules/SchedulesPage.tsx",
       "evidence": [
         "e2e/parity/schedules.parity.spec.ts — date-controls 0, table-head 0, table 0.0018; identical DOM skeleton; toggle persisted + viewer 403",
-        "e2e/parity/schedule-overlay.parity.spec.ts — overlay head/tabs/footer + History, Pickups, Drops, Cities bodies: identical DOM skeleton and text, pixel regions <= 1% (8/8); data from GET /api/admin/schedule-detail/{id}"
+        "e2e/parity/schedule-overlay.parity.spec.ts — overlay head/tabs/footer + History, Pickups, Drops, Cities bodies: identical DOM skeleton and text, pixel regions <= 1% (8/8); data from GET /api/admin/schedule-detail/{id}",
+        "e2e/parity/schedule-overlay.parity.spec.ts pnl — verbatim legacy schedule-pnl-v18 module: header/tabs/banner/cost footer/income header skeleton, labels and route expense lines identical, banner pixels <= 1%; GET /schedules/{id}/pnl + PUT /pnl-expenses (versioned)"
       ],
       "gaps": [
-        "Expense excludes OTA commission (legacy adds it)",
-        "profit excludes cancellation charges",
-        "schedule delete unsupported",
+        "P&L schedule-list expense/profit columns still use the reports cost model (P&L tab now includes commission + cancellation charges like legacy)",
+        "schedule delete: API done (DELETE /schedules/{id}), no UI button yet",
         "overlay Bookings/Block/Update tabs render the existing DispatchPanel, not the legacy seat-layout markup",
-        "overlay Fares and P&L tabs show an explanatory empty state (no per-trip fare override / trip expense API)",
+        "overlay Fares tab: API done (GET/PUT /schedules/{id}/fares), UI still an explanatory empty state",
         "stop edits, history edit, delay/advance, via toggles and sub-routes are aria-disabled preview-only (legacy also preview-only)",
-        "copy image / share not migrated"
+        "copy image / share not migrated",
+        "P&L amounts not pixel-compared (PostgreSQL also holds e2e bookings)"
       ]
     },
     "V003": {

@@ -1,0 +1,15 @@
+{
+  "id": "schedule-overlay-pnl",
+  "region": "banner-title",
+  "legacy": [
+    1146,
+    43
+  ],
+  "react": [
+    1146,
+    43
+  ],
+  "sizeMatch": true,
+  "diffPixels": 0,
+  "diffRatio": 0
+}

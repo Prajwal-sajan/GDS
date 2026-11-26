@@ -2306,8 +2306,8 @@
       63
     ],
     "sizeMatch": true,
-    "diffPixels": 138,
-    "diffRatio": 0.0019
+    "diffPixels": 175,
+    "diffRatio": 0.0024
   },
   {
     "id": "schedule-overlay-cities",
@@ -2396,8 +2396,8 @@
       63
     ],
     "sizeMatch": true,
-    "diffPixels": 138,
-    "diffRatio": 0.0019
+    "diffPixels": 175,
+    "diffRatio": 0.0024
   },
   {
     "id": "schedule-overlay-drops",
@@ -2426,7 +2426,7 @@
       59
     ],
     "sizeMatch": true,
-    "diffPixels": 65,
+    "diffPixels": 66,
     "diffRatio": 0.0009
   },
   {
@@ -2441,19 +2441,19 @@
       63
     ],
     "sizeMatch": true,
-    "diffPixels": 138,
-    "diffRatio": 0.0019
+    "diffPixels": 175,
+    "diffRatio": 0.0024
   },
   {
     "id": "schedule-overlay-history",
     "region": "table",
     "legacy": [
       1114,
-      388
+      481
     ],
     "react": [
       1114,
-      388
+      481
     ],
     "sizeMatch": true,
     "diffPixels": 0,
@@ -2546,8 +2546,8 @@
       63
     ],
     "sizeMatch": true,
-    "diffPixels": 138,
-    "diffRatio": 0.0019
+    "diffPixels": 175,
+    "diffRatio": 0.0024
   },
   {
     "id": "schedule-overlay-pickups",
@@ -2559,6 +2559,21 @@
     "react": [
       1180,
       53
+    ],
+    "sizeMatch": true,
+    "diffPixels": 0,
+    "diffRatio": 0
+  },
+  {
+    "id": "schedule-overlay-pnl",
+    "region": "banner-title",
+    "legacy": [
+      1146,
+      43
+    ],
+    "react": [
+      1146,
+      43
     ],
     "sizeMatch": true,
     "diffPixels": 0,

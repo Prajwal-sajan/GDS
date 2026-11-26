@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { PnlTab, pnlConfirmLeave } from "./SchedulePnlTab";
 import { api, type ScheduleDetail, type ScheduleRow, type ScheduleStage } from "../../api";
 import { toast, toastError } from "../../components/ui/feedback";
 import { inr, shortDate, t12 } from "../../services/format";
@@ -50,8 +51,14 @@ const OPERATIONAL = new Set(["bookings", "block", "update"]);
 /** legacy fdt: 23 Nov, 07:36 pm */
 const fdt = (s: string) => new Date(s).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
-export function ScheduleOverlay({ row, tab: initialTab, onClose }: { row: ScheduleRow; tab: string; onClose: () => void }) {
-  const [tab, setTab] = useState(TABS.some(([k]) => k === initialTab) ? initialTab : "bookings");
+export function ScheduleOverlay({ row, tab: initialTab, onClose: close }: { row: ScheduleRow; tab: string; onClose: () => void }) {
+  const [tab, setTabRaw] = useState(TABS.some(([k]) => k === initialTab) ? initialTab : "bookings");
+  const modal = useRef<HTMLDivElement>(null);
+  const [min, setMin] = useState(false);
+  // legacy handleOverlayClick: leaving the P&L tab (tab switch or close) confirms before discarding unsaved expenses
+  const leave = async () => tab !== "pnl" || (await pnlConfirmLeave());
+  const setTab = (k: string) => { void leave().then((ok) => ok && setTabRaw(k)); };
+  const onClose = () => { void leave().then((ok) => ok && close()); };
   const [detail, setDetail] = useState<ScheduleDetail>();
   const [error, setError] = useState<string>();
 
@@ -77,6 +84,7 @@ export function ScheduleOverlay({ row, tab: initialTab, onClose }: { row: Schedu
   else if (tab === "history") body = <HistoryTab d={detail} />;
   else if (tab === "pickups" || tab === "drops") body = <StopsTab key={tab} d={detail} kind={tab === "pickups" ? "pickup" : "drop"} />;
   else if (tab === "cities") body = <CitiesTab d={detail} />;
+  else if (tab === "pnl") body = <PnlTab sid={row.id} overlay={modal} />;
   else body = (
     <div className="sx-empty" aria-disabled="true">
       {tab === "fares" ? "Seat-wise fare editing" : "Trip P&L"} is not available yet: the backend has no {tab === "fares" ? "per-trip fare override" : "trip expense ledger"} API, so no figures are shown rather than estimated ones.
@@ -84,14 +92,20 @@ export function ScheduleOverlay({ row, tab: initialTab, onClose }: { row: Schedu
   );
 
   return (
-    <div className="sx-backdrop sx38-workspace" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="sx-modal" role="dialog" aria-modal="true" aria-label="Schedule management">
+    <div className={`sx-backdrop sx38-workspace${min ? " sx-minimized" : ""}`} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className={`sx-modal${tab === "pnl" ? " sxp-active" : ""}`} role="dialog" aria-modal="true" aria-label="Schedule management" ref={modal}
+        onClick={(e) => { if (tab === "pnl" && (e.target as Element).closest(".sx-modal-footer [data-sx-close]")) onClose(); }}>
         <header data-sx-modal-head="">
+          {tab === "pnl" ? <>
+            <div className="sx-head-identity"><div><h2>Schedule <small>{row.serviceNumber} - {row.serviceName || `${row.origin} ${row.destination}`}</small></h2></div></div>
+            <div className="sx-head-actions"><button type="button" data-sx-minimize="" title="Minimize" onClick={() => setMin((m) => !m)}>−</button><button type="button" data-sx-close="" title="Close schedule" onClick={onClose}><I name="x" size={26} /></button></div>
+          </> : <>
           <div className="sx-head-identity">
             <span className="sx-head-logo"><I name="bus" size={23} /></span>
             <div><h2>{row.serviceNumber} <small>{row.serviceName}</small></h2><p>{row.origin} → {row.destination} <span>• {shortDate(row.travelDate)}</span></p></div>
           </div>
           <div className="sx-head-actions"><button className="sx-close-round" data-sx-close="" title="Close schedule" onClick={onClose}><I name="x" /></button></div>
+          </>}
         </header>
         <nav data-sx-modal-tabs="">
           {TABS.map(([k, icon, label]) => (
@@ -99,14 +113,14 @@ export function ScheduleOverlay({ row, tab: initialTab, onClose }: { row: Schedu
           ))}
         </nav>
         <main data-sx-modal-body="">{body}</main>
-        <footer className="sx-modal-footer">
+        {tab === "pnl" ? <footer key="pnl" className="sx-modal-footer" /> : <footer key="std" className="sx-modal-footer">
           <span data-sx-footer-info="" className="sx-muted">Operator data shown where available · unsupported controls are preview-only</span>
           <div>
             {OPERATIONAL.has(tab)
               ? <Bt icon="x" label="Close" cls="primary" attrs={{ "data-sx-close": "" }} onClick={onClose} />
               : <><Bt icon="x" label="Close" attrs={{ "data-sx-close": "" }} onClick={onClose} /><Bt icon="check" label="Save changes" cls="primary" attrs={{ "data-sx-save": "" }} disabled /></>}
           </div>
-        </footer>
+        </footer>}
       </div>
     </div>
   );
