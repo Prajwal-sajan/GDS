@@ -64,12 +64,53 @@ public static class RouteEndpoints
             return Results.Ok(new { id = r.Id, name = r.Name, status = r.Status });
         }).RequireAuthorization(Policies.Operations);
 
+        // ---- Route editor writes (legacy PUT /routes/:id coach_id / stops / boarding+drop+breaks / seat_blocks, POST /routes/:id/shift-time)
+        g.MapPut("/routes/{id:long}/coach", async (long id, RouteCoachInput i, RouteEditService s, HttpContext h) =>
+            Results.Ok(await s.ChangeCoachAsync(id, i.CoachTemplateId, h.User.Identity!.Name!))).RequireAuthorization(Policies.Operations);
+
+        g.MapPut("/routes/{id:long}/stops", async (long id, List<RouteStopInput> i, RouteEditService s, HttpContext h) =>
+            Results.Ok(await s.ReplaceStopsAsync(id, i, h.User.Identity!.Name!))).RequireAuthorization(Policies.Operations);
+
+        g.MapPost("/routes/{id:long}/stages", async (long id, RouteStageInput i, RouteEditService s, HttpContext h) =>
+            Results.Ok(new { id = (await s.SaveStageAsync(id, null, i, h.User.Identity!.Name!)).Id })).RequireAuthorization(Policies.Operations);
+        g.MapPut("/routes/{id:long}/stages/{stageId:long}", async (long id, long stageId, RouteStageInput i, RouteEditService s, HttpContext h) =>
+            Results.Ok(new { id = (await s.SaveStageAsync(id, stageId, i, h.User.Identity!.Name!)).Id })).RequireAuthorization(Policies.Operations);
+        g.MapDelete("/routes/{id:long}/stages/{stageId:long}", async (long id, long stageId, RouteEditService s, HttpContext h) =>
+        {
+            await s.DeleteStageAsync(id, stageId, h.User.Identity!.Name!);
+            return Results.Ok(new { ok = true });
+        }).RequireAuthorization(Policies.Operations);
+
+        g.MapPost("/routes/{id:long}/seat-blocks", async (long id, RouteSeatBlockInput i, RouteEditService s, HttpContext h) =>
+        {
+            var (b, res) = await s.SaveSeatBlockAsync(id, null, i, h.User.Identity!.Name!);
+            return Results.Ok(new { id = b.Id, result = res });
+        }).RequireAuthorization(Policies.Operations);
+        g.MapPut("/routes/{id:long}/seat-blocks/{blockId:long}", async (long id, long blockId, RouteSeatBlockInput i, RouteEditService s, HttpContext h) =>
+        {
+            var (b, res) = await s.SaveSeatBlockAsync(id, blockId, i, h.User.Identity!.Name!);
+            return Results.Ok(new { id = b.Id, result = res });
+        }).RequireAuthorization(Policies.Operations);
+        g.MapDelete("/routes/{id:long}/seat-blocks/{blockId:long}", async (long id, long blockId, RouteEditService s, HttpContext h) =>
+            Results.Ok(new { result = await s.DeleteSeatBlockAsync(id, blockId, h.User.Identity!.Name!) })).RequireAuthorization(Policies.Operations);
+
+        g.MapPost("/routes/{id:long}/shift-time", async (long id, RouteShiftInput i, RouteEditService s, HttpContext h) =>
+            Results.Ok(await s.ShiftTimetableAsync(id, i, h.User.Identity!.Name!))).RequireAuthorization(Policies.Operations);
+
+        // City catalogue for the via-city editor (legacy GET /api/cities).
+        g.MapGet("/city-list", async (GdsDbContext db) => Results.Ok(new
+        {
+            cities = await db.Cities.AsNoTracking().Where(c => c.IsActive).OrderBy(c => c.Name)
+                .Select(c => new { c.Id, c.Name, c.State }).ToListAsync(),
+        })).RequireAuthorization(Policies.Reports);
+
         // Route editor read model (legacy GET /api/routes/:id): every tab's data in one call, PostgreSQL only.
         g.MapGet("/route-detail/{id:long}", async (long id, GdsDbContext db) =>
         {
             var r = await db.Routes.AsNoTracking().AsSplitQuery()
                 .Include(x => x.Stops).ThenInclude(s => s.City).Include(x => x.Stages).Include(x => x.Fares).Include(x => x.RefundSlabs)
                 .Include(x => x.SeatFareRules).Include(x => x.ExpenseItems).Include(x => x.CoachTemplate).ThenInclude(c => c!.Seats)
+                .Include(x => x.SeatBlocks)
                 .FirstOrDefaultAsync(x => x.Id == id) ?? throw new GdsException("ROUTE_NOT_FOUND", "Route not found", 404);
             var cityIds = r.Stages.Select(s => s.CityId).Concat(r.Stops.Select(s => s.CityId)).Distinct().ToList();
             var cities = await db.Cities.AsNoTracking().Where(c => cityIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id, c => c.Name);
@@ -85,8 +126,12 @@ public static class RouteEndpoints
                 {
                     id = r.CoachTemplate.Id, name = r.CoachTemplate.Name, pattern = r.CoachTemplate.Pattern, capacity = r.CoachTemplate.Seats.Count,
                     seaters = r.CoachTemplate.Seats.Count(s => s.SeatType == "seater"), sleepers = r.CoachTemplate.Seats.Count(s => s.SeatType == "sleeper"),
+                    seats = r.CoachTemplate.Seats.OrderBy(s => s.Deck).ThenBy(s => s.Row).ThenBy(s => s.Col)
+                        .Select(s => new { s.Code, s.Deck, s.Row, s.Col, s.Width, s.Length, s.SeatType }),
                 },
-                stops = stops.Select(s => new { s.Sequence, cityId = s.CityId, city = s.City?.Name, state = s.City?.State, lat = s.City?.Lat, lng = s.City?.Lng, s.Day, s.Time }),
+                coachTemplateId = r.CoachTemplateId,
+                seatBlocks = r.SeatBlocks.OrderBy(b => b.Id).Select(b => new { b.Id, b.Seats, b.Reason, b.FromDate, b.ToDate, b.AutoReleaseHours, b.CreatedBy, b.CreatedAt }),
+                stops = stops.Select(s => new { s.Id, s.Sequence, cityId = s.CityId, city = s.City?.Name, state = s.City?.State, lat = s.City?.Lat, lng = s.City?.Lng, s.Day, s.Time }),
                 stages = r.Stages.OrderBy(s => s.Day).ThenBy(s => s.Time).Select(s => new
                 {
                     s.Id, s.Kind, s.Name, s.Address, s.Landmark, s.ContactNumber, s.Lat, s.Lng, s.Day, s.Time, s.Prime, cityId = s.CityId,

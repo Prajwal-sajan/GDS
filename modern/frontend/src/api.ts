@@ -211,6 +211,17 @@ export const api = {
   setRouteStatus: (id: number, status: "active" | "inactive") => call<{ status: string }>("PUT", `/api/admin/routes/${id}/status`, { status }),
   saveFares: (routeId: number, fares: Fare[]) => call<{ updated: number }>("PUT", `/api/admin/routes/${routeId}/fares`, fares),
   saveRouteSettings: (routeId: number, body: RouteSettingsInput) => call<{ id: number }>("PUT", `/api/admin/routes/${routeId}/settings`, body),
+  cityList: () => call<{ cities: { id: number; name: string; state: string | null }[] }>("GET", "/api/admin/city-list"),
+  changeRouteCoach: (routeId: number, coachTemplateId: number) => call<{ changed: boolean; coach?: string; remappedSeats: number }>("PUT", `/api/admin/routes/${routeId}/coach`, { coachTemplateId }),
+  saveRouteStops: (routeId: number, stops: RouteStopInput[]) => call<{ stops: number; added: number; removed: number; pairsWithoutFare: { from: string; to: string }[] }>("PUT", `/api/admin/routes/${routeId}/stops`, stops),
+  saveRouteStage: (routeId: number, stageId: number | null, body: RouteStageInput) =>
+    call<{ id: number }>(stageId == null ? "POST" : "PUT", stageId == null ? `/api/admin/routes/${routeId}/stages` : `/api/admin/routes/${routeId}/stages/${stageId}`, body),
+  deleteRouteStage: (routeId: number, stageId: number) => call<{ ok: boolean }>("DELETE", `/api/admin/routes/${routeId}/stages/${stageId}`),
+  saveRouteSeatBlock: (routeId: number, blockId: number | null, body: RouteSeatBlockInput) =>
+    call<{ id: number; result: RouteBlockResult }>(blockId == null ? "POST" : "PUT", blockId == null ? `/api/admin/routes/${routeId}/seat-blocks` : `/api/admin/routes/${routeId}/seat-blocks/${blockId}`, body),
+  deleteRouteSeatBlock: (routeId: number, blockId: number) => call<{ result: RouteBlockResult }>("DELETE", `/api/admin/routes/${routeId}/seat-blocks/${blockId}`),
+  shiftRouteTime: (routeId: number, body: { direction: "delay" | "advance"; hours: number; minutes: number; dryRun: boolean }) =>
+    call<RouteShiftPreview>("POST", `/api/admin/routes/${routeId}/shift-time`, body),
   counterBook: (body: unknown) => call<CounterResult>("POST", "/api/admin/bookings/counter", body),
   invoices: () => call<InvoiceRow[]>("GET", "/api/admin/reconciliation/invoices"),
   uploadInvoice: (body: unknown) => call<{ id: number; duplicate: boolean }>("POST", "/api/admin/reconciliation/invoices", body),
@@ -323,11 +334,21 @@ export interface RouteStageRow { id: number; kind: string; name: string; address
   pickupType: string | null; exchangePoint: string | null; exchangeTime: string | null; metroDescription: string | null }
 export type RouteSettingsInput = Partial<{ name: string; altName: string; departureTime: string; arrivalTime: string; arrivalDay: number; startDate: string; endDate: string;
   partialCancellationAllowed: boolean; maxSeatsPerTicket: number; updateCutoffMinutes: number; refundSlabs: { hoursBefore: number; refundPercent: number }[] }>;
+export interface RouteStopInput { id: number | null; cityId: number; day: number; time: string }
+export interface RouteStageInput { kind: string; cityId: number; name: string; address: string | null; landmark: string | null; contactNumber: string | null;
+  lat: number | null; lng: number | null; day: number; time: string; prime: boolean; pickupType: string | null; exchangePoint: string | null; exchangeTime: string | null; metroDescription: string | null }
+export interface RouteSeatBlockInput { seats: string[]; reason: string | null; fromDate: string | null; toDate: string | null; autoReleaseHours: number | null }
+export interface RouteBlockResult { departures: number; seatsBlocked: number; seatsReleased: number; skipped: string[] }
+export interface RouteShiftPreview { deltaMinutes: number; departures: number; bookings: number; passengers: number;
+  cities: { city: string | null; before: string; after: string }[]; points: { kind: string; name: string; before: string; after: string }[] }
+export interface RouteCoachSeat { code: string; deck: string; row: number; col: number; width: number; length: number; seatType: string }
+export interface RouteSeatBlockRow { id: number; seats: string[]; reason: string; fromDate: string | null; toDate: string | null; autoReleaseHours: number | null; createdBy: string; createdAt: string }
 export interface RouteDetail {
   id: number; serviceNumber: string; name: string; altName: string | null; status: string; departureTime: string; arrivalTime: string | null;
   arrivalDay: number | null; startDate: string | null; endDate: string | null; partialCancellationAllowed: boolean; maxSeatsPerTicket: number; updateCutoffMinutes: number;
-  coach: { id: number; name: string; pattern: string; capacity: number; seaters: number; sleepers: number } | null;
-  stops: { sequence: number; cityId: number; city: string | null; state: string | null; lat: number | null; lng: number | null; day: number; time: string }[];
+  coach: { id: number; name: string; pattern: string; capacity: number; seaters: number; sleepers: number; seats: RouteCoachSeat[] } | null;
+  coachTemplateId: number; seatBlocks: RouteSeatBlockRow[];
+  stops: { id: number; sequence: number; cityId: number; city: string | null; state: string | null; lat: number | null; lng: number | null; day: number; time: string }[];
   stages: RouteStageRow[];
   fares: { fromSequence: number; toSequence: number; from: string | null; to: string | null; seater: number; sleeperLower: number; sleeperUpper: number }[];
   refundSlabs: { hoursBefore: number; refundPercent: number }[];

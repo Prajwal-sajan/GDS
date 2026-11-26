@@ -104,3 +104,65 @@ test("route editor: view mode is read-only; viewer cannot open edit", async ({ b
   await expect(R.locator('[data-rv="save"]')).toHaveCount(0);
   await expect(R.locator('.rv-tabbar [data-rv-tab="update"]')).toHaveCount(0);
 });
+
+type Detail = { seatBlocks: { id: number; reason: string; seats: string[] }[]; stages: { id: number; kind: string; name: string }[] };
+const detailOf = async (request: import("@playwright/test").APIRequestContext) => (await (await request.get(`${API}/api/admin/route-detail/1`, { headers: H })).json()) as Detail;
+
+test("route editor: standing seat block is created from the seat map and removed", async ({ browser, baseURL, request }) => {
+  const R = await reactPage(browser, baseURL!);
+  R.on("dialog", (d) => void d.accept());
+  await R.goto("/#/gds/routes/1?rvtab=block&rvmode=edit");
+  const before = await detailOf(request);
+  const taken = new Set(before.seatBlocks.flatMap((b) => b.seats));
+  const seats = R.getByTestId("route-seatmap").locator("button[data-seat]");
+  await expect(seats.first()).toBeVisible();
+  const codes = await seats.evaluateAll((els) => els.map((e) => e.getAttribute("data-seat")!));
+  const code = codes.find((c) => !taken.has(c))!;
+  try {
+    await R.locator(`[data-seat="${code}"]`).click();
+    await R.getByLabel("Reason").fill("E2E crew");
+    await R.locator('[data-rv="block-save"]').click();
+    await expect(R.locator("#toasts")).toContainText("Block saved");
+    await expect(R.getByTestId("route-seat-blocks")).toContainText("E2E crew");
+    expect((await detailOf(request)).seatBlocks.some((b) => b.reason === "E2E crew" && b.seats.includes(code))).toBeTruthy();
+    await R.getByRole("button", { name: "Remove block E2E crew" }).click();
+    await R.locator(".confirm-ok, [data-confirm-ok], button:has-text('Release')").last().click({ timeout: 3000 }).catch(() => undefined);
+    await expect(R.locator("#toasts")).toContainText("Block removed");
+  } finally {
+    for (const b of (await detailOf(request)).seatBlocks.filter((x) => x.reason === "E2E crew")) await request.delete(`${API}/api/admin/routes/1/seat-blocks/${b.id}`, { headers: H });
+  }
+  expect((await detailOf(request)).seatBlocks.some((b) => b.reason === "E2E crew")).toBeFalsy();
+});
+
+test("route editor: a break point is added through the modal and deleted", async ({ browser, baseURL, request }) => {
+  const R = await reactPage(browser, baseURL!);
+  await R.goto("/#/gds/routes/1?rvtab=breaks&rvmode=edit");
+  try {
+    await R.locator('[data-rv="add-point"]').click();
+    const dlg = R.getByRole("dialog", { name: /Add break/ });
+    await dlg.getByLabel("Name*").fill("E2E Tea Halt");
+    await dlg.getByLabel("Time*").fill("23:15");
+    await dlg.locator('[data-rv="point-save"]').click();
+    await expect(R.locator("#toasts")).toContainText("Point added");
+    await expect(R.locator(".rv-stopcard h3")).toContainText(["E2E Tea Halt"]);
+    expect((await detailOf(request)).stages.some((s) => s.kind === "break" && s.name === "E2E Tea Halt")).toBeTruthy();
+    await R.getByRole("button", { name: "Delete E2E Tea Halt" }).click();
+    await R.locator(".confirm-ok, [data-confirm-ok], button:has-text('Delete')").last().click({ timeout: 3000 }).catch(() => undefined);
+    await expect(R.locator("#toasts")).toContainText("Point deleted");
+  } finally {
+    for (const s of (await detailOf(request)).stages.filter((x) => x.name === "E2E Tea Halt")) await request.delete(`${API}/api/admin/routes/1/stages/${s.id}`, { headers: H });
+  }
+});
+
+test("route editor: update tab previews a timetable shift without changing it", async ({ browser, baseURL, request }) => {
+  const R = await reactPage(browser, baseURL!);
+  const times = async () => (await (await request.get(`${API}/api/admin/route-detail/1`, { headers: H })).json()).stops.map((s: { time: string }) => s.time);
+  const before = await times();
+  await R.goto("/#/gds/routes/1?rvtab=update&rvmode=edit");
+  await R.getByLabel("Minutes").fill("20");
+  await expect(R.locator('[data-rv="shift-apply"]')).toBeDisabled();
+  await R.locator('[data-rv="shift-preview"]').click();
+  // Either the before/after table, or the guard that a departure is on the road right now.
+  await expect(R.getByTestId("shift-impact").or(R.locator("#toasts").getByText(/on the road/))).toBeVisible();
+  expect(await times()).toEqual(before);
+});

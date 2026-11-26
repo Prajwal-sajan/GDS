@@ -26,6 +26,7 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
     public DbSet<RouteStage> RouteStages => Set<RouteStage>();
     public DbSet<RouteFare> RouteFares => Set<RouteFare>();
     public DbSet<RefundSlab> RefundSlabs => Set<RefundSlab>();
+    public DbSet<RouteSeatBlock> RouteSeatBlocks => Set<RouteSeatBlock>();
     public DbSet<SeatFareRule> SeatFareRules => Set<SeatFareRule>();
     public DbSet<Trip> Trips => Set<Trip>();
     public DbSet<SeatAllocation> SeatAllocations => Set<SeatAllocation>();
@@ -138,6 +139,11 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
             e.HasIndex(x => new { x.TenantId, x.ServiceNumber });
         });
         b.Entity<RouteStop>(e => e.HasIndex(x => new { x.RouteId, x.Sequence }).IsUnique());
+        b.Entity<RouteSeatBlock>(e =>
+        {
+            e.HasIndex(x => x.RouteId);
+            e.ToTable(t => t.HasCheckConstraint("ck_route_seat_blocks", "cardinality(seats) > 0 AND (auto_release_hours IS NULL OR auto_release_hours BETWEEN 0 AND 168) AND (from_date IS NULL OR to_date IS NULL OR from_date <= to_date)"));
+        });
         b.Entity<RouteStage>(e => { e.Property(x => x.Id).ValueGeneratedNever(); e.HasIndex(x => x.RouteId); });
         b.Entity<RouteFare>(e =>
         {

@@ -43,6 +43,7 @@ builder.Services.AddScoped<OutboxWriter>();
 builder.Services.AddScoped<RedBusNotifier>();
 builder.Services.AddScoped<LegacyImporter>();
 builder.Services.AddScoped<JourneyOS.Api.Operations.OperationsService>();
+builder.Services.AddScoped<JourneyOS.Api.Operations.RouteEditService>();
 builder.Services.AddScoped<JourneyOS.Api.Admin.PayrollService>();
 builder.Services.AddScoped<JourneyOS.Api.Accounts.ReconciliationService>();
 builder.Services.AddScoped<JourneyOS.Api.Crm.CrmService>();
@@ -59,10 +60,12 @@ if (cfg.GetValue<bool>("Realtime:RedisBackplane") && cfg.GetConnectionString("Re
 builder.Services.AddHttpClient<RedBusCallbackClient>(c => c.Timeout = TimeSpan.FromSeconds(cfg.GetValue("Outbox:TimeoutSeconds", 15)));
 builder.Services.AddSingleton<OutboxDispatcher>();
 builder.Services.AddSingleton<HoldExpirySweeper>();
+builder.Services.AddSingleton<JourneyOS.Api.Operations.RouteBlockReleaser>();
 if (cfg.GetValue("Workers:Enabled", true))
 {
     builder.Services.AddHostedService(sp => sp.GetRequiredService<OutboxDispatcher>());
     builder.Services.AddHostedService(sp => sp.GetRequiredService<HoldExpirySweeper>());
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<JourneyOS.Api.Operations.RouteBlockReleaser>());
 }
 
 builder.Services.AddAuthentication(AdminKeyHandler.Scheme)

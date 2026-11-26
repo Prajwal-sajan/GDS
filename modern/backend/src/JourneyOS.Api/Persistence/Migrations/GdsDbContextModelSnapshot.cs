@@ -2373,6 +2373,62 @@ namespace JourneyOS.Api.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("JourneyOS.Api.Persistence.RouteSeatBlock", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int?>("AutoReleaseHours")
+                        .HasColumnType("integer")
+                        .HasColumnName("auto_release_hours");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly?>("FromDate")
+                        .HasColumnType("date")
+                        .HasColumnName("from_date");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.Property<long>("RouteId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("route_id");
+
+                    b.PrimitiveCollection<string[]>("Seats")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("seats");
+
+                    b.Property<DateOnly?>("ToDate")
+                        .HasColumnType("date")
+                        .HasColumnName("to_date");
+
+                    b.HasKey("Id")
+                        .HasName("pk_route_seat_blocks");
+
+                    b.HasIndex("RouteId")
+                        .HasDatabaseName("ix_route_seat_blocks_route_id");
+
+                    b.ToTable("route_seat_blocks", t =>
+                        {
+                            t.HasCheckConstraint("ck_route_seat_blocks", "cardinality(seats) > 0 AND (auto_release_hours IS NULL OR auto_release_hours BETWEEN 0 AND 168) AND (from_date IS NULL OR to_date IS NULL OR from_date <= to_date)");
+                        });
+                });
+
             modelBuilder.Entity("JourneyOS.Api.Persistence.RouteStage", b =>
                 {
                     b.Property<long>("Id")
@@ -3668,6 +3724,16 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasConstraintName("fk_route_fares_routes_route_id");
                 });
 
+            modelBuilder.Entity("JourneyOS.Api.Persistence.RouteSeatBlock", b =>
+                {
+                    b.HasOne("JourneyOS.Api.Persistence.Route", null)
+                        .WithMany("SeatBlocks")
+                        .HasForeignKey("RouteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_route_seat_blocks_routes_route_id");
+                });
+
             modelBuilder.Entity("JourneyOS.Api.Persistence.RouteStage", b =>
                 {
                     b.HasOne("JourneyOS.Api.Persistence.Route", null)
@@ -3741,6 +3807,8 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.Navigation("Fares");
 
                     b.Navigation("RefundSlabs");
+
+                    b.Navigation("SeatBlocks");
 
                     b.Navigation("SeatFareRules");
 

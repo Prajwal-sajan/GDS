@@ -17,7 +17,7 @@ public sealed record FareInput(int FromSequence, int ToSequence, decimal Seater,
 public sealed record BlockInput(List<string> Seats, int? FromSequence, int? ToSequence, string? Reason);
 public sealed record GenerateInput(DateOnly From, DateOnly To);
 public sealed record RefundSlabInput(int HoursBefore, decimal RefundPercent);
-public sealed record RouteSettingsInput(string? Name = null, string? AltName = null, long? CoachTemplateId = null, TimeOnly? DepartureTime = null,
+public sealed record RouteSettingsInput(string? Name = null, string? AltName = null, TimeOnly? DepartureTime = null,
     TimeOnly? ArrivalTime = null, int? ArrivalDay = null, DateOnly? StartDate = null, DateOnly? EndDate = null, bool? PartialCancellationAllowed = null,
     bool? PrimaryPaxCancellable = null, int? MaxSeatsPerTicket = null, int? UpdateCutoffMinutes = null, List<RefundSlabInput>? RefundSlabs = null);
 public sealed record CounterPassenger(string Seat, string Name, int Age, string Gender, string? Mobile, string? Email, bool Primary);
@@ -26,7 +26,7 @@ public sealed record CounterBookingInput(long TripId, long BoardingPointId, long
 
 /// <summary>Operator-side master data and operations. Every mutation is transactional, audited and cache-invalidating.</summary>
 public sealed class OperationsService(GdsDbContext db, InventoryService inventory, RedBusQueryService rbq, RedBusNotifier notifier,
-    IGdsCache cache, TimeProvider clock)
+    IGdsCache cache, TimeProvider clock, RouteEditService routeEdit)
 {
     private DateTime Now => clock.GetUtcNow().UtcDateTime;
     private long T => db.CurrentTenantId;
@@ -166,6 +166,8 @@ public sealed class OperationsService(GdsDbContext db, InventoryService inventor
             if (!seqs.Contains(f.FromSequence) || !seqs.Contains(f.ToSequence) || f.FromSequence >= f.ToSequence)
                 throw new GdsException("VALIDATION", $"Invalid segment {f.FromSequence}->{f.ToSequence}");
             if (f.Seater < 0 || f.SleeperLower < 0 || f.SleeperUpper < 0) throw new GdsException("VALIDATION", "Fares cannot be negative");
+            // An all-zero row would put the city pair on sale for free.
+            if (f.Seater + f.SleeperLower + f.SleeperUpper == 0) throw new GdsException("VALIDATION", $"Enter a fare for segment {f.FromSequence}->{f.ToSequence}");
             var row = route.Fares.FirstOrDefault(x => x.FromSequence == f.FromSequence && x.ToSequence == f.ToSequence);
             if (row is null) route.Fares.Add(row = new RouteFare { RouteId = routeId, FromSequence = f.FromSequence, ToSequence = f.ToSequence });
             row.Seater = f.Seater; row.SleeperLower = f.SleeperLower; row.SleeperUpper = f.SleeperUpper;
@@ -292,10 +294,8 @@ public sealed class OperationsService(GdsDbContext db, InventoryService inventor
         if (i.UpdateCutoffMinutes is < 0 or > 10080) throw new GdsException("VALIDATION", "Update cutoff must be 0-10080 minutes");
         if (i.ArrivalDay is < 1 or > 7) throw new GdsException("VALIDATION", "Arrival day must be 1-7");
         if ((i.StartDate ?? route.StartDate) is DateOnly sd && (i.EndDate ?? route.EndDate) is DateOnly ed && ed < sd) throw new GdsException("VALIDATION", "End date is before start date");
-        if (i.CoachTemplateId is long cid && !await db.CoachTemplates.AnyAsync(c => c.Id == cid)) throw new GdsException("VALIDATION", "Unknown coach");
         Set("name", i.Name?.Trim(), route.Name, () => route.Name = i.Name!.Trim());
         Set("alt_name", i.AltName, route.AltName ?? "", () => route.AltName = i.AltName == "" ? null : i.AltName);
-        Set("coach_template_id", i.CoachTemplateId, route.CoachTemplateId, () => route.CoachTemplateId = i.CoachTemplateId!.Value);
         Set("departure_time", i.DepartureTime, route.DepartureTime, () => route.DepartureTime = i.DepartureTime!.Value);
         Set("arrival_time", i.ArrivalTime, route.ArrivalTime, () => route.ArrivalTime = i.ArrivalTime);
         Set("arrival_day", i.ArrivalDay, route.ArrivalDay, () => route.ArrivalDay = i.ArrivalDay);
@@ -329,7 +329,8 @@ public sealed class OperationsService(GdsDbContext db, InventoryService inventor
                    ?? throw new GdsException("SERVICE_NOT_FOUND", "Service not found", 404);
         var rows = await db.SeatAllocations.Where(a => a.TripId == tripId && a.IsActive && a.Kind == AllocationKind.Blocked && a.SeatCode == seat).ToListAsync();
         if (rows.Count == 0) throw new GdsException("NOT_BLOCKED", "Seat is not blocked", 404);
-        foreach (var r in rows) { r.IsActive = false; r.ReleasedAt = Now; r.Reason = "unblocked"; }
+        // A standing route block released on one departure stays released there (legacy schedule.unblocked).
+        foreach (var r in rows) { r.IsActive = false; r.ReleasedAt = Now; r.Reason = r.Reason?.StartsWith(RouteEditService.BlockReasonPrefix) == true ? r.Reason + ":unblocked" : "unblocked"; }
         await notifier.ServiceChangedAsync(trip, rows.Min(r => r.FromSeq), rows.Max(r => r.ToSeq));
         Audit(actor, "SEAT_UNBLOCK", "trip", tripId.ToString(), new { seat });
         await db.SaveChangesAsync();
@@ -356,6 +357,7 @@ ON CONFLICT DO NOTHING");
         }
         Audit(actor, "TRIPS_GENERATE", "route", routeId.ToString(), new { i.From, i.To, created });
         await db.SaveChangesAsync();
+        if (created > 0) await routeEdit.ApplyBlocksToNewTripsAsync(routeId);
         await tx.CommitAsync();
         await cache.BumpAsync(CacheKeys.SearchScope(T));
         return created;

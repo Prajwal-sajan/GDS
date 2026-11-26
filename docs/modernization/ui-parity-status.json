@@ -160,13 +160,16 @@
       "evidence": [
         "e2e/parity/route-editor.parity.spec.ts — header + tab bar pixel diff 0/0.0001 (view and edit); tab labels identical; pickups: same city tabs, names, times, identical stop-info markup incl. metro exchange text",
         "Fares tab edit persists to PostgreSQL and restores (e2e); Expenses tab saves via expense-template endpoint",
-        "General (name, alt name, max seats, update cut-off, partial cancellation), Cities & Schedule (times, arrival day, start/end date) and Cancellation slabs save via PUT /api/admin/routes/{id}/settings (OperationsService.UpdateRouteSettingsAsync: validated, audited ROUTE_UPDATE, future trips invalidated); e2e route-editor.parity.spec.ts 'general and cancellation settings persist' (6/6)"
+        "General (name, alt name, max seats, update cut-off, partial cancellation), Cities & Schedule (times, arrival day, start/end date) and Cancellation slabs save via PUT /api/admin/routes/{id}/settings (OperationsService.UpdateRouteSettingsAsync: validated, audited ROUTE_UPDATE, future trips invalidated); e2e route-editor.parity.spec.ts 'general and cancellation settings persist' (6/6)",
+        "Structural edits via Operations/RouteEditService.cs (one transaction each, audited, OTA notified, caches invalidated): PUT /routes/{id}/coach (remaps upcoming allocations + passengers to same seat code; refuses missing seats / different-layout buses), PUT /routes/{id}/stops (insert/remove/retime via cities; renumbers route_stops/stages/fares, seat_allocations, seat_holds, bookings, ota_inventories, trip fare overrides; refuses reorder and removal of used cities; reports pairs without fare), POST/PUT/DELETE /routes/{id}/stages (pickup/drop/break, one prime per city/kind, in-use protection), POST/PUT/DELETE /routes/{id}/seat-blocks (new route_seat_blocks table; materialised as Blocked allocations route_block:{id} on upcoming + newly generated departures; per-trip unblock sticky; RouteBlockReleaser auto-release), POST /routes/{id}/shift-time (dry-run preview with passengers affected; refuses on-road departures and moving origin off day 1)",
+        "Backend RouteEditTests 5/5 on cloned routes (renumbering, refusals, stage CRUD, block apply/unblock/generate/release window, shift preview/apply, coach refusal); full suite 74/74",
+        "e2e route-editor.parity.spec.ts 9/9: seat-map block create/remove, break add/delete via modal, update-tab preview leaves timetable unchanged"
       ],
       "gaps": [
-        "Coach change, via-city list, pickups/drops/breaks and route-level standing seat blocks are still read-only (no .NET write path); Update tab (shift schedule timings) not supported",
+        "Legacy route seat_blocks are still imported as raw legacy_block allocations, not as editable route_seat_blocks",
         "Legacy fares tab shows client-side fare-group/day-price preview data; React shows the persisted city-pair fare matrix",
-        "Simulated GPS halt evidence is not shown (no stored observations)",
-        "Break stops are not imported (not boarding inventory)",
+        "Simulated GPS halt evidence is not shown (no stored observations); 'Fix all' stays disabled",
+        "Legacy break stops are not imported (new breaks can be created)",
         "Full-page pixel parity not achieved for body tabs other than Pickups"
       ]
     },

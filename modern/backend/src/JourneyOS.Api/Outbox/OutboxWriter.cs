@@ -64,6 +64,23 @@ public sealed class RedBusNotifier(GdsDbContext db, OutboxWriter outbox)
         }
     }
 
+    /// <summary>REMOVE_SERVICE for one published (trip, source, destination) inventory, e.g. when a never-sold via city is removed.
+    /// Must run while the route's stops still carry the inventory's sequences.</summary>
+    public async Task InventoryRemovedAsync(Trip trip, OtaInventory i)
+    {
+        var p = await Provider();
+        if (p is null) return;
+        var stops = await db.RouteStops.Where(s => s.RouteId == trip.RouteId).ToListAsync();
+        var route = await db.Routes.FirstAsync(r => r.Id == trip.RouteId);
+        var src = stops.First(s => s.Sequence == i.FromSeq);
+        var dst = stops.First(s => s.Sequence == i.ToSeq);
+        await outbox.EnqueueAsync(RedBusActions.RemoveService, $"REMOVE_SERVICE:{i.Id}", new
+        {
+            action_type = RedBusActions.RemoveService,
+            data = new { doj = trip.TravelDate.AddDays(src.Day - 1).ToString("yyyy-MM-dd"), source = src.CityId.ToString(), destination = dst.CityId.ToString(), service_id = route.ServiceNumber, operatorcode = p.OperatorCode }
+        });
+    }
+
     public async Task ServiceRemovedAsync(Trip trip)
     {
         var p = await Provider();

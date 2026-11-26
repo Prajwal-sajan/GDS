@@ -86,6 +86,26 @@ public sealed class Route : ITenantOwned
     public List<RefundSlab> RefundSlabs { get; set; } = [];
     public List<SeatFareRule> SeatFareRules { get; set; } = [];
     public List<RouteExpenseItem> ExpenseItems { get; set; } = [];
+    public List<RouteSeatBlock> SeatBlocks { get; set; } = [];
+}
+
+/// <summary>
+/// Legacy route.seat_blocks: a standing quota (crew berth, staff seats) applied to every departure of the route whose travel date
+/// falls in [FromDate, ToDate]. Materialised as Blocked seat allocations (reason <c>route_block:{Id}</c>) when the block is saved
+/// and when trips are generated, so the allocation table stays the single source of seat availability. AutoReleaseHours releases
+/// the seats that many hours before departure (RouteBlockReleaser) so they can still be sold late.
+/// </summary>
+public sealed class RouteSeatBlock
+{
+    public long Id { get; set; }
+    public long RouteId { get; set; }
+    public string[] Seats { get; set; } = [];
+    public string Reason { get; set; } = "";
+    public DateOnly? FromDate { get; set; }
+    public DateOnly? ToDate { get; set; }
+    public int? AutoReleaseHours { get; set; }
+    public string CreatedBy { get; set; } = "";
+    public DateTime CreatedAt { get; set; }
 }
 
 /// <summary>
