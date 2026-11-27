@@ -3,6 +3,7 @@ import { api, type Me, type ScheduleDetail, type ScheduleRow, type TripSheet, ty
 import { BookingOverlay } from "../crm/BookingOverlay";
 import { confirmDialog, toast, toastError } from "../../components/ui/feedback";
 import { can, permissions } from "../settings/legacy";
+import { ImportPickupChart, ImportedChartModal, type ImportedChart } from "./PickupChartImport";
 
 // Schedule overlay → Block tab. React port of legacy schedules-screenshot-v6.js bookingTab() + blockPanel() + seatsGraphic()
 // (same classes). Seats: GET /trips/{id}/seats; block: POST /trips/{id}/blocks; unblock: DELETE /trips/{id}/blocks/{seat};
@@ -153,6 +154,11 @@ function PickupChart({ tripId, sheet, detail, seats, onTicket, reload }: { tripI
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [q, setQ] = useState("");
   const [notify, setNotify] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [imported, setImported] = useState<ImportedChart | null>(null);
+  const [showImported, setShowImported] = useState(false);
+  const loadImported = () => api.admin<{ imported: ImportedChart | null }>(`/schedules/${tripId}/pickup-chart/imported`).then((r) => setImported(r.imported)).catch(() => undefined);
+  useEffect(() => { void loadImported(); }, [tripId]); // eslint-disable-line react-hooks/exhaustive-deps
   const people = (sheet?.passengers ?? []).filter((p) => !["cancelled", "released", "expired"].includes(p.status));
   const total = people.length;
   const counts = { available: seats.filter((s) => s.state === "free").length, booked: seats.filter((s) => s.state === "booked" || s.state === "held").length, blocked: seats.filter((s) => s.state === "blocked").length };
@@ -196,13 +202,16 @@ function PickupChart({ tripId, sheet, detail, seats, onTicket, reload }: { tripI
       <div className="sx38-stats"><span className="available"><i></i> Available <b>{counts.available}</b></span><span className="booked"><i></i> Booked <b>{counts.booked}</b></span><span className="blocked"><i></i> Blocked <b>{counts.blocked}</b></span></div>
       <div className="sx38-toolbar">
         <B38 label="Print Pickup Chart" n="print" cls="primary" onClick={() => window.print()} />
-        <B38 label="Import Pickup Chart" n="upload" onClick={() => toast("Pickup chart import needs an operator-provided file format; no importer is configured.", "warn")} />
+        <B38 label="Import Pickup Chart" n="upload" onClick={() => can("bookings.modify") || can("schedules.modify") ? setImporting(true) : toast("Booking modification permission required", "bad")} />
+        {imported && <B38 label={`Imported (${imported.rows.length})`} n="ticket" onClick={() => setShowImported(true)} />}
         <span className="sx38-toolbar-divider"></span>
         <B38 label={`Cancel (${chosen.length})`} n="trash" cls="danger" disabled={!chosen.length} onClick={() => void cancel()} />
         <div className="sx48-notify-holder"><B38 label={`Notify (${chosen.length}) ▾`} n="bell" disabled={!chosen.length} onClick={() => setNotify((o) => !o)} /></div>
         <B38 label="History" n="history" onClick={() => setPanel("history")} />
       </div>
       {notify && pnrs.length > 0 && <NotifyForm tripId={tripId} pnrs={pnrs} onDone={() => setNotify(false)} />}
+      {importing && <ImportPickupChart detail={detail} onClose={() => setImporting(false)} onImported={() => void loadImported()} />}
+      {showImported && imported && <ImportedChartModal chart={imported} detail={detail} onClose={() => setShowImported(false)} />}
       <div className="sx38-groupcontrols"><span>Group by:</span>{GROUPS.map((g) => <button key={g} type="button" data-v38="group" data-group={g} className={group === g ? "active" : ""} aria-pressed={group === g} onClick={() => setGroup(g)}>{g}{g === "Pickup" ? " ↑" : ""}</button>)}</div>
       <div className="sx38-selection"><label><input type="checkbox" data-v38-all="" checked={total > 0 && chosen.length === total} onChange={(e) => toggle(people, e.target.checked)} /> {chosen.length} of {total} passengers selected</label>
         <button type="button" data-v38="select-all" onClick={() => toggle(people, true)}>Select All</button><button type="button" data-v38="clear" onClick={() => setSel(new Set())}>Clear</button>

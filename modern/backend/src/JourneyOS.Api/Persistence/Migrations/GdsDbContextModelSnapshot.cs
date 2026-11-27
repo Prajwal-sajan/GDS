@@ -2211,6 +2211,89 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.ToTable("payments");
                 });
 
+            modelBuilder.Entity("JourneyOS.Api.Persistence.PickupChartImport", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("Bytes")
+                        .HasColumnType("integer")
+                        .HasColumnName("bytes");
+
+                    b.Property<DateTime?>("CommittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("committed_at");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DetectedGds")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("detected_gds");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("file_name");
+
+                    b.Property<string>("InputLayout")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("input_layout");
+
+                    b.Property<string>("RowsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("rows_json");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("sha256");
+
+                    b.Property<string>("SourceGds")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source_gds");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<long>("TripId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("trip_id");
+
+                    b.Property<string>("WarningsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("warnings_json");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pickup_chart_imports");
+
+                    b.HasIndex("TenantId", "TripId", "Status")
+                        .HasDatabaseName("ix_pickup_chart_imports_tenant_id_trip_id_status");
+
+                    b.ToTable("pickup_chart_imports");
+                });
+
             modelBuilder.Entity("JourneyOS.Api.Persistence.Refund", b =>
                 {
                     b.Property<long>("Id")

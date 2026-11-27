@@ -440,6 +440,29 @@ public sealed class OutboxAttempt
     public bool Acknowledged { get; set; }
 }
 
+/// <summary>
+/// Legacy pickup_chart_imports_v40: an external tripsheet (PDF/CSV from another GDS) parsed into a reference-only manifest.
+/// Status "preview" rows expire after 20 minutes; "committed" rows are the imported chart. Never touches bookings or inventory.
+/// </summary>
+public sealed class PickupChartImport : ITenantOwned
+{
+    public long Id { get; set; }
+    public long TenantId { get; set; }
+    public long TripId { get; set; }
+    public string Status { get; set; } = "preview";
+    public string SourceGds { get; set; } = "";
+    public string DetectedGds { get; set; } = "";
+    public string InputLayout { get; set; } = "";
+    public string FileName { get; set; } = "";
+    public string Sha256 { get; set; } = "";
+    public int Bytes { get; set; }
+    public string RowsJson { get; set; } = "[]";
+    public string WarningsJson { get; set; } = "[]";
+    public string CreatedBy { get; set; } = "";
+    public DateTime CreatedAt { get; set; }
+    public DateTime? CommittedAt { get; set; }
+}
+
 public sealed class AuditLog : ITenantOwned
 {
     public long Id { get; set; }

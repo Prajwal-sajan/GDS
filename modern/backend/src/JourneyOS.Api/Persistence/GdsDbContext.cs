@@ -59,6 +59,7 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
     public DbSet<TripExpense> TripExpenses => Set<TripExpense>();
     public DbSet<ComplianceDocument> ComplianceDocuments => Set<ComplianceDocument>();
     public DbSet<VehicleMaintenance> VehicleMaintenance => Set<VehicleMaintenance>();
+    public DbSet<PickupChartImport> PickupChartImports => Set<PickupChartImport>();
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<UserSession> UserSessions => Set<UserSession>();
     public DbSet<Branch> Branches => Set<Branch>();
@@ -119,6 +120,12 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
         b.Entity<SarathiConversation>(e => { e.Property(x => x.MessagesJson).HasColumnType("jsonb"); e.HasIndex(x => new { x.TenantId, x.Owner }); });
         b.Entity<Vehicle>(e => { e.Property(x => x.PositionJson).HasColumnType("jsonb"); e.Property(x => x.HealthJson).HasColumnType("jsonb"); e.Property(x => x.DetailsJson).HasColumnType("jsonb"); });
         b.Entity<VehicleMaintenance>(e => e.HasIndex(x => new { x.TenantId, x.VehicleId }));
+        b.Entity<PickupChartImport>(e =>
+        {
+            e.HasIndex(x => new { x.TenantId, x.TripId, x.Status });
+            e.Property(x => x.RowsJson).HasColumnType("jsonb");
+            e.Property(x => x.WarningsJson).HasColumnType("jsonb");
+        });
         b.Entity<Staff>(e => e.Property(x => x.ProfileJson).HasColumnType("jsonb"));
         b.Entity<Trip>(e => e.Property(x => x.UiSettingsJson).HasColumnType("jsonb"));
         b.Entity<CoachTemplate>(e => e.Property(x => x.AmenitiesJson).HasColumnType("jsonb"));
