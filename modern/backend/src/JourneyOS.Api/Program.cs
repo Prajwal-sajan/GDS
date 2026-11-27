@@ -16,6 +16,7 @@ var builder = WebApplication.CreateBuilder(args);
 var cfg = builder.Configuration;
 
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<JourneyOS.Api.Security.StepUpService>();
 builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());
 builder.Services.AddDbContext<GdsDbContext>((sp, o) => o.UseNpgsql(cfg.GetConnectionString("Postgres"))

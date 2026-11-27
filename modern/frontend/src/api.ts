@@ -233,6 +233,11 @@ export const api = {
   saveExpenseTemplate: (id: number, items: { type: string; key: string | null; label: string; perTrip: number }[]) =>
     call<unknown>("PUT", `/api/admin/routes/${id}/expense-template`, items),
   setRouteStatus: (id: number, status: "active" | "inactive") => call<{ status: string }>("PUT", `/api/admin/routes/${id}/status`, { status }),
+  createRoute: (body: { serviceNumber: string; name: string; originCityId: number; destinationCityId: number; departureTime: string; arrivalTime?: string; coachTemplateId?: number; fare?: number }) =>
+    call<{ id: number; serviceNumber: string; status: string }>("POST", "/api/admin/routes", body),
+  duplicateRoute: (id: number, serviceNumber: string) => call<{ id: number; serviceNumber: string; status: string }>("POST", `/api/admin/routes/${id}/duplicate`, { serviceNumber }),
+  routeDeleteOtp: (id: number) => call<{ ok: boolean; dev_hint: string | null; notice?: string }>("POST", `/api/admin/routes/${id}/delete-otp`, {}),
+  deleteRoute: (id: number, otp: string) => call<{ success: boolean }>("DELETE", `/api/admin/routes/${id}?otp=${encodeURIComponent(otp)}`),
   saveFares: (routeId: number, fares: Fare[]) => call<{ updated: number }>("PUT", `/api/admin/routes/${routeId}/fares`, fares),
   saveRouteSettings: (routeId: number, body: RouteSettingsInput) => call<{ id: number }>("PUT", `/api/admin/routes/${routeId}/settings`, body),
   cityList: () => call<{ cities: { id: number; name: string; state: string | null }[] }>("GET", "/api/admin/city-list"),

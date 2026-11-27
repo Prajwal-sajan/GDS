@@ -1,0 +1,21 @@
+// Smoke: route create / duplicate / delete (OTP). Hard-removes the smoke routes afterwards (they never had trips).
+import { execSync } from "node:child_process";
+const B = "http://localhost:5080/api/admin", H = { "X-Admin-Key": "dev-owner-key", "X-Tenant": "demo", "Content-Type": "application/json" };
+const j = async (m, u, b) => { const r = await fetch(B + u, { method: m, headers: H, body: b ? JSON.stringify(b) : undefined }); const t = await r.text(); return { s: r.status, d: t ? JSON.parse(t) : null }; };
+const ok = (c, m) => { if (!c) throw new Error("FAIL " + m); console.log("ok", m); };
+const { d: { cities } } = await j("GET", "/city-list");
+const sn = `SMK${Date.now() % 100000}`;
+const bad = await j("POST", "/routes", { serviceNumber: sn }); ok(bad.s === 400 && /required/.test(bad.d.message), "create validation");
+const c = await j("POST", "/routes", { serviceNumber: sn, name: "Smoke route", originCityId: cities[0].id, destinationCityId: cities[1].id, departureTime: "17:30", arrivalTime: "07:55", fare: 900 });
+ok(c.s === 200 && c.d.status === "inactive", `created ${c.d.id}`);
+const dupSn = await j("POST", "/routes", { serviceNumber: sn, name: "x", originCityId: cities[0].id, destinationCityId: cities[1].id, departureTime: "17:30" }); ok(dupSn.s === 409, "duplicate service number rejected");
+const det = (await j("GET", `/route-detail/${c.d.id}`)).d; ok(det.fares.length === 1 && det.fares[0].seater === 900 && det.refundSlabs.length === 3, "fare + refund slabs seeded");
+const d = await j("POST", `/routes/${c.d.id}/duplicate`, { serviceNumber: `${sn}-COPY` }); ok(d.s === 200 && d.d.serviceNumber === `${sn}-COPY`, `duplicated ${d.d.id}`);
+const noOtp = await j("DELETE", `/routes/${d.d.id}?otp=000000`); ok(noOtp.s === 403, "delete without valid OTP rejected");
+const o = await j("POST", `/routes/${d.d.id}/delete-otp`, {}); ok(o.d.dev_hint, "otp issued");
+const del = await j("DELETE", `/routes/${d.d.id}?otp=${o.d.dev_hint}`); ok(del.s === 200, "deleted with OTP");
+const reuse = await j("DELETE", `/routes/${d.d.id}?otp=${o.d.dev_hint}`); ok(reuse.s === 403, "OTP single-use");
+const list = (await j("GET", "/route-list")).d.routes; ok(list.find((r) => r.id === d.d.id).status === "deleted", "listed as deleted");
+const ids = `${c.d.id},${d.d.id}`;
+execSync(`docker exec -i journeyos-postgres-1 psql -U journeyos -d journeyos -c "DELETE FROM route_stages WHERE route_id IN (${ids}); DELETE FROM route_stops WHERE route_id IN (${ids}); DELETE FROM route_fares WHERE route_id IN (${ids}); DELETE FROM refund_slabs WHERE route_id IN (${ids}); DELETE FROM seat_fare_rules WHERE route_id IN (${ids}); DELETE FROM route_expense_item WHERE route_id IN (${ids}); DELETE FROM routes WHERE id IN (${ids});"`, { stdio: "inherit" });
+console.log("ALL PASSED");

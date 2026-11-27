@@ -14,6 +14,7 @@ public sealed record RouteStageInput(string Kind, long CityId, string Name, stri
     decimal? Lat, decimal? Lng, int Day, string Time, bool Prime, string? PickupType, string? ExchangePoint, string? ExchangeTime, string? MetroDescription);
 public sealed record RouteSeatBlockInput(List<string> Seats, string? Reason, DateOnly? FromDate, DateOnly? ToDate, int? AutoReleaseHours);
 public sealed record RouteShiftInput(string Direction, int Hours, int Minutes, bool DryRun);
+public sealed record RouteCreateInput(string? ServiceNumber, string? Name, long? OriginCityId, long? DestinationCityId, string? DepartureTime, string? ArrivalTime, long? CoachTemplateId, decimal? Fare);
 
 /// <summary>
 /// Write side of the route editor for the structural parts of a route: coach, via cities, pickup / drop / break points, standing seat
@@ -66,6 +67,95 @@ public sealed class RouteEditService(GdsDbContext db, InventoryService inventory
     {
         var today = await TodayAsync();
         return await db.Trips.Where(t => t.RouteId == routeId && t.TravelDate >= today && t.Status == "active" && t.DeletedAt == null).OrderBy(t => t.TravelDate).ToListAsync();
+    }
+
+    // ---------------- route lifecycle (legacy POST /routes, POST /routes/:id/duplicate, DELETE /routes/:id) ----------------
+
+    private async Task EnsureServiceFreeAsync(string sn, long? except = null)
+    {
+        if (await db.Routes.AnyAsync(r => r.ServiceNumber == sn && r.Status != "deleted" && r.Id != except)) throw new GdsException("CONFLICT", "Service number already in use", 409);
+    }
+
+    /// <summary>Legacy POST /routes: new inactive route with origin/destination cities, one fare row and the legacy default refund slabs.</summary>
+    public async Task<Route> CreateRouteAsync(RouteCreateInput i, string actor)
+    {
+        var sn = (i.ServiceNumber ?? "").Trim();
+        if (sn == "" || i.OriginCityId is null || i.DestinationCityId is null || string.IsNullOrWhiteSpace(i.DepartureTime))
+            throw new GdsException("VALIDATION", "Service number, origin, destination and departure time are required");
+        if (i.OriginCityId == i.DestinationCityId) throw new GdsException("VALIDATION", "Origin and destination must differ");
+        var dep = ParseTime(i.DepartureTime, "Origin departure");
+        TimeOnly? arr = string.IsNullOrWhiteSpace(i.ArrivalTime) ? null : ParseTime(i.ArrivalTime, "Destination arrival");
+        await EnsureServiceFreeAsync(sn);
+        if (await db.Cities.CountAsync(c => c.Id == i.OriginCityId || c.Id == i.DestinationCityId) != 2) throw new GdsException("VALIDATION", "Choose valid origin and destination cities");
+        var coachId = i.CoachTemplateId ?? await db.CoachTemplates.OrderBy(c => c.Id).Select(c => (long?)c.Id).FirstOrDefaultAsync()
+            ?? throw new GdsException("VALIDATION", "Create a coach layout first");
+        if (!await db.CoachTemplates.AnyAsync(c => c.Id == coachId)) throw new GdsException("VALIDATION", "Coach not found");
+        var fare = i.Fare is > 0 ? i.Fare.Value : 1000m;
+        var r = new Route
+        {
+            Id = await NextIdAsync(), TenantId = T, ServiceNumber = sn, Name = string.IsNullOrWhiteSpace(i.Name) ? sn : i.Name.Trim(), CoachTemplateId = coachId,
+            DepartureTime = dep, ArrivalTime = arr, ArrivalDay = arr is null ? null : 2, Status = "inactive", StartDate = await TodayAsync(),
+            Stops = [new RouteStop { Sequence = 1, CityId = i.OriginCityId.Value, Day = 1, Time = dep }, new RouteStop { Sequence = 2, CityId = i.DestinationCityId.Value, Day = 2, Time = arr ?? dep }],
+            Fares = [new RouteFare { FromSequence = 1, ToSequence = 2, Seater = fare, SleeperLower = Math.Round(fare * 1.25m), SleeperUpper = Math.Round(fare * 1.15m) }],
+            RefundSlabs = [new RefundSlab { HoursBefore = 24, RefundPercent = 75 }, new RefundSlab { HoursBefore = 12, RefundPercent = 50 }, new RefundSlab { HoursBefore = 0, RefundPercent = 0 }],
+        };
+        db.Routes.Add(r);
+        Audit(actor, "ROUTE_CREATE", r.Id, new { r.ServiceNumber, r.Name, origin = i.OriginCityId, destination = i.DestinationCityId, departure = i.DepartureTime, coach = coachId, fare });
+        await db.SaveChangesAsync();
+        return r;
+    }
+
+    /// <summary>Legacy POST /routes/:id/duplicate: deep copy (cities, points, fares, slabs, seat rules, expenses, settings) as an inactive route.</summary>
+    public async Task<Route> DuplicateRouteAsync(long id, string? serviceNumber, string actor)
+    {
+        var src = await db.Routes.AsNoTracking().AsSplitQuery().Include(r => r.Stops).Include(r => r.Stages).Include(r => r.Fares).Include(r => r.RefundSlabs)
+            .Include(r => r.SeatFareRules).Include(r => r.ExpenseItems).FirstOrDefaultAsync(r => r.Id == id) ?? throw new GdsException("ROUTE_NOT_FOUND", "Route not found", 404);
+        var sn = string.IsNullOrWhiteSpace(serviceNumber) ? $"{src.ServiceNumber}-COPY" : serviceNumber.Trim();
+        await EnsureServiceFreeAsync(sn);
+        var r = new Route
+        {
+            Id = await NextIdAsync(), TenantId = T, ServiceNumber = sn, Name = src.Name, AltName = src.AltName, CoachTemplateId = src.CoachTemplateId, DepartureTime = src.DepartureTime,
+            Status = "inactive", ArrivalTime = src.ArrivalTime, ArrivalDay = src.ArrivalDay, DurationMinutes = src.DurationMinutes, DistanceKm = src.DistanceKm,
+            StartDate = src.StartDate, EndDate = src.EndDate, PartialCancellationAllowed = src.PartialCancellationAllowed, PrimaryPaxCancellable = src.PrimaryPaxCancellable,
+            MaxSeatsPerTicket = src.MaxSeatsPerTicket, UpdateCutoffMinutes = src.UpdateCutoffMinutes, SettingsJson = src.SettingsJson,
+            Stops = src.Stops.Select(s => new RouteStop { Sequence = s.Sequence, CityId = s.CityId, Day = s.Day, Time = s.Time }).ToList(),
+            Fares = src.Fares.Select(f => new RouteFare { FromSequence = f.FromSequence, ToSequence = f.ToSequence, Seater = f.Seater, SleeperLower = f.SleeperLower, SleeperUpper = f.SleeperUpper }).ToList(),
+            RefundSlabs = src.RefundSlabs.Select(s => new RefundSlab { HoursBefore = s.HoursBefore, RefundPercent = s.RefundPercent }).ToList(),
+            SeatFareRules = src.SeatFareRules.Select(s => new SeatFareRule { Kind = s.Kind, Label = s.Label, Seats = s.Seats, Days = s.Days, Value = s.Value }).ToList(),
+            ExpenseItems = src.ExpenseItems.Select(e => new RouteExpenseItem { Type = e.Type, Key = e.Key, Label = e.Label, PerTrip = e.PerTrip }).ToList(),
+        };
+        foreach (var s in src.Stages)
+            r.Stages.Add(new RouteStage
+            {
+                Id = await NextIdAsync(), CityId = s.CityId, StopSequence = s.StopSequence, Kind = s.Kind, Name = s.Name, Address = s.Address, Landmark = s.Landmark,
+                ContactNumber = s.ContactNumber, Lat = s.Lat, Lng = s.Lng, Day = s.Day, Time = s.Time, Prime = s.Prime, PickupType = s.PickupType,
+                ExchangePoint = s.ExchangePoint, ExchangeTime = s.ExchangeTime, MetroDescription = s.MetroDescription,
+            });
+        db.Routes.Add(r);
+        Audit(actor, "ROUTE_DUPLICATE", r.Id, new { source = id, r.ServiceNumber });
+        await db.SaveChangesAsync();
+        return r;
+    }
+
+    /// <summary>Legacy DELETE /routes/:id (OTP checked by the caller): status deleted; future departures stop selling (OTA notified).
+    /// Existing bookings are kept — they are cancelled/shifted explicitly by operators, never silently.</summary>
+    public async Task DeleteRouteAsync(long id, string actor)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync();
+        await LockRouteAsync(id);
+        var r = await db.Routes.Include(x => x.Stops).FirstAsync(x => x.Id == id);
+        if (r.Status == "deleted") throw new GdsException("CONFLICT", "Route is already deleted", 409);
+        var previous = r.Status; r.Status = "deleted";
+        var trips = await UpcomingTripsAsync(id);
+        foreach (var t in trips)
+        {
+            t.Bookable = false;
+            if (r.Stops.Count > 0) await notifier.ServiceChangedAsync(t, r.Stops.Min(s => s.Sequence), r.Stops.Max(s => s.Sequence));
+        }
+        Audit(actor, "ROUTE_DELETE", id, new { previous, disabled_trips = trips.Count });
+        await db.SaveChangesAsync();
+        await tx.CommitAsync();
+        foreach (var t in trips) await inventory.InvalidateTripAsync(t.Id);
     }
 
     private async Task NotifyAndCommitAsync(Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction tx, IEnumerable<Trip> trips)

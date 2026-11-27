@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace JourneyOS.Api.Admin;
 
 public sealed record RouteStatusInput(string Status);
+public sealed record RouteDuplicateInput(string? ServiceNumber);
 
 /// <summary>
 /// Read model for GDS → Routes list (legacy <c>GET /api/routes?status=all</c> + <c>/cities</c> + <c>/coaches</c> joined client-side)
@@ -96,6 +97,26 @@ public static class RouteEndpoints
 
         g.MapPost("/routes/{id:long}/shift-time", async (long id, RouteShiftInput i, RouteEditService s, HttpContext h) =>
             Results.Ok(await s.ShiftTimetableAsync(id, i, h.User.Identity!.Name!))).RequireAuthorization(Policies.Operations);
+
+        // ---- Route lifecycle (legacy POST /routes, POST /routes/:id/duplicate, POST /routes/:id/delete-otp, DELETE /routes/:id {otp})
+        g.MapPost("/routes", async (RouteCreateInput i, RouteEditService s, HttpContext h) =>
+        {
+            var r = await s.CreateRouteAsync(i, h.User.Identity!.Name!);
+            return Results.Ok(new { id = r.Id, serviceNumber = r.ServiceNumber, status = r.Status });
+        }).RequireAuthorization(Policies.Operations);
+        g.MapPost("/routes/{id:long}/duplicate", async (long id, RouteDuplicateInput i, RouteEditService s, HttpContext h) =>
+        {
+            var r = await s.DuplicateRouteAsync(id, i.ServiceNumber, h.User.Identity!.Name!);
+            return Results.Ok(new { id = r.Id, serviceNumber = r.ServiceNumber, status = r.Status });
+        }).RequireAuthorization(Policies.Operations);
+        g.MapPost("/routes/{id:long}/delete-otp", (long id, StepUpService otp, HttpContext h) =>
+            Results.Ok(otp.Request(h.User.Identity!.Name!, $"route_delete_{id}"))).RequireAuthorization(Policies.Operations);
+        g.MapDelete("/routes/{id:long}", async (long id, string? otp, StepUpService step, RouteEditService s, HttpContext h) =>
+        {
+            if (!step.Check(h.User.Identity!.Name!, $"route_delete_{id}", otp)) throw new GdsException("FORBIDDEN", "Valid OTP required to delete route", 403);
+            await s.DeleteRouteAsync(id, h.User.Identity!.Name!);
+            return Results.Ok(new { success = true });
+        }).RequireAuthorization(Policies.Operations);
 
         // City catalogue for the via-city editor (legacy GET /api/cities).
         g.MapGet("/city-list", async (GdsDbContext db) => Results.Ok(new
