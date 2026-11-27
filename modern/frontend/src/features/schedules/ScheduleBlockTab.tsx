@@ -37,7 +37,7 @@ export function BlockTab({ row, detail, mode = "block", me }: { row: ScheduleRow
   const [gender, setGender] = useState("Any");
   const [hide, setHide] = useState(false);
   const [popup, setPopup] = useState<"" | SummaryKind | "timings" | "location">("");
-  const [notifyOpen, setNotifyOpen] = useState(false);
+  const [notifyAnchor, setNotifyAnchor] = useState<HTMLElement | null>(null);
   const [chartPnrs, setChartPnrs] = useState<string[]>([]);
   const [layout, setLayout] = useState<SeatLayout>();
   const [posText, setPosText] = useState("No verified live position");
@@ -114,10 +114,9 @@ export function BlockTab({ row, detail, mode = "block", me }: { row: ScheduleRow
           <Bt n="pin" label="Location" cls="mini" attrs={{ "data-sx-location": "" }} onClick={() => setPopup("location")} />
           <Bt n="clock" label="Timings" cls="mini" attrs={{ "data-sx-timings": "" }} onClick={() => setPopup("timings")} />
           <Bt n="clock" label="Delay" cls="mini" attrs={{ "data-sx-delay": "" }} onClick={() => void delay48(row, load)} />
-          <div className="sx48-notify-holder" style={{ position: "relative", display: "grid" }}>
-            <Bt n="bell" label="Notify" cls="mini" attrs={{ "data-sx-notify-pop": "", "aria-haspopup": "menu", "aria-expanded": String(notifyOpen) }} onClick={() => setNotifyOpen((o) => !o)} />
-            {notifyOpen && <NotifyMenu onClose={() => setNotifyOpen(false)} onPick={(t) => void notify48(row, chartPnrs, t)} />}
-          </div>
+          <Bt n="bell" label="Notify" cls="mini" attrs={{ "data-sx-notify-pop": "", "aria-haspopup": "menu", "aria-expanded": String(!!notifyAnchor) }}
+            onClick={() => setNotifyAnchor((a) => a ? null : document.querySelector<HTMLElement>(".sx-seat-bottom [data-sx-notify-pop]"))} />
+          {notifyAnchor && <NotifyMenu anchor={notifyAnchor} onClose={() => setNotifyAnchor(null)} onPick={(t) => void notify48(row, chartPnrs, t)} />}
           <Bt n="shield" label={hide ? "Show fares" : "Hide fares"} cls="mini" attrs={{ "data-sx-hidefares": "", "aria-pressed": String(hide) }} onClick={() => setHide((h) => !h)} />
           <Bt n="rupee" label="Print" cls="mini" attrs={{ "data-sx-print": "" }} onClick={() => window.print()} />
         </div>

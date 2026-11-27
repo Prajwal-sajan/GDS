@@ -123,7 +123,9 @@ function Editor({ record, editing: startEdit, canModify, onClose, onSaved }: { r
     if (p.bank?.ifsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(p.bank.ifsc)) return toast("Invalid IFSC code", "bad");
     if (p.bank?.account_number && !/^\d{9,18}$/.test(p.bank.account_number)) return toast("Bank account number must be 9–18 digits", "bad");
     try {
-      await api.saveStaff({ ...d, email: d.email ?? "", bloodGroup: d.bloodGroup ?? "", joiningDate: d.joiningDate || null, licenseNumber: d.licenseNumber || null, licenseExpiry: d.licenseExpiry || null,
+      // status is owned by the row switch; keep the server's current value if the dialog was opened from a stale row
+      const status = record ? (await api.staff()).find((x) => x.id === record.id)?.status ?? d.status : d.status;
+      await api.saveStaff({ ...d, status, email: d.email ?? "", bloodGroup: d.bloodGroup ?? "", joiningDate: d.joiningDate || null, licenseNumber: d.licenseNumber || null, licenseExpiry: d.licenseExpiry || null,
         profile: { ...p, pan: (p.pan ?? "").toUpperCase() } } as Partial<Staff>, record?.id);
       toast(record ? "Staff changes saved" : "Staff added", "ok"); onClose(); onSaved();
     } catch (e) { toastError(e); }
@@ -275,7 +277,9 @@ export function StaffPage({ me }: { me: Me }) {
     return (!query || t.includes(query.toLowerCase())) && (!role || s.role === role) && (status === "all" || (s.status || "active") === status);
   }).sort((a, b) => a.name.localeCompare(b.name) * (asc ? 1 : -1) || a.id - b.id), [list, query, role, status, asc]);
   const setStat = async (ids: number[], st: string) => {
-    for (const id of ids) { const s = list!.find((x) => x.id === id)!; await api.saveStaff({ ...s, status: st }, id); }
+    // read the current server rows so a click made before the list re-renders never writes back stale fields
+    const fresh = await api.staff();
+    for (const id of ids) { const s = fresh.find((x) => x.id === id) ?? list!.find((x) => x.id === id)!; await api.saveStaff({ ...s, status: st }, id); }
   };
   const bulk = async (st: string) => {
     if (!canModify) return toast("Permission required", "bad");
@@ -311,7 +315,11 @@ export function StaffPage({ me }: { me: Me }) {
             const initial = (s.name || "?").trim().split(/\s+/).map((x) => x[0] || "").slice(0, 2).join("").toUpperCase();
             const toggleOne = async () => {
               if (!canModify) return toast("Permission required", "bad");
-              try { await setStat([s.id], active ? "inactive" : "active"); await load(); } catch (e) { toastError(e); }
+              try {
+                const cur = (await api.staff()).find((x) => x.id === s.id);
+                const isActive = ((cur ?? s).status || "active").toLowerCase() === "active";
+                await setStat([s.id], isActive ? "inactive" : "active"); await load();
+              } catch (e) { toastError(e); }
             };
             return (
               <tr key={s.id} data-staff-id={s.id} className={active ? "" : "inactive"}>

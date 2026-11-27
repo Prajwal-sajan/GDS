@@ -6,7 +6,9 @@ import { compare, LEGACY, legacyPage, OUT, reactPage, settle, shot, type DiffRes
 // Schedules → schedule management overlay (legacy schedules-screenshot-v6.js openModal). Baseline = live legacy GDS on the
 // same imported data, HB1 Rajahamsa 2026-11-24. Known data-only differences are normalised below, never the markup:
 //  - bookings created by the e2e suite (PNR prefix JOS…) exist only in PostgreSQL → removed from the React history table;
-//  - legacy route stops carry no state, PostgreSQL does → state text blanked on both sides before the text comparison.
+//  - legacy route stops carry no state, PostgreSQL does → state text blanked on both sides before the text comparison;
+//  - legacy pickup/drop edits were preview-only and its note says so; the React stop editor persists trip overrides, so
+//    its note truthfully says "Edits apply to this trip only…" → that note's text is blanked on both sides (markup still compared).
 test.describe.configure({ mode: "serial" });
 const results: DiffResult[] = [];
 test.afterAll(() => {
@@ -35,6 +37,7 @@ const normalise = (p: Page) => p.evaluate(() => {
   document.querySelectorAll(".sx-cities-editor tbody tr td:first-child").forEach((td) => { if (!td.querySelector("small")) td.textContent = "—"; });
   // per-stop passenger counts include e2e bookings that exist only in PostgreSQL (data, not markup)
   document.querySelectorAll(".sx-stop-count > span").forEach((s) => { s.textContent = "N passengers"; });
+  document.querySelectorAll(".sx-stops-ui > .sx-preview-note").forEach((n) => { if (n.lastChild?.nodeType === 3) n.lastChild.textContent = " stop-edit note"; });
 });
 const open = async (L: Page, R: Page, tab: string) => {
   await L.goto(`${LEGACY}/#/gds/schedules`); await R.goto(`/#/gds/schedules`);

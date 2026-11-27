@@ -120,7 +120,7 @@ export function ScheduleOverlay({ row, tab: initialTab, onClose: close, me }: { 
         </nav>
         <main data-sx-modal-body="">{body}</main>
         {tab === "pnl" ? <footer key="pnl" className="sx-modal-footer" ref={setPnlFoot} /> : <footer key="std" className="sx-modal-footer">
-          <span data-sx-footer-info="" className="sx-muted">{tab === "update" ? "" : tab === "fares" ? "Fare and seat-rule changes apply to this trip only" : "Stop, delay and city changes apply to this trip only"}</span>
+          <span data-sx-footer-info="" className="sx-muted">{tab === "update" ? "" : tab === "fares" ? "Fare and seat-rule changes apply to this trip only" : "Operator data shown where available · unsupported controls are preview-only"}</span>
           <div>
             {tab === "bookings" || tab === "update"
               ? <Bt icon="x" label="Close" cls="primary" attrs={{ "data-sx-close": "" }} onClick={onClose} />
@@ -349,7 +349,7 @@ function CitiesTab({ d, reload, saveRef }: { d: ScheduleDetail; reload: () => Pr
           <tbody>
             {pairs.map(([a, b], i) => (
               <tr key={`${a.cityId}-${b.cityId}`}>
-                <td><small>{i === 0 ? d.routeId : "—"}</small><span className="sx48-route-kind">{i === 0 ? "MAIN-ROUTE" : "SUB-ROUTE"}</span></td>
+                <td><small>{i === 0 ? d.routeId : "—"}</small><span className="sx48-route-kind">{i === 0 ? "MAIN-ROUTE" : "SUB-ROUTE · preview"}</span></td>
                 <td>{a.name} → {b.name}</td>
                 <td><span className="sx-pill">{t12(a.time || d.departureTime)} → {t12(b.time || d.arrivalTime)}</span></td>
                 <td><input className="sx-short" type="number" data-sx-subrate={i} value={rate(i)} min="0" max="100" onChange={(e) => setRate(i, e.target.value)} /></td>
@@ -359,7 +359,7 @@ function CitiesTab({ d, reload, saveRef }: { d: ScheduleDetail; reload: () => Pr
           </tbody>
         </table></div>
       </section>
-      <PreviewNote>Via-city toggles and fare percentages are saved automatically as schedule preferences. Published city-pair routes and fares are managed in the Routes/Fares editors.</PreviewNote>
+      <PreviewNote>Via-city toggles and proposed fare percentages are saved as schedule preferences only. Published city-pair routes and fares must be managed in authorized Routes/Fares workflows. No synthetic sub-route ID is published.</PreviewNote>
     </div>
   );
 }

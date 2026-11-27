@@ -97,7 +97,7 @@ public static class ScheduleEndpoints
                     passengers = live.Count(b => (s.Kind == "pickup" ? b.BoardingStageId : b.DroppingStageId) == s.Id),
                     overridden = ov.ContainsKey(s.Id),
                 }),
-                history = bookings.OrderByDescending(b => b.DateOfIssue).ThenByDescending(b => b.Id).Select(b =>
+                history = bookings.OrderByDescending(b => b.DateOfIssue).ThenBy(b => b.Pnr, StringComparer.Ordinal).Select(b => // legacy stable sort: ties keep store order
                 {
                     var pax = b.Passengers.OrderBy(p => p.Id).ToList();
                     return new

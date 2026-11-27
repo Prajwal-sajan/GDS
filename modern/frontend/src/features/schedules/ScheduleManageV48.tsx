@@ -236,18 +236,25 @@ export const NOTIFY_OPTIONS = [
   ["bus_cancellation", "Bus Cancellation", "Inform pax; use Cancel for refund"],
 ] as const;
 /** legacy notifyMenu(): dropdown under a Notify button; closes on outside click / Esc. */
-export function NotifyMenu({ onPick, onClose }: { onPick: (template: string) => void; onClose: () => void }) {
+export function NotifyMenu({ onPick, onClose, anchor }: { onPick: (template: string) => void; onClose: () => void; anchor?: HTMLElement | null }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const out = (e: MouseEvent) => { if (!ref.current?.parentElement?.contains(e.target as Node)) onClose(); };
+    const out = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (anchor ? !(ref.current?.contains(t) || anchor.contains(t)) : !ref.current?.parentElement?.contains(t)) onClose();
+    };
     const key = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopImmediatePropagation(); onClose(); } };
     document.addEventListener("mousedown", out); document.addEventListener("keydown", key, true);
     ref.current?.querySelector("button")?.focus();
     return () => { document.removeEventListener("mousedown", out); document.removeEventListener("keydown", key, true); };
-  }, [onClose]);
-  return <div className="sx48-notify-menu" role="menu" aria-label="Notify selected passengers" ref={ref}>
+  }, [onClose, anchor]);
+  // anchored mode (legacy seat-bottom Notify button sits directly in its toolbar): float the menu under the button
+  const r = anchor?.getBoundingClientRect();
+  const style = r ? { position: "fixed" as const, top: r.bottom + 4, right: "auto", left: Math.max(8, Math.min(r.left, window.innerWidth - 300)), zIndex: 1000 } : undefined;
+  const menu = <div className="sx48-notify-menu" role="menu" aria-label="Notify selected passengers" ref={ref} style={style}>
     {NOTIFY_OPTIONS.map(([id, label, d]) => <button key={id} type="button" role="menuitem" data-v48-notify={id} onClick={() => { onClose(); onPick(id); }}><strong>{label}</strong><small>{d}</small></button>)}
   </div>;
+  return anchor ? createPortal(menu, document.body) : menu;
 }
 /** legacy notify(S, pnrs, template). */
 export async function notify48(row: ScheduleRow, pnrs: string[], template: string) {
