@@ -3440,6 +3440,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("trip_status");
 
+                    b.Property<string>("UiSettingsJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("ui_settings_json");
+
                     b.Property<string>("UpdateSettingsJson")
                         .HasColumnType("jsonb")
                         .HasColumnName("update_settings_json");

@@ -108,7 +108,9 @@ export type ScheduleDetail = {
   id: number; routeId: number; travelDate: string; status: string; bookable: boolean; serviceNumber: string; serviceName: string; coach: string;
   origin: string; destination: string; departureTime: string; arrivalTime: string; arrivalDay: number;
   stops: ScheduleStop[]; stages: ScheduleStage[]; history: ScheduleHistoryRow[];
+  uiSettings?: ScheduleUiSettings | null;
 };
+export type ScheduleUiSettings = { via_city_enabled?: Record<string, { origin: boolean; destination: boolean }>; rates?: Record<string, number> };
 export type CrmMapSeat = { code: string; row: number; col: number; w: number; h: number; type: string; status: string; fare: number | null; reservationCount: number; booking: { isCurrent: boolean } | null };
 export type CrmDeck = { deck: string; rows: number; cols: number; seats: CrmMapSeat[] };
 export type CrmPoint = { name: string; time: string | null; day?: number } | null;
@@ -188,6 +190,7 @@ export const api = {
   unblock: (tripId: number, seat: string) => call<{ released: number }>("DELETE", `/api/admin/trips/${tripId}/blocks/${encodeURIComponent(seat)}`),
   routes: () => call<RouteRow[]>("GET", "/api/admin/routes"),
   schedules: (from: string, to: string) => call<{ schedules: ScheduleRow[] }>("GET", `/api/admin/schedules?from=${from}&to=${to}`),
+  saveScheduleUiSettings: (id: number, body: ScheduleUiSettings) => call<{ success: boolean }>("PUT", `/api/admin/schedules/${id}/ui-settings`, body),
   scheduleDetail: (id: number) => call<ScheduleDetail>("GET", `/api/admin/schedule-detail/${id}`),
   tripSheets: (date: string) => call<{ trips: TripSheetRow[] }>("GET", `/api/admin/trip-sheets?date=${date}`),
   tripSheet: (id: number | string) => call<TripSheet>("GET", `/api/admin/trip-sheets/${id}`),

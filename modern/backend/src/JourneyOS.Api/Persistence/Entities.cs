@@ -222,6 +222,8 @@ public sealed class Trip : ITenantOwned
     public bool SyncWithRoute { get; set; } = true;
     /// <summary>Legacy schedule.update_v51 (call_settings / escalation_contacts / cab_mode overrides), jsonb. Null = follow route.</summary>
     public string? UpdateSettingsJson { get; set; }
+    /// <summary>Legacy schedule.ui_settings (schedule overlay draft: via_city_enabled, sub-route fare % rates), jsonb. Preferences only.</summary>
+    public string? UiSettingsJson { get; set; }
 }
 
 /// <summary>One per-trip segment fare (legacy fare_override row), keyed by route stop sequence.</summary>

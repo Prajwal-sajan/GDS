@@ -3,8 +3,8 @@ import { PnlTab, pnlConfirmLeave } from "./SchedulePnlTab";
 import { FaresTab } from "./ScheduleFaresTab";
 import { UpdateTab } from "./ScheduleUpdateTab";
 import { BlockTab } from "./ScheduleBlockTab";
-import { api, type Me, type ScheduleDetail, type ScheduleRow, type ScheduleStage } from "../../api";
-import { toast, toastError } from "../../components/ui/feedback";
+import { api, type Me, type ScheduleDetail, type ScheduleRow, type ScheduleStage, type ScheduleUiSettings } from "../../api";
+import { infoDialog, toast, toastError } from "../../components/ui/feedback";
 import { inr, shortDate, t12 } from "../../services/format";
 
 // React port of the legacy schedule management overlay (public/js/schedules-screenshot-v6.js: openModal(), tabs, bt(),
@@ -199,6 +199,24 @@ function CitiesTab({ d }: { d: ScheduleDetail }) {
   const cities = d.stops;
   const first = cities[0], last = cities[cities.length - 1];
   const pairs = cities.flatMap((a, i) => cities.slice(i + 1).map((b) => [a, b] as const));
+  const [ui, setUi] = useState<ScheduleUiSettings>(() => d.uiSettings ?? {});
+  const timer = useRef<ReturnType<typeof setTimeout>>();
+  const save = (next: ScheduleUiSettings) => {
+    setUi(next);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => { api.saveScheduleUiSettings(d.id, next).catch(toastError); }, 400);
+  };
+  const via = (id: number, k: "origin" | "destination") => ui.via_city_enabled?.[id]?.[k] ?? true;
+  const toggleVia = (id: number, k: "origin" | "destination") => {
+    const cur = { origin: via(id, "origin"), destination: via(id, "destination") };
+    save({ ...ui, via_city_enabled: { ...(ui.via_city_enabled ?? {}), [id]: { ...cur, [k]: !cur[k] } } });
+  };
+  const rate = (i: number) => ui.rates?.[i] ?? (i === 0 ? 100 : 99);
+  const setRate = (i: number, v: string) => {
+    const n = Math.max(0, Math.min(100, Number(v) || 0));
+    save({ ...ui, rates: { ...(ui.rates ?? {}), [i]: n } });
+  };
+  const addSubroute = () => infoDialog("Add sub-route", <div><p>Create an additional city-pair service segment in the Routes editor, then return to the schedule.</p><a className="btn primary" href={`#/gds/routes/${d.routeId}?rvtab=cities`}>Open route editor</a></div>);
   return (
     <div className="sx-cities-editor sx48-cities">
       <div className="sx-source-chip"><I name="link" /> Data Source: Route</div>
@@ -222,7 +240,7 @@ function CitiesTab({ d }: { d: ScheduleDetail }) {
             {cities.slice(1, -1).map((c) => (
               <tr key={c.cityId}>
                 <td>{c.state || "—"}</td><td><I name="pin" size={12} />{` ${c.name}`}</td><td><span className="sx-pill">{c.day || 2}</span></td><td>{t12(c.time)}</td>
-                {(["origin", "destination"] as const).map((k) => <td key={k}><label className="sx-switch sx-small"><input data-sx-via={`${c.cityId}|${k}`} type="checkbox" checked readOnly aria-disabled="true" onClick={(e) => { e.preventDefault(); preview("Via-city toggle"); }} /><span></span></label></td>)}
+                {(["origin", "destination"] as const).map((k) => <td key={k}><label className="sx-switch sx-small"><input data-sx-via={`${c.cityId}|${k}`} type="checkbox" checked={via(c.cityId, k)} onChange={() => toggleVia(c.cityId, k)} /><span></span></label></td>)}
               </tr>
             ))}
             {cities.length <= 2 && <tr><td colSpan={6} className="sx-empty">No via cities</td></tr>}
@@ -230,23 +248,23 @@ function CitiesTab({ d }: { d: ScheduleDetail }) {
         </table></div>
       </section>
       <section className="sx-light-card sx48-route-pairs">
-        <header><b><I name="map" /> Routes <span className="sx48-combination-count">{pairs.length} city pairs</span></b><button data-sx-add-subroute="" aria-disabled="true" onClick={() => preview("Add sub-route")}><I name="plus" /> Add sub-route</button></header>
+        <header><b><I name="map" /> Routes <span className="sx48-combination-count">{pairs.length} city pairs</span></b><button data-sx-add-subroute="" onClick={addSubroute}><I name="plus" /> Add sub-route</button></header>
         <div className="sx-table-outer"><table className="sx-table">
           <thead><tr>{["ROUTE / SLOT ID", "ORIGIN → DESTINATION", "TIMING", "FARE %", "ACTIONS"].map((h) => <th key={h}>{h}</th>)}</tr></thead>
           <tbody>
             {pairs.map(([a, b], i) => (
               <tr key={`${a.cityId}-${b.cityId}`}>
-                <td><small>{i === 0 ? d.routeId : "—"}</small><span className="sx48-route-kind">{i === 0 ? "MAIN-ROUTE" : "SUB-ROUTE · preview"}</span></td>
+                <td><small>{i === 0 ? d.routeId : "—"}</small><span className="sx48-route-kind">{i === 0 ? "MAIN-ROUTE" : "SUB-ROUTE"}</span></td>
                 <td>{a.name} → {b.name}</td>
                 <td><span className="sx-pill">{t12(a.time || d.departureTime)} → {t12(b.time || d.arrivalTime)}</span></td>
-                <td><input className="sx-short" type="number" data-sx-subrate={i} defaultValue={i === 0 ? 100 : 99} min="0" max="100" readOnly aria-disabled="true" /></td>
-                <td>{i === 0 ? "—" : <button data-sx-remove-subroute={i} aria-disabled="true" onClick={() => preview("Remove sub-route")}><I name="trash" /></button>}</td>
+                <td><input className="sx-short" type="number" data-sx-subrate={i} value={rate(i)} min="0" max="100" onChange={(e) => setRate(i, e.target.value)} /></td>
+                <td>{i === 0 ? "—" : <button data-sx-remove-subroute={i} onClick={() => toast("Deleting a real route slot requires the Routes editor.", "warn")}><I name="trash" /></button>}</td>
               </tr>
             ))}
           </tbody>
         </table></div>
       </section>
-      <PreviewNote>Via-city toggles and proposed fare percentages are saved as schedule preferences only. Published city-pair routes and fares must be managed in authorized Routes/Fares workflows. No synthetic sub-route ID is published.</PreviewNote>
+      <PreviewNote>Via-city toggles and fare percentages are saved automatically as schedule preferences. Published city-pair routes and fares are managed in the Routes/Fares editors.</PreviewNote>
     </div>
   );
 }

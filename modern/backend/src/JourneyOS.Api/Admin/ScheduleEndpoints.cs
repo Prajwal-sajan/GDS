@@ -84,6 +84,7 @@ public static class ScheduleEndpoints
                 origin = stops.FirstOrDefault()?.City?.Name, destination = stops.LastOrDefault()?.City?.Name,
                 departureTime = r.DepartureTime, arrivalTime = lastDrop?.Time ?? stops.LastOrDefault()?.Time,
                 arrivalDay = lastDrop?.Day ?? stops.LastOrDefault()?.Day ?? 1,
+                uiSettings = t.UiSettingsJson is null ? (System.Text.Json.JsonElement?)null : System.Text.Json.JsonDocument.Parse(t.UiSettingsJson).RootElement.Clone(),
                 stops = stops.Select(s => new { cityId = s.CityId, name = s.City?.Name, state = s.City?.State, day = s.Day, time = s.Time }),
                 stages = r.Stages.OrderBy(s => s.Day).ThenBy(s => s.Time).Select(s => new
                 {
@@ -104,5 +105,35 @@ public static class ScheduleEndpoints
                 }),
             });
         }).RequireAuthorization(Policies.Reports);
+
+        // Legacy PUT /schedules/:id {ui_settings}: overlay preferences (via-city origin/destination toggles, sub-route fare %). Not published to OTAs.
+        g.MapPut("/schedules/{id:long}/ui-settings", async (long id, System.Text.Json.Nodes.JsonObject body, GdsDbContext db, HttpContext h) =>
+        {
+            var t = await db.Trips.FirstOrDefaultAsync(x => x.Id == id && x.DeletedAt == null) ?? throw new GdsException("SERVICE_NOT_FOUND", "Schedule not found", 404);
+            var clean = new System.Text.Json.Nodes.JsonObject();
+            if (body["via_city_enabled"] is System.Text.Json.Nodes.JsonObject via)
+            {
+                var o = new System.Text.Json.Nodes.JsonObject();
+                foreach (var (k, v) in via.Take(100))
+                    if (long.TryParse(k, out _) && v is System.Text.Json.Nodes.JsonObject f)
+                        o[k] = new System.Text.Json.Nodes.JsonObject { ["origin"] = f["origin"]?.GetValue<bool>() ?? true, ["destination"] = f["destination"]?.GetValue<bool>() ?? true };
+                clean["via_city_enabled"] = o;
+            }
+            if (body["rates"] is System.Text.Json.Nodes.JsonObject rates)
+            {
+                var o = new System.Text.Json.Nodes.JsonObject();
+                foreach (var (k, v) in rates.Take(200))
+                {
+                    if (!decimal.TryParse(v?.ToString(), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var pct) || pct < 0 || pct > 100)
+                        throw new GdsException("VALIDATION", "Fare % must be between 0 and 100");
+                    o[k] = pct;
+                }
+                clean["rates"] = o;
+            }
+            t.UiSettingsJson = clean.ToJsonString();
+            db.AuditLogs.Add(new AuditLog { TenantId = db.CurrentTenantId, Actor = h.User.Identity?.Name ?? "system", Action = "SCHEDULE_UI_SETTINGS", Entity = "trip", EntityId = id.ToString(), DataJson = t.UiSettingsJson, At = DateTime.UtcNow });
+            await db.SaveChangesAsync();
+            return Results.Ok(new { success = true });
+        }).RequireAuthorization(Policies.Operations);
     }
 }
