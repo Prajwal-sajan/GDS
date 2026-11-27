@@ -126,6 +126,7 @@ export type CrmBooking = {
   amount: number; from: string; to: string; boarding: CrmPoint; dropping: CrmPoint;
   contact: { name: string; phone: string | null; email: string | null }; comments: { text: string; by: string; at: string }[];
 };
+export type BookingStop = { id: number; name: string; time: string | null; day: number | null; pickup_type: string | null; city_name: string | null };
 export type SalesDay = { date: string; bookings: number; seats: number; sales: number; offers: number; netSales: number; gst: number; cancelCharges: number; expense: number;
   commission: number; capacity: number; trips: number; asp: number; occupancyPct: number; fleetUtilPct: number; profit: number; byChannel: Record<string, number> };
 export type SalesBreakdown = { value: string; name: string; bookings: number; seats: number; netSales: number; avgFare: number };
@@ -170,6 +171,7 @@ export const api = {
   bookingShiftOptions: (pnr: string, date: string) => call<{ date: string; services: { id: number; service: string; name: string; departure_time: string; free_seats: number }[] }>("GET", `/api/admin/bookings/${encodeURIComponent(pnr)}/shift-options?date=${date}`),
   bookingShiftSeats: (pnr: string, scheduleId: number) => call<{ passengers: { seat: string; name: string }[]; seats: { seat: string; type: string; deck: string; status: string }[] }>("GET", `/api/admin/bookings/${encodeURIComponent(pnr)}/shift-seats?schedule_id=${scheduleId}`),
   bookingShift: (pnr: string, scheduleId: number, seatMap: Record<string, string>) => call<{ success: boolean; schedule_id: number }>("POST", `/api/admin/bookings/${encodeURIComponent(pnr)}/shift-to`, { scheduleId, seatMap }),
+  bookingStops: (pnr: string) => call<{ boarding_stage_id: number | null; dropping_stage_id: number | null; pickups: BookingStop[]; drops: BookingStop[] }>("GET", `/api/admin/bookings/${encodeURIComponent(pnr)}/stops`),
   tripNotify: (tripId: number, body: { template: string; pnrs: string[]; text?: string }) => call<{ success: boolean; recorded: number }>("POST", `/api/admin/trips/${tripId}/notify`, body),
   status: () => call<RedBusStatus>("GET", `${rb}/status`),
   outbox: (status?: string) => call<OutboxRow[]>("GET", `${rb}/outbox${status ? `?status=${status}` : ""}`),

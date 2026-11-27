@@ -85,7 +85,7 @@ function DetailsBox({ icon, title, more = "", children }: { icon: string; title:
   return <section className={`cv8-detailcard ${more}`}><h3><span className="cv8-card-icon"><I n={icon} s={23} /></span>{title}</h3>{children}</section>;
 }
 
-function printBooking(b: CrmBooking, invoice: boolean) {
+export function printBooking(b: CrmBooking, invoice: boolean) {
   const win = window.open("", "_blank", "width=860,height=700");
   if (!win) { toast("Allow popups to print the ticket", "warn"); return; }
   const e = (v: unknown) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);

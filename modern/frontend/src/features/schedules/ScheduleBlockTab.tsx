@@ -3,6 +3,7 @@ import { api, type Me, type ScheduleDetail, type ScheduleRow, type TripSheet, ty
 import { BookingOverlay } from "../crm/BookingOverlay";
 import { confirmDialog, toast, toastError } from "../../components/ui/feedback";
 import { can, permissions } from "../settings/legacy";
+import { TicketWorkspaceV38 } from "./TicketWorkspaceV38";
 import { ImportPickupChart, ImportedChartModal, type ImportedChart } from "./PickupChartImport";
 import { LocationPopup, NotifyMenu, SeatDiagram48, SummaryPopup, TimingsPopup, delay48, fetchPosition, notify48, validGps, type LayoutSeat, type SeatLayout, type SummaryKind } from "./ScheduleManageV48";
 
@@ -27,6 +28,7 @@ const Bt = ({ n, label, cls = "", onClick, attrs }: { n: string; label: string; 
 export function BlockTab({ row, detail, mode = "block", me }: { row: ScheduleRow; detail: ScheduleDetail; mode?: "block" | "bookings"; me?: Me }) {
   const [sheet, setSheet] = useState<TripSheet>();
   const [ticket, setTicket] = useState<string>();
+  const [openReq, setOpenReq] = useState<{ pnr: string }>();
   const [seats, setSeats] = useState<Seat[]>();
   const [fares, setFares] = useState<Fares>();
   const [sel, setSel] = useState<Set<string>>(new Set());
@@ -54,7 +56,7 @@ export function BlockTab({ row, detail, mode = "block", me }: { row: ScheduleRow
   const counts = { blocked: (seats ?? []).filter((s) => s.state === "blocked").length };
 
   const pick = (s: LayoutSeat) => {
-    if (mode === "bookings" && s.pnr) { if (me) setTicket(s.pnr); else toast("Booking details permission is required", "bad"); return; }
+    if (mode === "bookings" && s.pnr) { setOpenReq({ pnr: s.pnr }); return; }
     if (mode === "bookings" && s.status !== "available" && s.status !== "blocked") return;
     if (!["available", "blocked"].includes(s.status)) return toast("Choose an available or blocked seat to modify.", "warn");
     setSel((x) => { const n = new Set(x); if (n.has(s.code)) n.delete(s.code); else n.add(s.code); return n; });
@@ -78,7 +80,7 @@ export function BlockTab({ row, detail, mode = "block", me }: { row: ScheduleRow
   };
 
   if (!seats) return <div className="sx-loading">Loading {mode}…</div>;
-  const openTicket = (pnr: string) => (me ? setTicket(pnr) : toast("Booking details permission is required", "bad"));
+  const openTicket = (pnr: string) => (mode === "bookings" ? setOpenReq({ pnr }) : me ? setTicket(pnr) : toast("Booking details permission is required", "bad"));
   return (
     <div className={`sx-book-columns${hide ? " sx-hidefares" : ""}`}>
       <section className="sx-book-left">
@@ -113,7 +115,7 @@ export function BlockTab({ row, detail, mode = "block", me }: { row: ScheduleRow
       {popup === "location" && <LocationPopup sheet={sheet} onClose={() => setPopup("")} reload={() => api.tripSheet(row.id).then(setSheet)} />}
       {popup && popup !== "timings" && popup !== "location" && <SummaryPopup kind={popup} sheet={sheet} detail={detail} onClose={() => setPopup("")} onPnr={openTicket} />}
       {mode === "bookings" ? <section className="sx-book-right sx38-right">
-        <PickupChart row={row} sheet={sheet} detail={detail} seats={seats} onTicket={openTicket} reload={load} onSelection={setChartPnrs} />
+        <PickupChart row={row} sheet={sheet} detail={detail} seats={seats} reload={load} onSelection={setChartPnrs} openRequest={openReq} />
       </section> :
       <section className="sx-book-right">
         <header className="sx-side-top"><I n="shield" /> Block <span className="sx-muted">({counts.blocked} blocked)</span></header>
@@ -146,9 +148,12 @@ const labelOf = (p: TripSheetPassenger, g: string) => g === "Drop" ? p.dropping?
   : g === "Booked On" ? (p.bookedAt ? p.bookedAt.slice(0, 10) : "Booking date unavailable") : g === "Fare" ? `₹${Number(p.fare ?? 0).toLocaleString("en-IN")}` : g === "Trips" ? `${p.trips ?? 0} Trips` : p.boarding?.name || "Pickup not assigned";
 
 /** legacy schedule-bookings-v38 chart()/historyChart()/bulkCancel(): Pickup Chart and History panels. */
-function PickupChart({ row, sheet, detail, seats, onTicket, reload, onSelection }: { row: ScheduleRow; sheet?: TripSheet; detail: ScheduleDetail; seats: Seat[]; onTicket: (pnr: string) => void; reload: () => Promise<unknown>; onSelection: (pnrs: string[]) => void }) {
+function PickupChart({ row, sheet, detail, seats, reload, onSelection, openRequest }: { row: ScheduleRow; sheet?: TripSheet; detail: ScheduleDetail; seats: Seat[]; reload: () => Promise<unknown>; onSelection: (pnrs: string[]) => void; openRequest?: { pnr: string } }) {
   const tripId = row.id;
-  const [panel, setPanel] = useState<"chart" | "history">("chart");
+  const [panel, setPanel] = useState<"chart" | "history" | "ticket">("chart");
+  const [tk, setTk] = useState<{ pnr: string; seat?: string }>();
+  const openTk = (pnr: string, seat?: string) => { setTk({ pnr, seat }); setPanel("ticket"); };
+  useEffect(() => { if (openRequest) openTk(openRequest.pnr); }, [openRequest]); // eslint-disable-line react-hooks/exhaustive-deps
   const [group, setGroup] = useState<string>("Pickup");
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [q, setQ] = useState("");
@@ -194,10 +199,13 @@ function PickupChart({ row, sheet, detail, seats, onTicket, reload, onSelection 
     <nav className="sx38-right-tabs" aria-label="Bookings right panel">
       <button type="button" data-v38="chart" className={panel === "chart" ? "active" : ""} onClick={() => setPanel("chart")}><I38 n="pin" /> Pickup Chart</button>
       <button type="button" data-v38="chart-history" className={panel === "history" ? "active" : ""} onClick={() => setPanel("history")}><I38 n="history" /> History</button>
+      {tk && <button type="button" data-v38="ticket" className={panel === "ticket" ? "active" : ""} onClick={() => setPanel("ticket")}><I38 n="ticket" /> Seat {tk.seat || "—"} — {tk.pnr}</button>}
     </nav>
-    <div className="sx38-panel-body">{panel === "history" ? (
+    <div className="sx38-panel-body">{panel === "ticket" && tk ? (
+      <TicketWorkspaceV38 pnr={tk.pnr} seat={tk.seat} tripId={tripId} onClose={() => { setTk(undefined); setPanel("chart"); }} onChanged={() => void reload()} />
+    ) : panel === "history" ? (
       <div className="sx38-history-list"><h3>Booking History</h3><p>{detail.history.length} booking records</p>
-        {detail.history.slice(0, 150).map((x) => <button key={x.pnr + x.bookedAt} type="button" className="sx38-history-item" onClick={() => onTicket(x.pnr)}><b>PNR {x.pnr}</b><span>{x.contactName || "Passenger"} · {x.status}</span><span>{x.source}</span></button>)}
+        {detail.history.slice(0, 150).map((x) => <button key={x.pnr + x.bookedAt} type="button" className="sx38-history-item" onClick={() => openTk(x.pnr)}><b>PNR {x.pnr}</b><span>{x.contactName || "Passenger"} · {x.status}</span><span>{x.source}</span></button>)}
         {!detail.history.length && <p>No booking records on this service.</p>}</div>
     ) : <>
       <div className="sx38-stats"><span className="available"><i></i> Available <b>{counts.available}</b></span><span className="booked"><i></i> Booked <b>{counts.booked}</b></span><span className="blocked"><i></i> Blocked <b>{counts.blocked}</b></span></div>
@@ -228,9 +236,9 @@ function PickupChart({ row, sheet, detail, seats, onTicket, reload, onSelection 
           {m.map((p) => <div key={keyOf(p)} className="sx38-pick-person" data-v38-person={p.pnr}>
             <input type="checkbox" aria-label={`Select passenger ${p.name} seat ${p.seat}`} checked={sel.has(keyOf(p))} onChange={(e) => toggle([p], e.target.checked)} />
             <span className="sx38-seat-pill">{p.seat}</span>
-            <div className="sx38-person-data"><button type="button" className="sx38-pnr-link" onClick={() => onTicket(p.pnr)}>{p.name || "Passenger"}</button>
+            <div className="sx38-person-data"><button type="button" className="sx38-pnr-link" onClick={() => openTk(p.pnr, p.seat)}>{p.name || "Passenger"}</button>
               <div className="sx38-person-metas"><span className="sx38-phone"><I38 n="phone" s={14} /> {p.phone || "—"}</span>
-                <button type="button" className="sx38-pnr-number" onClick={() => onTicket(p.pnr)}>{p.pnr}</button>
+                <button type="button" className="sx38-pnr-number" onClick={() => openTk(p.pnr, p.seat)}>{p.pnr}</button>
                 <strong>{p.fare != null ? `₹${Number(p.fare).toLocaleString("en-IN")}` : "—"}</strong><span className="sx38-trip-pill">Trips {p.trips ?? 0}</span></div>
               <div className="sx38-person-sub">→ {p.dropping?.name || "Drop not assigned"}{p.dropping?.time ? ` (Day ${p.dropping.day || 1} - ${t12(p.dropping.time)})` : ""}<span className="sx38-source">{p.source || "GDS"}</span></div></div>
             <span className={`sx38-gender ${String(p.gender ?? "").toUpperCase().startsWith("F") ? "female" : "male"}`}>{String(p.gender ?? "").toUpperCase().startsWith("F") ? "F" : "M"}</span></div>)}

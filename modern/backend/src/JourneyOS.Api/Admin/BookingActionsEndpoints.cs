@@ -56,6 +56,23 @@ public static partial class BookingActionsEndpoints
                 cancellation_allowed = JourneyOS.Api.Operations.RouteSettings.CancellationAllowed(route.SettingsJson) is not false });
         }).RequireAuthorization(Policies.Operations);
 
+        // ------------------------------------------------ editable stops for the ticket editor (legacy GET /bookings/:pnr/stops)
+        g.MapGet("/{pnr}/stops", async (string pnr, GdsDbContext db, InventoryService inv) =>
+        {
+            var b = await Need(db, pnr);
+            var trip = await db.Trips.AsNoTracking().FirstAsync(t => t.Id == b.TripId);
+            var route = await inv.LoadRouteAsync(trip.RouteId);
+            var cityIds = route.Stages.Select(s => s.CityId).Distinct().ToList();
+            var cities = await db.Cities.AsNoTracking().Where(c => cityIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id, c => c.Name);
+            object Row(RouteStage s) => new { id = s.Id, name = s.Name, time = s.Time.ToString("HH:mm"), day = s.Day, pickup_type = s.PickupType, city_name = cities.GetValueOrDefault(s.CityId) };
+            var ordered = route.Stages.OrderBy(s => s.Day).ThenBy(s => s.Time).ToList();
+            return Results.Ok(new
+            {
+                boarding_stage_id = b.BoardingStageId, dropping_stage_id = b.DroppingStageId,
+                pickups = ordered.Where(s => s.Kind == "pickup").Select(Row), drops = ordered.Where(s => s.Kind == "drop").Select(Row),
+            });
+        }).RequireAuthorization(Policies.Operations);
+
         // ------------------------------------------------ ticket edit (legacy PUT /bookings/:pnr)
         g.MapPut("/{pnr}", async (string pnr, BookingEditInput i, GdsDbContext db, InventoryService inv, HttpContext h) =>
         {
