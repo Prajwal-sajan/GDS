@@ -428,6 +428,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("booking_id");
 
+                    b.Property<string>("CallStatus")
+                        .HasColumnType("text")
+                        .HasColumnName("call_status");
+
                     b.Property<decimal>("CancellationCharge")
                         .HasPrecision(12, 2)
                         .HasColumnType("numeric(12,2)")

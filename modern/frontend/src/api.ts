@@ -93,6 +93,7 @@ export type TripSheetPassenger = {
   boarding: TripStageRef | null; dropping: TripStageRef | null;
   fare?: number | null; gender?: string | null; bookedAt?: string | null; from?: string | null; to?: string | null;
 };
+export type TripCommRow = { channel: string; direction: string; ts: string; label: string; from: string; to: string; status: string; duration: number | null; content: string };
 export type TripSheetStop = TripStageRef & { type: string; lat: number | null; lng: number | null; arrivedAt: string | null; departedAt: string | null };
 export type TripSheet = {
   id: number; travelDate: string; status: string; serviceNumber: string; serviceName: string; origin: string; destination: string;
@@ -188,6 +189,11 @@ export const api = {
   scheduleDetail: (id: number) => call<ScheduleDetail>("GET", `/api/admin/schedule-detail/${id}`),
   tripSheets: (date: string) => call<{ trips: TripSheetRow[] }>("GET", `/api/admin/trip-sheets?date=${date}`),
   tripSheet: (id: number | string) => call<TripSheet>("GET", `/api/admin/trip-sheets/${id}`),
+  tripPassenger: (id: number | string, pnr: string, seat: string, body: { status?: string; callStatus?: string; boardingOtp?: string }) =>
+    call<{ success: boolean }>("PATCH", `/api/admin/trip-sheets/${id}/passengers/${encodeURIComponent(pnr)}/${encodeURIComponent(seat)}`, body),
+  tripStopEvent: (id: number | string, stageId: number, kind: "arrived" | "departed") => call<{ success: boolean }>("POST", `/api/admin/trip-sheets/${id}/stop-event`, { stageId, kind }),
+  tripPassengerComms: (id: number | string, pnr: string) =>
+    call<{ rows: TripCommRow[]; outCalls: number; inCalls: number }>("GET", `/api/admin/trip-sheets/${id}/passengers/${encodeURIComponent(pnr)}/communications`),
   toggleSchedule: (id: number, active: boolean) => call<{ bookable: boolean }>("POST", `/api/admin/schedules/${id}/toggle`, { active }),
   routeList: () => call<{ routes: RouteListRow[] }>("GET", "/api/admin/route-list"),
   vehicleList: () => call<{ vehicles: VehicleListRow[] }>("GET", "/api/admin/vehicle-list"),

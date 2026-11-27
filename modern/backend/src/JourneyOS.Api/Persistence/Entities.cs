@@ -347,8 +347,9 @@ public sealed class BookingPassenger
     public string? IdNumber { get; set; }
     public bool IsPrimary { get; set; }
     public string Status { get; set; } = "CONFIRMED"; // CONFIRMED / CANCELLED
-    public string BoardingStatus { get; set; } = "Yet-To-Board"; // Boarded / No-Show / Yet-To-Board
+    public string BoardingStatus { get; set; } = "Yet-To-Board"; // Boarded / No-Show / Yet-To-Board / Checked-In / Dropped
     public DateTime? BoardingStatusAt { get; set; }
+    public string? CallStatus { get; set; }                       // to_call / called / not_reachable (legacy p.call_status)
     public decimal CancellationCharge { get; set; }
     public decimal RefundAmount { get; set; }
     public DateTime? CancelledAt { get; set; }

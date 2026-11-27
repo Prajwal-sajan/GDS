@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api, type Me, type TripSheet, type TripSheetPassenger, type TripSheetRow, type TripSheetStop } from "../../api";
-import { Modal, toast, toastError } from "../../components/ui/feedback";
+import { api, type Me, type TripCommRow, type TripSheet, type TripSheetPassenger, type TripSheetRow, type TripSheetStop } from "../../api";
+import { Modal, promptDialog, toast, toastError } from "../../components/ui/feedback";
 import { addDays, t12, today } from "../../services/format";
 
 // React port of the legacy Trips screen (public/js/trip-parity-v13.js `G.screens.trips` + trips-loyalty-v39.js control).
 // Same DOM/classes/SVG paths so the vendored trip-parity-v13.css renders it identically. Data: GET /api/admin/trip-sheets.
-// The platform does not record call status, passenger live location, stop arrival/departure events, telemetry or ratings:
-// those render "—" exactly as legacy does when absent; the controls that would write them are preview-only (toast).
+// Call status, check-in/drop, stop arrival/departure, manual call logs and communication history are persisted
+// (PATCH passengers, POST stop-event, GET communications). Passenger live location, telemetry and ratings are not
+// recorded: those render "—" exactly as legacy does when absent.
 const PATH = {
   calendar: "M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z",
   bus: "M4 16V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v11M4 16h16M4 16v3h3m13-3v3h-3M8 19h8M4 8h16M7 12h2m6 0h2",
@@ -85,6 +86,15 @@ export function TripsPage({ me }: { me: Me }) {
   const [stopMap, setStopMap] = useState<TripSheetStop | null>(null);
   const feedback = useRef<Record<string, string>>({});
   const seq = useRef(0);
+  const [history, setHistory] = useState<{ p: TripSheetPassenger; rows: TripCommRow[] } | null>(null);
+  const [stopAct, setStopAct] = useState<TripSheetStop | null>(null);
+  const [cust, setCust] = useState<{ p: TripSheetPassenger; left: number; top: number; out: number | null; inn: number | null } | null>(null);
+  useEffect(() => {
+    if (!cust) return;
+    const close = (e: MouseEvent) => { if (!(e.target as Element).closest?.(".tp13-customer-pop,[data-trip-customer]")) setCust(null); };
+    document.addEventListener("click", close, true);
+    return () => document.removeEventListener("click", close, true);
+  }, [cust]);
 
   useEffect(() => {
     if (!pop) return;
@@ -126,10 +136,47 @@ export function TripsPage({ me }: { me: Me }) {
     const p = findPassenger(k); if (!p) return;
     const v = feedback.current[k] || "";
     if (!v) { toast("Select an action or feedback status first", ""); return; }
-    const map: Record<string, "Boarded" | "No-Show"> = { "state:boarded": "Boarded", "state:no_show": "No-Show" };
-    if (!map[v]) { preview(STATUSES.find(([x]) => x === v)![1], "call status, check-in and drop are not recorded by the platform yet"); return; }
-    try { await api.setBoarding(p.pnr, p.seat, map[v]); toast("Passenger updated", "ok"); feedback.current[k] = ""; await loadDetail(sid, date); }
-    catch (e) { toastError(e); }
+    const [type, status] = v.split(":");
+    try {
+      if (type === "state" && status === "no_show") await api.setBoarding(p.pnr, p.seat, "No-Show");
+      else {
+        const body: { status?: string; callStatus?: string; boardingOtp?: string } = type === "call" ? { callStatus: status } : { status };
+        if (status === "boarded") {
+          const a = await promptDialog("Board passenger", [{ name: "boarding_otp", label: "Passenger boarding OTP (optional)", full: true }]);
+          if (!a) return;
+          if (a.boarding_otp) body.boardingOtp = String(a.boarding_otp);
+        }
+        await api.tripPassenger(sid, p.pnr, p.seat, body);
+      }
+      toast("Passenger updated", "ok"); feedback.current[k] = ""; await loadDetail(sid, date);
+    } catch (e) { toastError(e); }
+  };
+  const openHistory = async (p: TripSheetPassenger) => {
+    try { const r = await api.tripPassengerComms(sid, p.pnr); setHistory({ p, rows: r.rows }); } catch (e) { toastError(e); }
+  };
+  const openCustomer = (p: TripSheetPassenger, el: HTMLElement) => {
+    const r = el.getBoundingClientRect();
+    setCust({ p, left: Math.min(Math.max(8, r.left), window.innerWidth - 256), top: Math.min(r.bottom + 8, window.innerHeight - 230), out: null, inn: null });
+    api.tripPassengerComms(sid, p.pnr).then((x) => setCust((c) => (c && c.p === p ? { ...c, out: x.outCalls, inn: x.inCalls } : c))).catch(() => { /* leave unknown */ });
+  };
+  const callNow = async (p: TripSheetPassenger) => {
+    const v = await promptDialog("Log phone call (manual — no telephony connected)", [
+      { name: "phone", label: "Phone number", required: true, value: p.phone || "" },
+      { name: "name", label: "Contact name", value: p.name || "" },
+      { name: "pnr", label: "PNR", value: p.pnr },
+      { name: "status", label: "Operator-reported outcome", type: "select", options: [["answered", "Answered (self-reported)"], ["missed", "No answer"], ["busy", "Busy"], ["not_reachable", "Not reachable"]] },
+      { name: "duration_s", label: "Duration (seconds, if answered)", type: "number", value: 0 },
+      { name: "notes", label: "Call notes", type: "textarea", full: true },
+    ], { ok: "Save manual call record" });
+    if (!v) return;
+    try {
+      const r = await api.logCall({ phone: v.phone, name: v.name, pnr: v.pnr || null, kind: "manual", direction: "outgoing", status: v.status || "missed",
+        durationS: v.status === "answered" ? Number(v.duration_s) || 0 : 0, notes: v.notes || "" });
+      toast(r.notice || "Call logged", "ok");
+    } catch (e) { toastError(e); }
+  };
+  const stopEvent = async (s: TripSheetStop, kind: "arrived" | "departed") => {
+    try { await api.tripStopEvent(sid, s.id, kind); toast("Stop timing saved", "ok"); setStopAct(null); await loadDetail(sid, date); } catch (e) { toastError(e); }
   };
 
   return (
@@ -183,14 +230,35 @@ export function TripsPage({ me }: { me: Me }) {
                 {section === "pickup" || section === "drop"
                   ? <Boards t={trip} which={section} canOps={canOps} collapsed={collapsed}
                       onCollapse={(k) => setCollapsed((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; })}
-                      onFeedback={(k, v) => { feedback.current[k] = v; }} onUpdate={(k) => void passengerUpdate(k)} />
-                  : section === "timings" ? <Timings t={trip} canOps={canOps} onMap={setStopMap} />
+                      onFeedback={(k, v) => { feedback.current[k] = v; }} onUpdate={(k) => void passengerUpdate(k)}
+                      acts={{ history: (p) => void openHistory(p), customer: openCustomer, call: (p) => void callNow(p) }} />
+                  : section === "timings" ? <Timings t={trip} canOps={canOps} onMap={setStopMap} onStop={setStopAct} />
                   : <Docs t={trip} onView={setDocView} />}
               </div>
             </>
           )}
       </div>
       {docView != null && trip && <DocModal t={trip} i={docView} onClose={() => setDocView(null)} />}
+      {history && <HistoryModal p={history.p} rows={history.rows} onClose={() => setHistory(null)} />}
+      {stopAct && trip && (
+        <Modal title={`Stop timing · ${stopAct.name}`} onClose={() => setStopAct(null)}>
+          <p className="tp13-muted">Scheduled {clock(stopAct.time)} · Day {stopAct.day || 1}</p>
+          <div className="tp13-actiongrid">
+            <button className="btn" data-trip-stop-event="arrived" onClick={() => void stopEvent(stopAct, "arrived")}>Mark arrived</button>
+            <button className="btn" data-trip-stop-event="departed" onClick={() => void stopEvent(stopAct, "departed")}>Mark departed</button>
+          </div>
+        </Modal>
+      )}
+      {cust && (
+        <div className="tp13-customer-pop" style={{ left: cust.left, top: cust.top }}>
+          <div className="tp13-pop-title">Customer Rating <button data-trip-close-pop="" onClick={() => setCust(null)}><I name="close" /></button></div>
+          <div>Rating: <b className="green">—</b></div>
+          <div>Trips: <b>{cust.p.trips ?? "—"}</b></div>
+          <div>Out Calls: <b data-trip-outcalls="">{cust.out ?? "—"}</b></div>
+          <div>In Calls: <b data-trip-incalls="">{cust.inn ?? "—"}</b></div>
+          <div>Check-ins: <b>—</b></div>
+        </div>
+      )}
       {stopMap && (
         <Modal title={<span className="tp13-map-head"><I name="map-pin" /> <span><small>Passenger / Stop</small><b>{stopMap.name}</b><em>Scheduled stop location</em></span></span>} size="xl" onClose={() => setStopMap(null)}>
           <div className="tp13-mappanel">
@@ -277,9 +345,10 @@ function Summary({ t, section }: { t: TripSheet; section: Section }) {
   );
 }
 
-function Boards({ t, which, canOps, collapsed, onCollapse, onFeedback, onUpdate }: {
+type PaxActs = { history: (p: TripSheetPassenger) => void; customer: (p: TripSheetPassenger, el: HTMLElement) => void; call: (p: TripSheetPassenger) => void };
+function Boards({ t, which, canOps, collapsed, onCollapse, onFeedback, onUpdate, acts }: {
   t: TripSheet; which: "pickup" | "drop"; canOps: boolean; collapsed: Set<string>;
-  onCollapse: (k: string) => void; onFeedback: (k: string, v: string) => void; onUpdate: (k: string) => void;
+  onCollapse: (k: string) => void; onFeedback: (k: string, v: string) => void; onUpdate: (k: string) => void; acts: PaxActs;
 }) {
   const groups = useMemo(() => {
     const m = new Map<string, { stop: Partial<TripSheetStop>; rows: TripSheetPassenger[] }>();
@@ -314,7 +383,7 @@ function Boards({ t, which, canOps, collapsed, onCollapse, onFeedback, onUpdate 
             {open && (
               <div className="tp13-tabscroll"><table className="tp13-pax-table">
                 <thead><tr>{(which === "pickup" ? ["PASSENGERS", "PHONE", "SEATS/PNR", "RTG", "PASSENGER LOCATION", "STATUS", "ACTIONS"] : ["NAME", "PHONE", "PNR", "RTG", "DROPS", "STATUS", "ACTIONS"]).map((h) => <th key={h}>{h}</th>)}</tr></thead>
-                <tbody>{g.rows.map((p) => <PaxRow key={key(p)} p={p} which={which} canOps={canOps} onFeedback={onFeedback} onUpdate={onUpdate} />)}</tbody>
+                <tbody>{g.rows.map((p) => <PaxRow key={key(p)} p={p} which={which} canOps={canOps} onFeedback={onFeedback} onUpdate={onUpdate} acts={acts} />)}</tbody>
               </table></div>
             )}
           </section>
@@ -324,10 +393,9 @@ function Boards({ t, which, canOps, collapsed, onCollapse, onFeedback, onUpdate 
   );
 }
 
-function PaxRow({ p, which, canOps, onFeedback, onUpdate }: { p: TripSheetPassenger; which: "pickup" | "drop"; canOps: boolean; onFeedback: (k: string, v: string) => void; onUpdate: (k: string) => void }) {
+function PaxRow({ p, which, canOps, onFeedback, onUpdate, acts }: { p: TripSheetPassenger; which: "pickup" | "drop"; canOps: boolean; onFeedback: (k: string, v: string) => void; onUpdate: (k: string) => void; acts: PaxActs }) {
   const k = key(p), stat = p.status || "booked", checked = ["checked_in", "boarded", "dropped"].includes(stat);
   const why = `Check-in: Yes — ${stat === "checked_in" ? "passenger checked in" : stat === "boarded" ? "passenger boarded the bus" : stat === "dropped" ? "passenger boarded and was dropped" : "check-in recorded"}`;
-  const noComms = "telephony and messaging providers are not connected";
   return (
     <tr>
       <td>
@@ -337,10 +405,10 @@ function PaxRow({ p, which, canOps, onFeedback, onUpdate }: { p: TripSheetPassen
       <td>{mask(p.phone)}</td>
       <td>
         <div className="tp13-seat">Seats: {p.seat}</div>
-        <span className="tp13-source">Via: <b>{p.source || "—"}</b> <span>PNR: <a href="#" data-trip-history={k} title={`View Communication History for PNR ${p.pnr}`} onClick={(e) => { e.preventDefault(); preview("Communication history", noComms); }}>{p.pnr.slice(-6)}</a>
+        <span className="tp13-source">Via: <b>{p.source || "—"}</b> <span>PNR: <a href="#" data-trip-history={k} title={`View Communication History for PNR ${p.pnr}`} onClick={(e) => { e.preventDefault(); acts.history(p); }}>{p.pnr.slice(-6)}</a>
           {canOps && <button type="button" className="tp13-booking-shortcut" data-trip-booking={p.pnr} title="View booking details" aria-label={`View booking details for PNR ${p.pnr}`} onClick={(e) => { e.preventDefault(); location.hash = `#/crm?q=${encodeURIComponent(p.pnr)}`; }}><I name="file" /></button>}</span></span>
       </td>
-      <td><button className="tp13-rtg" data-trip-customer={k} title="Customer Rating · Trips, calls and check-ins" onClick={() => preview("Customer rating", "passenger ratings are not recorded by the platform")}>{p.trips == null ? "—" : `${p.trips}T`}, —</button></td>
+      <td><button className="tp13-rtg" data-trip-customer={k} title="Customer Rating · Trips, calls and check-ins" onClick={(e) => acts.customer(p, e.currentTarget)}>{p.trips == null ? "—" : `${p.trips}T`}, —</button></td>
       <td>{which === "pickup"
         ? <div className="tp13-location"><span>Views: <strong className="tp13-count">—</strong></span><span className="tp13-dash">—</span></div>
         : <><span>{p.dropping?.name || "—"}</span><div className="tp13-location">Views: <strong className="tp13-count">—</strong></div></>}</td>
@@ -354,8 +422,8 @@ function PaxRow({ p, which, canOps, onFeedback, onUpdate }: { p: TripSheetPassen
         : <span className="tp13-muted">{stat.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</span>}</td>
       <td>
         <div className="tp13-row-actions">
-          {canOps && <button className="tp13-call" data-trip-call={k} title="Call passenger" onClick={() => preview("Calling", noComms)}><I name="phone" />{` ${mask(p.phone)}`}</button>}
-          {canOps && <button className="tp13-chat" data-trip-history={k} title="Communication History" onClick={() => preview("Communication history", noComms)}><I name="message" /></button>}
+          {canOps && <button className="tp13-call" data-trip-call={k} title="Call passenger" onClick={() => acts.call(p)}><I name="phone" />{` ${mask(p.phone)}`}</button>}
+          {canOps && <button className="tp13-chat" data-trip-history={k} title="Communication History" onClick={() => acts.history(p)}><I name="message" /></button>}
           {canOps && <button type="button" className="lv39-offer-control" data-trip-loyalty-upgrade="1" title="Review loyalty upgrade / record passenger consent" aria-label={`Open seat upgrade for ${p.name}`} aria-disabled="true"
             onClick={() => preview("Loyalty seat upgrade", "the upgrade-offer API is not available yet")}><Sparkle /> Upgrade</button>}
         </div>
@@ -364,8 +432,9 @@ function PaxRow({ p, which, canOps, onFeedback, onUpdate }: { p: TripSheetPassen
   );
 }
 
-function Timings({ t, canOps, onMap }: { t: TripSheet; canOps: boolean; onMap: (s: TripSheetStop) => void }) {
-  const badge = <span className="tp13-muted">Awaiting arrival</span>;
+const stamp = (x: string | null) => (x ? new Date(x).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }) : "—");
+function Timings({ t, canOps, onMap, onStop }: { t: TripSheet; canOps: boolean; onMap: (s: TripSheetStop) => void; onStop: (s: TripSheetStop) => void }) {
+  const badgeFor = (s: TripSheetStop) => s.departedAt ? <span className="tp13-lag ok">Departed</span> : s.arrivedAt ? <span className="tp13-lag ok">Arrived</span> : <span className="tp13-muted">Awaiting arrival</span>;
   return (
     <div className="tp13-timing-scroll"><table className="tp13-timing-table">
       <thead><tr><th>Type</th><th>Name</th><th>Link</th><th>Status</th><th>Sched:</th><th>Arr:</th><th>Dep:</th></tr></thead>
@@ -375,9 +444,9 @@ function Timings({ t, canOps, onMap }: { t: TripSheet; canOps: boolean; onMap: (
             <td><span className={`tp13-stoptype ${s.type}`}><I name="map-pin" /><em>{s.type === "pickup" ? "Pickup" : s.type === "drop" ? "Drop" : "Break"}</em></span></td>
             <td className="tp13-stopname">{s.name} <I name="map-pin" /></td>
             <td>{s.lat != null && s.lng != null ? <button className="tp13-mapbutton" data-trip-stop-map={s.id} onClick={() => onMap(s)}><I name="map-pin" /> View Map</button> : <span className="tp13-muted">No location</span>}</td>
-            <td>{canOps ? <button className="tp13-lag-button" data-trip-stop-actions={s.id} title="Open stop timing actions" onClick={() => preview("Stop arrival / departure", "stop events are not recorded by the platform yet")}>{badge}</button> : badge}</td>
+            <td>{canOps ? <button className="tp13-lag-button" data-trip-stop-actions={s.id} title="Open stop timing actions" onClick={() => onStop(s)}>{badgeFor(s)}</button> : badgeFor(s)}</td>
             <td><b>{clock(s.time)}</b><small>{fdate(addDays(t.travelDate, (s.day || 1) - 1)).replace(/\d{4}/, "").trim()}</small></td>
-            <td>—</td><td>—</td>
+            <td>{stamp(s.arrivedAt)}</td><td>{stamp(s.departedAt)}</td>
           </tr>
         ))}
       </tbody>
@@ -426,6 +495,44 @@ function DocModal({ t, i, onClose }: { t: TripSheet; i: number; onClose: () => v
           <p className="tp13-muted">No file uploaded for this document.</p>
         </div>
       ) : <p className="tp13-muted">{label} is not on file for {t.vehicle?.registration || "—"}. Upload it from Fleet → Vehicles.</p>}
+    </Modal>
+  );
+}
+
+/** legacy trip-parity-v13 communication history modal (.tp13-history-modal) */
+function HistoryModal({ p, rows, onClose }: { p: TripSheetPassenger; rows: TripCommRow[]; onClose: () => void }) {
+  const [ch, setCh] = useState("all");
+  const cnt = (k: string) => rows.filter((r) => r.channel === k).length;
+  const list = rows.filter((x) => ch === "all" || x.channel === ch);
+  const tabs: [string, string, number, IconName | ""][] = [["all", "All", rows.length, ""], ["calls", "Calls", cnt("calls"), "phone"], ["whatsapp", "WhatsApp", cnt("whatsapp"), "message"], ["sms", "SMS", cnt("sms"), "message"]];
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  return (
+    <Modal title="Communication History" size="xl" className="tp13-history-modal" onClose={onClose}>
+      <p className="tp13-history-sub">{p.name}{"\u00a0 PNR: "}{p.pnr}{" \u00a0\u2022\u00a0 "}{mask(p.phone)}</p>
+      <div className="tp13-history-tabs">
+        {tabs.map(([id, label, n, icon]) => (
+          <button key={id} data-trip-channel={id} className={ch === id ? "active" : ""} onClick={() => setCh(id)}>{icon && <I name={icon} />}<span className="tp13-history-tablabel">{label}</span><small>({n})</small></button>
+        ))}
+      </div>
+      <div className="tp13-history-scroll" data-trip-history-rows="">
+        {list.length ? (
+          <table className="tp13-history-table">
+            <thead><tr>{["TYPE", "DIRECTION", "TIMESTAMP", "MESSAGE TYPE / FROM", "CONTACT / TO", "STATUS", "DURATION", "ADDITIONAL INFO"].map((h) => <th key={h}>{h}</th>)}</tr></thead>
+            <tbody>{list.map((r, i) => (
+              <tr key={i}>
+                <td><span className={`tp13-history-type ${r.channel}`}><I name={r.channel === "calls" ? "phone" : "message"} />{cap(r.channel === "calls" ? "Call" : r.channel)}</span></td>
+                <td><span className="tp13-history-dir">{r.direction === "out" ? "↗" : "↙"} {r.direction === "out" ? "Outgoing" : "Incoming"}</span></td>
+                <td>{new Date(r.ts).toLocaleString("en-IN")}</td>
+                <td><span className="tp13-history-name">{r.label}</span><small>{r.from || "—"}</small></td>
+                <td>{r.to || "—"}</td>
+                <td><span className={`tp13-history-status ${/read|deliver|answer/i.test(r.status) ? "good" : /sent|record/i.test(r.status) ? "sent" : "other"}`}>{r.status}</span></td>
+                <td>{r.duration == null ? "—" : `${r.duration}s`}</td>
+                <td>{r.content ? <><small>Content:</small> {r.content}</> : "—"}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        ) : <div className="tp13-history-empty">No recorded communications in this channel.</div>}
+      </div>
     </Modal>
   );
 }
