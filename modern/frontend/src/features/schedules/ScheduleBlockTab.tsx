@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api, type Me, type ScheduleDetail, type ScheduleRow, type TripSheet, type TripSheetPassenger } from "../../api";
 import { BookingOverlay } from "../crm/BookingOverlay";
-import { confirmDialog, toast, toastError } from "../../components/ui/feedback";
+import { Modal, confirmDialog, toast, toastError } from "../../components/ui/feedback";
 import { can, permissions } from "../../auth/permissions";
 import { TicketWorkspaceV38 } from "./TicketWorkspaceV38";
 import { ImportPickupChart, type ImportedChart } from "./PickupChartImport";
@@ -43,6 +43,8 @@ export function BlockTab({ row, detail, mode = "block", me }: { row: ScheduleRow
   const [posText, setPosText] = useState("No verified live position");
   const [busy, setBusy] = useState(false);
   const [pair, setPair] = useState<[number, number]>();
+  const [sharing, setSharing] = useState(false);
+  const [shareMsg, setShareMsg] = useState<string>();
   const load = () => Promise.all([api.admin<Seat[]>(`/trips/${row.id}/seats`), api.admin<Fares>(`/schedules/${row.id}/fares`).catch(() => undefined), api.tripSheet(row.id).catch(() => undefined), permissions()])
     .then(([s, f, t]) => { setSeats(s); setFares(f); setSheet(t); return loadLayout(); }).catch(toastError);
   useEffect(() => { void load(); }, [row.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -80,13 +82,21 @@ export function BlockTab({ row, detail, mode = "block", me }: { row: ScheduleRow
     } catch (e) { toastError(e); } finally { setBusy(false); }
   };
 
+  const doShare = async () => {
+    if (sharing) return; setSharing(true);
+    try {
+      const cityId = (seq: number) => cities.find((c) => c.sequence === seq)?.cityId;
+      const r = await shareLink(row.id, cityId(from), cityId(to));
+      if (r.copied) toast("Booking link copied. Paste into WhatsApp or any chat.", "ok"); else setShareMsg(r.message);
+    } catch (e) { toastError(e); } finally { setSharing(false); }
+  };
   if (!seats) return <div className="sx-loading">Loading {mode}…</div>;
   const openTicket = (pnr: string) => (mode === "bookings" ? setOpenReq({ pnr }) : me ? setTicket(pnr) : toast("Booking details permission is required", "bad"));
   return (
     <div className={`sx-book-columns${hide ? " sx-hidefares" : ""}`}>
       <section className="sx-book-left">
         <header className="sx-book-head"><strong><I n="layout" /> Seat Layout</strong>
-          <div><Bt n="copy" label="Copy" cls="mini" attrs={{ "data-sx-copy": "", title: "Copy seat layout image" }} onClick={() => void copyLayout()} /><Bt n="link" label="Share" cls="mini" attrs={{ "data-sx-share": "" }} onClick={() => void share(row)} /></div></header>
+          <div><Bt n="copy" label="Copy" cls="mini" attrs={{ "data-sx-copy": "", title: "Copy seat layout image" }} onClick={() => void copyLayout()} /><Bt n="link" label={sharing ? "Sharing…" : "Share"} cls="mini" attrs={{ "data-sx-share": "", ...(sharing ? { disabled: "", "aria-busy": "true" } : {}) }} onClick={() => void doShare()} /></div></header>
         <div className="sx-book-ident"><I n="bus" s={13} /> {sheet?.vehicle?.registration || "Unassigned vehicle"} <span><I n="user" s={13} /> {sheet?.crew[0]?.name || "Crew pending"}</span><span>{row.serviceNumber}</span></div>
         <div className="sx-book-location"><I n="pin" s={13} /> {posText} <small></small></div>
         <div className="sx-station-tools">{([["stations", "Stations", "map"], ["pickups", "Pickups", "arrowUp"], ["drops", "Drops", "arrowDown"], ["bookedby", "Booked by", "credit"], ["bookings", "Bookings", "file"]] as const).map(([k, l, ic]) =>
@@ -130,6 +140,7 @@ export function BlockTab({ row, detail, mode = "block", me }: { row: ScheduleRow
         <Bt n="refresh" label="Follow route blocks" attrs={{ "data-sx-block": "follow_route" }} onClick={() => void apply("follow_route")} />
         <div className="sx-preview-note"><I n="shield" s={15} /> Seat block changes use the existing authorized schedule API after confirmation.</div>
       </section>}
+      {shareMsg && <ShareFallback message={shareMsg} onClose={() => setShareMsg(undefined)} />}
       {ticket && me && <BookingOverlay me={me} pnr={ticket} onClose={() => { setTicket(undefined); void load(); }} />}
     </div>
   );
@@ -267,11 +278,40 @@ async function copyLayout() {
   } catch (e) { toast(`Could not copy the seat layout image: ${(e as Error).message}`, "bad"); }
 }
 
-/** legacy schedule-booking-share-v50: share service + availability text (Web Share API, clipboard fallback). */
-async function share(row: ScheduleRow) {
-  const text = `${row.serviceNumber} ${row.serviceName} · ${row.origin} → ${row.destination} · ${row.travelDate} ${row.departureTime} · ${row.free} seats available`;
-  try {
-    if (navigator.share) await navigator.share({ title: row.serviceNumber, text });
-    else { await navigator.clipboard.writeText(text); toast("Schedule details copied to clipboard", "ok"); }
-  } catch (e) { if ((e as Error).name !== "AbortError") toast(`Share failed: ${(e as Error).message}`, "bad"); }
+/** legacy schedule-booking-share-v50: route/date booking-search link for the displayed segment, copied for WhatsApp. */
+type ShareResp = { message: string; booking_url: string; link_type: string };
+function validShare(r: ShareResp) {
+  if (!r || typeof r.message !== "string" || typeof r.booking_url !== "string") throw new Error("Booking-link response is incomplete");
+  const u = new URL(r.booking_url);
+  if (u.protocol !== "https:" || u.username || u.password || !u.searchParams.get("fromCity") || !u.searchParams.get("toCity")
+    || !/^\d{4}-\d{2}-\d{2}$/.test(u.searchParams.get("journeyDate") || "") || !r.message.endsWith(r.booking_url) || r.link_type !== "route_date_search")
+    throw new Error("Booking link is not a verified route/date search URL");
+  return r;
+}
+async function shareLink(tripId: number, fromCityId: number | undefined, toCityId: number | undefined): Promise<{ copied: boolean; message: string }> {
+  const q = new URLSearchParams(); if (fromCityId) q.set("from_city_id", String(fromCityId)); if (toCityId) q.set("to_city_id", String(toCityId));
+  // Start the clipboard write before awaiting so the click's user activation survives the API call.
+  const resp = api.admin<ShareResp>(`/schedules/${tripId}/booking-share?${q}`).then(validShare);
+  if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+    try { await navigator.clipboard.write([new ClipboardItem({ "text/plain": resp.then((r) => new Blob([r.message], { type: "text/plain" })) })]); return { copied: true, message: (await resp).message }; }
+    catch { /* fall through */ }
+  }
+  const r = await resp;
+  try { await navigator.clipboard.writeText(r.message); return { copied: true, message: r.message }; } catch { return { copied: false, message: r.message }; }
+}
+function ShareFallback({ message, onClose }: { message: string; onClose: () => void }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => { ref.current?.focus(); ref.current?.select(); }, []);
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(message); }
+    catch { ref.current?.select(); if (!document.execCommand("copy")) return toast("Select the message and copy it manually", "warn"); }
+    toast("Booking message copied", "ok"); onClose();
+  };
+  return <Modal title="Share booking link" onClose={onClose}>
+    <p>Copy this route and travel-date booking message, then paste it into WhatsApp or any chat. Your WhatsApp app may create the website preview automatically.</p>
+    <textarea ref={ref} data-sx50-message="" readOnly rows={5} spellCheck={false} aria-label="Passenger booking link message" value={message}
+      style={{ width: "100%", minHeight: 110, font: "inherit", resize: "vertical", border: "1px solid #cad4ec", borderRadius: 10, padding: 12 }} />
+    <p className="sx-muted">This opens the operator’s booking website search for the selected route and date. It does not preselect a particular bus unless the booking site supports that separately.</p>
+    <button type="button" className="btn primary" data-sx50-copy="" onClick={() => void copy()}>Copy booking message</button>
+  </Modal>;
 }

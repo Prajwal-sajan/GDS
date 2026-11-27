@@ -184,6 +184,44 @@ public static class ScheduleManageEndpoints
             return Results.Text((await PnlAsync(db, id)).ToJsonString(), "application/json");
         }).RequireAuthorization(Policies.Accounts);
 
+        // ---------------------------------------------------------------- booking-link share (legacy schedule-booking-share-v50)
+        // Route/date-only public booking search link on the operator's configured HTTPS website. Never an internal GDS URL,
+        // never a guessed domain, never a PNR or passenger data.
+        g.MapGet("/schedules/{id:long}/booking-share", async (long id, long? from_city_id, long? to_city_id, GdsDbContext db, HttpContext h) =>
+        {
+            h.Response.Headers.CacheControl = "private, no-store, max-age=0";
+            var trip = await db.Trips.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id && t.DeletedAt == null) ?? throw Bad("Schedule not found", 404);
+            var route = await db.Routes.AsNoTracking().Include(r => r.Stops).ThenInclude(s => s.City).FirstOrDefaultAsync(r => r.Id == trip.RouteId) ?? throw Bad("Route not found", 404);
+            if (trip.Status != "active" || route.Status != "active" || trip.TripStatus == "cancelled") throw Bad("This service is not active for booking", 409);
+            var cities = route.Stops.OrderBy(s => s.Sequence).ToList();
+            if (cities.Count < 2) throw Bad("No valid city pair configured on this route", 409);
+            var from = from_city_id ?? cities[0].CityId; var to = to_city_id ?? cities[^1].CityId;
+            int i = cities.FindIndex(c => c.CityId == from), j = cities.FindIndex(c => c.CityId == to);
+            if (i < 0 || j < 0 || j <= i) throw Bad("Select a valid From/To city pair along this route");
+            var day = cities[i].Day;
+            if (day is < 1 or > 15) throw Bad("Invalid boarding day on route", 409);
+            var journey = trip.TravelDate.AddDays(day - 1);
+            var cfg = await Settings.SettingsEndpoints.ConfigAll(db);
+            var raw = (cfg["website"]?["booking_search_url"]?.GetValue<string>() ?? "").Trim();
+            if (raw.Length == 0) throw Bad("Passenger booking website is not configured. Set the Booking Search URL in Settings → Configuration → Website.", 409);
+            if (raw.Length > 300 || raw.Any(c => char.IsWhiteSpace(c) || c is '<' or '>' or '\\') || !Uri.TryCreate(raw, UriKind.Absolute, out var u)) throw Bad("Invalid passenger booking search URL");
+            if (u.Scheme != "https" || u.UserInfo.Length > 0 || !u.IsDefaultPort || u.Query.Length > 0 || u.Fragment.Length > 0 || u.HostNameType != UriHostNameType.Dns
+                || u.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) || u.Host.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase) || !u.Host.Contains('.'))
+                throw Bad("Passenger booking search URL must be a public HTTPS page without credentials, query or fragment");
+            string nameFrom = cities[i].City?.Name ?? "", nameTo = cities[j].City?.Name ?? "";
+            if (nameFrom.Length == 0 || nameTo.Length == 0) throw Bad("Missing city name for booking link", 409);
+            var url = $"{u.GetLeftPart(UriPartial.Path)}?fromCity={cities[i].CityId}&toCity={cities[j].CityId}&journeyDate={journey:yyyy-MM-dd}";
+            var label = journey.ToString("ddd, dd MMM, yyyy", CultureInfo.InvariantCulture);
+            return Results.Ok(new Dictionary<string, object?>
+            {
+                ["message"] = $"{nameFrom} → {nameTo} on {label} — pick your seat and book: {url}", ["booking_url"] = url, ["origin"] = nameFrom, ["destination"] = nameTo,
+                ["journey_date"] = journey.ToString("yyyy-MM-dd"), ["service_travel_date"] = trip.TravelDate.ToString("yyyy-MM-dd"),
+                ["from_city_id"] = cities[i].CityId.ToString(CultureInfo.InvariantCulture), ["to_city_id"] = cities[j].CityId.ToString(CultureInfo.InvariantCulture),
+                ["service_number"] = route.ServiceNumber ?? "", ["link_type"] = "route_date_search", ["preselects_service"] = false,
+                ["note"] = "Opens the operator booking website for the selected route and date. Select the desired service; availability is determined on the booking website.",
+            });
+        });
+
         // ---------------------------------------------------------------- per-trip fares
         g.MapGet("/schedules/{id:long}/fares", async (long id, GdsDbContext db) =>
         {
