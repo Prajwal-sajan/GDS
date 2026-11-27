@@ -14,7 +14,7 @@ const ICONS = {
   phone: "M5 3h4l2 5-3 2a15 15 0 0 0 6 6l2-3 5 2v4c0 1.1-1 2-2 2A17 17 0 0 1 3 5c0-1 1-2 2-2z",
   star: "M12 2l3.1 6.3L22 9.3l-5 4.9 1.2 7-6.2-3.3-6.2 3.3 1.2-7L2 9.3l6.9-1z", plus: "M12 5v14M5 12h14",
   trash: "M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15M10 10v7m4-7v7", edit: "M12 20h9M16 4l4 4L9 19l-5 1 1-5L16 4z",
-  tag: "M3 3h9l9 9-9 9-9-9V3zm5 4h.01", clock: "M12 6v6l4 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0",
+  tag: "M3 3h9l9 9-9 9-9-9V3zm5 4h.01", upload: "M12 16V3m-5 5 5-5 5 5M4 16v4h16v-4", clock: "M12 6v6l4 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0",
 } as const;
 type IconKey = keyof typeof ICONS;
 const I = ({ k, size = 18 }: { k: IconKey; size?: number }) => (
@@ -315,6 +315,22 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
     await infoDialog(x.ok ? "Route validation passed" : "Route needs attention", <div>{x.issues.length ? x.issues.map((v, i) => <p key={i}><span className={`rv-chip ${v.level === "error" ? "bad" : "warn"}`}>{v.level}</span> {v.message}</p>) : <p>No warnings from server validation.</p>}
       <p className="rv-help">These checks refer to the saved route; click Save first to validate recent edits.</p></div>);
   });
+  /** legacy import-via: CSV saved from Excel with headers city,day,time; rows are staged before the destination until Save. */
+  const importVias = async (file: File) => {
+    const rows = (await file.text()).trim().split(/\r?\n/).map((r) => r.split(",").map((s) => s.trim().replace(/^"|"$/g, "")));
+    const head = (rows.shift() ?? []).map((h) => h.toLowerCase());
+    const ci = head.indexOf("city"), di = head.indexOf("day"), ti = head.indexOf("time");
+    if (ci < 0 || ti < 0) return toast("CSV needs headers: city,day,time", "bad");
+    const added: Via[] = [], bad: string[] = [];
+    rows.forEach((r, n) => {
+      const c = cityCatalog.find((x) => x.name.toLowerCase() === (r[ci] ?? "").toLowerCase());
+      const time = /^\d{1,2}:\d{2}$/.test(r[ti] ?? "") ? r[ti].padStart(5, "0") : "";
+      if (!c || !time || vias.some((v) => v.cityId === c.id) || added.some((v) => v.cityId === c.id)) { bad.push(`row ${n + 2}`); return; }
+      added.push({ key: `csv${Date.now()}${n}`, id: null, cityId: c.id, day: Math.max(1, Number(r[di]) || 1), time });
+    });
+    if (added.length) setVias((xs) => [...xs.slice(0, -1), ...added, ...xs.slice(-1)]);
+    toast(`${added.length} via city row(s) staged; click Save to apply${bad.length ? ` · skipped ${bad.slice(0, 5).join(", ")} (unknown/duplicate city or bad time)` : ""}`, bad.length ? "warn" : "ok");
+  };
   const shiftKey = `${shift.direction}:${shift.hours}:${shift.minutes}`;
   const previewShift = () => run(async () => {
     if (!(shift.hours >= 0) || !(shift.minutes >= 0 && shift.minutes <= 59) || shift.hours * 60 + shift.minutes === 0) return toast("Enter hours and minutes (0-59) to shift", "warn");
@@ -470,6 +486,7 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
             {ro ? <div className="rv-scroll"><table className="rv-table rv-via"><thead><tr><th>#</th><th>State</th><th>City</th><th>Lat</th><th>Lng</th><th>Day</th><th>Time</th></tr></thead>
               <tbody>{route.stops.map((s) => <tr key={s.sequence}><td>{s.sequence + 1}</td><td>{s.state ?? "—"}</td><td>{s.city}</td><td>{s.lat ?? "—"}</td><td>{s.lng ?? "—"}</td><td>D{s.day}</td><td>{fmtTime(s.time)}</td></tr>)}</tbody></table></div>
               : <>
+                <div className="rv-topright"><label className="rv-btn" data-rv="import-via"><I k="upload" size={17} /> Upload Excel<input type="file" accept=".csv,text/csv" hidden onChange={(e) => { const f = e.currentTarget.files?.[0]; e.currentTarget.value = ""; if (f) void importVias(f); }} /></label></div>
                 <div className="rv-scroll"><table className="rv-table rv-via" data-testid="route-vias"><thead><tr><th>#</th><th>City</th><th>State</th><th>Day</th><th>Time</th><th /></tr></thead>
                   <tbody>{vias.map((v, i) => {
                     const set = (p: Partial<Via>) => setVias((xs) => xs.map((x, j) => (j === i ? { ...x, ...p } : x)));
