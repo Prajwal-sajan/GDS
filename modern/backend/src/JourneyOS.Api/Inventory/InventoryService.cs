@@ -457,8 +457,18 @@ WHERE hold_id IN (SELECT id FROM expired) AND is_active");
         long oCity = oldRoute.Stops.Single(s => s.Sequence == booking.FromSeq).CityId, dCity = oldRoute.Stops.Single(s => s.Sequence == booking.ToSeq).CityId;
         var nFrom = newRoute.Stops.FirstOrDefault(s => s.CityId == oCity) ?? throw new GdsException("SHIFT_ROUTE", "Target service does not serve the source city");
         var nTo = newRoute.Stops.FirstOrDefault(s => s.CityId == dCity && s.Sequence > nFrom.Sequence) ?? throw new GdsException("SHIFT_ROUTE", "Target service does not serve the destination city");
-        var nbp = newRoute.Stages.Where(s => s.Kind == "pickup" && s.StopSequence == nFrom.Sequence).OrderByDescending(s => s.Prime).First();
-        var ndp = newRoute.Stages.Where(s => s.Kind == "drop" && s.StopSequence == nTo.Sequence).OrderByDescending(s => s.Prime).First();
+        // keep the passenger's chosen boarding/dropping point when the target route serves it (always true for a seat change
+        // inside the same trip); only fall back to the prime point of the city when the target route has no such stage
+        var oldBp = oldRoute.Stages.FirstOrDefault(s => s.Id == booking.BoardingStageId);
+        var oldDp = oldRoute.Stages.FirstOrDefault(s => s.Id == booking.DroppingStageId);
+        var bps = newRoute.Stages.Where(s => s.Kind == "pickup" && s.StopSequence == nFrom.Sequence).ToList();
+        var dps = newRoute.Stages.Where(s => s.Kind == "drop" && s.StopSequence == nTo.Sequence).ToList();
+        var nbp = bps.FirstOrDefault(s => s.Id == booking.BoardingStageId)
+            ?? (oldBp is null ? null : bps.FirstOrDefault(s => string.Equals(s.Name, oldBp.Name, StringComparison.OrdinalIgnoreCase)))
+            ?? bps.OrderByDescending(s => s.Prime).First();
+        var ndp = dps.FirstOrDefault(s => s.Id == booking.DroppingStageId)
+            ?? (oldDp is null ? null : dps.FirstOrDefault(s => string.Equals(s.Name, oldDp.Name, StringComparison.OrdinalIgnoreCase)))
+            ?? dps.OrderByDescending(s => s.Prime).First();
 
         var now = UtcNow;
         var pIds = pax.Select(p => (long?)p.Id).ToHashSet();
