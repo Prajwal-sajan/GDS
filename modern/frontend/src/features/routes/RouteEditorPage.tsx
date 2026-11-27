@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { api, type CoachListRow, type Me, type RouteAssignment, type RouteCoachSeat, type RouteDetail, type RouteSettingsJson, type RouteShiftPreview, type RouteStageInput, type RouteStageRow, type Staff, type VehicleListRow } from "../../api";
-import { confirmDialog, toast, toastError } from "../../components/ui/feedback";
+import { confirmDialog, infoDialog, toast, toastError } from "../../components/ui/feedback";
 
 // React port of the legacy route editor (public/js/routes-screenshot-v5.js editor(): render(), general(), citiesTab(),
 // stopPanel(), fares(), cancellation(), expenses(), history()). Same DOM/classes so routes-screenshot-v5.css applies.
@@ -293,6 +293,28 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
     if (blk.id === b.id) { setSel(new Set()); setBlk({ id: null, reason: "", fromDate: "", toDate: "", autoReleaseHours: "" }); }
     await load();
   });
+  /** legacy block-release: remove the selected seats from every standing block holding them (empty blocks are deleted). */
+  const releaseSelected = () => run(async () => {
+    if (!route || !sel.size) return toast("Choose blocked seats on the seat map", "warn");
+    const hit = route.seatBlocks.filter((b) => b.seats.some((s) => sel.has(s)));
+    if (!hit.length) return toast("None of the selected seats are in a standing block", "warn");
+    if (!(await confirmDialog(`Release ${[...sel].join(", ")} from ${hit.length} standing block(s) on all upcoming departures?`, { ok: "Release", danger: true }))) return;
+    let released = 0;
+    for (const b of hit) {
+      const keep = b.seats.filter((s) => !sel.has(s));
+      const r = keep.length
+        ? await api.saveRouteSeatBlock(id, b.id, { seats: keep, reason: b.reason, fromDate: b.fromDate, toDate: b.toDate, autoReleaseHours: b.autoReleaseHours })
+        : await api.deleteRouteSeatBlock(id, b.id);
+      released += r.result.seatsReleased;
+    }
+    toast(`Seats released from standing blocks · ${released} seat allocation(s) freed`, "ok");
+    setSel(new Set()); setBlk({ id: null, reason: "", fromDate: "", toDate: "", autoReleaseHours: "" }); await load();
+  });
+  const validate = () => run(async () => {
+    const x = await api.admin<{ ok: boolean; issues: { level: string; message: string }[] }>(`/routes/${id}/validate`);
+    await infoDialog(x.ok ? "Route validation passed" : "Route needs attention", <div>{x.issues.length ? x.issues.map((v, i) => <p key={i}><span className={`rv-chip ${v.level === "error" ? "bad" : "warn"}`}>{v.level}</span> {v.message}</p>) : <p>No warnings from server validation.</p>}
+      <p className="rv-help">These checks refer to the saved route; click Save first to validate recent edits.</p></div>);
+  });
   const shiftKey = `${shift.direction}:${shift.hours}:${shift.minutes}`;
   const previewShift = () => run(async () => {
     if (!(shift.hours >= 0) || !(shift.minutes >= 0 && shift.minutes <= 59) || shift.hours * 60 + shift.minutes === 0) return toast("Enter hours and minutes (0-59) to shift", "warn");
@@ -508,6 +530,8 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
               </div>
             </Region>
           )}
+          <Region title="Validation"><p>Check coach, fare, stops, map pins and stop order.</p>
+            <Btn cls="primary" data-rv="validate-route" disabled={busy} onClick={validate}>Validate route</Btn></Region>
         </>
       );
       case "pickups": return stopPanel("pickup");
@@ -552,6 +576,7 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
                 <Field label="Auto-release (hours before departure)" type="number" min={0} max={168} value={blk.autoReleaseHours} placeholder="Never" onChange={(v) => setBlk((b) => ({ ...b, autoReleaseHours: v }))} />
                 <div className="rv-right">
                   {(blk.id != null || sel.size > 0) && <Btn onClick={() => { setSel(new Set()); setBlk({ id: null, reason: "", fromDate: "", toDate: "", autoReleaseHours: "" }); }}>Clear</Btn>}
+                  <Btn data-rv="block-release" disabled={busy || !sel.size} onClick={releaseSelected}>Release selected seats</Btn>
                   <Btn cls="primary" data-rv="block-save" disabled={busy} onClick={saveBlock}>{blk.id == null ? "Block seats" : "Save block"}</Btn>
                 </div>
               </div>}

@@ -125,6 +125,39 @@ public static class RouteEndpoints
                 .Select(c => new { c.Id, c.Name, c.State }).ToListAsync(),
         })).RequireAuthorization(Policies.Reports);
 
+        // Route validation (legacy GET /routes/:id/validate): coach, fares, stops, map pins and stop order on the saved route.
+        g.MapGet("/routes/{id:long}/validate", async (long id, GdsDbContext db) =>
+        {
+            var r = await db.Routes.AsNoTracking().AsSplitQuery().Include(x => x.Stops).ThenInclude(s => s.City).Include(x => x.Stages).Include(x => x.Fares)
+                .Include(x => x.CoachTemplate).ThenInclude(c => c!.Seats).FirstOrDefaultAsync(x => x.Id == id) ?? throw new GdsException("ROUTE_NOT_FOUND", "Route not found", 404);
+            var issues = new List<object>(); var errors = 0;
+            void E(string m) { errors++; issues.Add(new { level = "error", message = m }); }
+            void W(string m, long? stage = null) => issues.Add(new { level = "warn", stage_id = stage, message = m });
+            var stops = r.Stops.OrderBy(s => s.Sequence).ToList();
+            if (r.CoachTemplate is null || r.CoachTemplate.Seats.Count == 0) E("Route has no coach layout");
+            if (stops.Count < 2) E("Route needs an origin and a destination city");
+            if (!r.Stages.Any(s => s.Kind == "pickup")) E("Route has no boarding points");
+            if (!r.Stages.Any(s => s.Kind == "drop")) E("Route has no dropping points");
+            for (var a = 0; a < stops.Count; a++)
+                for (var b = a + 1; b < stops.Count; b++)
+                    if (!r.Fares.Any(f => f.FromSequence == stops[a].Sequence && f.ToSequence == stops[b].Sequence && (f.Seater > 0 || f.SleeperLower > 0 || f.SleeperUpper > 0)))
+                        W($"{stops[a].City?.Name} → {stops[b].City?.Name}: no fare (not on sale)");
+            foreach (var s in r.Stages) if (s.Lat is null || s.Lng is null) W($"{s.Name}: no map location", s.Id);
+            var ordered = r.Stages.OrderBy(s => s.Day).ThenBy(s => s.Time).ToList();
+            for (var i = 1; i < ordered.Count; i++)
+            {
+                var a = ordered[i - 1]; var b = ordered[i];
+                if (a.Lat is null || a.Lng is null || b.Lat is null || b.Lng is null) continue;
+                var mins = (b.Day - a.Day) * 1440 + (b.Time.ToTimeSpan() - a.Time.ToTimeSpan()).TotalMinutes;
+                double R(decimal d) => (double)d * Math.PI / 180;
+                var dLat = R(b.Lat.Value - a.Lat.Value); var dLng = R(b.Lng.Value - a.Lng.Value);
+                var h = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) + Math.Cos(R(a.Lat.Value)) * Math.Cos(R(b.Lat.Value)) * Math.Sin(dLng / 2) * Math.Sin(dLng / 2);
+                var km = 6371 * 2 * Math.Atan2(Math.Sqrt(h), Math.Sqrt(1 - h));
+                if (mins > 0 && km / (mins / 60) > 100) W($"{b.Name}: {Math.Round(km)} km from {a.Name} in {mins:0} min — time or pin probably wrong", b.Id);
+            }
+            return Results.Ok(new { ok = errors == 0, issues });
+        }).RequireAuthorization(Policies.Reports);
+
         // Route editor read model (legacy GET /api/routes/:id): every tab's data in one call, PostgreSQL only.
         g.MapGet("/route-detail/{id:long}", async (long id, GdsDbContext db) =>
         {
