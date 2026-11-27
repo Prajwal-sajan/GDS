@@ -53,14 +53,16 @@
         "e2e/parity/schedule-overlay.parity.spec.ts bookings — legacy schedule-bookings-v38 chart() port: right tabs, group controls, footer skeleton + text, toolbar/stats skeleton identical; seat/passenger click opens BookingOverlay; bulk Cancel per PNR, Notify via /trips/{id}/notify, search, group-by, History panel",
         "Cities tab via toggles / sub-route fare % persisted as schedule ui_settings (PUT /api/admin/schedules/{id}/ui-settings) — dcfc0ce",
         "Fares tab auto pricing toggle, min/max guard rails, demand curve persisted (ui_settings) — e30a8db",
-        "Import Pickup Chart v40: CSV + pdftotext PDF preview, stage matching, audited reference-only commit, imported chart view — 58ff838; scripts/pickup-chart-import-smoke.mjs"
+        "Import Pickup Chart v40: CSV + pdftotext PDF preview, stage matching, audited reference-only commit, imported chart view — 58ff838; scripts/pickup-chart-import-smoke.mjs",
+        "Pickups/Drops stop editor (name/time/day/landmark/contact/lat/lng, per-trip stage_overrides with field merge + reset; trip sheet applies them), trip seat fare rules priced after route rules (CRM seat map +₹100 verified), Edit history (audit-backed), Apply delay/advance (POST /trips/{id}/delay), footer Save changes — 65a5fab; scripts/schedule-overrides-smoke.mjs"
       ],
       "gaps": [
         "P&L schedule-list expense/profit columns still use the reports cost model (P&L tab now includes commission + cancellation charges like legacy)",
         "Block tab gender restriction is recorded in the block reason only (backend blocks have no gender field); Follow route blocks: routes have no seat-block template",
         "Copy layout image / Share implemented client-side (canvas + clipboard, Web Share); not pixel-compared",
         "P&L amounts not pixel-compared (PostgreSQL also holds e2e bookings)",
-        "Cities tab stop edit and Apply delay remain disabled (legacy schedule stop edits route through the Routes editor)",
+        "Stop editor Move pin needs a map provider (legacy also toasts); lat/lng are entered manually",
+        "Fares tab fare-group add/remove and Set Rate/CHANGE/Fixed/Percent toggles are client-side like legacy (added group persists in ui_settings)",
         "Pickup chart PDF import requires Poppler pdftotext on the server (503 with guidance otherwise, like legacy)",
         "Auto pricing settings are stored; no pricing engine applies them (legacy also: 'Recommended changes are not applied automatically')"
       ]
