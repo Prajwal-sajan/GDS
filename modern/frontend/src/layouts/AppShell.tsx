@@ -3,6 +3,7 @@ import type { Me } from "../api";
 import { NavSvg, UiIcon } from "../components/ui/icons";
 import { toast } from "../components/ui/feedback";
 import { LANGUAGES, SETTINGS_MENU, SUB, TOP, sectionOf, settingsHref, type Role } from "../navigation/nav";
+import { BookingNotices } from "./BookingNotices";
 
 /**
  * React port of the legacy shell (public/js/main.js `shell()` + settings-complete.js header menus):
@@ -93,6 +94,8 @@ export function AppShell({ me, seg, onSignOut, children }: { me: Me; seg: string
           </div>
         </div>
       </header>
+      {localStorage.getItem("viewAs") && <div className="su34-view-banner" role="status">Viewing as {me.name} ({me.role}). Changes are attributed to your account. <button type="button" data-view-as-return=""
+        onClick={() => { localStorage.removeItem("viewAs"); window.location.hash = "#/"; window.location.reload(); }}>Return to my account</button></div>}
       {top === "gds" && (
         <div data-sub>
           <div className="page" style={{ paddingBottom: 0 }}>
@@ -108,6 +111,7 @@ export function AppShell({ me, seg, onSignOut, children }: { me: Me; seg: string
         </div>
       )}
       <main className="page" data-content>{children}</main>
+      {role !== "agent" && <BookingNotices me={me} />}
     </div>
   );
 }

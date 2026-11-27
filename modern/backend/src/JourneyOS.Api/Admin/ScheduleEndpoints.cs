@@ -173,6 +173,40 @@ public static class ScheduleEndpoints
             });
         }).RequireAuthorization(Policies.Reports);
 
+        // Legacy GET /bookings/live-events-v39: global "new booking" notice feed. First call (no since_id) is a baseline
+        // (no replay of history). Cursor = highest booking id; only confirmed bookings with live passengers are emitted.
+        g.MapGet("/bookings/live-events-v39", async (string? since_id, GdsDbContext db, HttpContext h) =>
+        {
+            h.Response.Headers.CacheControl = "private, no-store";
+            var last = await db.Bookings.AsNoTracking().MaxAsync(b => (long?)b.Id) ?? 0;
+            if (since_id is null) return Results.Ok(new { cursor = last, events = Array.Empty<object>(), interval_ms = 3000 });
+            if (!long.TryParse(since_id, out var since) || since < 0) throw new GdsException("VALIDATION", "Invalid event cursor", 400);
+            if (since > last) throw new GdsException("VALIDATION", "Event cursor is ahead of latest record", 400);
+            var rows = await db.Bookings.AsNoTracking().Include(b => b.Passengers).Where(b => b.Id > since && b.Status != "CANCELLED").OrderBy(b => b.Id).Take(100).ToListAsync();
+            var tripIds = rows.Select(b => b.TripId).Distinct().ToList();
+            var trips = await db.Trips.AsNoTracking().Include(t => t.Route).ThenInclude(r => r!.Stages).Where(t => tripIds.Contains(t.Id)).ToDictionaryAsync(t => t.Id);
+            var asg = await db.TripAssignments.AsNoTracking().Where(a => tripIds.Contains(a.TripId) && a.IsActive && a.VehicleId != null).ToListAsync();
+            var vids = asg.Select(a => a.VehicleId!.Value).Distinct().ToList();
+            var veh = await db.Vehicles.AsNoTracking().Where(v => vids.Contains(v.Id)).ToDictionaryAsync(v => v.Id, v => v.RegistrationNumber);
+            var events = rows.Select(b =>
+            {
+                var live = b.Passengers.Where(p => p.Status != "CANCELLED").OrderBy(p => p.Id).ToList();
+                if (live.Count == 0 || !trips.TryGetValue(b.TripId, out var t)) return null;
+                var stages = t.Route?.Stages ?? [];
+                var vid = asg.FirstOrDefault(a => a.TripId == t.Id)?.VehicleId;
+                return new
+                {
+                    id = b.Id, pnr = b.Pnr, ticket_number = (string?)null, created_at = b.DateOfIssue,
+                    kind = t.TripStatus == "running" ? "in_trip_booking" : "new_booking",
+                    vehicle_registration = vid is { } v ? veh.GetValueOrDefault(v) : null, service = t.Route?.ServiceNumber ?? "",
+                    passenger_count = live.Count, passenger_name = live.Count == 1 ? live[0].Name : b.ContactName ?? (live.FirstOrDefault(p => p.IsPrimary) ?? live[0]).Name,
+                    seats = live.Select(p => p.SeatCode), boarding = stages.FirstOrDefault(s => s.Id == b.BoardingStageId)?.Name ?? "Not assigned",
+                    dropping = stages.FirstOrDefault(s => s.Id == b.DroppingStageId)?.Name ?? "Not assigned",
+                };
+            }).Where(x => x is not null).TakeLast(30);
+            return Results.Ok(new { cursor = last, events, interval_ms = 3000 });
+        }).RequireAuthorization(Policies.Reports);
+
         // Legacy PUT /schedules/:id {ui_settings}: overlay preferences (via-city origin/destination toggles, sub-route fare %). Not published to OTAs.
         g.MapPut("/schedules/{id:long}/ui-settings", async (long id, System.Text.Json.Nodes.JsonObject body, GdsDbContext db, HttpContext h) =>
         {
