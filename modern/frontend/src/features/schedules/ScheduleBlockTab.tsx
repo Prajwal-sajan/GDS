@@ -216,9 +216,7 @@ function PickupChart({ row, sheet, detail, seats, reload, onSelection, openReque
     <div className="sx38-panel-body">{panel === "ticket" && tk ? (
       <TicketWorkspaceV38 pnr={tk.pnr} seat={tk.seat} tripId={tripId} onClose={() => { setTk(undefined); setPanel("chart"); }} onChanged={() => void reload()} />
     ) : panel === "history" ? (
-      <div className="sx38-history-list"><h3>Booking History</h3><p>{detail.history.length} booking records</p>
-        {detail.history.slice(0, 150).map((x) => <button key={x.pnr + x.bookedAt} type="button" className="sx38-history-item" onClick={() => openTk(x.pnr)}><b>PNR {x.pnr}</b><span>{x.contactName || "Passenger"} · {x.status}</span><span>{x.source}</span></button>)}
-        {!detail.history.length && <p>No booking records on this service.</p>}</div>
+      <HistoryPanel48 tripId={tripId} travelDate={detail.travelDate} onTicket={openTk} />
     ) : <>
       <div className="sx38-stats"><span className="available"><i></i> Available <b>{counts.available}</b></span><span className="booked"><i></i> Booked <b>{counts.booked}</b></span><span className="blocked"><i></i> Blocked <b>{counts.blocked}</b></span></div>
       <div className="sx38-toolbar">
@@ -258,6 +256,35 @@ function PickupChart({ row, sheet, detail, seats, reload, onSelection, openReque
       })}{!groups.length && <div className="sx38-no-data">No passengers match these filters.</div>}</div>
     </>}</div>
   </>;
+}
+
+/** legacy schedule-manage-v48 historyPanel(): timestamped bookings / holds / seat blocks, oldest first, with filters. */
+type Ev48 = { id: string; kind: string; at: string; status: string; message: string; source: string; pnr: string | null; ticket: string | null; seats: string[]; reason: string; passengers: { seat: string; name: string; age: number | null; gender: string }[] };
+type H48 = { counts: Record<string, number>; events: Ev48[] };
+function HistoryPanel48({ tripId, travelDate, onTicket }: { tripId: number; travelDate: string; onTicket: (pnr: string, seat?: string) => void }) {
+  const [data, setData] = useState<H48>();
+  const [err, setErr] = useState("");
+  const [filter, setFilter] = useState("all");
+  useEffect(() => { api.admin<H48>(`/schedules/${tripId}/manage-bookings/v48`).then(setData).catch((e) => setErr((e as Error).message)); }, [tripId]);
+  if (!data) return <div className="sx38-no-data">{err || "Loading history…"}</div>;
+  const c = data.counts;
+  const opts: [string, string, number][] = [["all", "All", c.all], ["seat_blocks", "Seat blocks", c.seat_blocks], ["bookings", "Bookings", c.bookings], ["released", "Released", c.released], ["confirmed", "Confirmed", c.confirmed], ["expired", "Expired", c.expired], ["blocked", "Blocked (active)", c.blocked_active]];
+  const events = data.events.filter((e) => filter === "all" ? true : filter === "seat_blocks" ? e.kind === "blocked" : filter === "bookings" ? !!e.pnr : filter === "blocked" ? e.status === "blocked" : e.status === filter);
+  const cls = (s: string) => ["released", "confirmed", "expired", "blocked"].includes(s) ? s : "recorded";
+  const dt = (s: string) => new Date(s).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true });
+  return <section className="sx48-history"><p className="sx48-history-intro">{travelDate} · seat blocks and bookings · oldest first · schedule on/off is in the Schedule History tab · times in IST</p>
+    <div className="sx48-history-filters">{opts.map(([id, l, n]) => <button key={id} type="button" data-v48-history-filter={id} className={`${filter === id ? "active " : ""}${id}`} onClick={() => setFilter(id)}>{l} {Number(n || 0)}</button>)}</div>
+    <p className="sx48-history-provenance">Only timestamped booking and seat-block records are shown. Missing historical transitions are not inferred.</p>
+    <div className="sx48-timeline">{events.map((e) => {
+      const people = e.passengers.map((p) => `${p.name}, ${p.gender || "—"}, ${p.age ?? "—"} yrs, seat ${p.seat}`).join(" · ");
+      return <article key={e.id} className={`sx48-event ${cls(e.status)}`} data-sx48-event-id={e.id}><span className="sx48-event-dot"></span><div className="sx48-event-card">
+        <header><div><strong>{e.source || "GDS"}{e.pnr ? `: PNR ${e.pnr}` : " · Seat block"}</strong>{e.ticket ? <> <span className="muted">(ticket {e.ticket})</span></> : null}</div>
+          <span className={`sx48-event-status ${cls(e.status)}`}>{e.status || "Recorded"}</span></header>
+        {people && <p>{people}</p>}{e.seats.length > 0 && <p>Seats {e.seats.join(", ")}</p>}
+        <p className="sx48-event-msg">{e.message || "Event recorded"} at {dt(e.at)}{e.reason ? ` · ${e.reason}` : ""}</p>
+        {e.pnr && <button type="button" data-v38="open-ticket" data-pnr={e.pnr} onClick={() => onTicket(e.pnr!, e.passengers[0]?.seat)}>View ticket</button>}
+      </div></article>;
+    })}<div className="sx48-history-empty" hidden={events.length > 0}>No recorded events match this filter.</div></div></section>;
 }
 
 /** legacy seat-layout-copy-v49: copy the rendered seat diagram as a PNG (SVG foreignObject → canvas). */

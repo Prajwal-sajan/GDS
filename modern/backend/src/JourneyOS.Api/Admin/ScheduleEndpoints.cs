@@ -111,6 +111,68 @@ public static class ScheduleEndpoints
             });
         }).RequireAuthorization(Policies.Reports);
 
+        // Legacy GET /schedules/:id/manage-bookings/v48: timestamped booking / hold / manual seat-block evidence, oldest first.
+        // Only recorded timestamps are used; no transition is inferred.
+        g.MapGet("/schedules/{id:long}/manage-bookings/v48", async (long id, GdsDbContext db, HttpContext h) =>
+        {
+            h.Response.Headers.CacheControl = "private, no-store";
+            _ = await db.Trips.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.DeletedAt == null) ?? throw new GdsException("SERVICE_NOT_FOUND", "Schedule not found", 404);
+            var bookings = await db.Bookings.AsNoTracking().Include(b => b.Passengers).Where(b => b.TripId == id).ToListAsync();
+            var holds = await db.SeatHolds.AsNoTracking().Include(x => x.Passengers).Where(x => x.TripId == id).ToListAsync();
+            var blocks = await db.SeatAllocations.AsNoTracking().Where(a => a.TripId == id && a.Kind == AllocationKind.Blocked).OrderBy(a => a.CreatedAt).ToListAsync();
+            var booked = bookings.Where(b => b.HoldId != null).Select(b => b.HoldId!.Value).ToHashSet();
+            var events = new List<Dictionary<string, object?>>();
+            static string At(DateTime d) => DateTime.SpecifyKind(d, DateTimeKind.Utc).ToString("O");
+            foreach (var b in bookings)
+            {
+                var pax = b.Passengers.Where(p => p.Status != "CANCELLED" || b.Status == "CANCELLED").Select(p => new { seat = p.SeatCode, name = p.Name, age = p.Age, gender = p.Gender }).ToList();
+                var status = b.Status == "CANCELLED" ? "released" : "confirmed";
+                Dictionary<string, object?> Ev(string kind, DateTime at, string msg, string st) => new()
+                {
+                    ["id"] = $"{kind}:{b.Pnr}:{At(at)}", ["kind"] = kind, ["at"] = At(at), ["message"] = msg, ["status"] = st, ["pnr"] = b.Pnr, ["ticket"] = "",
+                    ["source"] = b.Channel, ["passengers"] = pax, ["seats"] = Array.Empty<string>(), ["reason"] = "",
+                };
+                events.Add(Ev("recorded", b.DateOfIssue, "Booking recorded", status));
+                if (b.DateOfCancellation is { } c) events.Add(Ev("released", c, "Cancellation recorded", "released"));
+            }
+            foreach (var x in holds.Where(x => !booked.Contains(x.Id)))
+            {
+                var pax = x.Passengers.Select(p => new { seat = p.SeatCode, name = p.Name, age = p.Age, gender = p.Gender }).ToList();
+                Dictionary<string, object?> Ev(string kind, DateTime at, string msg, string st) => new()
+                {
+                    ["id"] = $"{kind}:hold{x.Id}:{At(at)}", ["kind"] = kind, ["at"] = At(at), ["message"] = msg, ["status"] = st, ["pnr"] = null, ["ticket"] = null,
+                    ["source"] = x.Channel, ["passengers"] = pax, ["seats"] = x.Passengers.Select(p => p.SeatCode).ToArray(), ["reason"] = "",
+                };
+                events.Add(Ev("hold", x.CreatedAt, "Seat hold recorded", x.Status == HoldStatus.Held ? "blocked" : "recorded"));
+                if (x.ClosedAt is { } c && x.Status is HoldStatus.Released or HoldStatus.Expired)
+                    events.Add(Ev(x.Status == HoldStatus.Expired ? "expired" : "released", c, x.Status == HoldStatus.Expired ? "Hold expired" : "Hold released", x.Status == HoldStatus.Expired ? "expired" : "released"));
+            }
+            foreach (var a in blocks)
+            {
+                events.Add(new()
+                {
+                    ["id"] = $"manual-block:{a.Id}:{At(a.CreatedAt)}", ["kind"] = "blocked", ["at"] = At(a.CreatedAt), ["status"] = a.IsActive ? "blocked" : "released",
+                    ["message"] = "Manual seat block recorded", ["source"] = "Schedule", ["pnr"] = null, ["ticket"] = null, ["seats"] = new[] { a.SeatCode }, ["reason"] = a.Reason ?? "", ["passengers"] = Array.Empty<object>(),
+                });
+                if (!a.IsActive && a.ReleasedAt is { } r)
+                    events.Add(new()
+                    {
+                        ["id"] = $"unblock:{a.Id}:{At(r)}", ["kind"] = "released", ["at"] = At(r), ["status"] = "released", ["message"] = "Seat block released", ["source"] = "Schedule",
+                        ["pnr"] = null, ["ticket"] = null, ["seats"] = new[] { a.SeatCode }, ["reason"] = a.Reason ?? "", ["passengers"] = Array.Empty<object>(),
+                    });
+            }
+            events = events.OrderBy(e => (string)e["at"]!, StringComparer.Ordinal).ThenBy(e => (string)e["id"]!, StringComparer.Ordinal).ToList();
+            return Results.Ok(new
+            {
+                counts = new
+                {
+                    all = events.Count, seat_blocks = blocks.Count, bookings = bookings.Count, released = events.Count(e => (string)e["status"]! == "released"),
+                    confirmed = bookings.Count(b => b.Status != "CANCELLED"), expired = holds.Count(x => x.Status == HoldStatus.Expired), blocked_active = blocks.Count(a => a.IsActive),
+                },
+                events = events.TakeLast(500), provenance = "Booking, hold and seat-block timestamps only", timezone = "Asia/Kolkata",
+            });
+        }).RequireAuthorization(Policies.Reports);
+
         // Legacy PUT /schedules/:id {ui_settings}: overlay preferences (via-city origin/destination toggles, sub-route fare %). Not published to OTAs.
         g.MapPut("/schedules/{id:long}/ui-settings", async (long id, System.Text.Json.Nodes.JsonObject body, GdsDbContext db, HttpContext h) =>
         {
