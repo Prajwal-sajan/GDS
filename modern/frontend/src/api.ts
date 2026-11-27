@@ -205,6 +205,10 @@ export const api = {
   vehicleList: () => call<{ vehicles: VehicleListRow[] }>("GET", "/api/admin/vehicle-list"),
   setVehicleStatus: (id: number, status: string) => call<{ status: string }>("PUT", `/api/admin/vehicles/${id}/status`, { status }),
   coachList: () => call<{ coaches: CoachListRow[] }>("GET", "/api/admin/coach-list"),
+  coach: (id: number) => call<CoachDetail>("GET", `/api/admin/coaches/${id}`),
+  coachLayoutPreset: (kind: string, pattern: string) => call<{ seats: CoachSeatRow[] }>("GET", `/api/admin/coaches/layout-preset?kind=${encodeURIComponent(kind)}&pattern=${encodeURIComponent(pattern)}`),
+  saveCoach: (body: Record<string, unknown>, id?: number) => id ? call<{ id: number }>("PUT", `/api/admin/coaches/${id}`, body) : call<{ id: number }>("POST", "/api/admin/coaches", body),
+  deleteCoach: (id: number) => call<{ success: boolean }>("DELETE", `/api/admin/coaches/${id}`),
   setCoachStatus: (id: number, status: string) => call<{ status: string }>("PUT", `/api/admin/coaches/${id}/status`, { status }),
   // staff payroll
   attendance: (from: string, to: string) => call<AttendanceGrid>("GET", `${pr}/attendance?from=${from}&to=${to}`),
@@ -330,6 +334,8 @@ export interface Telemetry { lat?: number | null; lng?: number | null; speed?: n
 export interface VehicleHealth { status?: string; odometer_km?: number; engine_hours?: number; def_inhibit?: boolean; alerts?: { message: string; status: string; reading?: number; unit?: string }[]; fuel?: { fuel_l?: number; remaining_l?: number; adblue_l?: number } }
 export interface VehicleListRow { id: number; registrationNumber: string; coachTemplateId: number | null; coach: string | null; status: string; vehicleRole: string | null;
   gpsEnabled: boolean; modelName: string | null; odometerReading: number | null; position: Telemetry | null; health: VehicleHealth | null; docAlerts: number }
+export interface CoachSeatRow { code: string; deck: string; row: number; col: number; width: number; length: number; seatType: string }
+export interface CoachDetail { id: number; name: string; busType: string; pattern: string; isAc: boolean; status: string; amenities: string[]; vehicles: number; routes: number; seats: CoachSeatRow[] }
 export interface CoachListRow { id: number; name: string; busType: string; pattern: string; status: string; amenities: string[]; seater: number; sleeper: number; capacity: number }
 export interface AttendanceCell { id: number; status: string; state: string; amount: number; service: string | null }
 export interface AttendanceGrid { from: string; to: string; dates: string[]; staff: { staff_id: number; name: string | null; role: string | null; phone: string | null; days: Record<string, AttendanceCell>; present: number; amount: number; draft: number }[] }

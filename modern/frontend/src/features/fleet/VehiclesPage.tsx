@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api, type CoachListRow, type Me, type VehicleListRow } from "../../api";
-import { Modal, confirmDialog, toast, toastError } from "../../components/ui/feedback";
+import { Modal, confirmDialog, promptDialog, toast, toastError } from "../../components/ui/feedback";
+import { CoachModal, blankCoach, type CoachDraft } from "./CoachModal";
 import { NiceSelect } from "../../components/ui/NiceSelect";
 
 // React port of legacy GDS → Vehicles / Coaches (public/js/vehicles-parity-v9.js vehiclesPage()/coachesPage() and the
@@ -257,6 +258,23 @@ export function CoachesPage({ me }: { me: Me }) {
   const [C, setC] = useState<CoachListRow[]>(); const [error, setError] = useState<string>();
   const [s, setS] = useState({ query: "", ac: "all", berths: "all", sort: "asc", layout: readLayout("coaches") });
   const [menu, setMenu] = useState(false);
+  const [cm, setCm] = useState<{ c: CoachDraft; editing: boolean }>();
+  const coachAct = async (a: string, c: CoachListRow) => {
+    try {
+      if (a === "view" || a === "edit") { setCm({ c: await api.coach(c.id), editing: a === "edit" }); return; }
+      if (a === "duplicate") {
+        const v = await promptDialog("Duplicate Coach", [{ name: "name", label: "New coach name", value: `${c.name} Copy`, required: true }]);
+        if (!v) return;
+        const src = await api.coach(c.id);
+        await api.saveCoach({ name: v.name, busType: src.busType, pattern: src.pattern, isAc: src.isAc, amenities: src.amenities, seats: src.seats });
+        toast("Coach duplicated", "ok"); await load(); return;
+      }
+      if (a === "delete") {
+        if (!(await confirmDialog("Delete this coach? A coach assigned to a route or vehicle cannot be removed.", { danger: true }))) return;
+        await api.deleteCoach(c.id); toast("Coach removed", "ok"); await load();
+      }
+    } catch (e) { toastError(e); }
+  };
   const load = useCallback(async () => { try { setC((await api.coachList()).coaches); setError(undefined); } catch (e) { setError(e instanceof Error ? e.message : String(e)); } }, []);
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
@@ -286,7 +304,7 @@ export function CoachesPage({ me }: { me: Me }) {
       <label className="vp-onoff"><input type="checkbox" data-coach-status={c.id} checked={c.status !== "inactive"} disabled={!canModify} onChange={(e) => void toggle(c, e.target.checked)} /><span className="vp-thumb"></span><b>{c.status !== "inactive" ? "Active" : "Inactive"}</b></label>,
       <div className="vp-actions">
         {([["eye", "blue", "view", "View coach", true], ["pencil", "purple", "edit", "Edit coach", canModify], ["copy", "mint", "duplicate", "Duplicate coach", canModify], ["trash", "red", "delete", "Delete coach", canModify]] as const)
-          .filter((x) => x[4]).map(([n, k, a, l]) => <IconBtn key={a} n={n} kind={k} data-action={a} data-id={String(c.id)} label={l} aria-disabled onClick={() => toast(NO_CRUD, "warn")} />)}
+          .filter((x) => x[4]).map(([n, k, a, l]) => <IconBtn key={a} n={n} kind={k} data-action={a} data-id={String(c.id)} label={l} onClick={() => void coachAct(a, c)} />)}
       </div>,
     ];
   };
@@ -317,7 +335,7 @@ export function CoachesPage({ me }: { me: Me }) {
           <span className="vp-showing" data-showing>Showing {rows.length} of {C.length}</span>
           <div className="vp-view-switch"><IconBtn n="list" kind="plain" data-layout="list" aria-pressed={s.layout === "list"} label="List view" onClick={() => layout("list")} /><IconBtn n="grid" kind="plain" data-layout="grid" aria-pressed={s.layout === "grid"} label="Grid view" onClick={() => layout("grid")} /></div>
         </div>
-        <div className="vp-toolbar-actions">{canModify && <button type="button" className="vp-btn primary" data-action="add-coach" aria-disabled="true" title={NO_CRUD} onClick={() => toast(NO_CRUD, "warn")}><I n="plus" /> Add Coach</button>}</div>
+        <div className="vp-toolbar-actions">{canModify && <button type="button" className="vp-btn primary" data-action="add-coach" onClick={() => setCm({ c: blankCoach(), editing: true })}><I n="plus" /> Add Coach</button>}</div>
       </section>
       <div data-result>
         {!rows.length ? <div className="vp-empty">No coaches match your filters.</div>
@@ -339,6 +357,7 @@ export function CoachesPage({ me }: { me: Me }) {
             : <div className="vp-table-scroll"><table className="vp-table vp-coach-table"><thead><tr>{cols.map((c, i) => <th key={c}><I n={colIcons[i]} s={18} /> {c}</th>)}</tr></thead>
               <tbody>{rows.map((c) => <tr key={c.id}>{cells(c).map((x, i) => <td key={i}>{x}</td>)}</tr>)}</tbody></table></div>}
       </div>
+      {cm && <CoachModal coach={cm.c} editing={cm.editing} onClose={() => setCm(undefined)} onSaved={() => void load()} />}
     </div>
   );
 }
