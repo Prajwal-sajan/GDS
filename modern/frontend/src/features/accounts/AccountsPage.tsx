@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { svgNodes } from "../../components/ui/SvgMarkup";
 import { api, type Ledger, type Me, type ReceivableRow, type Sales, type SalesFacets, type Transactions, type TxRow } from "../../api";
 import { confirmDialog, Modal, toast, toastError } from "../../components/ui/feedback";
 import { NiceDate } from "../../components/ui/NiceDate";
@@ -43,11 +44,10 @@ const P: Record<string, string> = {
   wallet: '<path d="M3 7a2 2 0 0 1 2-2h13v4"/><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M16 13h2"/>',
 };
 export function Ic({ k, s = 17 }: { k: string; s?: number }) {
-  return <svg width={s} height={s} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.9"
-    dangerouslySetInnerHTML={{ __html: P[k] ?? P.reports }} />;
+  return <svg width={s} height={s} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.9">{svgNodes(P[k] ?? P.reports)}</svg>;
 }
 const V37: Record<string, string> = { pin: '<path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>', down: '<path d="m6 9 6 6 6-6"/>', check: '<path d="m5 12 5 5L19 7"/>' };
-const Svg37 = ({ k, s }: { k: string; s: number }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={s} height={s} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: V37[k] }} />;
+const Svg37 = ({ k, s }: { k: string; s: number }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={s} height={s} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{svgNodes(V37[k])}</svg>;
 
 // legacy core.js formatters
 export const inr = (n: number | null | undefined, d = 0) => (n == null || isNaN(n) ? "—" : `₹${Number(n).toLocaleString("en-IN", { maximumFractionDigits: d, minimumFractionDigits: d })}`);

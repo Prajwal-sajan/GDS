@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { svgNodes } from "../../components/ui/SvgMarkup";
 import { api, authHeaders, type Me, type Staff, type StaffLedger } from "../../api";
 import { confirmDialog, promptDialog, toast, toastError } from "../../components/ui/feedback";
 import { NiceSelect } from "../../components/ui/NiceSelect";
@@ -45,7 +46,7 @@ const P: Record<string, string> = {
   upload: '<path d="M12 21V9m-5 5 5-5 5 5M4 3h16"/>',
 };
 const I = ({ n, s = 20 }: { n: string; s?: number }) => (
-  <svg className="sp-icon" width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: P[n] ?? P.user }} />
+  <svg className="sp-icon" width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{svgNodes(P[n] ?? P.user)}</svg>
 );
 export const StaffIcon = I;
 const ROLES: [string, string][] = [["driver", "Driver"], ["helper", "Helper / Attendant"], ["conductor", "Conductor"], ["cleaner", "Cleaner"], ["pickup_driver", "Pickup Driver"], ["manager", "Manager"], ["office", "Office Staff"]];

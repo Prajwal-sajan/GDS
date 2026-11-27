@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { svgElement } from "../../components/ui/SvgMarkup";
 import { api, type CrmBooking, type CrmDeck, type CrmMapSeat, type Me } from "../../api";
 import { confirmDialog, infoDialog, promptDialog, toast, toastError } from "../../components/ui/feedback";
 
@@ -56,7 +57,7 @@ function Deck({ d, b }: { d: CrmDeck; b: CrmBooking }) {
   const active = new Set(b.passengers.filter((p) => p.status !== "cancelled").map((p) => String(p.seat)));
   return (
     <section className={`cv8-deck cv8-v45-deck ${lower ? "cv8-deck-lower" : "cv8-deck-upper"} ${proj.kind}`} aria-label={`${d.deck} deck`}>
-      <div className="cv8-deck-title"><strong>{d.deck}</strong>{lower && <span className="cv8-wheel" aria-label="Driver steering wheel" dangerouslySetInnerHTML={{ __html: STEERING }} />}</div>
+      <div className="cv8-deck-title"><strong>{d.deck}</strong>{lower && <span className="cv8-wheel" aria-label="Driver steering wheel">{svgElement(STEERING)}</span>}</div>
       <div className="cv8-seatgrid" style={{ ["--cv8-columns" as string]: proj.cols, ["--cv8-rows" as string]: rows, gridTemplateColumns: `repeat(${proj.cols},minmax(0,1fr))`, gridTemplateRows: `repeat(${rows},44px)` }}>
         {d.seats.filter((s) => s.code).map((s) => {
           const state = b.status !== "cancelled" && active.has(String(s.code)) && s.booking?.isCurrent ? "selected" : STATUSES[s.status] ? s.status : "available";
@@ -76,7 +77,7 @@ function Deck({ d, b }: { d: CrmDeck; b: CrmBooking }) {
           );
         })}
       </div>
-      {lower && <><span className="cv8-emergency" title="Emergency exit" aria-label="Emergency exit" dangerouslySetInnerHTML={{ __html: EMERGENCY }} /><span className="cv8-exit" title="Door" aria-label="Door"></span></>}
+      {lower && <><span className="cv8-emergency" title="Emergency exit" aria-label="Emergency exit">{svgElement(EMERGENCY)}</span><span className="cv8-exit" title="Door" aria-label="Door"></span></>}
     </section>
   );
 }

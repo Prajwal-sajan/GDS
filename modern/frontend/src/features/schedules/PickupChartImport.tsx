@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { api, authHeaders, type ScheduleDetail } from "../../api";
-import { Modal, toast, toastError } from "../../components/ui/feedback";
+import { toastError } from "../../components/ui/feedback";
 
 // React port of legacy public/js/pickup-chart-v40.js openImport()/importMarkup()/previewMarkup() (pc40-* classes).
 // POST /api/admin/schedules/{id}/pickup-chart/preview (raw PDF/CSV body) → review → POST …/commit {previewId, confirm:true}.
@@ -91,25 +91,5 @@ export function ImportPickupChart({ detail, onClose, onImported }: { detail: Sch
         </div>
       </div>
     </div>
-  );
-}
-
-/** Imported chart view (legacy openPrint(…,'imported') chart body, pickup-grouped). */
-export function ImportedChartModal({ chart, detail, onClose }: { chart: ImportedChart; detail: ScheduleDetail; onClose: () => void }) {
-  const groups = new Map<string, ImportedRow[]>();
-  for (const r of chart.rows) { const k = r.pickup || "Pickup not assigned"; if (!groups.has(k)) groups.set(k, []); groups.get(k)!.push(r); }
-  let n = 0;
-  return (
-    <Modal title={`Pickup Chart — ${detail.serviceNumber} (Imported · ${chart.source_gds})`} size="lg" onClose={onClose}
-      foot={<button type="button" className="btn" onClick={() => { window.print(); toast("Use the browser print dialog to print the imported chart"); }}>Print</button>}>
-      <div className="pc40-chart-paper">
-        <div className="pc40-print-meta"><div><p><b>Service:</b> {detail.serviceNumber}</p><p><b>Date:</b> {detail.travelDate}</p></div>
-          <div><p><b>Route:</b> {detail.origin} → {detail.destination}</p><p><b>File:</b> {chart.file_name} · imported {new Date(chart.at).toLocaleString("en-IN")} by {chart.by}</p></div></div>
-        <div className="pc40-print-stats"><b>Imported passengers:</b> {chart.rows.length} · reference only (live bookings unchanged)</div>
-        {[...groups].map(([k, rows]) => <section key={k} className="pc40-pickup-block"><h3>{k}{rows[0].pickup_time ? ` Day ${rows[0].pickup_day || 1} - ${t12(rows[0].pickup_time)}` : ""} ({rows.length} seat{rows.length === 1 ? "" : "s"})</h3>
-          <div className="pc40-table-scroll"><table className="pc40-chart-table"><thead><tr>{["#", "Seat", "Mobile", "PNR", "Name", "G", "Drop", "Fare", "Source"].map((h) => <th key={h}>{h}</th>)}</tr></thead>
-            <tbody>{rows.map((r) => <tr key={r.pnr + r.seat}><td>{++n}</td><td className="bold">{r.seat}</td><td>{r.mobile || "—"}</td><td>{r.pnr}</td><td>{r.name}</td><td>{r.gender || "—"}</td><td>{r.drop || "—"}</td><td>{r.fare != null ? `Rs.${r.fare.toLocaleString("en-IN")}` : "—"}</td><td>{r.source || "—"}</td></tr>)}</tbody></table></div></section>)}
-      </div>
-    </Modal>
   );
 }

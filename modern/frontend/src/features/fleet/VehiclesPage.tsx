@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { svgNodes } from "../../components/ui/SvgMarkup";
 import { api, type CoachListRow, type Me, type VehicleListRow } from "../../api";
 import { Modal, confirmDialog, promptDialog, toast, toastError } from "../../components/ui/feedback";
 import { CoachModal, blankCoach, type CoachDraft } from "./CoachModal";
@@ -48,7 +49,7 @@ const P: Record<string, string> = {
   expand: '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',
 };
 const I = ({ n, s = 19 }: { n: string; s?: number }) => (
-  <svg className="vp-i" width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.85} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: P[n] ?? P.bus }} />
+  <svg className="vp-i" width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.85} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{svgNodes(P[n] ?? P.bus)}</svg>
 );
 const IconBtn = ({ n, kind, label, ...rest }: { n: string; kind: string; label: string; onClick?: () => void; [k: `data-${string}`]: string | undefined; "aria-pressed"?: boolean; "aria-disabled"?: boolean }) => (
   <button type="button" className={`vp-icon vp-icon--${kind}`} {...rest} title={label} aria-label={label}><I n={n} /></button>
