@@ -45,6 +45,21 @@ public static class FleetEndpoints
         g.MapPut("/vehicles/{id:long}/status", async (long id, FleetStatusInput i, OperationsService s, HttpContext h) =>
             Results.Ok(new { status = await s.SetVehicleStatusAsync(id, i.Status, h.User.Identity!.Name!) })).RequireAuthorization(Policies.Operations);
 
+        // Legacy master.js DELETE /vehicles/:id: refused while assigned to an active trip today or later.
+        g.MapDelete("/vehicles/{id:long}", async (long id, GdsDbContext db, TimeProvider clock, HttpContext h) =>
+        {
+            var v = await db.Vehicles.FirstOrDefaultAsync(x => x.Id == id) ?? throw new JourneyOS.Api.Inventory.GdsException("not_found", "Vehicle not found", 404);
+            var today = DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime.AddHours(5.5));
+            var busy = await (from a in db.TripAssignments join t in db.Trips on a.TripId equals t.Id
+                              where a.VehicleId == id && a.IsActive && t.TravelDate >= today && t.Status == "active" select a.Id).AnyAsync();
+            if (busy) throw new JourneyOS.Api.Inventory.GdsException("conflict", "Vehicle is assigned to upcoming trips", 409);
+            db.Vehicles.Remove(v);
+            db.AuditLogs.Add(new AuditLog { TenantId = db.CurrentTenantId, Actor = h.User.Identity?.Name ?? "system", Action = "VEHICLE_DELETE", Entity = "vehicle", EntityId = id.ToString(), DataJson = JsonSerializer.Serialize(new { v.RegistrationNumber }), At = DateTime.UtcNow });
+            try { await db.SaveChangesAsync(); }
+            catch (DbUpdateException) { throw new JourneyOS.Api.Inventory.GdsException("conflict", "Vehicle has trip history and cannot be removed; mark it inactive instead", 409); }
+            return Results.Ok(new { success = true });
+        }).RequireAuthorization(Policies.Operations);
+
         g.MapGet("/coach-list", async (GdsDbContext db) =>
         {
             var list = await db.CoachTemplates.AsNoTracking().Include(c => c.Seats).OrderBy(c => c.Id).ToListAsync();

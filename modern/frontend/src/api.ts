@@ -209,6 +209,7 @@ export const api = {
   coachLayoutPreset: (kind: string, pattern: string) => call<{ seats: CoachSeatRow[] }>("GET", `/api/admin/coaches/layout-preset?kind=${encodeURIComponent(kind)}&pattern=${encodeURIComponent(pattern)}`),
   saveCoach: (body: Record<string, unknown>, id?: number) => id ? call<{ id: number }>("PUT", `/api/admin/coaches/${id}`, body) : call<{ id: number }>("POST", "/api/admin/coaches", body),
   deleteCoach: (id: number) => call<{ success: boolean }>("DELETE", `/api/admin/coaches/${id}`),
+  deleteVehicle: (id: number) => call<{ success: boolean }>("DELETE", `/api/admin/vehicles/${id}`),
   setCoachStatus: (id: number, status: string) => call<{ status: string }>("PUT", `/api/admin/coaches/${id}/status`, { status }),
   // staff payroll
   attendance: (from: string, to: string) => call<AttendanceGrid>("GET", `${pr}/attendance?from=${from}&to=${to}`),

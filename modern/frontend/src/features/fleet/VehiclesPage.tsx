@@ -59,7 +59,6 @@ const Sel = ({ icon, value, onChange, options, data, sort }: { icon: string; val
   <label className={`vp-select ${sort ? "sort" : ""} ui-dd-hosted`.replace("  ", " ")}><I n={icon} /><NiceSelect value={value} onChange={onChange} options={options} {...data} /><I n="down" s={13} /></label>
 );
 const OPS = ["owner", "admin", "ops"];
-const NO_CRUD = "Not available yet: the modern backend has no endpoint for this action (tracked in UI_MIGRATION_GAPS.md)";
 const NO_MAP = "Not available yet: the fleet map needs the legacy map tile service, which the modern stack does not proxy";
 const readLayout = (tab: string) => { try { return localStorage.getItem(`gds_${tab}_layout_v37`) === "list" ? "list" : "grid"; } catch { return "grid"; } };
 const saveLayout = (tab: string, v: string) => { try { localStorage.setItem(`gds_${tab}_layout_v37`, v); } catch { /* ignore */ } };
@@ -113,7 +112,7 @@ function vehicleParts(v: VehicleListRow, canModify: boolean, act: Act, toggle: (
       <IconBtn n="eye" kind="blue" data-action="view" data-id={String(v.id)} label="View vehicle" onClick={() => act("view", v)} />
       {canModify && <IconBtn n="pencil" kind="purple" data-action="edit" data-id={String(v.id)} label="Edit vehicle" onClick={() => act("edit", v)} />}
       {canModify && <IconBtn n="copy" kind="mint" data-action="duplicate" data-id={String(v.id)} label="Duplicate vehicle" onClick={() => act("duplicate", v)} />}
-      {canModify && <IconBtn n="trash" kind="red" data-action="delete" data-id={String(v.id)} label="Delete vehicle" aria-disabled onClick={() => toast(NO_CRUD, "warn")} />}
+      {canModify && <IconBtn n="trash" kind="red" data-action="delete" data-id={String(v.id)} label="Delete vehicle" onClick={() => act("delete", v)} />}
     </div>,
   ];
 }
@@ -175,6 +174,11 @@ export function VehiclesPage({ me }: { me: Me }) {
     try { await api.setVehicleStatus(v.id, on ? "active" : "inactive"); toast("Vehicle status saved", "ok"); await load(); } catch (e) { toastError(e); }
   };
   const act: Act = async (a, v) => {
+    if (a === "delete") {
+      if (!(await confirmDialog("Delete this vehicle? A vehicle assigned to upcoming trips cannot be removed.", { danger: true }))) return;
+      try { await api.deleteVehicle(v.id); toast("Vehicle removed", "ok"); await load(); } catch (e) { toastError(e); }
+      return;
+    }
     if (a === "duplicate") {
       if (!(await confirmDialog(`Duplicate ${v.registrationNumber}? A new unique registration is required.`))) return;
       const reg = window.prompt("New registration number");
