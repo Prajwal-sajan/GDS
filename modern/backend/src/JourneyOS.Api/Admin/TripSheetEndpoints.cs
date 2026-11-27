@@ -81,6 +81,7 @@ public static class TripSheetEndpoints
                     status = b.Status == "CANCELLED" || p.Status == "CANCELLED" ? "cancelled"
                         : p.BoardingStatus switch { "Boarded" => "boarded", "No-Show" => "no_show", "Checked-In" => "checked_in", "Dropped" => "dropped", _ => "booked" },
                     callStatus = p.CallStatus,
+                    seatUpgrade = string.IsNullOrEmpty(p.SeatUpgradeJson) ? (JsonElement?)null : JsonDocument.Parse(p.SeatUpgradeJson).RootElement,
                     trips = b.ContactMobile is { } m ? tripsByPhone.GetValueOrDefault(m) : (int?)null,
                     boarding = Stage(b.BoardingStageId), dropping = Stage(b.DroppingStageId),
                     fare = p.Fare, gender = p.Gender, bookedAt = b.DateOfIssue,

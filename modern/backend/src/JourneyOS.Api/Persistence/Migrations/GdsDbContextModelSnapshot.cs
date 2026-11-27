@@ -499,6 +499,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("seat_code");
 
+                    b.Property<string>("SeatUpgradeJson")
+                        .HasColumnType("text")
+                        .HasColumnName("seat_upgrade_json");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text")

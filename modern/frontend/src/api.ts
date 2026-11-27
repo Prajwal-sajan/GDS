@@ -91,8 +91,10 @@ export type TripStageRef = { id: number; name: string; time: string; day: number
 export type TripSheetPassenger = {
   pnr: string; seat: string; name: string; phone: string | null; source: string; status: string; callStatus: string | null; trips: number | null;
   boarding: TripStageRef | null; dropping: TripStageRef | null;
-  fare?: number | null; gender?: string | null; bookedAt?: string | null; from?: string | null; to?: string | null;
+  fare?: number | null; gender?: string | null; bookedAt?: string | null; from?: string | null; to?: string | null; seatUpgrade?: SeatUpgrade | null;
 };
+export type SeatUpgrade = { status: string; from_seat: string; to_seat: string; expires_at: string; offered_at?: string; applied_at?: string; consent_method?: string };
+export type UpgradeView = { pnr: string; current_seat: string; offer: SeatUpgrade | null; options: { seat: string; deck: string; type: string; row: number }[]; reason: string | null; offer_expires_at: string | null };
 export type TripCommRow = { channel: string; direction: string; ts: string; label: string; from: string; to: string; status: string; duration: number | null; content: string };
 export type TripSheetStop = TripStageRef & { type: string; lat: number | null; lng: number | null; arrivedAt: string | null; departedAt: string | null };
 export type TripSheet = {
@@ -192,6 +194,10 @@ export const api = {
   tripPassenger: (id: number | string, pnr: string, seat: string, body: { status?: string; callStatus?: string; boardingOtp?: string }) =>
     call<{ success: boolean }>("PATCH", `/api/admin/trip-sheets/${id}/passengers/${encodeURIComponent(pnr)}/${encodeURIComponent(seat)}`, body),
   tripStopEvent: (id: number | string, stageId: number, kind: "arrived" | "departed") => call<{ success: boolean }>("POST", `/api/admin/trip-sheets/${id}/stop-event`, { stageId, kind }),
+  upgradeView: (sid: number | string, pnr: string, seat: string) => call<UpgradeView>("GET", `/api/admin/trip-sheets/${sid}/loyalty-upgrades/${encodeURIComponent(pnr)}/${encodeURIComponent(seat)}`),
+  upgradeOffer: (sid: number | string, pnr: string, seat: string, targetSeat: string) => call<unknown>("POST", `/api/admin/trip-sheets/${sid}/loyalty-upgrades/${encodeURIComponent(pnr)}/${encodeURIComponent(seat)}/offer`, { targetSeat }),
+  upgradeAccept: (sid: number | string, pnr: string, seat: string, body: { consentConfirmed: boolean; consentMethod: string; consentReference: string }) => call<unknown>("POST", `/api/admin/trip-sheets/${sid}/loyalty-upgrades/${encodeURIComponent(pnr)}/${encodeURIComponent(seat)}/accept`, body),
+  upgradeDecline: (sid: number | string, pnr: string, seat: string, reason: string) => call<unknown>("POST", `/api/admin/trip-sheets/${sid}/loyalty-upgrades/${encodeURIComponent(pnr)}/${encodeURIComponent(seat)}/decline`, { reason }),
   tripPassengerComms: (id: number | string, pnr: string) =>
     call<{ rows: TripCommRow[]; outCalls: number; inCalls: number }>("GET", `/api/admin/trip-sheets/${id}/passengers/${encodeURIComponent(pnr)}/communications`),
   toggleSchedule: (id: number, active: boolean) => call<{ bookable: boolean }>("POST", `/api/admin/schedules/${id}/toggle`, { active }),

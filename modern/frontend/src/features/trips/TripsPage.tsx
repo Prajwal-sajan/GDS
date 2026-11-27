@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, type Me, type TripCommRow, type TripSheet, type TripSheetPassenger, type TripSheetRow, type TripSheetStop } from "../../api";
 import { Modal, promptDialog, toast, toastError } from "../../components/ui/feedback";
 import { addDays, t12, today } from "../../services/format";
+import { UpgradeBadge, UpgradeModal } from "./LoyaltyUpgrade";
 
 // React port of the legacy Trips screen (public/js/trip-parity-v13.js `G.screens.trips` + trips-loyalty-v39.js control).
 // Same DOM/classes/SVG paths so the vendored trip-parity-v13.css renders it identically. Data: GET /api/admin/trip-sheets.
@@ -61,7 +62,6 @@ const key = (p: TripSheetPassenger) => `${encodeURIComponent(p.pnr)}|${encodeURI
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const parseIso = (x: string) => { const [y, m, d] = x.split("-").map(Number); return new Date(y, (m || 1) - 1, d || 1); };
 const pointUrl = (lat: number, lng: number) => `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`;
-const preview = (what: string, why: string) => toast(`${what} is preview-only: ${why}`);
 
 type Section = "pickup" | "drop" | "timings" | "docs";
 const STATUSES: [string, string][] = [["", "__DEFAULT__"], ["call:to_call", "To call"], ["call:called", "Called"], ["call:not_reachable", "Not reachable"], ["state:checked_in", "Check-in: Yes"], ["state:boarded", "Boarded"], ["state:dropped", "Dropped"], ["state:no_show", "No-show"]];
@@ -88,6 +88,7 @@ export function TripsPage({ me }: { me: Me }) {
   const seq = useRef(0);
   const [history, setHistory] = useState<{ p: TripSheetPassenger; rows: TripCommRow[] } | null>(null);
   const [stopAct, setStopAct] = useState<TripSheetStop | null>(null);
+  const [upgrade, setUpgrade] = useState<TripSheetPassenger | null>(null);
   const [cust, setCust] = useState<{ p: TripSheetPassenger; left: number; top: number; out: number | null; inn: number | null } | null>(null);
   useEffect(() => {
     if (!cust) return;
@@ -151,6 +152,7 @@ export function TripsPage({ me }: { me: Me }) {
       toast("Passenger updated", "ok"); feedback.current[k] = ""; await loadDetail(sid, date);
     } catch (e) { toastError(e); }
   };
+  const closeUpgrade = useCallback(() => setUpgrade(null), []);
   const openHistory = async (p: TripSheetPassenger) => {
     try { const r = await api.tripPassengerComms(sid, p.pnr); setHistory({ p, rows: r.rows }); } catch (e) { toastError(e); }
   };
@@ -231,7 +233,7 @@ export function TripsPage({ me }: { me: Me }) {
                   ? <Boards t={trip} which={section} canOps={canOps} collapsed={collapsed}
                       onCollapse={(k) => setCollapsed((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; })}
                       onFeedback={(k, v) => { feedback.current[k] = v; }} onUpdate={(k) => void passengerUpdate(k)}
-                      acts={{ history: (p) => void openHistory(p), customer: openCustomer, call: (p) => void callNow(p) }} />
+                      acts={{ history: (p) => void openHistory(p), customer: openCustomer, call: (p) => void callNow(p), upgrade: setUpgrade }} />
                   : section === "timings" ? <Timings t={trip} canOps={canOps} onMap={setStopMap} onStop={setStopAct} />
                   : <Docs t={trip} onView={setDocView} />}
               </div>
@@ -240,6 +242,7 @@ export function TripsPage({ me }: { me: Me }) {
       </div>
       {docView != null && trip && <DocModal t={trip} i={docView} onClose={() => setDocView(null)} />}
       {history && <HistoryModal p={history.p} rows={history.rows} onClose={() => setHistory(null)} />}
+      {upgrade && <UpgradeModal sid={sid} pnr={upgrade.pnr} seat={upgrade.seat} onClose={closeUpgrade} onDone={() => loadDetail(sid, date)} />}
       {stopAct && trip && (
         <Modal title={`Stop timing · ${stopAct.name}`} onClose={() => setStopAct(null)}>
           <p className="tp13-muted">Scheduled {clock(stopAct.time)} · Day {stopAct.day || 1}</p>
@@ -345,7 +348,7 @@ function Summary({ t, section }: { t: TripSheet; section: Section }) {
   );
 }
 
-type PaxActs = { history: (p: TripSheetPassenger) => void; customer: (p: TripSheetPassenger, el: HTMLElement) => void; call: (p: TripSheetPassenger) => void };
+type PaxActs = { history: (p: TripSheetPassenger) => void; customer: (p: TripSheetPassenger, el: HTMLElement) => void; call: (p: TripSheetPassenger) => void; upgrade: (p: TripSheetPassenger) => void };
 function Boards({ t, which, canOps, collapsed, onCollapse, onFeedback, onUpdate, acts }: {
   t: TripSheet; which: "pickup" | "drop"; canOps: boolean; collapsed: Set<string>;
   onCollapse: (k: string) => void; onFeedback: (k: string, v: string) => void; onUpdate: (k: string) => void; acts: PaxActs;
@@ -404,7 +407,7 @@ function PaxRow({ p, which, canOps, onFeedback, onUpdate, acts }: { p: TripSheet
       </td>
       <td>{mask(p.phone)}</td>
       <td>
-        <div className="tp13-seat">Seats: {p.seat}</div>
+        <div className="tp13-seat">Seats: {p.seat}<UpgradeBadge u={p.seatUpgrade} /></div>
         <span className="tp13-source">Via: <b>{p.source || "—"}</b> <span>PNR: <a href="#" data-trip-history={k} title={`View Communication History for PNR ${p.pnr}`} onClick={(e) => { e.preventDefault(); acts.history(p); }}>{p.pnr.slice(-6)}</a>
           {canOps && <button type="button" className="tp13-booking-shortcut" data-trip-booking={p.pnr} title="View booking details" aria-label={`View booking details for PNR ${p.pnr}`} onClick={(e) => { e.preventDefault(); location.hash = `#/crm?q=${encodeURIComponent(p.pnr)}`; }}><I name="file" /></button>}</span></span>
       </td>
@@ -424,8 +427,8 @@ function PaxRow({ p, which, canOps, onFeedback, onUpdate, acts }: { p: TripSheet
         <div className="tp13-row-actions">
           {canOps && <button className="tp13-call" data-trip-call={k} title="Call passenger" onClick={() => acts.call(p)}><I name="phone" />{` ${mask(p.phone)}`}</button>}
           {canOps && <button className="tp13-chat" data-trip-history={k} title="Communication History" onClick={() => acts.history(p)}><I name="message" /></button>}
-          {canOps && <button type="button" className="lv39-offer-control" data-trip-loyalty-upgrade="1" title="Review loyalty upgrade / record passenger consent" aria-label={`Open seat upgrade for ${p.name}`} aria-disabled="true"
-            onClick={() => preview("Loyalty seat upgrade", "the upgrade-offer API is not available yet")}><Sparkle /> Upgrade</button>}
+          {canOps && <button type="button" className="lv39-offer-control" data-trip-loyalty-upgrade="1" title="Review loyalty upgrade / record passenger consent" aria-label={`Open seat upgrade for ${p.name}`}
+            onClick={() => acts.upgrade(p)}><Sparkle /> Upgrade</button>}
         </div>
       </td>
     </tr>
