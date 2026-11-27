@@ -13,10 +13,10 @@
       "evidence": [
         "e2e/parity/crm.parity.spec.ts — empty / phone 8853429780 / no-match search: search panel, results, countbar, thead, row identical DOM skeleton + text, pixel <= 1%; booking overlay ST261120214051098630: header, actionbar, ticket, contact, fare identical DOM + text + pixels, seat map identical DOM + text (4/4)",
         "BusinessTests.Crm_booking_detail_returns_passengers_fare_and_seat_map_and_masks_phone_for_viewers; e2e business 'CRM search validates input'",
-        "Data from GET /api/admin/crm/customers and GET /api/admin/crm/booking/{pnr} (full PNR or last 6)"
+        "Data from GET /api/admin/crm/customers and GET /api/admin/crm/booking/{pnr} (full PNR or last 6)",
+        "Booking actions (update/cancel/shift/history/comment/notify) — commit 4a13893"
       ],
       "gaps": [
-        "Update Ticket, Cancel Ticket, Shift Passenger (guided), Show History, Comment and Notify have no modern API: rendered like legacy, aria-disabled, explain via toast",
         "Print Invoice prints a payment statement (no statutory GST invoice); Call is preview-only (no telephony)",
         "Miles/coupon discounts are not recorded (shown as 0)",
         "Import skipped 154 legacy PNRs overlapping seats: customer counts/spend and seat reservation counts can differ (normalised in spec)",
@@ -29,12 +29,11 @@
       "evidence": [
         "e2e/parity/trips.parity.spec.ts — HB1 2026-11-24, Pickup/Drop/Timings/Docs: filterbar, crew, tabs, summary and body identical DOM skeleton + text; pixel regions <= 1% (8/8); data from GET /api/admin/trip-sheets?date= and /api/admin/trip-sheets/{id}",
         "BusinessTests.Trip_sheets_list_services_for_a_date_and_return_crew_stops_and_passengers; e2e integrations 'trip sheet shows crew, tabs and passenger boards'",
-        "Status Update persists Boarded / No-show via POST /api/admin/bookings/{pnr}/boarding"
+        "Status Update persists Boarded / No-show via POST /api/admin/bookings/{pnr}/boarding",
+        "Trip passenger actions + loyalty seat upgrade — commits 16f5a61, f0d5c1c"
       ],
       "gaps": [
-        "Call status (To call / Called / Not reachable), Check-in and Dropped are not recorded: Update explains via toast",
         "Passenger live location / views, stop arrival-departure events and telemetry (fuel, mileage, driving score) are not recorded: shown as — / Awaiting arrival",
-        "Call, chat/communication history, customer rating and loyalty seat upgrade are preview-only (no telephony / ratings / offer API); legacy loyalty-offer badges are not migrated",
         "Route break (meal/rest) stops are not imported, so they are absent from Timings (normalised in the parity spec)",
         "RTG trip counts can differ by 1 where the import skipped 154 legacy PNRs that overlap seats (exclusion constraint)",
         "Service cancellation moved to interim #/trips/services"
@@ -51,16 +50,19 @@
         "e2e/parity/schedule-overlay.parity.spec.ts fares — legacy faresTab() port: pricing-top skeleton, table/control labels, footer identical; Save trip fares / Follow route fares via PUT /schedules/{id}/fares",
         "e2e/parity/schedule-overlay.parity.spec.ts block — legacy bookingTab()+blockPanel() port: book-head, station tools, legend, seat-bottom, control grid, hint, footer skeleton + text identical; block/unblock via /trips/{id}/blocks; Delay (POST /trips/{id}/delay) and Notify (POST /trips/{id}/notify, recorded, delivery_verified=false)",
         "schedule list Delete button wired to DELETE /schedules/{id} with legacy confirm text; operator ticket cancel POST /bookings/{pnr}/cancel (full refund when by=operator)",
-        "e2e/parity/schedule-overlay.parity.spec.ts bookings — legacy schedule-bookings-v38 chart() port: right tabs, group controls, footer skeleton + text, toolbar/stats skeleton identical; seat/passenger click opens BookingOverlay; bulk Cancel per PNR, Notify via /trips/{id}/notify, search, group-by, History panel"
+        "e2e/parity/schedule-overlay.parity.spec.ts bookings — legacy schedule-bookings-v38 chart() port: right tabs, group controls, footer skeleton + text, toolbar/stats skeleton identical; seat/passenger click opens BookingOverlay; bulk Cancel per PNR, Notify via /trips/{id}/notify, search, group-by, History panel",
+        "Cities tab via toggles / sub-route fare % persisted as schedule ui_settings (PUT /api/admin/schedules/{id}/ui-settings) — dcfc0ce",
+        "Fares tab auto pricing toggle, min/max guard rails, demand curve persisted (ui_settings) — e30a8db",
+        "Import Pickup Chart v40: CSV + pdftotext PDF preview, stage matching, audited reference-only commit, imported chart view — 58ff838; scripts/pickup-chart-import-smoke.mjs"
       ],
       "gaps": [
         "P&L schedule-list expense/profit columns still use the reports cost model (P&L tab now includes commission + cancellation charges like legacy)",
-        "Bookings pickup chart: Import Pickup Chart has no importer (explains via toast); passenger rows not pixel-compared (store data differs)",
         "Block tab gender restriction is recorded in the block reason only (backend blocks have no gender field); Follow route blocks: routes have no seat-block template",
-        "Fares tab Auto Pricing / guard rails / seat rules are route-level and preview-only (legacy also)",
-        "stop edits, history edit, via toggles and sub-routes are aria-disabled preview-only (legacy also preview-only)",
         "Copy layout image / Share implemented client-side (canvas + clipboard, Web Share); not pixel-compared",
-        "P&L amounts not pixel-compared (PostgreSQL also holds e2e bookings)"
+        "P&L amounts not pixel-compared (PostgreSQL also holds e2e bookings)",
+        "Cities tab stop edit and Apply delay remain disabled (legacy schedule stop edits route through the Routes editor)",
+        "Pickup chart PDF import requires Poppler pdftotext on the server (503 with guidance otherwise, like legacy)",
+        "Auto pricing settings are stored; no pricing engine applies them (legacy also: 'Recommended changes are not applied automatically')"
       ]
     },
     "V003": {
@@ -68,10 +70,10 @@
       "react": "src/features/routes/RoutesPage.tsx",
       "evidence": [
         "e2e/parity/routes.parity.spec.ts — toolbar 0, list header 0, all 6 rows <= 0.0001; identical row + filter DOM skeleton; same services in same order",
-        "Status switch: cancel leaves PostgreSQL untouched; confirm persists, row moves to Inactive filter, reactivation restores (e2e + BusinessTests.Route_list_reflects_postgres_and_status_switch_gates_sales)"
+        "Status switch: cancel leaves PostgreSQL untouched; confirm persists, row moves to Inactive filter, reactivation restores (e2e + BusinessTests.Route_list_reflects_postgres_and_status_switch_gates_sales)",
+        "Route add/duplicate/delete with OTP step-up — commit f713e03"
       ],
       "gaps": [
-        "Add Route, Duplicate, Delete (OTP step-up) have no .NET endpoint: rendered in legacy style, aria-disabled, explain on click",
         "Bus halts needs GPS halt evidence not stored by the modern backend",
         "Row links (view/edit/pickups/drops/fares) open the route editor V015, which is not ported yet (interim fare editor shown)"
       ]
@@ -81,13 +83,13 @@
       "react": "src/features/fleet/VehiclesPage.tsx (VehiclesPage)",
       "evidence": [
         "e2e/parity/fleet.parity.spec.ts — default grid: all 7 vehicle cards pixel diff 0, tabs 0, toolbar 0.0002; identical card text; DOM skeleton of tabs/metrics/controls/actions/cards compared",
-        "Active switch persists via PUT /api/admin/vehicles/{id}/status and restores (e2e + BusinessTests.Fleet_lists_reflect_postgres_and_status_switches_are_audited); doc alerts computed from compliance documents like legacy master.js"
+        "Active switch persists via PUT /api/admin/vehicles/{id}/status and restores (e2e + BusinessTests.Fleet_lists_reflect_postgres_and_status_switches_are_audited); doc alerts computed from compliance documents like legacy master.js",
+        "DELETE /api/admin/vehicles/{id} (511f4d5) and vehicle-details-v19 workspace: details/documents/maintenance/archive (814c3c2); scripts/vehicle-delete-smoke.mjs, vehicle-detail-smoke.mjs"
       ],
       "gaps": [
         "Telemetry is the last imported report (vehicles.position_json/health_json); no live GPS/ECU feed in the modern stack",
-        "Fleet Map and Delete vehicle: no .NET equivalent — aria-disabled with explanation",
-        "View/Health/Alerts/Location open simplified modals (legacy VehicleDetailV19 workspace not ported); Add/Edit use a simplified form (make, chassis, documents not stored)",
-        "Duplicate uses a browser prompt for the new registration instead of the legacy G.prompt dialog"
+        "Duplicate uses a browser prompt for the new registration instead of the legacy G.prompt dialog",
+        "Fleet Map stays aria-disabled: no live GPS feed"
       ]
     },
     "V006": {
@@ -95,25 +97,22 @@
       "react": "src/features/fleet/VehiclesPage.tsx (CoachesPage)",
       "evidence": [
         "e2e/parity/fleet.parity.spec.ts — all 4 coach cards pixel diff 0, tabs 0, toolbar 0.0003; identical card text; list layout thead skeleton + row text identical",
-        "Coach active switch persists via PUT /api/admin/coaches/{id}/status (migration FleetLegacyTelemetry adds coach status + amenities, backfilled by importer)"
+        "Coach active switch persists via PUT /api/admin/coaches/{id}/status (migration FleetLegacyTelemetry adds coach status + amenities, backfilled by importer)",
+        "Coach CRUD + seat-layout designer (GET/POST/PUT/DELETE /api/admin/coaches, layout-preset) — commit 92dba7a; scripts/coach-crud-smoke.mjs"
       ],
-      "gaps": [
-        "Add/View/Edit/Duplicate/Delete coach and the seat-layout designer: no .NET coach CRUD endpoints — aria-disabled with explanation"
-      ]
+      "gaps": []
     },
     "V007": {
       "status": "VISUAL_PASS",
       "react": "src/features/staff/StaffPage.tsx",
       "evidence": [
         "e2e/parity/staff.parity.spec.ts — identical DOM skeleton (top, filter bar incl. ui-dd custom dropdowns, thead, rows), identical row text for all legacy staff, top/filters/thead/5 rows <= 0.01 pixel diff",
-        "Status switch flips and restores in PostgreSQL; editor email save persists (e2e); BackendTests 46/46 after Staff Email/BloodGroup/JoiningDate migration StaffLegacyProfile + importer backfill"
+        "Status switch flips and restores in PostgreSQL; editor email save persists (e2e); BackendTests 46/46 after Staff Email/BloodGroup/JoiningDate migration StaffLegacyProfile + importer backfill",
+        "Staff profile fields, Payables rules, Bank, Ledger, Documents tabs persisted — commit a2c07ba; scripts/staff-profile-smoke.mjs"
       ],
       "gaps": [
-        "Editor fields address, emergency contact, Aadhaar, PAN, employment type, retention, overtime, bonus/deduction rules: not stored by .NET — shown disabled",
-        "Editor Bank/Ledger/Documents tabs: no .NET endpoints — explicit not-persisted state",
         "Legacy DELETE /staff/:id deactivates; React performs the same via PUT status=inactive",
-        "Rows created only by the modern e2e suite are excluded from the visual comparison (not present in legacy data)",
-        "Editor Ledger tab still shows not-persisted state although GET /api/admin/payroll/staff/{id}/ledger now exists"
+        "Rows created only by the modern e2e suite are excluded from the visual comparison (not present in legacy data)"
       ]
     },
     "V016": {
@@ -554,10 +553,10 @@
       "react": "src/features/legacyScreens/LegacyScreen.tsx + vendor/screens.legacy.ts (verbatim, generated by modern/scripts/vendor-legacy-screens.mjs) — dailyops-parity-v12 + ota-ratings-v44",
       "evidence": [
         "e2e/parity/comms.parity.spec.ts dailyops: DOM skeleton + text identical, pixel <= 2%",
-        "GET /api/admin/legacy/daily-ops and /legacy/trips (LegacyCompatEndpoints) in legacy shape"
+        "GET /api/admin/legacy/daily-ops and /legacy/trips (LegacyCompatEndpoints) in legacy shape",
+        "GET/PUT /api/admin/ota-ratings/settings, POST /refresh/{provider} (409 OTA_CONNECTOR_NOT_AVAILABLE) — da2f344; passwords AES-GCM encrypted with OTA_RATINGS_CREDENTIAL_KEY, never returned"
       ],
       "gaps": [
-        "/ota-ratings/settings has no .NET endpoint (404 handled by legacy code: OTA connector shows not configured)",
         "Tracking / live alerts not recorded (shown — like legacy without data)"
       ]
     },
