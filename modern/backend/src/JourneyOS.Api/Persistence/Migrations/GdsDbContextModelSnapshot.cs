@@ -959,14 +959,30 @@ namespace JourneyOS.Api.Persistence.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<string>("ArchiveReason")
+                        .HasColumnType("text")
+                        .HasColumnName("archive_reason");
+
+                    b.Property<DateTime?>("ArchivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("archived_at");
+
                     b.Property<string>("Category")
                         .HasColumnType("text")
                         .HasColumnName("category");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("DocumentName")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("document_name");
+
+                    b.Property<string>("DocumentNumber")
+                        .HasColumnType("text")
+                        .HasColumnName("document_number");
 
                     b.Property<string>("DocumentType")
                         .IsRequired()
@@ -976,6 +992,22 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.Property<DateOnly?>("ExpiryDate")
                         .HasColumnType("date")
                         .HasColumnName("expiry_date");
+
+                    b.Property<byte[]>("FileData")
+                        .HasColumnType("bytea")
+                        .HasColumnName("file_data");
+
+                    b.Property<string>("FileName")
+                        .HasColumnType("text")
+                        .HasColumnName("file_name");
+
+                    b.Property<string>("FileType")
+                        .HasColumnType("text")
+                        .HasColumnName("file_type");
+
+                    b.Property<DateOnly?>("IssueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("issue_date");
 
                     b.Property<long>("OwnerId")
                         .HasColumnType("bigint")
@@ -993,6 +1025,11 @@ namespace JourneyOS.Api.Persistence.Migrations
                     b.Property<string>("VerificationStatus")
                         .HasColumnType("text")
                         .HasColumnName("verification_status");
+
+                    b.Property<string>("Visibility")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("visibility");
 
                     b.HasKey("Id")
                         .HasName("pk_compliance_documents");
@@ -3612,6 +3649,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("coach_template_id");
 
+                    b.Property<string>("DetailsJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("details_json");
+
                     b.Property<DateOnly?>("FitnessExpiry")
                         .HasColumnType("date")
                         .HasColumnName("fitness_expiry");
@@ -3686,6 +3727,98 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasDatabaseName("ix_vehicles_tenant_id_registration_number");
 
                     b.ToTable("vehicles");
+                });
+
+            modelBuilder.Entity("JourneyOS.Api.Persistence.VehicleMaintenance", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime?>("ArchivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("archived_at");
+
+                    b.Property<decimal>("Cost")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("cost");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text")
+                        .HasColumnName("created_by");
+
+                    b.Property<byte[]>("FileData")
+                        .HasColumnType("bytea")
+                        .HasColumnName("file_data");
+
+                    b.Property<string>("FileName")
+                        .HasColumnType("text")
+                        .HasColumnName("file_name");
+
+                    b.Property<string>("FileType")
+                        .HasColumnType("text")
+                        .HasColumnName("file_type");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("label");
+
+                    b.Property<DateOnly?>("NextDueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("next_due_date");
+
+                    b.Property<decimal?>("NextDueKm")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("next_due_km");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("notes");
+
+                    b.Property<decimal?>("OdometerKm")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("odometer_km");
+
+                    b.Property<DateOnly?>("ServiceDate")
+                        .HasColumnType("date")
+                        .HasColumnName("service_date");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("type");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long>("VehicleId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("vehicle_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_vehicle_maintenance");
+
+                    b.HasIndex("TenantId", "VehicleId")
+                        .HasDatabaseName("ix_vehicle_maintenance_tenant_id_vehicle_id");
+
+                    b.ToTable("vehicle_maintenance");
                 });
 
             modelBuilder.Entity("JourneyOS.Api.Persistence.Booking", b =>

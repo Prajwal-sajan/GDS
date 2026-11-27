@@ -54,6 +54,8 @@ public static class FleetEndpoints
                               where a.VehicleId == id && a.IsActive && t.TravelDate >= today && t.Status == "active" select a.Id).AnyAsync();
             if (busy) throw new JourneyOS.Api.Inventory.GdsException("conflict", "Vehicle is assigned to upcoming trips", 409);
             db.Vehicles.Remove(v);
+            db.ComplianceDocuments.RemoveRange(db.ComplianceDocuments.Where(d => d.OwnerType == "vehicle" && d.OwnerId == id));
+            db.VehicleMaintenance.RemoveRange(db.VehicleMaintenance.Where(r => r.VehicleId == id));
             db.AuditLogs.Add(new AuditLog { TenantId = db.CurrentTenantId, Actor = h.User.Identity?.Name ?? "system", Action = "VEHICLE_DELETE", Entity = "vehicle", EntityId = id.ToString(), DataJson = JsonSerializer.Serialize(new { v.RegistrationNumber }), At = DateTime.UtcNow });
             try { await db.SaveChangesAsync(); }
             catch (DbUpdateException) { throw new JourneyOS.Api.Inventory.GdsException("conflict", "Vehicle has trip history and cannot be removed; mark it inactive instead", 409); }

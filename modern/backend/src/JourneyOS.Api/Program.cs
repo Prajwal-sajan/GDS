@@ -187,6 +187,7 @@ JourneyOS.Api.Admin.CrmBookingEndpoints.MapCrmBooking(app);
 JourneyOS.Api.Admin.BookingActionsEndpoints.MapBookingActions(app);
 JourneyOS.Api.Admin.LoyaltyUpgradeEndpoints.MapLoyaltyUpgrades(app);
 JourneyOS.Api.Admin.CoachEndpoints.MapCoaches(app);
+JourneyOS.Api.Admin.VehicleDetailEndpoints.MapVehicleDetail(app);
 JourneyOS.Api.Admin.RouteEndpoints.MapRouteList(app);
 JourneyOS.Api.Admin.FleetEndpoints.MapFleetLists(app);
 JourneyOS.Api.Admin.PayrollEndpoints.MapPayroll(app);

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { api, type CoachListRow, type Me, type VehicleListRow } from "../../api";
 import { Modal, confirmDialog, promptDialog, toast, toastError } from "../../components/ui/feedback";
 import { CoachModal, blankCoach, type CoachDraft } from "./CoachModal";
+import { VehicleDetail } from "./VehicleDetail";
 import { NiceSelect } from "../../components/ui/NiceSelect";
 
 // React port of legacy GDS → Vehicles / Coaches (public/js/vehicles-parity-v9.js vehiclesPage()/coachesPage() and the
@@ -166,6 +167,7 @@ export function VehiclesPage({ me }: { me: Me }) {
   const [V, setV] = useState<VehicleListRow[]>(); const [C, setC] = useState<CoachListRow[]>([]); const [error, setError] = useState<string>();
   const [s, setS] = useState({ query: "", state: "All states", health: "All health", gps: "All GPS", sort: "plate", layout: readLayout("vehicles") });
   const [modal, setModal] = useState<{ kind: string; v: VehicleListRow | null }>();
+  const [ws, setWs] = useState<{ id: number; mode: "view" | "edit" }>();
   const load = useCallback(async () => {
     try { const [a, b] = await Promise.all([api.vehicleList(), api.coachList()]); setV(a.vehicles); setC(b.coaches); setError(undefined); } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
   }, []);
@@ -174,6 +176,7 @@ export function VehiclesPage({ me }: { me: Me }) {
     try { await api.setVehicleStatus(v.id, on ? "active" : "inactive"); toast("Vehicle status saved", "ok"); await load(); } catch (e) { toastError(e); }
   };
   const act: Act = async (a, v) => {
+    if (a === "view" || a === "edit") { setWs({ id: v.id, mode: a }); return; }
     if (a === "delete") {
       if (!(await confirmDialog("Delete this vehicle? A vehicle assigned to upcoming trips cannot be removed.", { danger: true }))) return;
       try { await api.deleteVehicle(v.id); toast("Vehicle removed", "ok"); await load(); } catch (e) { toastError(e); }
@@ -198,6 +201,7 @@ export function VehiclesPage({ me }: { me: Me }) {
   }, [V, s]);
   if (error) return <div className="vp-scope"><Tabs active="vehicles" /><div className="vp-empty" role="alert">Unable to load vehicles · {error}</div></div>;
   if (!V) return <div className="vp-scope"><Tabs active="vehicles" /><div className="vp-empty">Loading…</div></div>;
+  if (ws) return <div className="vp-scope"><Tabs active="vehicles" /><VehicleDetail id={ws.id} mode={ws.mode} canModify={canModify} onDone={() => { setWs(undefined); void load(); }} /></div>;
   const set = (k: string) => (x: string) => setS({ ...s, [k]: x });
   const layout = (l: string) => { saveLayout("vehicles", l); setS({ ...s, layout: l }); };
   const header = ["REGISTRATION", "STATE", "ODOMETER", "FUEL / ADBLUE", "GPS", "HEALTH", "LOCATION", "ALERTS", "STATUS", "ACTIONS"];

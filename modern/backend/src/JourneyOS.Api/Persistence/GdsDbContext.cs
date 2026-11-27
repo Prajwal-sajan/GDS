@@ -58,6 +58,7 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
     public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
     public DbSet<TripExpense> TripExpenses => Set<TripExpense>();
     public DbSet<ComplianceDocument> ComplianceDocuments => Set<ComplianceDocument>();
+    public DbSet<VehicleMaintenance> VehicleMaintenance => Set<VehicleMaintenance>();
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<UserSession> UserSessions => Set<UserSession>();
     public DbSet<Branch> Branches => Set<Branch>();
@@ -116,7 +117,8 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
         b.Entity<StaffReimbursement>(e => { e.HasIndex(x => x.StaffId); e.ToTable(t => t.HasCheckConstraint("ck_staff_reimbursements_amount", "amount >= 0")); });
         b.Entity<StaffPayout>(e => { e.HasIndex(x => new { x.TenantId, x.PayoutNo }).IsUnique(); e.HasIndex(x => x.StaffId); });
         b.Entity<SarathiConversation>(e => { e.Property(x => x.MessagesJson).HasColumnType("jsonb"); e.HasIndex(x => new { x.TenantId, x.Owner }); });
-        b.Entity<Vehicle>(e => { e.Property(x => x.PositionJson).HasColumnType("jsonb"); e.Property(x => x.HealthJson).HasColumnType("jsonb"); });
+        b.Entity<Vehicle>(e => { e.Property(x => x.PositionJson).HasColumnType("jsonb"); e.Property(x => x.HealthJson).HasColumnType("jsonb"); e.Property(x => x.DetailsJson).HasColumnType("jsonb"); });
+        b.Entity<VehicleMaintenance>(e => e.HasIndex(x => new { x.TenantId, x.VehicleId }));
         b.Entity<CoachTemplate>(e => e.Property(x => x.AmenitiesJson).HasColumnType("jsonb"));
         b.Entity<Route>(e => e.Property(x => x.SettingsJson).HasColumnType("jsonb"));
         b.Entity<Trip>(e => { e.Property(x => x.TelemetryJson).HasColumnType("jsonb"); e.Property(x => x.StopEventsJson).HasColumnType("jsonb"); e.Property(x => x.UpdateSettingsJson).HasColumnType("jsonb"); e.Property(x => x.DelayReason).HasMaxLength(300); });

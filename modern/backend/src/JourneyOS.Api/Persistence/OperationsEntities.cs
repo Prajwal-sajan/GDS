@@ -22,6 +22,32 @@ public sealed class Vehicle : ITenantOwned
     /// <summary>Last reported telemetry as received (legacy <c>position</c> / <c>health</c> objects), jsonb. Null = never reported.</summary>
     public string? PositionJson { get; set; }
     public string? HealthJson { get; set; }
+    /// <summary>Legacy vehicle-details-v19 fields: vehicle_number, chassis/engine numbers, GPS/DMS device+provider, dms_enabled,
+    /// purchased_date, notes, tags. jsonb, null = never entered.</summary>
+    public string? DetailsJson { get; set; }
+}
+
+/// <summary>Legacy vehicle_maintenance (vehicle-details-v19): service bills, job cards and next-due reminders.</summary>
+public sealed class VehicleMaintenance : ITenantOwned
+{
+    public long Id { get; set; }
+    public long TenantId { get; set; }
+    public long VehicleId { get; set; }
+    public string Type { get; set; } = "service";     // service / repair / inspection / reminder
+    public string Label { get; set; } = "";
+    public DateOnly? ServiceDate { get; set; }
+    public decimal? OdometerKm { get; set; }
+    public DateOnly? NextDueDate { get; set; }
+    public decimal? NextDueKm { get; set; }
+    public decimal Cost { get; set; }
+    public string Notes { get; set; } = "";
+    public string? FileName { get; set; }
+    public string? FileType { get; set; }
+    public byte[]? FileData { get; set; }
+    public string? CreatedBy { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public DateTime? ArchivedAt { get; set; }
 }
 
 public sealed class Staff : ITenantOwned

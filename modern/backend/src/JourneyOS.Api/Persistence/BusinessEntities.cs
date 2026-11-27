@@ -135,6 +135,16 @@ public sealed class ComplianceDocument : ITenantOwned
     public DateOnly? ExpiryDate { get; set; }
     public string? Category { get; set; }
     public string? VerificationStatus { get; set; }
+    // Legacy vehicle-details-v19 document fields (upload, visibility, replace -> archive).
+    public string? DocumentNumber { get; set; }
+    public DateOnly? IssueDate { get; set; }
+    public string Visibility { get; set; } = "private";   // public / private
+    public string? FileName { get; set; }
+    public string? FileType { get; set; }
+    public byte[]? FileData { get; set; }
+    public DateTime? CreatedAt { get; set; }
+    public DateTime? ArchivedAt { get; set; }
+    public string? ArchiveReason { get; set; }
 }
 
 // ---------- IAM ----------
