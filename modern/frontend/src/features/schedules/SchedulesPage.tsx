@@ -3,6 +3,7 @@ import { api, type Me, type ScheduleRow } from "../../api";
 import { confirmDialog, toast, toastError } from "../../components/ui/feedback";
 import { addDays, inr, shortDate, t12, today } from "../../services/format";
 import { ScheduleOverlay } from "./ScheduleOverlay";
+import { CalendarPopover, SearchServicesModal } from "./ScheduleInsightsV36";
 
 // React port of the legacy GDS → Schedules list (public/js/schedules-screenshot-v6.js: dates(), top(), drawList(),
 // handleRootClick()). Same DOM, class names and SVG paths, so the vendored legacy CSS renders it identically.
@@ -29,11 +30,22 @@ export function SchedulesPage({ me }: { me: Me }) {
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [calOpen, setCalOpen] = useState(false);
-  const [jump, setJump] = useState(selected);
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "departure", dir: 1 });
   const [workspace, setWorkspace] = useState<{ row: ScheduleRow; tab: string }>();
   const closeWorkspace = useCallback(() => { setWorkspace(undefined); void refreshRef.current(); }, []);
   const seq = useRef(0);
+  const calBtn = useRef<HTMLButtonElement>(null);
+  // Legacy S.filterFrom/S.filterTo (si36 Search services): route ids serving from → to, or undefined for all.
+  const [cityFilter, setCityFilter] = useState<{ ids: Set<number>; label: string }>();
+  const runSearch = async ({ date, fromCityId, toCityId }: { date: string; fromCityId: string; toCityId: string }) => {
+    setSearch(""); goTo(date);
+    if (!fromCityId && !toCityId) { setCityFilter(undefined); return; }
+    try {
+      const q = new URLSearchParams(); if (fromCityId) q.set("from", fromCityId); if (toCityId) q.set("to", toCityId);
+      const r = await api.admin<{ route_ids: number[] }>(`/schedules/city-routes?${q}`);
+      setCityFilter({ ids: new Set(r.route_ids), label: "city pair" });
+    } catch (e) { toastError(e); }
+  };
 
   const refresh = useCallback(async () => {
     const mine = ++seq.current; // a slower, older response must never overwrite a newer week
@@ -44,13 +56,13 @@ export function SchedulesPage({ me }: { me: Me }) {
   const refreshRef = useRef(refresh);
   refreshRef.current = refresh;
 
-  const goTo = (d: string) => { setStart(d); setSelected(d); setJump(d); setCalOpen(false); };
+  const goTo = (d: string) => { setStart(d); setSelected(d); setCalOpen(false); };
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
     const value = (s: ScheduleRow) => (sort.key === "service" ? s.serviceNumber : sort.key === "arrival" ? s.arrivalTime ?? "" : sort.key === "collection" ? s.sale ?? 0 : s.departureTime);
-    return (list ?? []).filter((s) => s.travelDate === selected && (!q || [s.serviceNumber, s.serviceName, s.origin, s.destination, s.coach].join(" ").toLowerCase().includes(q)))
+    return (list ?? []).filter((s) => s.travelDate === selected && (!cityFilter || cityFilter.ids.has(s.routeId)) && (!q || [s.serviceNumber, s.serviceName, s.origin, s.destination, s.coach].join(" ").toLowerCase().includes(q)))
       .sort((a, b) => { const av = value(a), bv = value(b); return (typeof av === "number" && typeof bv === "number" ? av - bv : String(av).localeCompare(String(bv), "en", { numeric: true })) * sort.dir; });
-  }, [list, selected, search, sort]);
+  }, [list, selected, search, sort, cityFilter]);
 
   const toggle = async (s: ScheduleRow) => {
     if (!canOperate) return;
@@ -79,17 +91,13 @@ export function SchedulesPage({ me }: { me: Me }) {
             ))}
             <button data-sx-next className="sx-iconbtn" aria-label="Next seven days" onClick={() => goTo(addDays(start, 7))}><I name="chevronRight" /></button>
             <button className="sx-iconbtn" data-sx-find title="Search schedules" aria-label="Search schedules" aria-expanded={searchOpen} onClick={() => setSearchOpen((o) => !o)}><I name="search" /></button>
-            <button className="sx-iconbtn sx-calendar" data-sx-today title="Choose schedule date" aria-label="Open date picker" aria-expanded={calOpen} onClick={() => setCalOpen((o) => !o)}><I name="calendar" /></button>
+            <button ref={calBtn} className="sx-iconbtn sx-calendar" data-sx-today title="Choose schedule date" aria-label="Open date picker" aria-expanded={calOpen} onClick={() => setCalOpen((o) => !o)}><I name="calendar" /></button>
           </div>
-          <div className="sx-searchbox" data-sx-searchbox hidden={!searchOpen}>
-            <I name="search" /><input data-sx-query placeholder="Search service, route, vehicle" aria-label="Search schedules" value={search} onChange={(e) => setSearch(e.target.value)} ref={(el) => { if (el && searchOpen) el.focus(); }} />
-            <button className="sx-iconbtn" data-sx-find aria-label="Close search" onClick={() => { setSearch(""); setSearchOpen(false); }}><I name="x" /></button>
-          </div>
-          <div className="sx-calendar-popup" data-sx-calendar-popup hidden={!calOpen}>
-            <label>Go to date <input type="date" value={jump} data-sx-jump-date onChange={(e) => setJump(e.target.value)} /></label>
-            <button type="button" data-sx-jump-go onClick={() => (/^\d{4}-\d{2}-\d{2}$/.test(jump) ? goTo(jump) : toast("Choose a date", "warn"))}>Go</button>
-            <button type="button" data-sx-jump-today onClick={() => goTo(today())}>Today</button>
-          </div>
+          {searchOpen && <SearchServicesModal date={selected} onClose={() => setSearchOpen(false)} onSearch={(s) => void runSearch(s)}
+            onClear={(d) => { setSearch(""); setCityFilter(undefined); goTo(d); }} />}
+          {calOpen && <CalendarPopover date={selected} anchor={calBtn.current} onClose={() => setCalOpen(false)} onPick={goTo} />}
+          {cityFilter && <div className="sx-searchbox"><span>Filtered by origin/destination</span>
+            <button className="sx-iconbtn" aria-label="Clear service search" onClick={() => setCityFilter(undefined)}><I name="x" /></button></div>}
         </div>
         <div data-sx-list>
           {error ? (

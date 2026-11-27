@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, type Me, type RouteListRow } from "../../api";
 import { confirmDialog, promptDialog, toast, toastError } from "../../components/ui/feedback";
+import { BusHaltsModal } from "../schedules/ScheduleInsightsV36";
 
 // React port of the legacy GDS → Routes list (public/js/routes-screenshot-v5.js: listRoutes(), rowRoute(), modal()).
 // Same DOM, class names and SVG paths, so the vendored legacy CSS (routes-screenshot-v5.css) renders it identically.
-// Add / duplicate / delete (OTP step-up) are live. GPS bus halts stay disabled: no halt evidence is stored.
+// Add / duplicate / delete (OTP step-up) are live. Bus halts opens the si36 overview, which reports that no GPS halt evidence is stored.
 const ICONS = {
   route: "M3 6l6 3 6-3 6 3v11l-6-3-6 3-6-3V6zm6 3v11m6-14v11",
   calendar: "M8 2v4m8-4v4M3 10h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z",
@@ -20,7 +21,6 @@ type IconKey = keyof typeof ICONS;
 const I = ({ k, size = 18 }: { k: IconKey; size?: number }) => (
   <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth={1.85} strokeLinecap="round" strokeLinejoin="round"><path d={ICONS[k]} /></svg>
 );
-const HALTS = "Not available yet: GPS halt evidence is not stored by the modern backend";
 const STATUSES: [string, string, string][] = [["active", "Active", "#04bf7b"], ["inactive", "Inactive", "#9da9bc"], ["deleted", "Deleted", "#ff3858"]];
 const OPS = ["owner", "admin", "ops"];
 const hm = (t: string | null | undefined) => String(t ?? "").slice(0, 5) || "—";
@@ -118,6 +118,7 @@ export function RoutesPage({ me }: { me: Me }) {
   const [status, setStatus] = useState(initial);
   const [map, setMap] = useState<RouteListRow>();
   const [add, setAdd] = useState(false);
+  const [halts, setHalts] = useState(false);
 
   const load = useCallback(async () => {
     try { setRoutes((await api.routeList()).routes); setError(undefined); } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
@@ -164,7 +165,7 @@ export function RoutesPage({ me }: { me: Me }) {
             </button>
           ))}
         </div>
-        <button type="button" className="rv-btn sky" data-rv="all-halts" aria-disabled="true" title={HALTS} onClick={() => toast(HALTS, "warn")}><I k="bus" size={17} /> Bus halts</button>
+        <button type="button" className="rv-btn sky" data-rv="all-halts" onClick={() => setHalts(true)}><I k="bus" size={17} /> Bus halts</button>
       </div>
       <div className="rv-listframe">
         <header className="rv-listhead">
@@ -192,6 +193,7 @@ export function RoutesPage({ me }: { me: Me }) {
           </section>
         </div>
       )}
+      {halts && <BusHaltsModal onClose={() => setHalts(false)} />}
     </div>
   );
 }
