@@ -174,6 +174,7 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
   const [staff, setStaff] = useState<Staff[]>([]);
   const [tagIn, setTagIn] = useState({ name: "", value: "" });
   const [vanAdd, setVanAdd] = useState<{ i: number; label: string }>();
+  const [hist, setHist] = useState<{ at: string; section: string; actor: string; details: string | null }[]>();
   const upd = <K extends keyof Settings>(k: K, v: Settings[K]) => setSt((s) => (s ? { ...s, [k]: v } : s));
   const updGen = (f: (g: Gen) => Gen) => setSt((s) => (s ? { ...s, gen: f(s.gen) } : s));
 
@@ -650,9 +651,11 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
       default: return (
         <>
           <h2>History</h2>
-          {route.history.length ? <div className="rv-scroll"><table className="rv-table"><thead><tr><th>When</th><th>Action</th><th>By</th></tr></thead>
-            <tbody>{route.history.map((h, i) => <tr key={i}><td>{new Date(h.at).toLocaleString("en-IN")}</td><td>{h.action}</td><td>{h.actor}</td></tr>)}</tbody></table></div>
-            : <p className="rv-subtext">No recorded changes for this route yet.</p>}
+          <p className="rv-subtext">Server-side route edit history is loaded separately; entries appear here after you click Save.</p>
+          {hist ? <div className="rv-scroll"><table className="rv-table"><thead><tr><th>Timestamp</th><th>Section</th><th>Operation</th><th>By</th></tr></thead>
+            <tbody>{hist.length ? hist.map((h, i) => <tr key={i}><td>{new Date(h.at).toLocaleString("en-IN")}</td><td>{h.section}</td><td style={{ maxWidth: 420, overflowWrap: "anywhere" }}>{h.details ? h.details.slice(0, 240) : "Update"}</td><td>{h.actor}</td></tr>)
+              : <tr><td colSpan={4}>No recorded changes for this route yet.</td></tr>}</tbody></table></div>
+            : <div data-rv-history><Btn data-rv="history-load" disabled={busy} onClick={() => run(async () => setHist((await api.admin<{ history: { at: string; section: string; actor: string; details: string | null }[] }>(`/routes/${id}/history`)).history))}>Load history</Btn></div>}
         </>
       );
     }

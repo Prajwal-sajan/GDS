@@ -158,6 +158,14 @@ public static class RouteEndpoints
             return Results.Ok(new { ok = errors == 0, issues });
         }).RequireAuthorization(Policies.Reports);
 
+        // Route edit history (legacy GET /routes/:id/history): audit rows with section + operation detail.
+        g.MapGet("/routes/{id:long}/history", async (long id, int? limit, GdsDbContext db) =>
+        {
+            var rows = await db.AuditLogs.AsNoTracking().Where(a => a.Entity == "route" && a.EntityId == id.ToString())
+                .OrderByDescending(a => a.Id).Take(Math.Clamp(limit ?? 100, 1, 500)).Select(a => new { a.Action, a.Actor, a.At, a.DataJson }).ToListAsync();
+            return Results.Ok(new { history = rows.Select(a => new { at = a.At, section = a.Action, actor = a.Actor, details = a.DataJson }) });
+        }).RequireAuthorization(Policies.Reports);
+
         // Route editor read model (legacy GET /api/routes/:id): every tab's data in one call, PostgreSQL only.
         g.MapGet("/route-detail/{id:long}", async (long id, GdsDbContext db) =>
         {
