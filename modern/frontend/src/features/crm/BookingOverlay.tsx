@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { api, type CrmBooking, type CrmDeck, type CrmMapSeat, type Me } from "../../api";
-import { toast, toastError } from "../../components/ui/feedback";
+import { confirmDialog, infoDialog, promptDialog, toast, toastError } from "../../components/ui/feedback";
 
 // React port of the legacy CRM booking overlay (crm-screenshot-v8.js openBooking + crm-journey-v45.js seat map / cards).
-// Data: GET /api/admin/crm/booking/{pnr}. Writes the modern API does not expose yet (ticket edit, cancellation, comments,
-// notifications, ticket history, guided shift) are rendered exactly like legacy and explain themselves on click.
+// Data: GET /api/admin/crm/booking/{pnr}. Actions use the same prompts/confirmations as legacy: Update Ticket (PUT /bookings/{pnr}),
+// Cancel Ticket (refund-quote + cancel), Shift Passenger (shift-options → shift-seats → shift-to), Show History, Comment and Notify.
 const P: Record<string, string> = {
   users: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m11-7a4 4 0 1 0-8 0 4 4 0 0 0 8 0Zm3-9v6m3-3h-6",
   phone: "M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 2.09 4.18 2 2 0 0 1 4.09 2h3a2 2 0 0 1 2 1.72l.55 3a2 2 0 0 1-.57 1.71L7.91 9.59a16 16 0 0 0 6.5 6.5l1.16-1.16a2 2 0 0 1 1.71-.57l3 .55A2 2 0 0 1 22 16.92z",
@@ -93,17 +93,48 @@ function printBooking(b: CrmBooking, invoice: boolean) {
   win.document.close(); win.focus(); win.print();
 }
 
-const NOT_YET: Record<string, string> = {
-  edit: "Ticket update is not available yet: the modern API has no booking edit endpoint",
-  cancel: "Ticket cancellation from CRM is not available yet: the modern API has no operator cancellation endpoint",
-  shift: "Guided passenger shift is not migrated yet (shift-options / seat picker)",
-  history: "Ticket history is not available yet: booking events are not exposed by the modern API",
-  comment: "Booking comments are not stored by the modern platform yet",
-  notify: "Passenger notifications are preview-only: no messaging provider is connected",
-};
+const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
-export function BookingOverlay({ me, pnr, onClose }: { me: Me; pnr: string; onClose: () => void }) {
+/** Legacy shiftBookingV45: date → service → seat per passenger → confirm → optional notification. */
+async function shiftBooking(b: CrmBooking): Promise<boolean> {
+  const pnr = b.pnr, active = b.passengers.filter((p) => p.status !== "cancelled");
+  if (!active.length) { toast("This booking has no active passenger seats", "warn"); return false; }
+  const proposed = b.travelDate.slice(0, 10) >= todayIso() ? b.travelDate.slice(0, 10) : todayIso();
+  const dp = await promptDialog("Shift Passenger · Select journey date", [{ name: "date", label: "Target journey date", type: "date", required: true, value: proposed }], { ok: "Find services" });
+  if (!dp) return false;
+  const date = String(dp.date || "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { toast("Select a valid journey date", "bad"); return false; }
+  const { services } = await api.bookingShiftOptions(pnr, date);
+  if (!services.length) { toast("No eligible active services with this journey direction", "warn"); return false; }
+  const sc = await promptDialog("Shift Passenger · Select service", [{ name: "schedule_id", type: "select", label: "Target service", full: true, required: true,
+    options: services.map((x) => [String(x.id), `${x.service} · ${x.departure_time} · ${x.free_seats} free seats`] as [string, string]) }], { ok: "Choose passenger seats" });
+  if (!sc) return false;
+  const selected = services.find((x) => String(x.id) === String(sc.schedule_id));
+  if (!selected) { toast("Choose an available service", "bad"); return false; }
+  const { seats: choices } = await api.bookingShiftSeats(pnr, selected.id);
+  if (choices.length < active.length) { toast("Not enough available seats on the target service", "warn"); return false; }
+  const asg = await promptDialog("Shift Passenger · Assign seats", [
+    ...active.map((p, i) => ({ name: `seat_${i}`, label: `New seat for ${p.name} (${p.seat})`, type: "select" as const, required: true, full: true,
+      options: choices.map((x) => [x.seat, `${x.seat} · ${(x.status || "available").replace(/_/g, " ")}`] as [string, string]) })),
+    { name: "notify", label: "Record passenger notification after shift", type: "checkbox", value: true, full: true },
+  ], { ok: "Review shift" });
+  if (!asg) return false;
+  const assigned = active.map((_, i) => String(asg[`seat_${i}`] || ""));
+  if (assigned.some((x) => !choices.some((y) => y.seat === x)) || new Set(assigned).size !== assigned.length) { toast("Select a different available target seat for every passenger", "bad"); return false; }
+  const seatMap = Object.fromEntries(active.map((p, i) => [p.seat, assigned[i]]));
+  const desc = `${active.length} passenger(s) to ${date} · ${selected.service} · ${Object.entries(seatMap).map(([f, t]) => `${f} → ${t}`).join(", ")}`;
+  if (!(await confirmDialog(`Confirm shift of ${desc}?`, { ok: "Confirm Shift" }))) return false;
+  await api.bookingShift(pnr, selected.id, seatMap);
+  if (asg.notify) {
+    try { const n = await api.tripNotify(selected.id, { template: "ticket_confirmation", pnrs: [pnr] }); if (n.recorded) toast("Passenger message recorded; external delivery not verified", "ok"); }
+    catch (e) { toast(`Shift saved, but notification was not recorded: ${e instanceof Error ? e.message : e}`, "warn"); }
+  }
+  return true;
+}
+
+export function BookingOverlay({ me, pnr, onClose, onChanged }: { me: Me; pnr: string; onClose: () => void; onChanged?: () => void }) {
   const [data, setData] = useState<{ booking: CrmBooking; map: { decks: CrmDeck[] } | null } | null>(null);
+  const [rev, setRev] = useState(0);
   const [inspect, setInspect] = useState("");
   const [collapsed, setCollapsed] = useState(false);
   const [notifyOpen, setNotifyOpen] = useState(false);
@@ -116,10 +147,10 @@ export function BookingOverlay({ me, pnr, onClose }: { me: Me; pnr: string; onCl
     let live = true;
     api.crmBooking(pnr).then((d) => { if (live) setData(d); }).catch((e) => { toastError(e); onClose(); });
     return () => { live = false; };
-  }, [pnr]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pnr, rev]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     document.body.classList.add("cv8-locked");
-    const key = (ev: KeyboardEvent) => { if (ev.key === "Escape") { ev.preventDefault(); closeRef.current(); } };
+    const key = (ev: KeyboardEvent) => { if (ev.key === "Escape") { if (document.querySelector("#modal-root .ov")) return; ev.preventDefault(); closeRef.current(); } };
     document.addEventListener("keydown", key);
     const prev = prevFocus.current;
     return () => {
@@ -134,15 +165,62 @@ export function BookingOverlay({ me, pnr, onClose }: { me: Me; pnr: string; onCl
   const b = data.booking, f = b.fare;
   const base = Number(f.gross || 0), discount = Number(f.discount || 0), miles = Number(f.milesDiscount || 0), net = base - discount - miles;
   const confirmed = b.status === "confirmed";
-  const act = (type: string) => {
+  const refresh = () => { setRev((x) => x + 1); onChanged?.(); };
+  const run = (f: () => Promise<void>) => { f().catch(toastError); };
+  const act = (type: string) => run(async () => {
     if (type === "print") return printBooking(b, false);
     if (type === "invoice") { toast("A statutory tax invoice is not available; the document is a booking payment statement.", "warn"); return printBooking(b, true); }
     if (type === "chat") { onClose(); location.hash = `#/chats?q=${encodeURIComponent(b.contact.phone || "")}`; return; }
-    toast(NOT_YET[type], "warn");
-  };
+    if (type === "comment") {
+      const v = await promptDialog("Add booking comment", [{ name: "text", label: "Comment", type: "textarea", required: true, full: true }], { ok: "Add comment" });
+      if (v?.text) { await api.bookingComment(b.pnr, String(v.text).trim()); refresh(); }
+      return;
+    }
+    if (type === "history") {
+      const h = await api.bookingHistory(b.pnr);
+      await infoDialog(`Ticket history · ${b.ticketNumber || b.pnr}`, <div className="cv8-history">{h.events.length ? h.events.map((x) => (
+        <div key={x.id}><b>{x.title || "Change"}</b> · {datetime(x.at)}<div>{x.actor || "System"} · {x.source || "GDS"}</div>{x.details.map((y, i) => <p key={i}>{y.label}: {y.value}</p>)}</div>
+      )) : <p>No recorded booking events.</p>}</div>, "lg");
+      return;
+    }
+    if (type === "edit") {
+      const v = await promptDialog("Update ticket", [{ name: "name", label: "Contact name", value: b.contact.name }, { name: "phone", label: "Mobile", value: b.contact.phone }, { name: "email", label: "Email", value: b.contact.email || "" },
+        ...b.passengers.map((p, i) => ({ name: `p_${i}`, label: `Passenger ${p.seat}`, value: p.name }))], { ok: "Save changes" });
+      if (v) {
+        await api.bookingEdit(b.pnr, { contact: { name: String(v.name ?? ""), phone: String(v.phone ?? ""), email: String(v.email ?? "") }, passengers: b.passengers.map((p, i) => ({ seat: p.seat, name: String(v[`p_${i}`] ?? p.name) })) });
+        toast("Booking updated", "ok"); refresh();
+      }
+      return;
+    }
+    if (type === "cancel") {
+      const q = await api.bookingRefundQuote(b.pnr);
+      const v = await promptDialog("Cancel ticket", [{ name: "by", label: "Cancelled by", type: "select", options: [["passenger", `Passenger · ${q.refund_pct}% policy refund`], ["operator", "Operator · 100% refund"]] },
+        { name: "reason", label: "Reason", required: true }, { name: "notify", label: "Notify passenger", type: "checkbox", value: true }], { ok: "Cancel booking" });
+      if (v && (await confirmDialog("Confirm ticket cancellation?", { ok: "Cancel ticket" }))) {
+        await api.bookingCancel(b.pnr, { seats: b.passengers.filter((p) => p.status !== "cancelled").map((p) => p.seat), by: String(v.by), reason: String(v.reason), notify: !!v.notify });
+        toast("Booking cancellation recorded", "ok"); refresh();
+      }
+      return;
+    }
+    if (type === "shift") {
+      if (b.status !== "confirmed") return toast("Only confirmed tickets can be shifted with permission", "warn");
+      if (await shiftBooking(b)) { toast("Passenger shifted successfully", "ok"); refresh(); }
+    }
+  });
+  const notify = (t: string) => run(async () => {
+    setNotifyOpen(false);
+    let text = "";
+    if (t === "custom" || t === "bus_cancellation") {
+      const v = await promptDialog(t === "custom" ? "Bus delay / early notification" : "Bus cancellation notice", [{ name: "minutes", label: "Delay / early (minutes)", type: "number", value: 0 }, { name: "reason", label: "Reason / message", type: "textarea", full: true, required: true }], { ok: "Send message" });
+      if (!v) return;
+      text = t === "custom" ? `Bus update: ${v.minutes || 0} minute(s). ${v.reason}` : String(v.reason);
+    }
+    if (!(await confirmDialog(`Send ${t.replace(/_/g, " ")} notification for PNR ${b.pnr}?`, { ok: "Send notification" }))) return;
+    const r = await api.tripNotify(b.scheduleId, { pnrs: [b.pnr], template: t, text });
+    toast(r.recorded ? `Message recorded for ${r.recorded} booking(s); external delivery is not verified.` : "No eligible confirmed booking found", r.recorded ? "ok" : "warn");
+  });
   const btn = (type: string, enabled: boolean, title: string, cls?: string) => ({
-    className: cls, "data-cv8-action": type, disabled: !enabled || undefined, title: enabled ? undefined : title,
-    "aria-disabled": enabled && NOT_YET[type] ? true : undefined, onClick: () => act(type),
+    className: cls, "data-cv8-action": type, disabled: !enabled || undefined, title: enabled ? undefined : title, onClick: () => act(type),
   });
   const seats = b.passengers.filter((p) => p.status !== "cancelled").length;
 
@@ -174,7 +252,7 @@ export function BookingOverlay({ me, pnr, onClose }: { me: Me; pnr: string; onCl
                 <button data-cv8-action="notify-toggle" disabled={!canOps || undefined} title={canOps ? undefined : "Messaging permission required"} onClick={() => setNotifyOpen((o) => !o)}><I n="bell" /> Notify <I n="chevron" s={14} /></button>
                 <div className="cv8-notifymenu" data-cv8-notifymenu="" hidden={!notifyOpen}>
                   {[["ticket_confirmation", "Ticket Confirmation", "Resend booking confirmation"], ["bus_details", "Bus Details", "Tracker + bus + driver"], ["custom", "Bus Delay / Early", "Reason + minutes + tracker"], ["bus_cancellation", "Bus Cancellation", "Inform pax; cancellation is separate"]].map(([k, t, st]) => (
-                    <button key={k} data-cv8-notify={k} aria-disabled="true" onClick={() => { setNotifyOpen(false); act("notify"); }}><b>{t}</b><small>{st}</small></button>
+                    <button key={k} data-cv8-notify={k} onClick={() => notify(k)}><b>{t}</b><small>{st}</small></button>
                   ))}
                 </div>
               </span>

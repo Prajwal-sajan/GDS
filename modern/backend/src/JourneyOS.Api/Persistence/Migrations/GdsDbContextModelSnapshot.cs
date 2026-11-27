@@ -221,6 +221,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("contact_mobile");
 
+                    b.Property<string>("ContactName")
+                        .HasColumnType("text")
+                        .HasColumnName("contact_name");
+
                     b.Property<string>("Currency")
                         .IsRequired()
                         .HasColumnType("text")
@@ -292,6 +296,48 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasDatabaseName("ix_bookings_trip_id");
 
                     b.ToTable("bookings");
+                });
+
+            modelBuilder.Entity("JourneyOS.Api.Persistence.BookingComment", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("At")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("at");
+
+                    b.Property<long>("BookingId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("booking_id");
+
+                    b.Property<string>("By")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("by");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("text");
+
+                    b.HasKey("Id")
+                        .HasName("pk_booking_comments");
+
+                    b.HasIndex("BookingId")
+                        .HasDatabaseName("ix_booking_comments_booking_id");
+
+                    b.ToTable("booking_comments");
                 });
 
             modelBuilder.Entity("JourneyOS.Api.Persistence.BookingFinance", b =>

@@ -314,6 +314,8 @@ public sealed class Booking : ITenantOwned
     public int ToSeq { get; set; }
     public string? ContactMobile { get; set; }
     public string? ContactEmail { get; set; }
+    /// <summary>Contact person when edited separately from the primary passenger (legacy booking.contact.name).</summary>
+    public string? ContactName { get; set; }
     public decimal TotalFare { get; set; }
     public string Currency { get; set; } = "INR";
     public string CancellationPolicy { get; set; } = "";
@@ -443,5 +445,16 @@ public sealed class AuditLog : ITenantOwned
     public string Entity { get; set; } = "";
     public string EntityId { get; set; } = "";
     public string? DataJson { get; set; }
+    public DateTime At { get; set; }
+}
+
+/// <summary>Staff comment on a booking (legacy bookings[].comments: {text, by, at}).</summary>
+public sealed class BookingComment : ITenantOwned
+{
+    public long Id { get; set; }
+    public long TenantId { get; set; }
+    public long BookingId { get; set; }
+    public string Text { get; set; } = "";
+    public string By { get; set; } = "";
     public DateTime At { get; set; }
 }

@@ -150,6 +150,18 @@ export const api = {
   receivables: (q: Record<string, string>) => call<Receivables>("GET", `/api/admin/accounts/receivables?${new URLSearchParams(q)}`),
   exportReceivables: (q: Record<string, string>) => downloadCsv("receivables", q),
   crmBooking: (pnr: string) => call<{ booking: CrmBooking; map: { coach: { id: number; name: string; capacity: number }; decks: CrmDeck[] } | null }>("GET", `/api/admin/crm/booking/${encodeURIComponent(pnr)}`),
+  // CRM booking workspace actions (legacy PUT /bookings/:pnr, comments, history, refund-quote, cancel, guided shift, notify)
+  bookingRefundQuote: (pnr: string) => call<{ refund_pct: number; paid: number; refund: number; hours_before: number; cancellation_allowed: boolean }>("GET", `/api/admin/bookings/${encodeURIComponent(pnr)}/refund-quote`),
+  bookingEdit: (pnr: string, body: { contact?: { name: string; phone: string; email: string }; passengers?: { seat: string; name: string; age?: number; gender?: string }[]; boardingStageId?: number; droppingStageId?: number }) =>
+    call<{ success: boolean; fields: string[] }>("PUT", `/api/admin/bookings/${encodeURIComponent(pnr)}`, body),
+  bookingComment: (pnr: string, text: string) => call<{ text: string; by: string; at: string }[]>("POST", `/api/admin/bookings/${encodeURIComponent(pnr)}/comments`, { text }),
+  bookingHistory: (pnr: string) => call<{ pnr: string; ticket_number: string; events: { id: string; kind: string; title: string; at: string; actor: string; source: string; details: { label: string; value: string }[] }[] }>("GET", `/api/admin/bookings/${encodeURIComponent(pnr)}/history`),
+  bookingCancel: (pnr: string, body: { seats: string[]; by: string; reason: string; notify: boolean }) =>
+    call<{ success: boolean; refund: number; charge: number; recorded: number }>("POST", `/api/admin/bookings/${encodeURIComponent(pnr)}/cancel`, body),
+  bookingShiftOptions: (pnr: string, date: string) => call<{ date: string; services: { id: number; service: string; name: string; departure_time: string; free_seats: number }[] }>("GET", `/api/admin/bookings/${encodeURIComponent(pnr)}/shift-options?date=${date}`),
+  bookingShiftSeats: (pnr: string, scheduleId: number) => call<{ passengers: { seat: string; name: string }[]; seats: { seat: string; type: string; deck: string; status: string }[] }>("GET", `/api/admin/bookings/${encodeURIComponent(pnr)}/shift-seats?schedule_id=${scheduleId}`),
+  bookingShift: (pnr: string, scheduleId: number, seatMap: Record<string, string>) => call<{ success: boolean; schedule_id: number }>("POST", `/api/admin/bookings/${encodeURIComponent(pnr)}/shift-to`, { scheduleId, seatMap }),
+  tripNotify: (tripId: number, body: { template: string; pnrs: string[]; text?: string }) => call<{ success: boolean; recorded: number }>("POST", `/api/admin/trips/${tripId}/notify`, body),
   status: () => call<RedBusStatus>("GET", `${rb}/status`),
   outbox: (status?: string) => call<OutboxRow[]>("GET", `${rb}/outbox${status ? `?status=${status}` : ""}`),
   attempts: (id: number) => call<Attempt[]>("GET", `${rb}/outbox/${id}/attempts`),

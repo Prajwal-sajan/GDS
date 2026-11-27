@@ -41,6 +41,7 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
     public DbSet<OutboxMessage> Outbox => Set<OutboxMessage>();
     public DbSet<OutboxAttempt> OutboxAttempts => Set<OutboxAttempt>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<BookingComment> BookingComments => Set<BookingComment>();
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
     public DbSet<Staff> Staff => Set<Staff>();
     public DbSet<TripAssignment> TripAssignments => Set<TripAssignment>();
@@ -195,6 +196,7 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
         });
         b.Entity<OutboxAttempt>(e => e.HasIndex(x => x.OutboxMessageId));
         b.Entity<AuditLog>(e => e.HasIndex(x => new { x.TenantId, x.Entity, x.EntityId }));
+        b.Entity<BookingComment>(e => { e.HasIndex(x => x.BookingId); e.Property(x => x.Text).HasMaxLength(1000); e.Property(x => x.By).HasMaxLength(120); });
 
         foreach (var et in b.Model.GetEntityTypes())
         {

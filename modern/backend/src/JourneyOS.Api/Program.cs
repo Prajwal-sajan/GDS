@@ -183,6 +183,7 @@ JourneyOS.Api.Admin.ScheduleManageEndpoints.MapScheduleManage(app);
 JourneyOS.Api.Admin.TripOpsEndpoints.MapTripOps(app);
 JourneyOS.Api.Admin.TripSheetEndpoints.MapTripSheets(app);
 JourneyOS.Api.Admin.CrmBookingEndpoints.MapCrmBooking(app);
+JourneyOS.Api.Admin.BookingActionsEndpoints.MapBookingActions(app);
 JourneyOS.Api.Admin.RouteEndpoints.MapRouteList(app);
 JourneyOS.Api.Admin.FleetEndpoints.MapFleetLists(app);
 JourneyOS.Api.Admin.PayrollEndpoints.MapPayroll(app);

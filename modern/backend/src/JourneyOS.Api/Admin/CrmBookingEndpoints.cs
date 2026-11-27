@@ -94,8 +94,8 @@ public static class CrmBookingEndpoints
                     from = bp?.Name, to = dp?.Name,
                     boarding = bp is null ? null : new { bp.Name, time = bp.Time.ToString("HH:mm"), bp.Day },
                     dropping = dp is null ? null : new { dp.Name, time = dp.Time.ToString("HH:mm"), dp.Day },
-                    contact = new { name = primary?.Name, phone = Mask(b.ContactMobile, see), email = b.ContactEmail ?? "" },
-                    comments = Array.Empty<object>(),
+                    contact = new { name = b.ContactName ?? primary?.Name, phone = Mask(b.ContactMobile, see), email = b.ContactEmail ?? "" },
+                    comments = await db.BookingComments.AsNoTracking().Where(c => c.BookingId == b.Id).OrderBy(c => c.At).Select(c => new { text = c.Text, by = c.By, at = c.At }).ToListAsync(),
                 },
                 map = new { coach = route.CoachTemplate is null ? null : new { route.CoachTemplate.Id, route.CoachTemplate.Name, capacity = seats.Count }, decks },
             });
