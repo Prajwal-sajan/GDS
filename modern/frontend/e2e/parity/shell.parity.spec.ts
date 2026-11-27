@@ -63,8 +63,10 @@ test("shell parity: language menu open", async ({ browser, baseURL }) => {
   expect.soft(r.diffRatio).toBeLessThanOrEqual(SHELL_TOLERANCE);
 });
 
-/** Full-page capture of every legacy view vs its React route — REPORT ONLY (feeds VISUAL_PARITY_REPORT.md; no pass/fail claim). */
-const views: { id: string; hash: string }[] = JSON.parse(fs.readFileSync(path.join(REPO, "docs/modernization/qa/legacy/views.json"), "utf8")).views;
+/** Full-page capture of every legacy view vs its React route — REPORT ONLY (feeds VISUAL_PARITY_REPORT.md; no pass/fail claim).
+ *  48 views × 2 apps is slow, so it only runs when explicitly requested: $env:PARITY_CAPTURE="1". */
+const views: { id: string; hash: string }[] = process.env.PARITY_CAPTURE
+  ? JSON.parse(fs.readFileSync(path.join(REPO, "docs/modernization/qa/legacy/views.json"), "utf8")).views : [];
 for (const v of views.filter((x) => !x.hash.includes(":id"))) {
   test(`page capture ${v.id} ${v.hash}`, async ({ browser, baseURL }) => {
     const L = await legacyPage(browser), R = await reactPage(browser, baseURL!);
