@@ -747,6 +747,66 @@ public static class SettingsEndpoints
             return J(new JsonObject { ["success"] = true });
         });
 
+        // ---- Daily Ops → OTA Ratings provider settings (legacy server/api/ota-ratings-settings-v44.js).
+        // Credentials are AES-GCM encrypted with OTA_RATINGS_CREDENTIAL_KEY and never returned. No live feed is claimed.
+        string[] otaProviders = ["redbus", "abhibus"];
+        JsonObject OtaPresent(JsonObject all, string p)
+        {
+            var row = all[p] as JsonObject;
+            return new JsonObject
+            {
+                ["provider"] = p, ["username"] = Str(row?["username"]), ["password_saved"] = Str(row?["password_encrypted"]).Length > 0,
+                ["configured"] = Str(row?["username"]).Length > 0 && Str(row?["password_encrypted"]).Length > 0,
+                ["last_saved_at"] = row?["updated_at"]?.DeepClone(), ["last_fetched_at"] = null, ["auto_fetch_active"] = false,
+                ["live_connector_available"] = false, ["refresh_every_hours"] = 3, ["data_source"] = "gds_records",
+            };
+        }
+        g.MapGet("/ota-ratings/settings", async (HttpContext h, GdsDbContext db) =>
+        {
+            var a = await ActorOf(db, h.User); Require(a, "settings.view");
+            var all = await Obj(db, "ota_rating_connections");
+            h.Response.Headers.CacheControl = "private, no-store";
+            return J(new JsonObject { ["providers"] = new JsonObject(otaProviders.Select(p => KeyValuePair.Create(p, (JsonNode?)OtaPresent(all, p)))), ["refresh_every_hours"] = 3, ["live_connector_available"] = false });
+        });
+        g.MapPut("/ota-ratings/settings/{provider}", async (string provider, HttpContext h, GdsDbContext db, IConfiguration c, JsonObject? body) =>
+        {
+            var a = await ActorOf(db, h.User); Require(a, "settings.modify");
+            h.Response.Headers.CacheControl = "private, no-store";
+            if (!otaProviders.Contains(provider)) throw Fail("Unsupported OTA provider", 400);
+            var b = body ?? new JsonObject();
+            if (K(b["username"]) != JsonValueKind.String || Str(b["username"]).Length > 256 || Regex.IsMatch(Str(b["username"]), @"[\u0000-\u001f]")) throw Fail("Enter a valid username (up to 256 characters)", 400);
+            if (b["password"] is not null && (K(b["password"]) != JsonValueKind.String || Str(b["password"]).Length > 1024)) throw Fail("Invalid password", 400);
+            var username = Str(b["username"]).Trim(); var password = Str(b["password"]);
+            if (password.Length > 0 && username.Length == 0) throw Fail("Enter the username before saving a password", 400);
+            var all = await Obj(db, "ota_rating_connections");
+            var existing = all[provider] as JsonObject;
+            string? enc = Str(existing?["password_encrypted"]) is { Length: > 0 } prev ? prev : null;
+            if (password.Length > 0)
+            {
+                var raw = (c["OTA_RATINGS_CREDENTIAL_KEY"] ?? "").Trim();
+                byte[]? key = null;
+                if (Regex.IsMatch(raw, "^[a-fA-F0-9]{64}$")) key = Convert.FromHexString(raw);
+                else if (raw.Length > 0) try { key = Convert.FromBase64String(raw); } catch (FormatException) { }
+                if (key is not { Length: 32 }) throw Fail("OTA credential encryption key is not configured. Set OTA_RATINGS_CREDENTIAL_KEY to 32 random bytes (hex or base64) before saving a password.", 503);
+                enc = Encrypt(password, key);
+            }
+            all[provider] = new JsonObject
+            {
+                ["username"] = username, ["password_encrypted"] = enc, ["updated_by"] = a.Id,
+                ["created_at"] = existing?["created_at"]?.DeepClone() ?? Now(), ["updated_at"] = Now(),
+            };
+            await SetDoc(db, "ota_rating_connections", all);
+            // Never log the password or the encrypted payload.
+            SettingsAudit(db, a, "ota_ratings", provider, new { username_set = username.Length > 0, password_changed = password.Length > 0 }); await db.SaveChangesAsync();
+            return J(new JsonObject { ["success"] = true, ["settings"] = OtaPresent(all, provider), ["message"] = "OTA account settings saved; live collection is not yet connected." });
+        });
+        g.MapPost("/ota-ratings/refresh/{provider}", async (string provider, HttpContext h, GdsDbContext db) =>
+        {
+            var a = await ActorOf(db, h.User); Require(a, "dailyops.view");
+            if (!otaProviders.Contains(provider)) throw Fail("Unsupported OTA provider", 400);
+            return Results.Json(new { success = false, code = "OTA_CONNECTOR_NOT_AVAILABLE", message = "GDS ratings can be refreshed locally, but live OTA collection needs a permitted, verified provider connector. Saving a username and password does not activate a feed." }, statusCode: 409);
+        });
+
         // ---- WhatsApp templates (settings-complete) + Meta onboarding (v33)
         g.MapGet("/settings/whatsapp", async (HttpContext h, GdsDbContext db) =>
         {
