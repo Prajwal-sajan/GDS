@@ -556,16 +556,16 @@ function Matrix({ data, reload }: { data: TeamData; reload: () => Promise<void> 
       <h3>What each role can do</h3>
       <p className="ta26-help">Pick a role, tap an area, and choose what they can reach and whether they can make changes. Then press Save.</p>
       <div className="ta26-matrix-toolbar ta27-actions">
-        {single ? <button type="button" onClick={() => void switchMode("matrix").catch(toastError)}>‹ All roles</button>
-          : <button type="button" onClick={() => void switchMode("single", matrixFocus || "viewer").catch(toastError)}>‹ Back to one role</button>}
-        <button type="button" disabled={!manage} onClick={() => setCreating(true)}><Icon k="plus" /> New role</button>
+        {single ? <button type="button" data-all-roles="" onClick={() => void switchMode("matrix").catch(toastError)}>‹ All roles</button>
+          : <button type="button" data-one-role="" onClick={() => void switchMode("single", matrixFocus || "viewer").catch(toastError)}>‹ Back to one role</button>}
+        <button type="button" data-new-role="" disabled={!manage} onClick={() => setCreating(true)}><Icon k="plus" /> New role</button>
         {single && <label className="ta27-role-picker ui-dd-hosted"><span>Role</span>
           <NiceSelect data-nice title="Choose" value={focus.key} options={data.roles.filter((r) => r.key !== "owner" && r.key !== "admin").map((r): [string, string] => [r.key, r.name])}
             onChange={(v) => void switchMode("single", v).catch(toastError)} /></label>}
       </div>
       {creating && <NewRoleForm data={data} onCancel={() => setCreating(false)} onCreated={async (r) => { setCreating(false); await switchMode("single", r.key); }} />}
       <div className="ta26-matrix-toolbar ta27-filter-bar" hidden={creating}>
-        <input type="search" aria-label="Search permissions" placeholder="Search, e.g. cancel, routes, payouts" value={query} onChange={(e) => setQuery(e.currentTarget.value)} />
+        <input type="search" data-matrix-search="" aria-label="Search permissions" placeholder="Search, e.g. cancel, routes, payouts" value={query} onChange={(e) => setQuery(e.currentTarget.value)} />
         <div className="ta26-legend"><span>Off</span><span>Own</span><span>Branch</span><span>Company / On</span><small>· — = not possible for that role</small></div></div>
       <div className={`ta26-matrix-scroll ${single ? "ta27-single" : ""}`} tabIndex={0} aria-label="Role permissions matrix" hidden={creating}>
         <table className="ta26-matrix">
@@ -582,9 +582,9 @@ function Matrix({ data, reload }: { data: TeamData; reload: () => Promise<void> 
           })}</tbody>
         </table></div>
       <div className="ta26-matrix-foot ta27-matrix-foot" hidden={creating}>
-        <button className="ta26-primary" type="button" disabled={!dirty.length || !manage || saving} onClick={() => void save()}>Save changes</button>
+        <button className="ta26-primary" data-save-matrix="" type="button" disabled={!dirty.length || !manage || saving} onClick={() => void save()}>Save changes</button>
         <span>Limits: seat blocks (seats, hours) and cancel cut-off (hours before departure); empty = no limit.</span>
-        <span className="ta27-dirty-count" aria-live="polite">{dirty.length ? `${dirty.length} unsaved change${dirty.length === 1 ? "" : "s"}` : ""}</span></div>
+        <span className="ta27-dirty-count" data-dirty-count="" aria-live="polite">{dirty.length ? `${dirty.length} unsaved change${dirty.length === 1 ? "" : "s"}` : ""}</span></div>
       <p className="ta27-scope-note" hidden={creating}>Own / Branch access is enforced on supported booking APIs. Some other operational APIs still require endpoint-specific scope enforcement before production delegation.</p>
     </>
   );
