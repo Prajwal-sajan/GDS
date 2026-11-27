@@ -158,6 +158,11 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
   const [stopCity, setStopCity] = useState<string>();
   const [haltDays, setHaltDays] = useState(15);
   const [fares, setFares] = useState<RouteDetail["fares"]>([]);
+  const [rules, setRules] = useState<RouteDetail["seatFareRules"]>([]);
+  const [fareSel, setFareSel] = useState<Set<number>>(new Set());
+  const [fareMode, setFareMode] = useState<"fixed" | "percent">("fixed");
+  const [fareChange, setFareChange] = useState(0);
+  const [newGroup, setNewGroup] = useState({ label: "", seats: "", value: 10, kind: "amount" });
   const [expenses, setExpenses] = useState<RouteDetail["expenses"]>([]);
   const [st, setSt] = useState<Settings>();
   const [coachId, setCoachId] = useState<number>(0);
@@ -179,7 +184,7 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
   const updGen = (f: (g: Gen) => Gen) => setSt((s) => (s ? { ...s, gen: f(s.gen) } : s));
 
   const load = useCallback(async (live: () => boolean = () => true) => {
-    try { const r = await api.routeDetail(id); if (!live()) return; setRoute(r); setFares(r.fares); setExpenses(r.expenses); setSt(toSettings(r)); setCoachId(r.coachTemplateId); setVias(toVias(r)); setError(undefined); }
+    try { const r = await api.routeDetail(id); if (!live()) return; setRoute(r); setFares(r.fares); setRules(r.seatFareRules); setFareSel(new Set(r.fares.map((_, i) => i))); setExpenses(r.expenses); setSt(toSettings(r)); setCoachId(r.coachTemplateId); setVias(toVias(r)); setError(undefined); }
     catch (e) { if (live()) setError(e instanceof Error ? e.message : String(e)); }
   }, [id]);
   // Only the live effect applies its result: a stale response (StrictMode double effect, fast id change) must not overwrite edits in progress.
@@ -199,7 +204,7 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
     q.set("rvtab", t); window.history.replaceState(null, "", `#/gds/routes/${id}?${q.toString()}`);
   };
   const viasDirty = !!route && JSON.stringify(vias.map(({ key: _k, ...v }) => v)) !== JSON.stringify(toVias(route).map(({ key: _k, ...v }) => v));
-  const dirty = !!route && (JSON.stringify(fares) !== JSON.stringify(route.fares) || JSON.stringify(expenses) !== JSON.stringify(route.expenses) || JSON.stringify(st) !== JSON.stringify(toSettings(route))
+  const dirty = !!route && (JSON.stringify(fares) !== JSON.stringify(route.fares) || JSON.stringify(rules) !== JSON.stringify(route.seatFareRules) || JSON.stringify(expenses) !== JSON.stringify(route.expenses) || JSON.stringify(st) !== JSON.stringify(toSettings(route))
     || coachId !== route.coachTemplateId || viasDirty);
   const cancel = async () => { if (dirty && !(await confirmDialog("Discard unsaved changes?", { ok: "Discard", danger: true }))) return; window.location.hash = "#/gds/routes"; };
   const save = async () => {
@@ -252,6 +257,8 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
       } else if (tab === "fares") {
         if (fares.some((f) => [f.seater, f.sleeperLower, f.sleeperUpper].some((v) => !(v >= 0)))) return toast("Fares must be zero or more", "warn");
         await api.saveFares(id, fares.map(({ fromSequence, toSequence, seater, sleeperLower, sleeperUpper }) => ({ fromSequence, toSequence, seater, sleeperLower, sleeperUpper })));
+        if (JSON.stringify(rules) !== JSON.stringify(route.seatFareRules))
+          await api.admin(`/routes/${id}/seat-fare-rules`, "PUT", { rules });
         toast("Fares saved", "ok");
       } else if (tab === "expenses") {
         if (expenses.some((e) => !e.label.trim() || !(e.perTrip >= 0))) return toast("Every expense needs a label and an amount of zero or more", "warn");
@@ -555,25 +562,80 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
       case "pickups": return stopPanel("pickup");
       case "drops": return stopPanel("drop");
       case "breaks": return stopPanel("break");
-      case "fares": return (
+      case "fares": {
+        const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        const allOn = fares.length > 0 && fareSel.size === fares.length;
+        const shiftFares = (sign: 1 | -1 | 0) => {
+          if (!fareSel.size) return toast("Select at least one city pair", "warn");
+          if (!(fareChange >= 0)) return toast("Change must be zero or more", "warn");
+          const f = (v: number) => Math.max(0, Math.round(sign === 0 ? fareChange : fareMode === "fixed" ? v + sign * fareChange : v * (1 + (sign * fareChange) / 100)));
+          setFares((xs) => xs.map((x, i) => (fareSel.has(i) ? { ...x, seater: f(x.seater), sleeperLower: f(x.sleeperLower), sleeperUpper: f(x.sleeperUpper) } : x)));
+        };
+        const setRule = (i: number, p: Partial<RouteDetail["seatFareRules"][number]>) => setRules((xs) => xs.map((x, j) => (j === i ? { ...x, ...p } : x)));
+        const dayOn = (days: string[], d: number) => days.some((x) => x === String(d) || x.toLowerCase() === DOW[d].toLowerCase());
+        const codes = new Set((route.coach?.seats ?? []).map((s) => s.code));
+        const addGroup = () => {
+          const seats = [...new Set(newGroup.seats.split(/[\s,]+/).map((s) => s.trim().toUpperCase()).filter(Boolean))];
+          if (!seats.length) return toast("Enter seat IDs, e.g. SL1, SL2, SL3", "warn");
+          const bad = codes.size ? seats.filter((s) => !codes.has(s)) : [];
+          if (bad.length) return toast(`Unknown seat(s): ${bad.join(", ")}`, "warn");
+          if (!newGroup.value) return toast("Enter a non-zero change", "warn");
+          setRules((xs) => [...xs, { kind: newGroup.kind, label: newGroup.label.trim() || `Group ${xs.length + 1}`, seats, days: [], value: newGroup.value }]);
+          setNewGroup({ label: "", seats: "", value: 10, kind: "amount" });
+        };
+        return (
         <>
           <div className="rv-between rv-seat-pricing"><h2>Seat Pricing</h2></div>
           <p className="rv-subtext">Fares per city pair as stored for this route. Changes publish to OTAs for upcoming trips.</p>
-          <div className="rv-scroll"><table className="rv-table rv-faretable" data-testid="route-fares"><thead><tr><th>FROM</th><th>TO</th><th>SEATER ₹</th><th>SLEEPER LOWER ₹</th><th>SLEEPER UPPER ₹</th></tr></thead>
+          {!ro && <div className="rv-fare-toolbar" data-testid="fare-toolbar"><b>{fareSel.size} of {fares.length} route{fares.length === 1 ? "" : "s"}</b>
+            <Btn data-rv="set-fare-rate" title="Set every fare of the selected pairs to the change value" onClick={() => shiftFares(0)}>Set Rate</Btn>
+            <div className="rv-segment"><button type="button" className={fareMode === "fixed" ? "selected" : ""} data-rv="fare-mode:fixed" onClick={() => setFareMode("fixed")}>Fixed ₹</button><button type="button" className={fareMode === "percent" ? "selected" : ""} data-rv="fare-mode:percent" onClick={() => setFareMode("percent")}>Percent %</button></div>
+            <Btn cls="minus" data-rv="fare-minus" aria-label="Decrease selected fares" onClick={() => shiftFares(-1)}>−</Btn>
+            <label className="rv-field rv-unitfield"><span>Change</span><div className="rv-unitwrap"><b>{fareMode === "fixed" ? "₹" : ""}</b><input type="number" min={0} data-rv-field="fare_change" value={fareChange} onChange={(e) => setFareChange(e.currentTarget.valueAsNumber || 0)} /><b>{fareMode === "percent" ? "%" : ""}</b></div></label>
+            <Btn cls="plus" data-rv="fare-plus" aria-label="Increase selected fares" onClick={() => shiftFares(1)}>+</Btn>
+          </div>}
+          <div className="rv-scroll"><table className="rv-table rv-faretable" data-testid="route-fares"><thead><tr>
+            <th><input type="checkbox" aria-label="Select all fare rows" data-rv-check-all checked={allOn} disabled={ro} onChange={() => setFareSel(allOn ? new Set() : new Set(fares.map((_, i) => i)))} /></th>
+            <th>FROM</th><th>TO</th><th>SEATER ₹</th><th>SLEEPER LOWER ₹</th><th>SLEEPER UPPER ₹</th></tr></thead>
             <tbody>{fares.map((f, i) => (
-              <tr key={`${f.fromSequence}-${f.toSequence}`}><td>{f.from}</td><td>{f.to}</td>
+              <tr key={`${f.fromSequence}-${f.toSequence}`}>
+                <td><input type="checkbox" aria-label={`Select ${f.from} to ${f.to}`} checked={fareSel.has(i)} disabled={ro} onChange={() => setFareSel((s) => { const n = new Set(s); if (n.has(i)) n.delete(i); else n.add(i); return n; })} /></td>
+                <td>{f.from}</td><td>{f.to}</td>
                 {(["seater", "sleeperLower", "sleeperUpper"] as const).map((k) => (
                   <td key={k}><input className="rv-dayfare" type="number" min={0} step={1} aria-label={`${f.from} to ${f.to} ${k}`} value={f[k]} disabled={ro}
                     onChange={(e) => { const v = e.currentTarget.valueAsNumber; setFares((xs) => xs.map((x, j) => (j === i ? { ...x, [k]: v } : x))); }} /></td>
                 ))}</tr>
             ))}</tbody></table></div>
           <Region title={<><I k="tag" size={17} /> Fare rules</>} cls="rv-fare-rules">
-            <div className="rv-rulecards">{route.seatFareRules.length ? route.seatFareRules.map((x, i) => (
-              <div key={i} className="rv-rulecard"><span className="rv-chip ok">{x.value < 0 ? "−" : "+"}{x.kind === "percent" ? "" : "₹"}{Math.abs(x.value)}{x.kind === "percent" ? "%" : ""}</span><b>{x.label || `Rule ${i + 1}`}</b><small>{x.seats.length} seats · {x.days.length ? x.days.join(", ") : "Every day"}</small></div>
-            )) : <p className="rv-help">No fare rules.</p>}</div>
+            <p>Charge more for popular seats and less for the ones passengers avoid. A rule changes those seats on every trip, pair and channel of this route, on top of the fare above. Rules stack: percentage changes first, then fixed ₹ adjustments.</p>
+            <div className="rv-scroll"><table className="rv-table rv-faretable rf42-faretable" data-testid="fare-groups"><thead><tr><th>NAME</th><th>SEAT IDS</th><th>− / +</th><th>CHANGE</th>{DOW.map((d) => <th key={d}>{d.toUpperCase()}</th>)}<th>ACTIONS</th></tr></thead>
+              <tbody>{rules.map((x, i) => (
+                <tr key={i} data-rf42-group={i}>
+                  <td><input aria-label={`Group ${i + 1} name`} value={x.label} disabled={ro} onChange={(e) => setRule(i, { label: e.currentTarget.value })} /></td>
+                  <td><div className="rv-seat-ids">{x.seats.map((s) => <span key={s} className="rv-chip seat">{s}</span>)}</div></td>
+                  <td><div className="rf42-adjust"><button type="button" className="rv-smallminus" disabled={ro} data-rv={`group-adjust:${i}:-1`} title="Decrease fares" onClick={() => setRule(i, { value: x.value - (x.kind === "percent" ? 1 : 10) })}>−</button><button type="button" className="rv-smallplus" disabled={ro} data-rv={`group-adjust:${i}:1`} title="Increase fares" onClick={() => setRule(i, { value: x.value + (x.kind === "percent" ? 1 : 10) })}>+</button></div></td>
+                  <td><input className="rv-dayfare" type="number" aria-label={`${x.label} change`} value={x.value} disabled={ro} onChange={(e) => setRule(i, { value: e.currentTarget.valueAsNumber || 0 })} />
+                    <select aria-label={`${x.label} kind`} value={x.kind} disabled={ro} onChange={(e) => setRule(i, { kind: e.currentTarget.value })}><option value="amount">₹</option><option value="percent">%</option></select></td>
+                  {DOW.map((d, j) => <td key={d}><input type="checkbox" aria-label={`${x.label} ${d}`} title={x.days.length ? undefined : "Every day"} checked={!x.days.length || dayOn(x.days, j)} disabled={ro}
+                    onChange={() => { const cur = x.days.length ? DOW.map((_, k) => k).filter((k) => dayOn(x.days, k)) : DOW.map((_, k) => k); const next = cur.includes(j) ? cur.filter((k) => k !== j) : [...cur, j].sort();
+                      if (!next.length) return toast("Keep at least one day — remove the group instead", "warn"); setRule(i, { days: next.length === 7 ? [] : next.map(String) }); }} /></td>)}
+                  <td>{!ro && <Btn cls="icon danger" data-rv={`group-remove:${i}`} aria-label={`Remove ${x.label}`} onClick={() => setRules((xs) => xs.filter((_, j) => j !== i))}><I k="trash" size={18} /></Btn>}</td>
+                </tr>
+              ))}
+              {!rules.length && <tr><td colSpan={12} className="rv-help">No fare rules.</td></tr>}
+              {!ro && <tr className="rv-fare-auto">
+                <td><input aria-label="New group name" placeholder="Name" value={newGroup.label} onChange={(e) => setNewGroup((g) => ({ ...g, label: e.currentTarget.value }))} /></td>
+                <td><input data-rv-auto-seat aria-label="New group seat IDs" placeholder="e.g. SL1, SL2, SL3" value={newGroup.seats} onChange={(e) => setNewGroup((g) => ({ ...g, seats: e.currentTarget.value }))} onKeyDown={(e) => { if (e.key === "Enter") addGroup(); }} /></td>
+                <td></td>
+                <td><input className="rv-dayfare" type="number" aria-label="New group change" value={newGroup.value} onChange={(e) => setNewGroup((g) => ({ ...g, value: e.currentTarget.valueAsNumber || 0 }))} />
+                  <select aria-label="New group kind" value={newGroup.kind} onChange={(e) => setNewGroup((g) => ({ ...g, kind: e.currentTarget.value }))}><option value="amount">₹</option><option value="percent">%</option></select></td>
+                <td colSpan={7} className="rv-help">Every day (untick days after adding)</td>
+                <td><Btn cls="primary" data-rv="group-add" onClick={addGroup}>Add</Btn></td>
+              </tr>}</tbody></table></div>
           </Region>
         </>
-      );
+        );
+      }
       case "block": {
         const blocked = new Map<string, string>(); route.seatBlocks.forEach((b) => { if (b.id !== blk.id) b.seats.forEach((s) => blocked.set(s, b.reason)); });
         const fmtD = (d: string | null) => (d ? new Date(d + "T00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "");

@@ -20,6 +20,39 @@ public static class RouteEndpoints
     {
         var g = app.MapGroup("/api/admin").RequireAuthorization().WithTags("Routes");
 
+        // Legacy route fare groups / seat_fare_rules (routes-screenshot-v5 fares()): per-seat ± changes with optional weekdays,
+        // applied on top of the city-pair fare for every trip of the route (FareCalculator).
+        g.MapPut("/routes/{id:long}/seat-fare-rules", async (long id, System.Text.Json.Nodes.JsonObject body, GdsDbContext db, InventoryService inv, HttpContext h) =>
+        {
+            var route = await db.Routes.Include(r => r.SeatFareRules).Include(r => r.CoachTemplate).ThenInclude(c => c!.Seats).FirstOrDefaultAsync(r => r.Id == id)
+                ?? throw new GdsException("ROUTE_NOT_FOUND", "Route not found", 404);
+            if (body["rules"] is not System.Text.Json.Nodes.JsonArray arr || arr.Count > 200) throw new GdsException("VALIDATION", "rules must be a list");
+            var codes = route.CoachTemplate?.Seats.Select(s => s.Code).ToHashSet() ?? [];
+            var next = new List<SeatFareRule>();
+            foreach (var x in arr.OfType<System.Text.Json.Nodes.JsonObject>())
+            {
+                var seats = (x["seats"] as System.Text.Json.Nodes.JsonArray ?? []).Select(s => s?.ToString().Trim().ToUpperInvariant() ?? "").Where(s => s.Length > 0).Distinct().ToArray();
+                var unknown = seats.Where(s => !codes.Contains(s)).ToList();
+                if (unknown.Count > 0) throw new GdsException("VALIDATION", "Unknown seat(s): " + string.Join(", ", unknown.Take(10)));
+                var days = (x["days"] as System.Text.Json.Nodes.JsonArray ?? []).Select(d => d?.ToString() ?? "").Where(d => d.Length > 0).Distinct().ToArray();
+                var kind = x["kind"]?.ToString() == "percent" ? "percent" : "amount";
+                if (!decimal.TryParse(x["value"]?.ToString(), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var value)) value = 0;
+                if (kind == "percent" && Math.Abs(value) > 100) throw new GdsException("VALIDATION", "Percent change must be between -100 and 100");
+                if (Math.Abs(value) > 100000) throw new GdsException("VALIDATION", "Fare change is too large");
+                var label = (x["label"]?.ToString() ?? "").Trim(); if (label.Length > 80) label = label[..80];
+                if (seats.Length > 0 && value != 0) next.Add(new SeatFareRule { RouteId = id, Kind = kind, Label = label, Seats = seats, Days = days, Value = value });
+            }
+            var before = route.SeatFareRules.Select(s => new { s.Kind, s.Label, s.Seats, s.Days, s.Value }).ToList();
+            db.SeatFareRules.RemoveRange(route.SeatFareRules);
+            db.SeatFareRules.AddRange(next);
+            db.AuditLogs.Add(new AuditLog { TenantId = db.CurrentTenantId, Actor = h.User.Identity?.Name ?? "system", Action = "ROUTE_SEAT_FARE_RULES", Entity = "route", EntityId = id.ToString(),
+                DataJson = System.Text.Json.JsonSerializer.Serialize(new { before, after = next.Select(s => new { s.Kind, s.Label, s.Seats, s.Days, s.Value }) }), At = DateTime.UtcNow });
+            await db.SaveChangesAsync();
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            foreach (var t in await db.Trips.Where(t => t.RouteId == id && t.TravelDate >= today).Select(t => t.Id).ToListAsync()) await inv.InvalidateTripAsync(t);
+            return Results.Ok(new { success = true, rules = next.Count });
+        }).RequireAuthorization(Policies.Operations);
+
         g.MapGet("/route-list", async (GdsDbContext db) =>
         {
             var routes = await db.Routes.AsNoTracking().AsSplitQuery()
