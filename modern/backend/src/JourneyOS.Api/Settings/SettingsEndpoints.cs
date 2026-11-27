@@ -30,7 +30,7 @@ public static class SettingsEndpoints
     private static void SettingsAudit(GdsDbContext db, Actor a, string entity, string id, object? data) =>
         db.AuditLogs.Add(new AuditLog { TenantId = db.CurrentTenantId, Actor = a.Name, Action = "settings", Entity = entity, EntityId = id, DataJson = data is null ? null : JsonSerializer.Serialize(data), At = DateTime.UtcNow });
 
-    private static async Task<JsonObject> Obj(GdsDbContext db, string key) => await Doc(db, key) as JsonObject ?? new JsonObject();
+    internal static async Task<JsonObject> Obj(GdsDbContext db, string key) => await Doc(db, key) as JsonObject ?? new JsonObject();
     private static async Task<JsonArray> Arr(GdsDbContext db, string key) => await Doc(db, key) as JsonArray ?? new JsonArray();
     private static long NextId(JsonArray a) => a.OfType<JsonObject>().Select(x => (long?)Number(x["id"]) ?? 0).DefaultIfEmpty(0).Max() + 1;
     private static JsonObject? ById(JsonArray a, string id) => a.OfType<JsonObject>().FirstOrDefault(x => Str(x["id"]) == id);

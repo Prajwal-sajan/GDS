@@ -23,6 +23,20 @@ public static partial class BookingActionsEndpoints
 {
     [GeneratedRegex(@"^[^\s@]+@[^\s@]+\.[^\s@]+$")] private static partial Regex EmailRx();
     private static GdsException Bad(string m, int status = 400) => new(status switch { 404 => "BOOKING_NOT_FOUND", 409 => "CONFLICT", _ => "VALIDATION" }, m, status);
+    private static readonly string[] DefaultTerms =
+    [
+        "Assigned vehicle, driver, and tracking details will be shared before boarding when available.",
+        "Passengers should reach the boarding point 10-15 minutes before scheduled departure. Late arrivals may result in forfeiture of the ticket.",
+        "Carry a valid government-issued photo ID (Aadhaar Card, Driving Licence, Passport, etc.) while travelling.",
+        "Luggage allowance: 1 handbag and 1 check-in bag (up to 20 kg) per passenger, unless the operator specifies otherwise. Additional luggage may incur charges.",
+        "No-show policy: refunds and modifications depend on the operator cancellation conditions.",
+        "The operator may refuse boarding to intoxicated passengers or those causing a disturbance, subject to applicable law.",
+        "Keep belongings secure. Contact the operator regarding loss, damage or theft during the journey.",
+        "For operator cancellation or breakdown, request the applicable refund or alternative arrangement.",
+        "Smoking, alcohol consumption and prohibited items are not permitted on the bus.",
+        "Follow the safety instructions given by the driver and conductor.",
+        "Any dispute or liability is governed by the applicable operator terms and law.",
+    ];
     private static string Actor(HttpContext h) => h.User.Identity?.Name ?? "system";
     private static void Audit(GdsDbContext db, string actor, string op, string pnr, object data) =>
         db.AuditLogs.Add(new AuditLog { TenantId = db.CurrentTenantId, Actor = actor, Action = op.ToUpperInvariant(), Entity = "booking", EntityId = pnr,
@@ -73,7 +87,51 @@ public static partial class BookingActionsEndpoints
             });
         }).RequireAuthorization(Policies.Operations);
 
-        // ------------------------------------------------ ticket edit (legacy PUT /bookings/:pnr)
+        // ------------------------------------------------ v41 branded ticket extras (legacy GET /bookings/:pnr/ticket/v41: operator + stage details)
+        g.MapGet("/{pnr}/ticket/v41", async (string pnr, GdsDbContext db, InventoryService inv) =>
+        {
+            var b = await Need(db, pnr);
+            var trip = await db.Trips.AsNoTracking().FirstAsync(t => t.Id == b.TripId);
+            var route = await inv.LoadRouteAsync(trip.RouteId);
+            var board = route.Stages.FirstOrDefault(s => s.Id == b.BoardingStageId);
+            var drop = route.Stages.FirstOrDefault(s => s.Id == b.DroppingStageId);
+            if (board is null || drop is null) throw Bad("Ticket boarding/drop points have not been configured", 409);
+            var cityIds = new[] { board.CityId, drop.CityId };
+            var cities = await db.Cities.AsNoTracking().Where(c => cityIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id, c => c.Name);
+            var cfg = await JourneyOS.Api.Settings.SettingsEndpoints.ConfigAll(db);
+            var op = await JourneyOS.Api.Settings.SettingsEndpoints.Obj(db, "operator");
+            var biz = (System.Text.Json.Nodes.JsonObject)cfg["business"]!; var web = (System.Text.Json.Nodes.JsonObject)cfg["website"]!;
+            static string S(System.Text.Json.Nodes.JsonNode? n) => n is System.Text.Json.Nodes.JsonValue v && v.TryGetValue<string>(out var s) ? s.Trim() : "";
+            string First(params System.Text.Json.Nodes.JsonNode?[] n) => n.Select(S).FirstOrDefault(x => x.Length > 0) ?? "";
+            var phone = First(web["helpline"], op["helpline_number"], op["customer_central_number"]);
+            var alt = First(web["whatsapp_number"], op["customer_central_number"]);
+            DateTime At(RouteStage s) => trip.TravelDate.AddDays(s.Day - 1).ToDateTime(s.Time);
+            var from = At(board); var to = At(drop);
+            var reportingMin = int.TryParse(S(op["reporting_minutes"]), out var rm) ? rm : 12;
+            string F(DateTime d) => d.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture);
+            string? Maps(RouteStage s) => s.Lat is { } la && s.Lng is { } ln ? $"https://www.google.com/maps/search/?api=1&query={la.ToString(CultureInfo.InvariantCulture)},{ln.ToString(CultureInfo.InvariantCulture)}" : null;
+            object Stage(RouteStage s, bool boarding) => new
+            {
+                id = s.Id, name = s.Name, city = cities.GetValueOrDefault(s.CityId) ?? "", address = s.Address ?? "", instructions = s.Landmark ?? s.MetroDescription ?? "",
+                time = F(At(s)), reporting = boarding ? F(At(s).AddMinutes(-Math.Max(0, reportingMin))) : null, contact = s.ContactNumber ?? (alt.Length > 0 ? alt : phone), maps_url = Maps(s),
+            };
+            var terms = op["ticket_terms"] is System.Text.Json.Nodes.JsonArray ta && ta.Count > 0 ? ta.Select(S).Where(x => x.Length > 0).Take(25).ToArray() : DefaultTerms;
+            var name = First(biz["operator_name"], op["operator_name"], op["app_name"]);
+            return Results.Ok(new
+            {
+                @operator = new
+                {
+                    name = name.Length > 0 ? name : "Bus Operator", legal_name = First(biz["gst_registration_name"], web["company_legal_name"], biz["operator_name"]),
+                    phone, alternate_phone = alt, email = First(biz["support_email"], web["email"]), gstin = S(biz["gst_number"]),
+                    address = First(web["address_lines"], op["registered_address"], op["office_address"], op["address"]),
+                    website = First(op["website_url"], op["website"]), tagline = First(web["tagline"], op["tagline"]) is { Length: > 0 } t ? t : "Your Journey, Our Commitment",
+                },
+                boarding = Stage(board, true), dropping = Stage(drop, false),
+                journey_minutes = Math.Max(0, (int)(to - from).TotalMinutes),
+                cancellation_policy = First(op["ticket_cancellation_policy"]) is { Length: > 0 } cp ? cp : "Cancellation charges vary by route and service. The exact charge for this ticket is shown before a cancellation is confirmed.",
+                terms,
+            });
+        }).RequireAuthorization(Policies.Operations);
         g.MapPut("/{pnr}", async (string pnr, BookingEditInput i, GdsDbContext db, InventoryService inv, HttpContext h) =>
         {
             var b = await Need(db, pnr, track: true);

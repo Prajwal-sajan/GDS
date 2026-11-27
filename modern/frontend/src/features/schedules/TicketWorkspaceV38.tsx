@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api, type BookingStop, type CrmBooking } from "../../api";
 import { confirmDialog, infoDialog, promptDialog, toast, toastError } from "../../components/ui/feedback";
 import { can } from "../settings/legacy";
-import { printBooking } from "../crm/BookingOverlay";
+import { TicketPrintV41, invoiceNotice41 } from "./TicketPrintV41";
 
 // React port of legacy public/js/booking-ticket-v38.js: integrated PNR ticket workspace shown in the
 // Schedule → Bookings right panel (view / edit / shift modes, comments, notify, cancel, history, print).
@@ -42,6 +42,7 @@ export function TicketWorkspaceV38({ pnr, seat, tripId, onClose, onChanged }: { 
   const [stopOpen, setStopOpen] = useState<"" | "pickup" | "drop">("");
   const [stopQ, setStopQ] = useState("");
   const [sh, setSh] = useState<Shift>();
+  const [print41, setPrint41] = useState(false);
   const reload = () => api.crmBooking(pnr).then((r) => { setB(r.booking); setErr(""); }).catch((e) => setErr((e as Error).message));
   useEffect(() => { setB(undefined); setMode("view"); setNotifyOpen(false); setCommentOpen(false); void reload(); }, [pnr]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -170,8 +171,8 @@ export function TicketWorkspaceV38({ pnr, seat, tripId, onClose, onChanged }: { 
 
   const toolbar = <div className="sx38-ticket-toolbar">
     <Btn label="Update Ticket" n="edit" cls="primary" disabled={!canEdit} onClick={startEdit} />
-    <Btn label="Print Ticket" n="print" onClick={() => printBooking(b, false)} />
-    <Btn label="Print Invoice" n="ticket" onClick={() => toast("Print invoice feature coming soon", "warn")} />
+    <Btn label="Print Ticket" n="print" onClick={() => setPrint41(true)} />
+    <Btn label="Print Invoice" n="ticket" onClick={invoiceNotice41} />
     <div className="sx38-notify-wrap"><Btn label="Notify" n="bell" onClick={() => setNotifyOpen((o) => !o)} />
       {notifyOpen && <div className="sx38-notify-dropdown" role="menu">{[["ticket_confirmation", "Ticket Confirmation"], ["bus_details", "Bus Details"], ["custom", "Custom Message"]].map(([k, l]) =>
         <button key={k} type="button" role="menuitem" data-v38="notify-send" data-template={k} onClick={() => ticketNotify(k)}>{l}</button>)}</div>}</div>
@@ -266,5 +267,6 @@ export function TicketWorkspaceV38({ pnr, seat, tripId, onClose, onChanged }: { 
       <div className="sx38-submit-row"><button type="button" onClick={() => setMode("view")}>Back</button><button type="button" className="primary" disabled={!ready} onClick={confirmShift}>Confirm Shift</button></div>
     </div></div> : null;
 
-  return <>{toolbar}{mode === "edit" ? editor : mode === "shift" ? shift : view}</>;
+  return <>{toolbar}{mode === "edit" ? editor : mode === "shift" ? shift : view}
+    {print41 && <TicketPrintV41 pnr={pnr} onClose={() => setPrint41(false)} onChanged={() => void after()} />}</>;
 }
