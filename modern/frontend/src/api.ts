@@ -110,7 +110,7 @@ export type ScheduleDetail = {
   stops: ScheduleStop[]; stages: ScheduleStage[]; history: ScheduleHistoryRow[];
   uiSettings?: ScheduleUiSettings | null;
 };
-export type ScheduleUiSettings = { via_city_enabled?: Record<string, { origin: boolean; destination: boolean }>; rates?: Record<string, number> };
+export type ScheduleUiSettings = { via_city_enabled?: Record<string, { origin: boolean; destination: boolean }>; rates?: Record<string, number>; auto_price?: boolean; min_price?: number; max_price?: number; curve?: string };
 export type CrmMapSeat = { code: string; row: number; col: number; w: number; h: number; type: string; status: string; fare: number | null; reservationCount: number; booking: { isCurrent: boolean } | null };
 export type CrmDeck = { deck: string; rows: number; cols: number; seats: CrmMapSeat[] };
 export type CrmPoint = { name: string; time: string | null; day?: number } | null;

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { api } from "../../api";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { api, type ScheduleUiSettings } from "../../api";
 import { confirmDialog, toast, toastError } from "../../components/ui/feedback";
 import { can, permissions } from "../settings/legacy";
 
@@ -33,6 +33,19 @@ export function FaresTab({ sid }: { sid: number }) {
   const [edits, setEdits] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string>();
+  const [ap, setAp] = useState<ScheduleUiSettings>({});
+  const apTimer = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => { api.scheduleDetail(sid).then((d) => setAp(d.uiSettings ?? {})).catch(() => undefined); }, [sid]);
+  const setPricing = (patch: ScheduleUiSettings) => {
+    if (!(can("schedules.fares") || can("schedules.modify"))) return toast("No permission to edit trip fares", "bad");
+    const next = { ...ap, ...patch };
+    setAp(next);
+    clearTimeout(apTimer.current);
+    apTimer.current = setTimeout(() => {
+      if ((next.min_price ?? 650) > (next.max_price ?? 4500)) return toast("Fare min/max not valid", "bad");
+      api.saveScheduleUiSettings(sid, patch.min_price !== undefined || patch.max_price !== undefined ? { min_price: next.min_price ?? 650, max_price: next.max_price ?? 4500 } : patch).catch(toastError);
+    }, 400);
+  };
   const load = () => Promise.all([api.admin<Fares>(`/schedules/${sid}/fares`), api.admin<Seat[]>(`/trips/${sid}/seats`), permissions()])
     .then(([fa, se]) => { setF(fa); setSeats(se); setEdits({}); setPair((p) => p ?? (fa.cities.length > 1 ? [fa.cities[0].sequence, fa.cities[fa.cities.length - 1].sequence] : undefined)); })
     .catch((e) => { setErr(String((e as Error)?.message ?? e)); toastError(e); });
@@ -71,12 +84,12 @@ export function FaresTab({ sid }: { sid: number }) {
     <div className="sx-fares-ui" data-sx-fares="">
       <div className="sx-pricing-top">
         <div className="sx-pricing-mode"><b><I n="spark" s={21} /> Auto Pricing</b><p>AI sets fares for this trip.</p>
-          <label className="sx-switch"><input type="checkbox" aria-disabled="true" checked={false} onChange={preview} /><span></span></label></div>
+          <label className="sx-switch"><input type="checkbox" data-sx-draft-toggle="auto_price" checked={!!ap.auto_price} onChange={(e) => setPricing({ auto_price: e.target.checked })} /><span></span></label></div>
         <div className="sx-pricing-guard"><b>PRICE GUARD RAILS</b>
-          <div>{[["Min ₹", "min_price", 650], ["Max ₹", "max_price", 4500]].map(([l, n, v]) => <label key={n} className="sx-field"><span>{l}</span><input name={String(n)} type="number" defaultValue={v} readOnly aria-disabled="true" onFocus={preview} /></label>)}</div>
+          <div>{([["Min ₹", "min_price", 650], ["Max ₹", "max_price", 4500]] as const).map(([l, n, v]) => <label key={n} className="sx-field"><span>{l}</span><input name={n} type="number" min="0" value={ap[n] ?? v} onChange={(e) => setPricing({ [n]: Math.max(0, Number(e.target.value) || 0) })} /></label>)}</div>
           <small>AI never prices a seat below Min or above Max.</small></div>
-        <div className="sx-pricing-curve"><label className="sx-field"><span>DEMAND CURVE</span><select name="curve" defaultValue="Max revenue" aria-disabled="true" onChange={preview}>{["Max revenue", "Balanced", "Max occupancy"].map((x) => <option key={x}>{x}</option>)}</select></label>
-          <small>Targets: <b>Revenue</b></small>
+        <div className="sx-pricing-curve"><label className="sx-field"><span>DEMAND CURVE</span><select name="curve" value={ap.curve ?? "Max revenue"} onChange={(e) => setPricing({ curve: e.target.value })}>{["Max revenue", "Balanced", "Max occupancy"].map((x) => <option key={x}>{x}</option>)}</select></label>
+          <small>Targets: <b>{(ap.curve ?? "Max revenue") === "Max revenue" ? "Revenue" : ap.curve}</b></small>
           <div className="sx-targets">{[["7D", "5%"], ["3D", "10%"], ["1D", "35%"], ["12H", "40%"], ["6H", "45%"], ["TRIP", "100%"]].map(([a, b]) => <div key={a}><small>{a}</small><strong>{b}</strong></div>)}</div></div>
       </div>
       <div className="sx-fare-last">Last change: <b>{f.changedAt ? fdt(f.changedAt) : "No trip override"}</b> · Fares {f.synced ? "follow route" : "custom trip prices"} · Recommended changes are not applied automatically.</div>

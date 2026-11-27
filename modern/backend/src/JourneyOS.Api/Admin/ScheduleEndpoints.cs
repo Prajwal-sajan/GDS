@@ -110,7 +110,19 @@ public static class ScheduleEndpoints
         g.MapPut("/schedules/{id:long}/ui-settings", async (long id, System.Text.Json.Nodes.JsonObject body, GdsDbContext db, HttpContext h) =>
         {
             var t = await db.Trips.FirstOrDefaultAsync(x => x.Id == id && x.DeletedAt == null) ?? throw new GdsException("SERVICE_NOT_FOUND", "Schedule not found", 404);
-            var clean = new System.Text.Json.Nodes.JsonObject();
+            var clean = (t.UiSettingsJson is null ? null : System.Text.Json.Nodes.JsonNode.Parse(t.UiSettingsJson) as System.Text.Json.Nodes.JsonObject) ?? new System.Text.Json.Nodes.JsonObject();
+            if (body["auto_price"] is { } ap) clean["auto_price"] = ap.GetValue<bool>();
+            decimal? Money(string k) => body[k] is null ? null : decimal.TryParse(body[k]!.ToString(), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var v) && v >= 0 ? v : throw new GdsException("VALIDATION", $"{k} must be a non-negative number");
+            var min = Money("min_price"); var max = Money("max_price");
+            if (min is not null) clean["min_price"] = min;
+            if (max is not null) clean["max_price"] = max;
+            if (clean["min_price"] is { } mn && clean["max_price"] is { } mx && mn.GetValue<decimal>() > mx.GetValue<decimal>()) throw new GdsException("VALIDATION", "Fare min/max not valid");
+            if (body["curve"] is { } cv)
+            {
+                var c = cv.GetValue<string>();
+                if (c is not ("Max revenue" or "Balanced" or "Max occupancy")) throw new GdsException("VALIDATION", "Unknown demand curve");
+                clean["curve"] = c;
+            }
             if (body["via_city_enabled"] is System.Text.Json.Nodes.JsonObject via)
             {
                 var o = new System.Text.Json.Nodes.JsonObject();
