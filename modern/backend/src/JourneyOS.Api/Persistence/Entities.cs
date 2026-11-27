@@ -224,6 +224,10 @@ public sealed class Trip : ITenantOwned
     public string? UpdateSettingsJson { get; set; }
     /// <summary>Legacy schedule.ui_settings (schedule overlay draft: via_city_enabled, sub-route fare % rates), jsonb. Preferences only.</summary>
     public string? UiSettingsJson { get; set; }
+    /// <summary>Legacy schedule.stage_overrides: {stageId: {name,time,day,landmark,contact_number,lat,lng}} for this trip only (jsonb).</summary>
+    public string? StageOverridesJson { get; set; }
+    /// <summary>Legacy schedule.seat_fare_rules: [{name,seats,days(0-6),kind(flat|percent),value}] applied on top of route rules (jsonb).</summary>
+    public string? SeatFareRulesJson { get; set; }
 }
 
 /// <summary>One per-trip segment fare (legacy fare_override row), keyed by route stop sequence.</summary>

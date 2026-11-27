@@ -77,6 +77,7 @@ public static class ScheduleEndpoints
             // Seats (not tickets) per boarding / dropping point, excluding cancelled passengers — legacy stopTab() count.
             var live = bookings.SelectMany(b => b.Passengers.Where(p => p.Status != "CANCELLED").Select(_ => b)).ToList();
             var lastDrop = r.Stages.Where(s => s.Kind == "drop").OrderBy(s => s.Day).ThenBy(s => s.Time).LastOrDefault();
+            var ov = StageOverrides(t);
             return Results.Ok(new
             {
                 id = t.Id, routeId = r.Id, travelDate = t.TravelDate, status = t.Status, bookable = t.Bookable,
@@ -85,12 +86,16 @@ public static class ScheduleEndpoints
                 departureTime = r.DepartureTime, arrivalTime = lastDrop?.Time ?? stops.LastOrDefault()?.Time,
                 arrivalDay = lastDrop?.Day ?? stops.LastOrDefault()?.Day ?? 1,
                 uiSettings = t.UiSettingsJson is null ? (System.Text.Json.JsonElement?)null : System.Text.Json.JsonDocument.Parse(t.UiSettingsJson).RootElement.Clone(),
+                delayMinutes = t.DelayMinutes ?? 0,
+                seatFareRules = FareCalculator.TripRules(t).Select(x => new { name = x.Label, seats = x.Seats, days = x.Days.Select(int.Parse), kind = x.Kind == "percent" ? "percent" : "flat", value = x.Value }),
+                stageOverrides = ov.Keys,
                 stops = stops.Select(s => new { cityId = s.CityId, name = s.City?.Name, state = s.City?.State, day = s.Day, time = s.Time }),
-                stages = r.Stages.OrderBy(s => s.Day).ThenBy(s => s.Time).Select(s => new
+                stages = r.Stages.Select(s => Overlay(s, ov)).OrderBy(s => s.Day).ThenBy(s => s.Time).Select(s => new
                 {
                     s.Id, s.Kind, s.Name, s.Address, s.Landmark, s.ContactNumber, s.Lat, s.Lng, s.Day, s.Time, s.Prime, s.PickupType,
                     cityId = s.CityId, city = cityNames.GetValueOrDefault(s.CityId),
                     passengers = live.Count(b => (s.Kind == "pickup" ? b.BoardingStageId : b.DroppingStageId) == s.Id),
+                    overridden = ov.ContainsKey(s.Id),
                 }),
                 history = bookings.OrderByDescending(b => b.DateOfIssue).ThenByDescending(b => b.Id).Select(b =>
                 {
@@ -111,6 +116,13 @@ public static class ScheduleEndpoints
         {
             var t = await db.Trips.FirstOrDefaultAsync(x => x.Id == id && x.DeletedAt == null) ?? throw new GdsException("SERVICE_NOT_FOUND", "Schedule not found", 404);
             var clean = (t.UiSettingsJson is null ? null : System.Text.Json.Nodes.JsonNode.Parse(t.UiSettingsJson) as System.Text.Json.Nodes.JsonObject) ?? new System.Text.Json.Nodes.JsonObject();
+            if (body["added_group"] is System.Text.Json.Nodes.JsonObject ag)
+            {
+                var gname = (ag["name"]?.ToString() ?? "").Trim();
+                var gseats = (ag["seat_ids"] as System.Text.Json.Nodes.JsonArray ?? []).Select(x => x?.ToString().Trim() ?? "").Where(x => x.Length is > 0 and <= 8).Distinct().Take(80).ToList();
+                if (gname.Length == 0 || gname.Length > 60 || gseats.Count == 0) throw new GdsException("VALIDATION", "Fare group needs a name and seat IDs");
+                clean["added_group"] = new System.Text.Json.Nodes.JsonObject { ["name"] = gname, ["seat_ids"] = new System.Text.Json.Nodes.JsonArray(gseats.Select(x => (System.Text.Json.Nodes.JsonNode?)x).ToArray()) };
+            }
             if (body["auto_price"] is { } ap) clean["auto_price"] = ap.GetValue<bool>();
             decimal? Money(string k) => body[k] is null ? null : decimal.TryParse(body[k]!.ToString(), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var v) && v >= 0 ? v : throw new GdsException("VALIDATION", $"{k} must be a non-negative number");
             var min = Money("min_price"); var max = Money("max_price");
@@ -143,9 +155,105 @@ public static class ScheduleEndpoints
                 clean["rates"] = o;
             }
             t.UiSettingsJson = clean.ToJsonString();
-            db.AuditLogs.Add(new AuditLog { TenantId = db.CurrentTenantId, Actor = h.User.Identity?.Name ?? "system", Action = "SCHEDULE_UI_SETTINGS", Entity = "trip", EntityId = id.ToString(), DataJson = t.UiSettingsJson, At = DateTime.UtcNow });
+            db.AuditLogs.Add(new AuditLog { TenantId = db.CurrentTenantId, Actor = h.User.Identity?.Name ?? "system", Action = "SCHEDULE_UI_SETTINGS", Entity = "schedule", EntityId = id.ToString(), DataJson = t.UiSettingsJson, At = DateTime.UtcNow });
             await db.SaveChangesAsync();
             return Results.Ok(new { success = true });
         }).RequireAuthorization(Policies.Operations);
+
+        // Legacy PUT /schedules/:id {stage_overrides}: per-trip pickup/drop corrections; the route template is unchanged.
+        g.MapPut("/schedules/{id:long}/stage-overrides", async (long id, System.Text.Json.Nodes.JsonObject body, GdsDbContext db, InventoryService inv, HttpContext h) =>
+        {
+            var t = await db.Trips.FirstOrDefaultAsync(x => x.Id == id && x.DeletedAt == null) ?? throw new GdsException("SERVICE_NOT_FOUND", "Schedule not found", 404);
+            var ids = await db.Routes.AsNoTracking().Where(r => r.Id == t.RouteId).SelectMany(r => r.Stages.Select(s => s.Id)).ToListAsync();
+            var ov = body["overrides"] as System.Text.Json.Nodes.JsonObject ?? (body["overrides"] is null ? new System.Text.Json.Nodes.JsonObject() : throw new GdsException("VALIDATION", "stage_overrides must be an object"));
+            var clean = StageOverrides(t);
+            if (body["reset"] is System.Text.Json.Nodes.JsonArray reset)
+                foreach (var r0 in reset) if (long.TryParse(r0?.ToString(), out var rid)) clean.Remove(rid);
+            foreach (var (k, v) in ov)
+            {
+                if (!long.TryParse(k, out var sid) || !ids.Contains(sid)) throw new GdsException("VALIDATION", $"Unknown stop {k}");
+                if (v is not System.Text.Json.Nodes.JsonObject o) throw new GdsException("VALIDATION", $"Stop {k} must be an object");
+                string? S(string n, int max) { var s = o[n]?.ToString().Trim(); return string.IsNullOrEmpty(s) ? null : s.Length > max ? s[..max] : s; }
+                var time = S("time", 5);
+                if (time is not null && !System.Text.RegularExpressions.Regex.IsMatch(time, @"^\d{1,2}:\d{2}$")) throw new GdsException("VALIDATION", "Stop time must be HH:MM");
+                if (time is not null && !TimeOnly.TryParseExact(time.PadLeft(5, '0'), "HH:mm", out _)) throw new GdsException("VALIDATION", "Stop time must be HH:MM");
+                int? day = S("day", 3) is { } ds ? int.TryParse(ds, out var dv) && dv is >= 1 and <= 7 ? dv : throw new GdsException("VALIDATION", "Stop day must be between 1 and 7") : null;
+                decimal? Coord(string n, decimal lim) => S(n, 20) is { } cs ? decimal.TryParse(cs, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var c) && Math.Abs(c) <= lim ? c : throw new GdsException("VALIDATION", $"Invalid {(n == "lat" ? "latitude" : "longitude")}") : null;
+                var phone = S("contact_number", 20);
+                if (phone is not null && !System.Text.RegularExpressions.Regex.IsMatch(phone, @"^\+?[0-9 -]{6,20}$")) throw new GdsException("VALIDATION", "Enter a valid contact phone");
+                var prev = clean.GetValueOrDefault(sid);
+                clean[sid] = new StageOverride(S("name", 120) ?? prev?.Name, time?.PadLeft(5, '0') ?? prev?.Time, day ?? prev?.Day, S("landmark", 200) ?? prev?.Landmark, phone ?? prev?.ContactNumber, Coord("lat", 90) ?? prev?.Lat, Coord("lng", 180) ?? prev?.Lng);
+            }
+            var before = t.StageOverridesJson;
+            t.StageOverridesJson = clean.Count == 0 ? null : System.Text.Json.JsonSerializer.Serialize(clean.ToDictionary(x => x.Key.ToString(), x => x.Value), OverrideJson);
+            db.AuditLogs.Add(new AuditLog { TenantId = db.CurrentTenantId, Actor = h.User.Identity?.Name ?? "system", Action = "stops", Entity = "schedule", EntityId = id.ToString(), DataJson = System.Text.Json.JsonSerializer.Serialize(new { before, after = t.StageOverridesJson }), At = DateTime.UtcNow });
+            await db.SaveChangesAsync();
+            await inv.InvalidateTripAsync(id);
+            return Results.Ok(new { success = true, overridden = clean.Count });
+        }).RequireAuthorization(Policies.Operations);
+
+        // Legacy PUT /schedules/:id {seat_fare_rules}: trip-only premium/discount seat rules, priced after route rules (domain.js fareFor).
+        g.MapPut("/schedules/{id:long}/seat-fare-rules", async (long id, System.Text.Json.Nodes.JsonObject body, GdsDbContext db, InventoryService inv, HttpContext h) =>
+        {
+            var t = await db.Trips.FirstOrDefaultAsync(x => x.Id == id && x.DeletedAt == null) ?? throw new GdsException("SERVICE_NOT_FOUND", "Schedule not found", 404);
+            if (body["rules"] is not System.Text.Json.Nodes.JsonArray arr || arr.Count > 200) throw new GdsException("VALIDATION", "seat_fare_rules must be a list");
+            var seatCodes = await db.Routes.AsNoTracking().Where(r => r.Id == t.RouteId).SelectMany(r => r.CoachTemplate!.Seats.Select(s => s.Code)).ToListAsync();
+            var rules = new List<FareCalculator.TripSeatRule>();
+            foreach (var x in arr.OfType<System.Text.Json.Nodes.JsonObject>())
+            {
+                var seats = (x["seats"] as System.Text.Json.Nodes.JsonArray ?? []).Select(s => s?.ToString() ?? "").Where(s => s.Length > 0).Distinct().ToArray();
+                var unknown = seats.Where(s => !seatCodes.Contains(s)).ToList();
+                if (unknown.Count > 0) throw new GdsException("VALIDATION", "Unknown seat(s): " + string.Join(", ", unknown.Take(10)));
+                var days = (x["days"] as System.Text.Json.Nodes.JsonArray ?? []).Select(d => int.TryParse(d?.ToString(), out var n) ? n : -1).Where(d => d is >= 0 and <= 6).Distinct().ToArray();
+                var kind = x["kind"]?.ToString() == "percent" ? "percent" : "flat";
+                if (!decimal.TryParse(x["value"]?.ToString(), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var value)) value = 0;
+                if (kind == "percent" && Math.Abs(value) > 100) throw new GdsException("VALIDATION", "Percent change must be between -100 and 100");
+                if (Math.Abs(value) > 100000) throw new GdsException("VALIDATION", "Fare change is too large");
+                var name = (x["name"]?.ToString() ?? "Rule").Trim(); if (name.Length == 0) name = "Rule"; if (name.Length > 80) name = name[..80];
+                if (seats.Length > 0 && value != 0) rules.Add(new(name, seats, days, kind, value)); // legacy drops empty rules
+            }
+            var before = t.SeatFareRulesJson;
+            t.SeatFareRulesJson = rules.Count == 0 ? null : System.Text.Json.JsonSerializer.Serialize(rules, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+            db.AuditLogs.Add(new AuditLog { TenantId = db.CurrentTenantId, Actor = h.User.Identity?.Name ?? "system", Action = "fares", Entity = "schedule", EntityId = id.ToString(), DataJson = System.Text.Json.JsonSerializer.Serialize(new { before, seat_fare_rules = t.SeatFareRulesJson }), At = DateTime.UtcNow });
+            await db.SaveChangesAsync();
+            await inv.InvalidateTripAsync(id);
+            return Results.Ok(new { success = true, rules = rules.Count });
+        }).RequireAuthorization(Policies.Operations);
+
+        // Legacy GET /schedules/:id/history: edit history (section, by, changes) from the immutable audit log.
+        g.MapGet("/schedules/{id:long}/history", async (long id, GdsDbContext db, int? limit) =>
+        {
+            var key = id.ToString();
+            var rows = await db.AuditLogs.AsNoTracking().Where(a => a.Entity == "schedule" && a.EntityId == key).OrderByDescending(a => a.At).ThenByDescending(a => a.Id)
+                .Take(Math.Clamp(limit ?? 100, 1, 500)).ToListAsync();
+            return Results.Ok(new
+            {
+                history = rows.Select(a => new
+                {
+                    at = a.At, section = a.Action, by = a.Actor, name = a.Actor,
+                    changes = a.DataJson is null ? (System.Text.Json.JsonElement?)null : System.Text.Json.JsonDocument.Parse(a.DataJson).RootElement.Clone(),
+                }),
+            });
+        }).RequireAuthorization(Policies.Reports);
+    }
+
+    public sealed record StageOverride(string? Name, string? Time, int? Day, string? Landmark, string? ContactNumber, decimal? Lat, decimal? Lng);
+    static readonly System.Text.Json.JsonSerializerOptions OverrideJson = new(System.Text.Json.JsonSerializerDefaults.Web)
+    { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull };
+
+    public static Dictionary<long, StageOverride> StageOverrides(Trip t) =>
+        string.IsNullOrEmpty(t.StageOverridesJson) ? []
+        : (System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, StageOverride>>(t.StageOverridesJson, OverrideJson) ?? []).ToDictionary(x => long.Parse(x.Key), x => x.Value);
+
+    /// <summary>legacy ops.js stagesFor(): route stage with the trip's override fields applied (detached copy).</summary>
+    public static RouteStage Overlay(RouteStage s, Dictionary<long, StageOverride> ov)
+    {
+        if (!ov.TryGetValue(s.Id, out var o)) return s;
+        return new RouteStage
+        {
+            Id = s.Id, RouteId = s.RouteId, CityId = s.CityId, StopSequence = s.StopSequence, Kind = s.Kind, Prime = s.Prime, PickupType = s.PickupType, ExchangePoint = s.ExchangePoint, ExchangeTime = s.ExchangeTime, MetroDescription = s.MetroDescription, Address = s.Address,
+            Name = o.Name ?? s.Name, Landmark = o.Landmark ?? s.Landmark, ContactNumber = o.ContactNumber ?? s.ContactNumber, Lat = o.Lat ?? s.Lat, Lng = o.Lng ?? s.Lng, Day = o.Day ?? s.Day,
+            Time = o.Time is not null && TimeOnly.TryParseExact(o.Time, "HH:mm", out var tm) ? tm : s.Time,
+        };
     }
 }

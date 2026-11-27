@@ -22,6 +22,16 @@ public static class FareCalculator
         return o.Select(x => new RouteFare { RouteId = route.Id, FromSequence = x.FromSequence, ToSequence = x.ToSequence, Seater = x.Seater, SleeperLower = x.SleeperLower, SleeperUpper = x.SleeperUpper }).ToList();
     }
 
+    public sealed record TripSeatRule(string Name, string[] Seats, int[] Days, string Kind, decimal Value);
+
+    /// <summary>Legacy domain.js fareFor(): schedule.seat_fare_rules are applied after the route rules (days are 0=Sun..6=Sat).</summary>
+    public static IEnumerable<SeatFareRule> TripRules(Trip? trip)
+    {
+        if (string.IsNullOrEmpty(trip?.SeatFareRulesJson)) return [];
+        var list = System.Text.Json.JsonSerializer.Deserialize<List<TripSeatRule>>(trip.SeatFareRulesJson, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web)) ?? [];
+        return list.Select(r => new SeatFareRule { Kind = r.Kind == "percent" ? "percent" : "amount", Label = r.Name, Seats = r.Seats, Days = r.Days.Select(d => d.ToString(CultureInfo.InvariantCulture)).ToArray(), Value = r.Value });
+    }
+
     public static decimal? ListedFare(Route route, CoachSeat seat, int fromSeq, int toSeq, DateOnly travelDate, Trip? trip = null)
     {
         var f = FaresFor(route, trip).FirstOrDefault(x => x.FromSequence == fromSeq && x.ToSequence == toSeq);
@@ -35,7 +45,7 @@ public static class FareCalculator
         if (fare <= 0) fare = f.Seater;
         var dayNo = (int)travelDate.DayOfWeek;
         decimal pct = 0, fixedAmt = 0;
-        foreach (var rule in route.SeatFareRules)
+        foreach (var rule in route.SeatFareRules.Concat(TripRules(trip)))
         {
             if (!rule.Seats.Contains(seat.Code)) continue;
             if (rule.Days.Length > 0 && !rule.Days.Any(d =>

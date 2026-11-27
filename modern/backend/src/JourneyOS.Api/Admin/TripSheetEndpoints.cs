@@ -55,7 +55,9 @@ public static class TripSheetEndpoints
             // legacy "trips" = confirmed bookings for the same contact phone
             var tripsByPhone = await db.Bookings.AsNoTracking().Where(b => phones.Contains(b.ContactMobile) && b.Status != "CANCELLED")
                 .GroupBy(b => b.ContactMobile!).Select(x => new { x.Key, n = x.Count() }).ToDictionaryAsync(x => x.Key, x => x.n);
-            var stages = r.Stages.ToDictionary(s => s.Id);
+            var ov = ScheduleEndpoints.StageOverrides(t);
+            var routeStages = r.Stages.Select(s => ScheduleEndpoints.Overlay(s, ov)).ToList();
+            var stages = routeStages.ToDictionary(s => s.Id);
             object? Stage(long sid) => stages.TryGetValue(sid, out var s)
                 ? new { s.Id, s.Name, s.Time, s.Day, s.PickupType, s.ExchangePoint, s.ExchangeTime } : null;
             var cities = r.Stops.OrderBy(s => s.Sequence).ToList();
@@ -70,7 +72,7 @@ public static class TripSheetEndpoints
                 {
                     role = a.Role, staffId = a.StaffId, name = staff.GetValueOrDefault(a.StaffId!.Value)?.Name, phone = staff.GetValueOrDefault(a.StaffId!.Value)?.Phone,
                 }),
-                stops = r.Stages.OrderBy(s => s.Day).ThenBy(s => s.Time).Select(s => new
+                stops = routeStages.OrderBy(s => s.Day).ThenBy(s => s.Time).Select(s => new
                 {
                     s.Id, type = s.Kind, s.Name, s.Time, s.Day, s.Lat, s.Lng, s.PickupType, s.ExchangePoint, s.ExchangeTime,
                     arrivedAt = StopStamp(events, s.Id, "atime"), departedAt = StopStamp(events, s.Id, "dtime"),

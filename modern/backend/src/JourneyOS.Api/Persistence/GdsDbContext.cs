@@ -128,6 +128,8 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
         });
         b.Entity<Staff>(e => e.Property(x => x.ProfileJson).HasColumnType("jsonb"));
         b.Entity<Trip>(e => e.Property(x => x.UiSettingsJson).HasColumnType("jsonb"));
+        b.Entity<Trip>(e => e.Property(x => x.StageOverridesJson).HasColumnType("jsonb"));
+        b.Entity<Trip>(e => e.Property(x => x.SeatFareRulesJson).HasColumnType("jsonb"));
         b.Entity<CoachTemplate>(e => e.Property(x => x.AmenitiesJson).HasColumnType("jsonb"));
         b.Entity<Route>(e => e.Property(x => x.SettingsJson).HasColumnType("jsonb"));
         b.Entity<Trip>(e => { e.Property(x => x.TelemetryJson).HasColumnType("jsonb"); e.Property(x => x.StopEventsJson).HasColumnType("jsonb"); e.Property(x => x.UpdateSettingsJson).HasColumnType("jsonb"); e.Property(x => x.DelayReason).HasMaxLength(300); });

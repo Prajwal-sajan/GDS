@@ -3494,6 +3494,14 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("route_id");
 
+                    b.Property<string>("SeatFareRulesJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("seat_fare_rules_json");
+
+                    b.Property<string>("StageOverridesJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("stage_overrides_json");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text")

@@ -83,8 +83,11 @@ const pr = "/api/admin/payroll";
 export type ScheduleStop = { cityId: number; name: string; state: string | null; day: number; time: string };
 export type ScheduleStage = {
   id: number; kind: "pickup" | "drop"; name: string; address: string | null; landmark: string | null; contactNumber: string | null;
-  lat: number | null; lng: number | null; day: number; time: string; prime: boolean; pickupType: string | null; cityId: number; city: string; passengers: number;
+  lat: number | null; lng: number | null; day: number; time: string; prime: boolean; pickupType: string | null; cityId: number; city: string; passengers: number; overridden?: boolean;
 };
+export type TripSeatRule = { name: string; seats: string[]; days: number[]; kind: "flat" | "percent"; value: number };
+export type StageOverrideInput = { name?: string; time?: string; day?: number | string; landmark?: string; contact_number?: string; lat?: number | string; lng?: number | string };
+export type ScheduleEditRow = { at: string; section: string; by: string; name: string; changes: unknown };
 export type ScheduleHistoryRow = { pnr: string; seats: string[]; totalAmount: number; source: string; contactName: string; bookedAt: string; status: string };
 export type TripSheetRow = { id: number; serviceNumber: string; serviceName: string; status: string; registration: string | null; staff: number };
 export type TripStageRef = { id: number; name: string; time: string; day: number; pickupType?: string | null; exchangePoint?: string | null; exchangeTime?: string | null };
@@ -109,8 +112,9 @@ export type ScheduleDetail = {
   origin: string; destination: string; departureTime: string; arrivalTime: string; arrivalDay: number;
   stops: ScheduleStop[]; stages: ScheduleStage[]; history: ScheduleHistoryRow[];
   uiSettings?: ScheduleUiSettings | null;
+  delayMinutes?: number; seatFareRules?: TripSeatRule[]; stageOverrides?: number[];
 };
-export type ScheduleUiSettings = { via_city_enabled?: Record<string, { origin: boolean; destination: boolean }>; rates?: Record<string, number>; auto_price?: boolean; min_price?: number; max_price?: number; curve?: string };
+export type ScheduleUiSettings = { via_city_enabled?: Record<string, { origin: boolean; destination: boolean }>; rates?: Record<string, number>; auto_price?: boolean; min_price?: number; max_price?: number; curve?: string; added_group?: { name: string; seat_ids: string[] } };
 export type CrmMapSeat = { code: string; row: number; col: number; w: number; h: number; type: string; status: string; fare: number | null; reservationCount: number; booking: { isCurrent: boolean } | null };
 export type CrmDeck = { deck: string; rows: number; cols: number; seats: CrmMapSeat[] };
 export type CrmPoint = { name: string; time: string | null; day?: number } | null;
@@ -191,6 +195,9 @@ export const api = {
   routes: () => call<RouteRow[]>("GET", "/api/admin/routes"),
   schedules: (from: string, to: string) => call<{ schedules: ScheduleRow[] }>("GET", `/api/admin/schedules?from=${from}&to=${to}`),
   saveScheduleUiSettings: (id: number, body: ScheduleUiSettings) => call<{ success: boolean }>("PUT", `/api/admin/schedules/${id}/ui-settings`, body),
+  saveStageOverrides: (id: number, overrides: Record<string, StageOverrideInput>, reset: number[] = []) => call<{ success: boolean; overridden: number }>("PUT", `/api/admin/schedules/${id}/stage-overrides`, { overrides, reset }),
+  saveTripSeatRules: (id: number, rules: TripSeatRule[]) => call<{ success: boolean; rules: number }>("PUT", `/api/admin/schedules/${id}/seat-fare-rules`, { rules }),
+  scheduleEditHistory: (id: number) => call<{ history: ScheduleEditRow[] }>("GET", `/api/admin/schedules/${id}/history`),
   scheduleDetail: (id: number) => call<ScheduleDetail>("GET", `/api/admin/schedule-detail/${id}`),
   tripSheets: (date: string) => call<{ trips: TripSheetRow[] }>("GET", `/api/admin/trip-sheets?date=${date}`),
   tripSheet: (id: number | string) => call<TripSheet>("GET", `/api/admin/trip-sheets/${id}`),
