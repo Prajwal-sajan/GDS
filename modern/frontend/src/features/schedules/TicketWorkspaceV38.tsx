@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type BookingStop, type CrmBooking } from "../../api";
 import { confirmDialog, infoDialog, promptDialog, toast, toastError } from "../../components/ui/feedback";
-import { can } from "../settings/legacy";
+import { can } from "../../auth/permissions";
 import { TicketPrintV41, invoiceNotice41 } from "./TicketPrintV41";
 
 // React port of legacy public/js/booking-ticket-v38.js: integrated PNR ticket workspace shown in the

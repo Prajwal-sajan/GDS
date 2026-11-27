@@ -19,14 +19,8 @@ export const G = {
   confirm: (m: string, o?: { ok?: string; danger?: boolean }) => confirmDialog(m, o),
 };
 
-let perms: Promise<string[]> | null = null;
-let permsNow: string[] | null = null;
-/** legacy req.user.permissions; cached for the session (cleared on sign-out via resetPermissions). */
-export function permissions() {
-  return (perms ??= api.admin<{ permissions: string[] }>("/auth/permissions").then((r) => (permsNow = r.permissions)).catch(() => (permsNow = [])));
-}
-export const can = (p: string) => !permsNow || permsNow.includes(p);
-export function resetPermissions() { perms = null; permsNow = null; }
+import { permissions } from "../../auth/permissions";
+export { can, permissions, resetPermissions } from "../../auth/permissions";
 
 /** Mounts a legacy screen like the legacy router (main.js route()): a fresh box div inside main[data-content]. */
 export function useLegacyPage(mount: (el: HTMLElement, alive: () => boolean) => void | (() => void) | Promise<void>, deps: unknown[]) {

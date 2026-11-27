@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { api, type BookingStop, type CrmBooking } from "../../api";
 import { toast, toastError } from "../../components/ui/feedback";
-import { can } from "../settings/legacy";
+import { can } from "../../auth/permissions";
 
 // React port of legacy public/js/ticket-print-v41.js: operator-branded passenger ticket (Ticket / Update tabs).
 // Data: GET /crm/booking/{pnr} (passengers, fare, status) + GET /bookings/{pnr}/ticket/v41 (operator, stage details, terms).

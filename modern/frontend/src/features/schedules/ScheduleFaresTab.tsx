@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, type ScheduleUiSettings, type TripSeatRule } from "../../api";
 import { confirmDialog, promptDialog, toast, toastError } from "../../components/ui/feedback";
-import { can, permissions } from "../settings/legacy";
+import { can, permissions } from "../../auth/permissions";
 
 // Schedule overlay → Fares tab. React port of legacy schedules-screenshot-v6.js faresTab()/saveFare()/sxSaveRule: same
 // classes and layout. Base seat-group fares (SS / SLB / DUB) for the chosen city pair save as a per-trip override via

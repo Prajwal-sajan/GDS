@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api, type Me, type ScheduleDetail, type ScheduleRow, type TripSheet, type TripSheetPassenger } from "../../api";
 import { BookingOverlay } from "../crm/BookingOverlay";
 import { confirmDialog, toast, toastError } from "../../components/ui/feedback";
-import { can, permissions } from "../settings/legacy";
+import { can, permissions } from "../../auth/permissions";
 import { TicketWorkspaceV38 } from "./TicketWorkspaceV38";
 import { ImportPickupChart, ImportedChartModal, type ImportedChart } from "./PickupChartImport";
 import { LocationPopup, NotifyMenu, SeatDiagram48, SummaryPopup, TimingsPopup, delay48, fetchPosition, notify48, validGps, type LayoutSeat, type SeatLayout, type SummaryKind } from "./ScheduleManageV48";

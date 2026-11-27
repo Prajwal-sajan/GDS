@@ -80,7 +80,7 @@ export default function App() {
  * explicit "not yet migrated" state — never a fake page.
  */
 import { AboutPage } from "./features/settings/AboutPage";
-import { resetPermissions } from "./features/settings/legacy";
+import { resetPermissions } from "./auth/permissions";
 import { WhatsAppPage } from "./features/settings/WhatsAppPage";
 import { ConfigurationPage } from "./features/settings/ConfigurationPage";
 import { StpSettingsPage } from "./features/settings/StpSettingsPage";

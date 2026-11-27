@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { api, type ScheduleDetail, type ScheduleRow, type TripSheet, type TripSheetPassenger } from "../../api";
 import { confirmDialog, promptDialog, toast, toastError } from "../../components/ui/feedback";
-import { can } from "../settings/legacy";
+import { can } from "../../auth/permissions";
 
 // React port of legacy public/js/schedule-manage-v48.js (Schedules → Manage → Bookings): station-tool summaries,
 // timings, live location, delay and notify flows, and the V48 seat diagram. Same classes as the vendored CSS.

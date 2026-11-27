@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { PnlTab, pnlConfirmLeave } from "./SchedulePnlTab";
+import { PnlTab, type LeaveGuard } from "./SchedulePnlTab";
 import { FaresTab } from "./ScheduleFaresTab";
 import { UpdateTab } from "./ScheduleUpdateTab";
 import { BlockTab } from "./ScheduleBlockTab";
 import { api, type Me, type ScheduleDetail, type ScheduleEditRow, type ScheduleRow, type ScheduleStage, type ScheduleUiSettings, type StageOverrideInput } from "../../api";
 import { confirmDialog, infoDialog, Modal, promptDialog, toast, toastError } from "../../components/ui/feedback";
-import { can } from "../settings/legacy";
+import { can } from "../../auth/permissions";
 import { inr, shortDate, t12 } from "../../services/format";
 
 // React port of the legacy schedule management overlay (public/js/schedules-screenshot-v6.js: openModal(), tabs, bt(),
@@ -55,8 +55,10 @@ export function ScheduleOverlay({ row, tab: initialTab, onClose: close, me }: { 
   const [tab, setTabRaw] = useState(TABS.some(([k]) => k === initialTab) ? initialTab : "bookings");
   const modal = useRef<HTMLDivElement>(null);
   const [min, setMin] = useState(false);
-  // legacy handleOverlayClick: leaving the P&L tab (tab switch or close) confirms before discarding unsaved expenses
-  const leave = async () => tab !== "pnl" || (await pnlConfirmLeave());
+  const guard: LeaveGuard = useRef(null);
+  const [pnlFoot, setPnlFoot] = useState<HTMLElement | null>(null);
+  // legacy handleOverlayClick: leaving a tab with unsaved edits (tab switch or close) confirms first
+  const leave = async () => !guard.current || (await guard.current());
   const setTab = (k: string) => { void leave().then((ok) => ok && setTabRaw(k)); };
   const onClose = () => { void leave().then((ok) => ok && close()); };
   const [detail, setDetail] = useState<ScheduleDetail>();
@@ -85,7 +87,7 @@ export function ScheduleOverlay({ row, tab: initialTab, onClose: close, me }: { 
   }, [onClose]);
 
   let body: ReactNode;
-  if (tab === "update") body = <UpdateTab row={row} overlay={modal} />;
+  if (tab === "update") body = <UpdateTab row={row} />;
   else if (error) body = <div className="sx-empty">{error}</div>;
   else if (!detail) body = <div className="sx-loading">Loading schedule…</div>;
   else if (tab === "history") body = <HistoryTab d={detail} />;
@@ -93,13 +95,12 @@ export function ScheduleOverlay({ row, tab: initialTab, onClose: close, me }: { 
   else if (tab === "bookings") body = <BlockTab key="bookings" row={row} detail={detail} mode="bookings" me={me} />;
   else if (tab === "pickups" || tab === "drops") body = <StopsTab key={tab} d={detail} kind={tab === "pickups" ? "pickup" : "drop"} reload={reload} />;
   else if (tab === "cities") body = <CitiesTab d={detail} reload={reload} saveRef={citySave} />;
-  else if (tab === "pnl") body = <PnlTab sid={row.id} overlay={modal} />;
+  else if (tab === "pnl") body = <PnlTab sid={row.id} footer={pnlFoot} guard={guard} onClose={onClose} />;
   else body = <FaresTab sid={row.id} />;
 
   return (
     <div className={`sx-backdrop sx38-workspace${tab === "bookings" ? " sx48-workspace" : ""}${min ? " sx-minimized" : ""}`} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={`sx-modal${tab === "pnl" ? " sxp-active" : ""}`} role="dialog" aria-modal="true" aria-label="Schedule management" ref={modal}
-        onClick={(e) => { if (tab === "pnl" && (e.target as Element).closest(".sx-modal-footer [data-sx-close]")) onClose(); }}>
+      <div className={`sx-modal${tab === "pnl" ? " sxp-active" : ""}`} role="dialog" aria-modal="true" aria-label="Schedule management" ref={modal}>
         <header data-sx-modal-head="">
           {tab === "pnl" ? <>
             <div className="sx-head-identity"><div><h2>Schedule <small>{row.serviceNumber} - {row.serviceName || `${row.origin} ${row.destination}`}</small></h2></div></div>
@@ -118,7 +119,7 @@ export function ScheduleOverlay({ row, tab: initialTab, onClose: close, me }: { 
           ))}
         </nav>
         <main data-sx-modal-body="">{body}</main>
-        {tab === "pnl" ? <footer key="pnl" className="sx-modal-footer" /> : <footer key="std" className="sx-modal-footer">
+        {tab === "pnl" ? <footer key="pnl" className="sx-modal-footer" ref={setPnlFoot} /> : <footer key="std" className="sx-modal-footer">
           <span data-sx-footer-info="" className="sx-muted">{tab === "update" ? "" : tab === "fares" ? "Fare and seat-rule changes apply to this trip only" : "Stop, delay and city changes apply to this trip only"}</span>
           <div>
             {tab === "bookings" || tab === "update"
