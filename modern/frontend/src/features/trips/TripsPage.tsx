@@ -24,6 +24,7 @@ const PATH = {
   close: "M18 6 6 18M6 6l12 12", "arrow-right": "M5 12h14m-6-6 6 6-6 6",
   "check-circle": "M20 11a8 8 0 1 1-4.3-7.1M8 11l3 3 9-9",
   "external-link": "M14 3h7v7M21 3l-9 9M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6",
+  copy: "M8 8h12v13H8zM16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3",
   refresh: "M20 11a8 8 0 0 0-14.6-4.6L3 9m0-6v6h6m-5 4a8 8 0 0 0 14.6 4.6L21 15m0 6v-6h-6",
   shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z",
   leaf: "M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10ZM2 21c0-3 1.9-5.4 5.1-6",
@@ -268,7 +269,9 @@ export function TripsPage({ me }: { me: Me }) {
             <iframe title={`Map of ${stopMap.name}`} loading="lazy" referrerPolicy="no-referrer-when-downgrade"
               src={`https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(`${stopMap.lng! - 0.018},${stopMap.lat! - 0.012},${stopMap.lng! + 0.018},${stopMap.lat! + 0.012}`)}&layer=mapnik&marker=${encodeURIComponent(`${stopMap.lat},${stopMap.lng}`)}`} />
           </div>
-          <div className="tp13-mapfooter"><a className="tp13-openmap" href={pointUrl(stopMap.lat!, stopMap.lng!)} target="_blank" rel="noopener noreferrer"><I name="external-link" /> Open in Maps</a></div>
+          <div className="tp13-mapfooter"><a className="tp13-openmap" href={pointUrl(stopMap.lat!, stopMap.lng!)} target="_blank" rel="noopener noreferrer"><I name="external-link" /> Open in Maps</a>
+            <button type="button" data-trip-copy-coords="" onClick={() => { const t = `${stopMap.lat}, ${stopMap.lng}`; if (navigator.clipboard?.writeText) navigator.clipboard.writeText(t).then(() => toast("Coordinates copied", "ok")).catch(() => toast("Unable to copy coordinates", "bad")); else toast(`Coordinates: ${t}`); }}>
+              <I name="copy" /> {stopMap.lat}, {stopMap.lng}</button></div>
         </Modal>
       )}
     </div>

@@ -3,6 +3,7 @@ import { api, type CoachListRow, type Me, type VehicleListRow } from "../../api"
 import { Modal, confirmDialog, promptDialog, toast, toastError } from "../../components/ui/feedback";
 import { CoachModal, blankCoach, type CoachDraft } from "./CoachModal";
 import { VehicleDetail } from "./VehicleDetail";
+import { TileMap } from "./TileMap";
 import { NiceSelect } from "../../components/ui/NiceSelect";
 
 // React port of legacy GDS → Vehicles / Coaches (public/js/vehicles-parity-v9.js vehiclesPage()/coachesPage() and the
@@ -43,6 +44,8 @@ const P: Record<string, string> = {
   zap: '<path d="m13 2-9 12h7l-1 8 10-12h-7l0-8Z"/>',
   droplet: '<path d="M12 2s-7 9-7 13a7 7 0 0 0 14 0c0-4-7-13-7-13Z"/>',
   layers: '<path d="m12 2 9 5-9 5-9-5 9-5Zm-9 10 9 5 9-5M3 17l9 5 9-5"/>',
+  share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m9 11 6-5m-6 8 6 4"/>',
+  expand: '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',
 };
 const I = ({ n, s = 19 }: { n: string; s?: number }) => (
   <svg className="vp-i" width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.85} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: P[n] ?? P.bus }} />
@@ -60,7 +63,6 @@ const Sel = ({ icon, value, onChange, options, data, sort }: { icon: string; val
   <label className={`vp-select ${sort ? "sort" : ""} ui-dd-hosted`.replace("  ", " ")}><I n={icon} /><NiceSelect value={value} onChange={onChange} options={options} {...data} /><I n="down" s={13} /></label>
 );
 const OPS = ["owner", "admin", "ops"];
-const NO_MAP = "Not available yet: the fleet map needs the legacy map tile service, which the modern stack does not proxy";
 const readLayout = (tab: string) => { try { return localStorage.getItem(`gds_${tab}_layout_v37`) === "list" ? "list" : "grid"; } catch { return "grid"; } };
 const saveLayout = (tab: string, v: string) => { try { localStorage.setItem(`gds_${tab}_layout_v37`, v); } catch { /* ignore */ } };
 
@@ -148,7 +150,24 @@ function VehicleForm({ v, coaches, onClose, onSaved }: { v: VehicleListRow | nul
 
 function InfoModal({ kind, v, onClose }: { kind: string; v: VehicleListRow; onClose: () => void }) {
   const p = pos(v), h = v.health ?? {};
-  const title = kind === "health" ? "Vehicle Health" : kind === "alerts" ? "Alerts" : kind === "location" ? "Live Location" : "View Vehicle";
+  if (kind === "location") {
+    const ok = validGPS(p);
+    const share = async () => {
+      if (!ok) return toast("No coordinate to share", "bad");
+      const url = `https://www.openstreetmap.org/?mlat=${Number(p.lat)}&mlon=${Number(p.lng)}#map=15/${Number(p.lat)}/${Number(p.lng)}`;
+      try { await navigator.clipboard.writeText(url); toast("Map link copied", "ok"); } catch { toast("Copy link from the browser address bar"); }
+    };
+    return (
+      <Modal title={<>Live location · {v.registrationNumber} · {v.coach || "Coach"}</>} size="lg" className="vp-overlay-map" onClose={onClose}
+        foot={<div className="vp-footer"><button type="button" className="vp-btn outline" data-share-location="" onClick={() => void share()}><I n="share" /> Share</button><button type="button" className="vp-btn primary" data-close-location="" onClick={onClose}>Close</button></div>}>
+        <div className="vp-position-label"><span className="vp-dot state">{p.state || "Unknown"}</span> <span className="vp-dot muted">Updated {formatAge(p.ts)}</span>
+          <h3><I n="pin" /> {ok ? `${Number(p.lat).toFixed(5)}, ${Number(p.lng).toFixed(5)}` : "No recorded position"}</h3></div>
+        <TileMap single pins={ok ? [{ id: v.id, label: v.registrationNumber, lat: Number(p.lat), lng: Number(p.lng) }] : []} />
+        <p className="vp-map-disclaimer">{ok ? "Location is the last coordinate stored for this vehicle." : "GPS provider has not returned a position."}</p>
+      </Modal>
+    );
+  }
+  const title = kind === "health" ? "Vehicle Health" : kind === "alerts" ? "Alerts" : "View Vehicle";
   return (
     <Modal title={<>{title} · {v.registrationNumber}</>} size="lg" onClose={onClose}>
       {kind === "view" && <dl className="vp-info-card">{([["Registration", v.registrationNumber], ["Coach", v.coach], ["Model", v.modelName], ["Role", v.vehicleRole], ["Status", v.status], ["Odometer", odo(v) == null ? "—" : `${num(odo(v))} km`]] as const).map(([k, x]) => <div key={k}><dt>{k}</dt><dd>{x || "—"}</dd></div>)}</dl>}
@@ -158,6 +177,18 @@ function InfoModal({ kind, v, onClose }: { kind: string; v: VehicleListRow; onCl
         <ul>{(h.alerts ?? []).map((a, i) => <li key={i}>{a.message} — {a.status}{a.reading != null ? ` (${a.reading} ${a.unit ?? ""})` : ""}</li>)}</ul>
       </>}
       <p className="vp-datasource">Values are the last report stored for this vehicle; the modern stack does not poll a live GPS/ECU feed.</p>
+    </Modal>
+  );
+}
+
+function FleetMapModal({ V, onClose, onPin }: { V: VehicleListRow[]; onClose: () => void; onPin: (v: VehicleListRow) => void }) {
+  const [fitN, setFitN] = useState(0);
+  const pins = V.filter((v) => validGPS(pos(v))).map((v) => ({ id: v.id, label: v.registrationNumber, lat: Number(pos(v).lat), lng: Number(pos(v).lng) }));
+  return (
+    <Modal title={<>Fleet Map <small>{pins.length} of {V.length} on map · Moving {V.filter((v) => state(v) === "MOVING").length}</small></>} size="lg" className="vp-overlay-map" onClose={onClose}
+      foot={<div className="vp-footer"><button type="button" className="vp-btn outline" data-vp-map-show="" onClick={() => setFitN((n) => n + 1)}><I n="expand" /> Show all</button><button type="button" className="vp-btn outline" data-vp-map-close="" onClick={onClose}>Close</button></div>}>
+      <TileMap pins={pins} fitSignal={fitN} onPin={(id) => { const v = V.find((x) => x.id === id); if (v) onPin(v); }} />
+      <p className="vp-map-disclaimer">Map positions are the last coordinates stored for each vehicle.</p>
     </Modal>
   );
 }
@@ -226,7 +257,7 @@ export function VehiclesPage({ me }: { me: Me }) {
           <div className="vp-view-switch"><IconBtn n="list" kind="plain" data-layout="list" aria-pressed={s.layout === "list"} label="List view" onClick={() => layout("list")} /><IconBtn n="grid" kind="plain" data-layout="grid" aria-pressed={s.layout === "grid"} label="Grid view" onClick={() => layout("grid")} /></div>
         </div>
         <div className="vp-toolbar-actions">
-          <button type="button" className="vp-btn outline" data-action="fleet-map" aria-disabled="true" title={NO_MAP} onClick={() => toast(NO_MAP, "warn")}><I n="map" /> Fleet Map</button>
+          <button type="button" className="vp-btn outline" data-action="fleet-map" onClick={() => setModal({ kind: "fleet-map", v: null })}><I n="map" /> Fleet Map</button>
           {canModify && <button type="button" className="vp-btn primary" data-action="add-vehicle" onClick={() => setModal({ kind: "form", v: null })}><I n="plus" /> Add Vehicle</button>}
         </div>
       </section>
@@ -251,6 +282,7 @@ export function VehiclesPage({ me }: { me: Me }) {
       </div>
       <p className="vp-datasource">Vehicle position, health and fuel values depend on your connected data feed. The development GDS currently uses simulated positions; this view does not verify physical GPS devices or ECU measurements.</p>
       {modal?.kind === "form" || modal?.kind === "edit" ? <VehicleForm v={modal.v} coaches={C} onClose={() => setModal(undefined)} onSaved={() => void load()} />
+        : modal?.kind === "fleet-map" ? <FleetMapModal V={V} onClose={() => setModal(undefined)} onPin={(v) => setModal({ kind: "location", v })} />
         : modal?.v ? <InfoModal kind={modal.kind} v={modal.v} onClose={() => setModal(undefined)} /> : null}
     </div>
   );
