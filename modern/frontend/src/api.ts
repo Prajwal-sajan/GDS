@@ -389,8 +389,9 @@ export type RouteSettingsInput = Partial<{ name: string; altName: string; depart
 export interface RouteCrewMember { staff_id?: number | null; role: string; name?: string; phone?: string }
 export interface RouteAssignment { vehicle_id?: number | null; crew?: RouteCrewMember[]; pickup_vans?: { label?: string; name?: string }[] }
 /** Legacy route General-tab settings (routes-screenshot-v5 general()), stored as-is. */
-export interface RouteSettingsJson { hub?: string; business_rules?: Record<string, string | boolean>; call_settings?: Record<string, unknown>;
-  escalation_contacts?: string; cabs?: string; assignments?: RouteAssignment[]; tags?: Record<string, string> | { name: string; value: string }[]; run_pattern?: unknown }
+export interface RouteSettingsJson { hub?: string; business_rules?: Record<string, string | boolean | number>; call_settings?: Record<string, unknown>;
+  escalation_contacts?: string; cabs?: string; assignments?: RouteAssignment[]; tags?: Record<string, string> | { name: string; value: string }[];
+  run_pattern?: { type: "daily" | "weekdays" | "every_n"; days?: number[]; n?: number }; alternate_assignment?: boolean }
 export interface RouteStopInput { id: number | null; cityId: number; day: number; time: string }
 export interface RouteStageInput { kind: string; cityId: number; name: string; address: string | null; landmark: string | null; contactNumber: string | null;
   lat: number | null; lng: number | null; day: number; time: string; prime: boolean; pickupType: string | null; exchangePoint: string | null; exchangeTime: string | null; metroDescription: string | null }

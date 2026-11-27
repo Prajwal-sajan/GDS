@@ -9,7 +9,7 @@ namespace JourneyOS.Api.Operations;
 /// </summary>
 public static class RouteSettings
 {
-    public static readonly string[] Keys = ["hub", "business_rules", "call_settings", "escalation_contacts", "cabs", "assignments", "tags", "run_pattern"];
+    public static readonly string[] Keys = ["hub", "business_rules", "call_settings", "escalation_contacts", "cabs", "assignments", "tags", "run_pattern", "alternate_assignment"];
     private static readonly Dictionary<string, string[]> RuleValues = new()
     {
         ["gents_next_to_ladies"] = ["No", "Yes"],
@@ -28,6 +28,25 @@ public static class RouteSettings
         if (v is JsonValue jv && jv.TryGetValue<bool>(out var b)) return b;
         return v?.GetValue<string>() != "No";
     }
+    /// <summary>Legacy run_pattern: does the service run on <paramref name="d"/>? daily (default) / weekdays {days:[0-6], 0=Sun} / every_n {n=2} anchored on the route start date.</summary>
+    public static bool Runs(string? json, DateOnly d, DateOnly? start)
+    {
+        var rp = json is null ? null : JsonNode.Parse(json)?["run_pattern"] as JsonObject;
+        switch (rp?["type"]?.GetValue<string>())
+        {
+            case "weekdays":
+                return rp["days"] is JsonArray days && days.Any(x => x is JsonValue v && v.TryGetValue<int>(out var i) && i == (int)d.DayOfWeek);
+            case "every_n":
+                var n = rp["n"] is JsonValue nv && nv.TryGetValue<int>(out var ni) && ni >= 2 ? ni : 2;
+                var anchor = start ?? d;
+                return ((d.DayNumber - anchor.DayNumber) % n + n) % n == 0;
+            default: return true;
+        }
+    }
+    /// <summary>business_rules.advance_booking_days (legacy default 30).</summary>
+    public static int AdvanceDays(string? json) =>
+        json is not null && JsonNode.Parse(json)?["business_rules"]?["advance_booking_days"] is JsonValue v && v.TryGetValue<int>(out var n) ? n : 30;
+
     private static readonly string[] CallKeys = ["cloud_calling", "number_masking", "direct_to_vehicle", "driver_gps"];
     private static readonly string[] Cabs = ["Off", "Pickups", "Drops", "Both"];
     private static readonly string[] CrewRoles = ["Driver", "Helper", "Conductor", "Attendant"];
@@ -70,6 +89,11 @@ public static class RouteSettings
                 if (v is not JsonObject br) return "business_rules must be an object";
                 foreach (var (rk, rv) in br)
                 {
+                    if (rk == "advance_booking_days")
+                    {
+                        if (rv is not JsonValue av || !av.TryGetValue<int>(out var ad) || ad is < 0 or > 365) return "Advance booking days must be between 0 and 365";
+                        continue;
+                    }
                     if (!RuleValues.TryGetValue(rk, out var allowed)) return $"Unknown booking rule '{rk}'";
                     var text = rv is JsonValue jv && jv.TryGetValue<bool>(out var b) ? (b ? "Yes" : "No") : rv?.GetValue<string>();
                     if (text is null || !allowed.Contains(text)) return $"{rk} must be one of {string.Join(", ", allowed)}";
@@ -105,7 +129,12 @@ public static class RouteSettings
                 }
                 return null;
             case "run_pattern":
-                return v is JsonObject ? null : "run_pattern must be an object";
+                if (v is not JsonObject rp || rp["type"]?.GetValue<string>() is not ("daily" or "weekdays" or "every_n") ) return "Service runs must be daily, weekdays or every_n";
+                if (rp["type"]!.GetValue<string>() == "weekdays" && (rp["days"] is not JsonArray dd || dd.Count == 0 || dd.Any(x => x is not JsonValue xv || !xv.TryGetValue<int>(out var di) || di is < 0 or > 6))) return "Pick at least one weekday";
+                if (rp["type"]!.GetValue<string>() == "every_n" && rp["n"] is { } nn && (nn is not JsonValue nv || !nv.TryGetValue<int>(out var ni) || ni is < 2 or > 14)) return "Run interval must be 2-14 days";
+                return null;
+            case "alternate_assignment":
+                return v is JsonValue ab && ab.TryGetValue<bool>(out _) ? null : "alternate_assignment must be on or off";
         }
         return null;
     }

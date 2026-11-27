@@ -431,6 +431,7 @@ public sealed class OperationsService(GdsDbContext db, InventoryService inventor
         await using var tx = await db.Database.BeginTransactionAsync();
         for (var d = i.From; d <= i.To; d = d.AddDays(1))
         {
+            if (!RouteSettings.Runs(route.SettingsJson, d, route.StartDate)) continue;
             var id = long.Parse($"1000{d:yyMMdd}{routeId:000}"); // legacy schedule id scheme
             created += await db.Database.ExecuteSqlInterpolatedAsync($@"
 INSERT INTO trips (id, tenant_id, route_id, travel_date, status, bookable) VALUES ({id}, {T}, {routeId}, {d}, 'active', true)

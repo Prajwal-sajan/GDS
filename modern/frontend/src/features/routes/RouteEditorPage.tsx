@@ -118,13 +118,30 @@ const genPatch = (g: Gen, orig: RouteSettingsJson | null | undefined) => ({
   assignments: g.assignments.map((a) => ({ ...a, crew: a.crew.filter((c) => c.staff_id || c.name) })),
 });
 type Settings = { name: string; altName: string; maxSeatsPerTicket: number; updateCutoffMinutes: number; partialCancellationAllowed: boolean; distanceKm: string; gen: Gen;
-  departureTime: string; arrivalTime: string; arrivalDay: number; startDate: string; endDate: string; refundSlabs: RouteDetail["refundSlabs"] };
+  departureTime: string; arrivalTime: string; arrivalDay: number; startDate: string; endDate: string; refundSlabs: RouteDetail["refundSlabs"];
+  advanceDays: string; runType: "daily" | "weekdays" | "every_n"; runDays: number[]; alternate: boolean };
 const hhmm = (t: string | null | undefined) => String(t ?? "").slice(0, 5);
 const toSettings = (r: RouteDetail): Settings => ({
   name: r.name, altName: r.altName ?? "", maxSeatsPerTicket: r.maxSeatsPerTicket, updateCutoffMinutes: r.updateCutoffMinutes, partialCancellationAllowed: r.partialCancellationAllowed,
   distanceKm: r.distanceKm == null ? "" : String(r.distanceKm), gen: toGen(r.settings),
   departureTime: hhmm(r.departureTime), arrivalTime: hhmm(r.arrivalTime), arrivalDay: r.arrivalDay ?? 1, startDate: r.startDate ?? "", endDate: r.endDate ?? "", refundSlabs: r.refundSlabs,
+  advanceDays: String(r.settings?.business_rules?.advance_booking_days ?? 30), runType: r.settings?.run_pattern?.type ?? "daily", runDays: r.settings?.run_pattern?.days ?? [], alternate: !!r.settings?.alternate_assignment,
 });
+const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+/** legacy routes-screenshot-v5 nextDates(): the next 7 running dates within start/end under the run pattern. */
+const nextDates = (s: Settings) => {
+  const out: string[] = [], iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const today = new Date(); today.setHours(12, 0, 0, 0);
+  const start = s.startDate ? new Date(s.startDate + "T12:00:00") : today;
+  const d = new Date(Math.max(+today, +start));
+  for (let i = 0; i < 400 && out.length < 7; i++, d.setDate(d.getDate() + 1)) {
+    const k = iso(d); if (s.endDate && k > s.endDate) break;
+    if (s.runType === "weekdays" && !s.runDays.includes(d.getDay())) continue;
+    if (s.runType === "every_n" && Math.round((+d - +start) / 864e5) % 2 !== 0) continue;
+    out.push(k);
+  }
+  return out;
+};
 const Region = ({ title, children, cls = "" }: { title?: ReactNode; children: ReactNode; cls?: string }) => (
   <section className={`rv-region ${cls}`}>{title && <h3>{title}</h3>}{children}</section>
 );
@@ -203,6 +220,13 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
       } else if (tab === "cities") {
         if (!st.startDate) return toast("Complete the mandatory fields", "warn");
         if (st.endDate && st.endDate < st.startDate) return toast("End date is before start date", "warn");
+        const adv = Number(st.advanceDays);
+        if (!Number.isInteger(adv) || adv < 0 || adv > 365) return toast("Advance booking days must be between 0 and 365", "warn");
+        if (st.runType === "weekdays" && !st.runDays.length) return toast("Pick at least one weekday", "warn");
+        await api.saveRouteSettings(id, { settings: {
+          business_rules: { ...(route.settings?.business_rules ?? {}), allow_cancellation: st.gen.rules.allow_cancellation, advance_booking_days: adv },
+          run_pattern: st.runType === "weekdays" ? { type: "weekdays", days: st.runDays } : st.runType === "every_n" ? { type: "every_n", n: 2 } : { type: "daily" },
+          alternate_assignment: st.alternate } });
         if (viasDirty) {
           if (vias.length < 2) return toast("A route needs an origin and a destination", "warn");
           if (vias.some((v) => !v.cityId || !v.time)) return toast("Choose a city and time for every row", "warn");
@@ -450,7 +474,14 @@ export function RouteEditorPage({ me, id }: { me: Me; id: number }) {
                 <p className="rv-help">Insert cities between existing ones and edit their day and time; stored bookings, holds, blocks and fares move with their cities. Cities already on the route cannot be reordered, and a city with points or sales cannot be removed. New city pairs go on sale once their fares are entered on the Fares tab.{viasDirty && " Saving the city list also sets the origin departure and destination arrival from the first and last rows."}</p>
               </>}
           </Region>
-          <div className="rv-two rv-dates"><Field label="Start Date*" value={st.startDate} type="date" onChange={ed("startDate")} /><Field label="End Date" value={st.endDate} type="date" onChange={ed("endDate")} /></div>
+          <div className="rv-two rv-dates"><Field label="Start Date*" value={st.startDate} type="date" onChange={ed("startDate")} /><Field label="End Date" value={st.endDate} type="date" onChange={ed("endDate")} />
+            <Field label="Advance Booking Days*" value={st.advanceDays} type="number" min={0} max={365} onChange={ed("advanceDays")} />
+            <label className="rv-field"><span>Allow Cancellation</span><select disabled={ro} value={st.gen.rules.allow_cancellation} onChange={(e) => { const v = e.currentTarget.value; updGen((g) => ({ ...g, rules: { ...g.rules, allow_cancellation: v } })); }}><option>Yes</option><option>No</option></select></label>
+            <label className="rv-field"><span>Service runs</span><select data-rv-field="run_type" disabled={ro} value={st.runType} onChange={(e) => upd("runType", e.currentTarget.value as Settings["runType"])}><option value="daily">Every day</option><option value="weekdays">Selected weekdays</option><option value="every_n">Every other day</option></select></label></div>
+          <p className="rv-help">Schedules are created only on these dates within the start/end date of the route.</p>
+          {st.runType === "weekdays" && <div className="rv-weekdays">{DOW.map((d, i) => <label key={d} className="rv-check"><input type="checkbox" disabled={ro} checked={st.runDays.includes(i)} onChange={(e) => upd("runDays", e.currentTarget.checked ? [...st.runDays, i].sort() : st.runDays.filter((x) => x !== i))} /> {d}</label>)}</div>}
+          <h3>Next running dates</h3><div className="rv-datechips">{nextDates(st).map((d) => <span key={d} className="rv-chip">{new Date(d + "T12:00").toLocaleDateString("en-IN", { weekday: "short", day: "2-digit", month: "short" })}</span>)}</div>
+          <h3>Alternate Vehicle &amp; Crew</h3><label className="rv-check"><input type="checkbox" data-rv-field="alternate_assignment" disabled={ro} checked={st.alternate} onChange={(e) => upd("alternate", e.currentTarget.checked)} /> Alternate the two vehicle/crew assignments every trip (does not skip days)</label>
         </>
       );
       case "update": return (
