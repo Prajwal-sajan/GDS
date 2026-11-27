@@ -7,7 +7,7 @@ import { createPortal } from "react-dom";
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const fmt = (v: string) => { const d = v ? new Date(`${v}T00:00:00`) : null; return d && !isNaN(+d) ? d.toLocaleDateString("en-IN", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }) : "Select date"; };
 
-function CalendarPop({ anchor, value, onPick, onClose, clear }: { anchor: Element; value: string; onPick: (v: string) => void; onClose: () => void; clear?: boolean }) {
+export function CalendarPop({ anchor, value, onPick, onClose, clear }: { anchor: Element; value: string; onPick: (v: string) => void; onClose: () => void; clear?: boolean }) {
   const pop = useRef<HTMLDivElement>(null);
   const [cur, setCur] = useState(() => { const d = value ? new Date(`${value}T00:00:00`) : new Date(); const c = isNaN(+d) ? new Date() : d; return new Date(c.getFullYear(), c.getMonth(), 1); });
   const r = anchor.getBoundingClientRect();
