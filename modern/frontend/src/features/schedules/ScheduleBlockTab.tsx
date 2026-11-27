@@ -4,6 +4,7 @@ import { BookingOverlay } from "../crm/BookingOverlay";
 import { confirmDialog, toast, toastError } from "../../components/ui/feedback";
 import { can, permissions } from "../settings/legacy";
 import { ImportPickupChart, ImportedChartModal, type ImportedChart } from "./PickupChartImport";
+import { LocationPopup, NotifyMenu, SeatDiagram48, SummaryPopup, TimingsPopup, delay48, fetchPosition, notify48, validGps, type LayoutSeat, type SeatLayout, type SummaryKind } from "./ScheduleManageV48";
 
 // Schedule overlay → Block tab. React port of legacy schedules-screenshot-v6.js bookingTab() + blockPanel() + seatsGraphic()
 // (same classes). Seats: GET /trips/{id}/seats; block: POST /trips/{id}/blocks; unblock: DELETE /trips/{id}/blocks/{seat};
@@ -22,10 +23,6 @@ const P: Record<string, string> = {
 const I = ({ n, s = 16 }: { n: string; s?: number }) => <svg className="sx-svg" width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={P[n]} /></svg>;
 const Bt = ({ n, label, cls = "", onClick, attrs }: { n: string; label: string; cls?: string; onClick?: () => void; attrs?: Record<string, string> }) =>
   <button type="button" className={`sx-btn ${cls}`} onClick={onClick} {...attrs}><I n={n} /><span>{label}</span></button>;
-const groupOf = (s: Seat) => /^[0-9]+[LU]$/.test(s.seatCode) ? (s.seatCode.endsWith("U") && s.col > 0 ? "DUB" : "SLB") : "SS";
-/** legacy seatColor() */
-const color = (s: Seat, chosen: boolean) => chosen ? "selected" : s.state === "blocked" ? "blocked" : s.state === "held" ? "hold"
-  : s.state === "booked" ? ((s.gender ?? "").toLowerCase().startsWith("f") ? "female" : "male") : "available";
 
 export function BlockTab({ row, detail, mode = "block", me }: { row: ScheduleRow; detail: ScheduleDetail; mode?: "block" | "bookings"; me?: Me }) {
   const [sheet, setSheet] = useState<TripSheet>();
@@ -36,27 +33,31 @@ export function BlockTab({ row, detail, mode = "block", me }: { row: ScheduleRow
   const [reason, setReason] = useState("Operator quota");
   const [gender, setGender] = useState("Any");
   const [hide, setHide] = useState(false);
-  const [panel, setPanel] = useState<"" | "delay" | "notify">("");
+  const [popup, setPopup] = useState<"" | SummaryKind | "timings" | "location">("");
+  const [notifyOpen, setNotifyOpen] = useState(false);
+  const [chartPnrs, setChartPnrs] = useState<string[]>([]);
+  const [layout, setLayout] = useState<SeatLayout>();
+  const [posText, setPosText] = useState("No verified live position");
   const [busy, setBusy] = useState(false);
   const [pair, setPair] = useState<[number, number]>();
   const load = () => Promise.all([api.admin<Seat[]>(`/trips/${row.id}/seats`), api.admin<Fares>(`/schedules/${row.id}/fares`).catch(() => undefined), api.tripSheet(row.id).catch(() => undefined), permissions()])
-    .then(([s, f, t]) => { setSeats(s); setFares(f); setSheet(t); }).catch(toastError);
+    .then(([s, f, t]) => { setSeats(s); setFares(f); setSheet(t); return loadLayout(); }).catch(toastError);
   useEffect(() => { void load(); }, [row.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cities = fares?.cities ?? [];
   const [from, to] = pair ?? (cities.length > 1 ? [cities[0].sequence, cities[cities.length - 1].sequence] : [0, 0]);
-  const main = useMemo(() => fares?.fares.find((f) => f.fromSequence === from && f.toSequence === to), [fares, from, to]);
-  const fareOf = (s: Seat) => main ? (groupOf(s) === "SS" ? main.seater : groupOf(s) === "SLB" ? main.sleeperLower : main.sleeperUpper) : 0;
+  const loadLayout = () => api.admin<SeatLayout>(`/schedules/${row.id}/seat-layout${pair ? `?from=${pair[0]}&to=${pair[1]}` : ""}`).then(setLayout).catch(() => setLayout(undefined));
+  useEffect(() => { if (pair) void loadLayout(); }, [pair?.[0], pair?.[1]]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    void fetchPosition(sheet?.vehicle?.id).then((p) => { const g = validGps(p); setPosText(g ? (p as { address?: string })?.address || `${g.lat.toFixed(5)}, ${g.lng.toFixed(5)}` : "No verified live position"); });
+  }, [sheet?.vehicle?.id]);
   const counts = { blocked: (seats ?? []).filter((s) => s.state === "blocked").length };
-  const decks = [...new Set((seats ?? []).map((s) => s.deck))];
 
-  const pick = (s: Seat) => {
-    if (mode === "bookings") {
-      const p = sheet?.passengers.find((x) => x.seat === s.seatCode && x.status !== "cancelled");
-      if (p) { if (me) setTicket(p.pnr); return; }
-    }
-    if (!["free", "blocked"].includes(s.state)) return toast("Choose an available or blocked seat to modify.", "warn");
-    setSel((x) => { const n = new Set(x); if (n.has(s.seatCode)) n.delete(s.seatCode); else n.add(s.seatCode); return n; });
+  const pick = (s: LayoutSeat) => {
+    if (mode === "bookings" && s.pnr) { if (me) setTicket(s.pnr); else toast("Booking details permission is required", "bad"); return; }
+    if (mode === "bookings" && s.status !== "available" && s.status !== "blocked") return;
+    if (!["available", "blocked"].includes(s.status)) return toast("Choose an available or blocked seat to modify.", "warn");
+    setSel((x) => { const n = new Set(x); if (n.has(s.code)) n.delete(s.code); else n.add(s.code); return n; });
   };
   const apply = async (action: "block" | "unblock" | "follow_route") => {
     if (action === "follow_route") return toast("Routes carry no seat-block template in this backend; trip blocks are managed here only.", "warn");
@@ -77,45 +78,42 @@ export function BlockTab({ row, detail, mode = "block", me }: { row: ScheduleRow
   };
 
   if (!seats) return <div className="sx-loading">Loading {mode}…</div>;
+  const openTicket = (pnr: string) => (me ? setTicket(pnr) : toast("Booking details permission is required", "bad"));
   return (
-    <div className="sx-book-columns">
+    <div className={`sx-book-columns${hide ? " sx-hidefares" : ""}`}>
       <section className="sx-book-left">
         <header className="sx-book-head"><strong><I n="layout" /> Seat Layout</strong>
           <div><Bt n="copy" label="Copy" cls="mini" attrs={{ "data-sx-copy": "", title: "Copy seat layout image" }} onClick={() => void copyLayout()} /><Bt n="link" label="Share" cls="mini" attrs={{ "data-sx-share": "" }} onClick={() => void share(row)} /></div></header>
         <div className="sx-book-ident"><I n="bus" s={13} /> {sheet?.vehicle?.registration || "Unassigned vehicle"} <span><I n="user" s={13} /> {sheet?.crew[0]?.name || "Crew pending"}</span><span>{row.serviceNumber}</span></div>
-        <div className="sx-book-location"><I n="pin" s={13} /> No verified live position <small></small></div>
+        <div className="sx-book-location"><I n="pin" s={13} /> {posText} <small></small></div>
         <div className="sx-station-tools">{([["stations", "Stations", "map"], ["pickups", "Pickups", "arrowUp"], ["drops", "Drops", "arrowDown"], ["bookedby", "Booked by", "credit"], ["bookings", "Bookings", "file"]] as const).map(([k, l, ic]) =>
-          <button key={k} data-sx-summary={k} onClick={() => toast(summary(k, detail))}><I n={ic} s={15} /><small>{l}</small></button>)}</div>
+          <button key={k} type="button" data-sx-summary={k} onClick={() => setPopup(k)}><I n={ic} s={15} /><small>{l}</small></button>)}</div>
         <div className="sx-journey-select">
           <label><I n="pin" s={12} /> From <select data-sx-fromcity="" value={from} onChange={(e) => { const a = Number(e.target.value); setPair([a, Math.max(to, cities.find((c) => c.sequence > a)?.sequence ?? to)]); }}>{cities.slice(0, -1).map((c) => <option key={c.sequence} value={c.sequence}>{c.name}</option>)}</select></label>
           <span>→</span>
           <label>To <select data-sx-tocity="" value={to} onChange={(e) => setPair([from, Number(e.target.value)])}>{cities.slice(1).map((c) => <option key={c.sequence} value={c.sequence} disabled={c.sequence <= from}>{c.name}</option>)}</select></label>
         </div>
         <div className="sx-seat-scroll">
-          <div className="sx-seat-diagram">{decks.map((d) => {
-            const ds = seats.filter((s) => s.deck === d), rows = Math.max(0, ...ds.map((s) => s.row)) + 1, cols = Math.max(0, ...ds.map((s) => s.col)) + 1;
-            return <div key={d} className="sx-deck"><div className="sx-deck-head"><b>{d}</b></div>
-              <div className="sx-deck-grid" style={{ gridTemplateColumns: `repeat(${Math.max(1, cols)},minmax(28px,1fr))`, gridTemplateRows: `repeat(${Math.max(1, rows)},32px)` }}>
-                {ds.map((s) => <button key={s.seatCode} type="button" className={`sx-seat sx-${color(s, sel.has(s.seatCode))}${sel.has(s.seatCode) ? " sx-chosen" : ""}`} data-sx-seat={s.seatCode}
-                  style={{ gridColumn: `${s.col + 1}/span 1`, gridRow: `${s.row + 1}/span 1` }} title={`${s.seatCode} • ${s.state}${main ? ` • ₹${fareOf(s)}` : ""}`} onClick={() => pick(s)}>
-                  <span className="sx-seat-fare">{hide || !main ? "—" : Math.round(fareOf(s))}</span><strong>{s.seatCode}</strong></button>)}
-              </div><div className="sx-deck-footer"><I n="arrowDown" s={14} /> <span>Door</span></div></div>;
-          })}</div>
+          <SeatDiagram48 layout={layout} selected={sel} onSeat={pick} />
         </div>
         <div className="sx-legend">{[["available", "Available"], ["male", "Male (Booked)"], ["female", "Female (Booked)"], ["blocked", "Blocked"], ["hold", "Hold"], ["selected", "Selected"]].map(([t, l]) => <span key={t}><i className={`sx-legend-${t}`}></i>{l}</span>)}</div>
         <div className="sx-seat-bottom">
-          <Bt n="pin" label="Location" cls="mini" attrs={{ "data-sx-location": "" }} onClick={() => toast("No verified live GPS position has been reported for this vehicle.", "warn")} />
-          <Bt n="clock" label="Timings" cls="mini" attrs={{ "data-sx-timings": "" }} onClick={() => toast(detail.stops.map((s) => `${s.name ?? ""} ${s.time ?? ""}`).join(" · "))} />
-          <Bt n="clock" label="Delay" cls="mini" attrs={{ "data-sx-delay": "" }} onClick={() => setPanel((p) => p === "delay" ? "" : "delay")} />
-          <Bt n="bell" label="Notify" cls="mini" attrs={{ "data-sx-notify-pop": "" }} onClick={() => setPanel((p) => p === "notify" ? "" : "notify")} />
-          <Bt n="shield" label={hide ? "Show fares" : "Hide fares"} cls="mini" attrs={{ "data-sx-hidefares": "" }} onClick={() => setHide((h) => !h)} />
+          <Bt n="pin" label="Location" cls="mini" attrs={{ "data-sx-location": "" }} onClick={() => setPopup("location")} />
+          <Bt n="clock" label="Timings" cls="mini" attrs={{ "data-sx-timings": "" }} onClick={() => setPopup("timings")} />
+          <Bt n="clock" label="Delay" cls="mini" attrs={{ "data-sx-delay": "" }} onClick={() => void delay48(row, load)} />
+          <div className="sx48-notify-holder" style={{ position: "relative", display: "grid" }}>
+            <Bt n="bell" label="Notify" cls="mini" attrs={{ "data-sx-notify-pop": "", "aria-haspopup": "menu", "aria-expanded": String(notifyOpen) }} onClick={() => setNotifyOpen((o) => !o)} />
+            {notifyOpen && <NotifyMenu onClose={() => setNotifyOpen(false)} onPick={(t) => void notify48(row, chartPnrs, t)} />}
+          </div>
+          <Bt n="shield" label={hide ? "Show fares" : "Hide fares"} cls="mini" attrs={{ "data-sx-hidefares": "", "aria-pressed": String(hide) }} onClick={() => setHide((h) => !h)} />
           <Bt n="rupee" label="Print" cls="mini" attrs={{ "data-sx-print": "" }} onClick={() => window.print()} />
         </div>
-        {panel === "delay" && <DelayForm tripId={row.id} onDone={() => setPanel("")} />}
-        {panel === "notify" && <NotifyForm tripId={row.id} pnrs={[...new Set(detail.history.filter((h) => h.status.toLowerCase() === "confirmed").map((h) => h.pnr))]} onDone={() => setPanel("")} />}
       </section>
+      {popup === "timings" && <TimingsPopup sheet={sheet} onClose={() => setPopup("")} />}
+      {popup === "location" && <LocationPopup sheet={sheet} onClose={() => setPopup("")} reload={() => api.tripSheet(row.id).then(setSheet)} />}
+      {popup && popup !== "timings" && popup !== "location" && <SummaryPopup kind={popup} sheet={sheet} detail={detail} onClose={() => setPopup("")} onPnr={openTicket} />}
       {mode === "bookings" ? <section className="sx-book-right sx38-right">
-        <PickupChart tripId={row.id} sheet={sheet} detail={detail} seats={seats} onTicket={(pnr) => (me ? setTicket(pnr) : toast("Booking details permission is required", "bad"))} reload={load} />
+        <PickupChart row={row} sheet={sheet} detail={detail} seats={seats} onTicket={openTicket} reload={load} onSelection={setChartPnrs} />
       </section> :
       <section className="sx-book-right">
         <header className="sx-side-top"><I n="shield" /> Block <span className="sx-muted">({counts.blocked} blocked)</span></header>
@@ -148,7 +146,8 @@ const labelOf = (p: TripSheetPassenger, g: string) => g === "Drop" ? p.dropping?
   : g === "Booked On" ? (p.bookedAt ? p.bookedAt.slice(0, 10) : "Booking date unavailable") : g === "Fare" ? `₹${Number(p.fare ?? 0).toLocaleString("en-IN")}` : g === "Trips" ? `${p.trips ?? 0} Trips` : p.boarding?.name || "Pickup not assigned";
 
 /** legacy schedule-bookings-v38 chart()/historyChart()/bulkCancel(): Pickup Chart and History panels. */
-function PickupChart({ tripId, sheet, detail, seats, onTicket, reload }: { tripId: number; sheet?: TripSheet; detail: ScheduleDetail; seats: Seat[]; onTicket: (pnr: string) => void; reload: () => Promise<unknown> }) {
+function PickupChart({ row, sheet, detail, seats, onTicket, reload, onSelection }: { row: ScheduleRow; sheet?: TripSheet; detail: ScheduleDetail; seats: Seat[]; onTicket: (pnr: string) => void; reload: () => Promise<unknown>; onSelection: (pnrs: string[]) => void }) {
+  const tripId = row.id;
   const [panel, setPanel] = useState<"chart" | "history">("chart");
   const [group, setGroup] = useState<string>("Pickup");
   const [sel, setSel] = useState<Set<string>>(new Set());
@@ -172,6 +171,8 @@ function PickupChart({ tripId, sheet, detail, seats, onTicket, reload }: { tripI
   const toggle = (list: TripSheetPassenger[], on: boolean) => setSel((x) => { const n = new Set(x); for (const p of list) if (on) n.add(keyOf(p)); else n.delete(keyOf(p)); return n; });
   const chosen = people.filter((p) => sel.has(keyOf(p)));
   const pnrs = [...new Set(chosen.map((p) => p.pnr))];
+  const pnrKey = pnrs.join(",");
+  useEffect(() => { onSelection(pnrKey ? pnrKey.split(",") : []); }, [pnrKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cancel = async () => {
     if (!chosen.length || !can("bookings.cancel") && !can("schedules.modify")) return;
@@ -206,10 +207,10 @@ function PickupChart({ tripId, sheet, detail, seats, onTicket, reload }: { tripI
         {imported && <B38 label={`Imported (${imported.rows.length})`} n="ticket" onClick={() => setShowImported(true)} />}
         <span className="sx38-toolbar-divider"></span>
         <B38 label={`Cancel (${chosen.length})`} n="trash" cls="danger" disabled={!chosen.length} onClick={() => void cancel()} />
-        <div className="sx48-notify-holder"><B38 label={`Notify (${chosen.length}) ▾`} n="bell" disabled={!chosen.length} onClick={() => setNotify((o) => !o)} /></div>
+        <div className="sx48-notify-holder"><B38 label={`Notify (${chosen.length}) ▾`} n="bell" disabled={!chosen.length} onClick={() => setNotify((o) => !o)} />
+          {notify && pnrs.length > 0 && <NotifyMenu onClose={() => setNotify(false)} onPick={(t) => void notify48(row, pnrs, t)} />}</div>
         <B38 label="History" n="history" onClick={() => setPanel("history")} />
       </div>
-      {notify && pnrs.length > 0 && <NotifyForm tripId={tripId} pnrs={pnrs} onDone={() => setNotify(false)} />}
       {importing && <ImportPickupChart detail={detail} onClose={() => setImporting(false)} onImported={() => void loadImported()} />}
       {showImported && imported && <ImportedChartModal chart={imported} detail={detail} onClose={() => setShowImported(false)} />}
       <div className="sx38-groupcontrols"><span>Group by:</span>{GROUPS.map((g) => <button key={g} type="button" data-v38="group" data-group={g} className={group === g ? "active" : ""} aria-pressed={group === g} onClick={() => setGroup(g)}>{g}{g === "Pickup" ? " ↑" : ""}</button>)}</div>
@@ -239,65 +240,9 @@ function PickupChart({ tripId, sheet, detail, seats, onTicket, reload }: { tripI
   </>;
 }
 
-/** legacy ScheduleManageV48.summary(): short real-data summaries for the station tool buttons. */
-function summary(kind: string, d: ScheduleDetail) {
-  const live = d.history.filter((h) => h.status.toLowerCase() === "confirmed");
-  const by = (f: (h: ScheduleDetail["history"][number]) => string) => Object.entries(live.reduce<Record<string, number>>((a, h) => ({ ...a, [f(h)]: (a[f(h)] ?? 0) + h.seats.length }), {})).map(([k, v]) => `${k}: ${v}`).join(" · ") || "No confirmed bookings";
-  if (kind === "stations") return d.stops.map((s) => s.name).join(" → ");
-  if (kind === "pickups") return `${d.stages.filter((s) => s.kind === "pickup").length} pickup points`;
-  if (kind === "drops") return `${d.stages.filter((s) => s.kind === "drop").length} drop points`;
-  if (kind === "bookedby") return by((h) => h.source || "Unknown");
-  return `${live.length} confirmed PNR(s), ${live.reduce((a, h) => a + h.seats.length, 0)} seat(s)`;
-}
-
-/** legacy ScheduleManageV48.delay(): minutes (−720…720), mandatory reason, optional passenger notification. */
-export function DelayForm({ tripId, onDone }: { tripId: number; onDone: () => void }) {
-  const [mins, setMins] = useState("15"); const [reason, setReason] = useState(""); const [notify, setNotify] = useState(false); const [busy, setBusy] = useState(false);
-  const save = async () => {
-    const m = Number(mins);
-    if (!Number.isInteger(m) || Math.abs(m) > 720) return toast("Timing change must be an integer between -720 and +720 minutes", "warn");
-    if (m !== 0 && !reason.trim()) return toast("Reason is required for a timing change", "warn");
-    if (!(await confirmDialog(`${m >= 0 ? "Delay" : "Advance"} this trip by ${Math.abs(m)} minutes?`, { ok: "Apply timing" }))) return;
-    setBusy(true);
-    try {
-      const r = await api.admin<{ recorded: number }>(`/trips/${tripId}/delay`, "POST", { minutes: m, reason: reason.trim(), notify });
-      toast(`Trip timing updated${notify ? ` · ${r.recorded} notification(s) recorded (no messaging provider connected)` : ""}`, "ok"); onDone();
-    } catch (e) { toastError(e); } finally { setBusy(false); }
-  };
-  return (
-    <div className="sx-control-grid" data-sx-delay-form="">
-      <label className="sx-field"><span>Minutes (+ late / − early)</span><input type="number" min={-720} max={720} value={mins} onChange={(e) => setMins(e.target.value)} /></label>
-      <label className="sx-field"><span>Reason</span><input value={reason} maxLength={300} onChange={(e) => setReason(e.target.value)} /></label>
-      <label className="sx-field"><span>Notify passengers</span><input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} /></label>
-      <button type="button" className="sx-btn primary" disabled={busy} onClick={() => void save()}><span>Apply timing</span></button>
-    </div>
-  );
-}
-
-/** legacy ScheduleManageV48.notify(): template + PNRs (+ text for custom / cancellation). */
-export function NotifyForm({ tripId, pnrs, onDone }: { tripId: number; pnrs: string[]; onDone: () => void }) {
-  const [tpl, setTpl] = useState("bus_details"); const [text, setText] = useState(""); const [busy, setBusy] = useState(false);
-  const send = async () => {
-    if (!pnrs.length) return toast("No confirmed passenger PNRs on this trip", "warn");
-    if ((tpl === "custom" || tpl === "bus_cancellation") && !text.trim()) return toast("Message text is required", "warn");
-    if (!(await confirmDialog(`Record "${tpl.replace(/_/g, " ")}" notification for ${pnrs.length} PNR(s)?`, { ok: "Notify" }))) return;
-    setBusy(true);
-    try { const r = await api.admin<{ recorded: number }>(`/trips/${tripId}/notify`, "POST", { template: tpl, pnrs: pnrs.slice(0, 200), text }); toast(`${r.recorded} notification(s) recorded · delivery not verified (no provider connected)`, "ok"); onDone(); }
-    catch (e) { toastError(e); } finally { setBusy(false); }
-  };
-  return (
-    <div className="sx-control-grid" data-sx-notify-form="">
-      <label className="sx-field"><span>Template ({pnrs.length} PNRs)</span><select value={tpl} onChange={(e) => setTpl(e.target.value)}>
-        {[["ticket_confirmation", "Ticket confirmation"], ["bus_details", "Bus details"], ["bus_cancellation", "Bus cancellation"], ["custom", "Custom message"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label>
-      {(tpl === "custom" || tpl === "bus_cancellation") && <label className="sx-field"><span>Message</span><input value={text} maxLength={1000} onChange={(e) => setText(e.target.value)} /></label>}
-      <button type="button" className="sx-btn primary" disabled={busy} onClick={() => void send()}><span>Notify</span></button>
-    </div>
-  );
-}
-
 /** legacy seat-layout-copy-v49: copy the rendered seat diagram as a PNG (SVG foreignObject → canvas). */
 async function copyLayout() {
-  const node = document.querySelector<HTMLElement>(".sx-seat-diagram");
+  const node = document.querySelector<HTMLElement>(".sx48-deck-holder");
   if (!node) return;
   try {
     const { width, height } = node.getBoundingClientRect();

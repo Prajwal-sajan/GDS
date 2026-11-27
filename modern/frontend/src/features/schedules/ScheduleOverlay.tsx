@@ -97,7 +97,7 @@ export function ScheduleOverlay({ row, tab: initialTab, onClose: close, me }: { 
   else body = <FaresTab sid={row.id} />;
 
   return (
-    <div className={`sx-backdrop sx38-workspace${min ? " sx-minimized" : ""}`} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className={`sx-backdrop sx38-workspace${tab === "bookings" ? " sx48-workspace" : ""}${min ? " sx-minimized" : ""}`} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className={`sx-modal${tab === "pnl" ? " sxp-active" : ""}`} role="dialog" aria-modal="true" aria-label="Schedule management" ref={modal}
         onClick={(e) => { if (tab === "pnl" && (e.target as Element).closest(".sx-modal-footer [data-sx-close]")) onClose(); }}>
         <header data-sx-modal-head="">
