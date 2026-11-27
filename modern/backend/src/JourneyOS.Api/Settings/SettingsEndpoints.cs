@@ -255,7 +255,7 @@ public static class SettingsEndpoints
             ["idling_max_odometer_km"] = v => Dec31(v, "Idling maximum odometer", 1000), ["offline_threshold_minutes"] = v => Int31(v, "Offline threshold", 10080),
             ["alert_recipients"] = v => List31(v, "vehicle recipients", 30, Phone31),
         },
-        ["expenses"] = new() { ["diesel_cost_per_litre"] = v => K(v) == JsonValueKind.Null || (K(v) == JsonValueKind.String && Str(v) == "") ? null : Dec31(v, "Diesel cost", 100000) },
+        ["expenses"] = new() { ["diesel_cost_per_litre"] = v => v is null || K(v) == JsonValueKind.Null || (K(v) == JsonValueKind.String && Str(v) == "") ? null : Dec31(v, "Diesel cost", 100000) },
         ["seats"] = new()
         {
             ["fill_seats_by"] = v => Choice(v, "seat fill mode", ["gender", "booking_channel", "none"]), ["outer_ring_by"] = v => Choice(v, "seat ring mode", ["booking_channel", "none"]),
