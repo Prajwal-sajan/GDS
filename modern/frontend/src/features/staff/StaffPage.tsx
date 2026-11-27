@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { api, type Me, type Staff } from "../../api";
-import { confirmDialog, toast, toastError } from "../../components/ui/feedback";
+import { api, authHeaders, type Me, type Staff, type StaffLedger } from "../../api";
+import { confirmDialog, promptDialog, toast, toastError } from "../../components/ui/feedback";
 import { NiceSelect } from "../../components/ui/NiceSelect";
 
 // React port of legacy GDS → Staff (public/js/staff-parity-v11.js: staffPage(), listHeader(), staffRow(), openEditor()).
 // Same DOM + class names so the vendored staff-parity-v11.css renders identically.
-// Fields the .NET backend does not persist (address, emergency contact, Aadhaar, PAN, employment type, bank, retention,
-// overtime, bonus/deduction rules, ledger, documents) are shown disabled with an explanation — never faked.
+// Profile fields (address, emergency contact, Aadhaar, PAN, employment type, bank, retention, overtime, bonus/deduction rules) persist in
+// staff.profile_json; Ledger reads /payroll/staff/:id/ledger and Documents use /staff/:id/documents.
 const P: Record<string, string> = {
   user: '<circle cx="12" cy="7" r="4"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/>',
   userPlus: '<circle cx="9" cy="7" r="4"/><path d="M2 21v-2a7 7 0 0 1 14 0m3-10v8m-4-4h8"/>',
@@ -36,6 +36,13 @@ const P: Record<string, string> = {
   clipboard: '<rect x="5" y="5" width="14" height="17" rx="2"/><path d="M9 3h6v4H9zM9 12h6m-6 4h6"/>',
   receipt: '<path d="M4 3h16v18l-4-2-4 2-4-2-4 2V3Zm4 5h8m-8 4h8"/>',
   checkCircle: '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+  building: '<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h1m4 0h1M9 11h1m4 0h1M9 15h1m4 0h1M10 21v-3h4v3"/>',
+  hash: '<path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/>',
+  at: '<circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>',
+  gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v9H5v-9M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/>',
+  trendingDown: '<path d="m22 17-8.5-8.5-5 5L2 7m14 10h6v-6"/>',
+  download: '<path d="M12 3v12m-5-5 5 5 5-5M4 21h16"/>',
+  upload: '<path d="M12 21V9m-5 5 5-5 5 5M4 3h16"/>',
 };
 const I = ({ n, s = 20 }: { n: string; s?: number }) => (
   <svg className="sp-icon" width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: P[n] ?? P.user }} />
@@ -45,7 +52,13 @@ const ROLES: [string, string][] = [["driver", "Driver"], ["helper", "Helper / At
 const NAV: [string, string, string][] = [["staff", "Staff", "users"], ["attendance", "Attendance", "calendar"], ["advances", "Advances", "wallet"], ["reimbursements", "Reimbursements", "receipt"], ["payouts", "Payouts", "cash"]];
 const TABS: [string, string, string][] = [["personal", "Personal Info", "user"], ["payables", "Payables", "wallet"], ["bank", "Bank Details", "bank"], ["ledger", "Ledger", "book"], ["docs", "Documents", "file"]];
 const BLOOD = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-const NP = "Not stored by the modern backend yet (see UI_MIGRATION_GAPS.md)";
+const inr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
+const DOC_TYPES: [string, string, string, string][] = [["AADHAAR", "Aadhaar Card", "finger", "orange"], ["LICENSE", "Driving License", "id", "cyan"], ["PAN", "PAN Card", "file", "blue"], ["BANK_CHEQUE", "Bank Cheque", "bank", "green"]];
+type Rule = { name: string; amount: number; frequency: string };
+type Profile = { address?: string; aadhaar?: string; pan?: string; employment_type?: string; retention_per_day?: number; overtime_rate?: number;
+  emergency_contact?: { name?: string; phone?: string }; bank?: Record<string, string>; payroll_bonus_rules?: Rule[]; payroll_deduction_rules?: Rule[] };
+type StaffDoc = { id: number; document_type: string; file_name: string | null; has_file: boolean; expiry_date: string | null };
+const parseProfile = (s?: string | null): Profile => { try { return s ? JSON.parse(s) : {}; } catch { return {}; } };
 const OPS = ["owner", "admin", "ops"];
 const cleanRole = (x: string) => ROLES.find((r) => r[0] === x)?.[1] ?? String(x || "Staff").replace(/_/g, " ");
 const fdate = (s?: string | null) => (s ? new Date(`${s.slice(0, 10)}T00:00:00`).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—");
@@ -54,11 +67,11 @@ export function SubNav({ tab }: { tab: string }) {
   return <nav className="sp-subnav" aria-label="Staff sections">{NAV.map(([id, label, ic]) => <a key={id} className={`sp-subpill ${tab === id ? "active" : ""}`} href={`#/fleet/${id}`}><I n={ic} /> {label}</a>)}</nav>;
 }
 
-type Field = { name: keyof Staff | string; label: string; icon: string; type?: string; options?: [string, string][]; required?: boolean; wide?: boolean; placeholder?: string; np?: boolean; max?: number };
+type Field = { name: keyof Staff | string; label: string; icon: string; type?: string; options?: [string, string][]; required?: boolean; wide?: boolean; placeholder?: string; max?: number };
 function FieldView({ f, value, editing, set }: { f: Field; value: unknown; editing: boolean; set: (v: string) => void }) {
   const v = value == null ? "" : String(value);
-  const dis = !editing || f.np;
-  const common = { name: f.name, disabled: dis, title: f.np ? NP : undefined, onChange: (e: { target: { value: string } }) => set(e.target.value) };
+  const dis = !editing;
+  const common = { name: f.name, disabled: dis, onChange: (e: { target: { value: string } }) => set(e.target.value) };
   return (
     <label className={`sp-field ${f.wide ? "wide" : ""}`}>
       <span>{f.label} {f.required && <b className="sp-req">*</b>}</span>
@@ -79,6 +92,20 @@ function Editor({ record, editing: startEdit, canModify, onClose, onSaved }: { r
   const [tab, setTab] = useState("personal");
   const [d, setD] = useState<Partial<Staff>>(record ? { ...record } : { name: "", phone: "", role: "driver", status: "active", salaryType: "per_trip", salaryAmount: 0 });
   const set = (k: string) => (v: string) => setD((o) => ({ ...o, [k]: ["salaryAmount", "bataPerTrip"].includes(k) ? (v === "" ? 0 : Number(v)) : v }));
+  const [p, setP] = useState<Profile>(() => parseProfile(record?.profileJson));
+  const setPath = (path: string) => (v: string) => setP((o) => {
+    const [a, b] = path.split("."); const num = ["retention_per_day", "overtime_rate"].includes(a);
+    return b ? { ...o, [a]: { ...((o as Record<string, Record<string, string>>)[a] ?? {}), [b]: v } } : { ...o, [a]: num ? (v === "" ? 0 : Number(v)) : v };
+  });
+  const getPath = (path: string) => { const [a, b] = path.split("."); const x = (p as Record<string, unknown>)[a]; return b ? (x as Record<string, unknown> | undefined)?.[b] : x; };
+  const [ledger, setLedger] = useState<StaffLedger | null>(null);
+  const [docs, setDocs] = useState<StaffDoc[]>();
+  const loadDocs = useCallback(async () => { if (record) setDocs((await api.admin<{ documents: StaffDoc[] }>(`/staff/${record.id}/documents`)).documents); }, [record]);
+  useEffect(() => {
+    if (!record) return;
+    if (tab === "ledger" && !ledger) api.staffLedger(record.id).then((l) => setLedger(l as StaffLedger)).catch((e) => { setLedger({ entries: [], total_credits: 0, total_debits: 0, balance: 0 }); toastError(e); });
+    if (tab === "docs" && !docs) loadDocs().catch(toastError);
+  }, [tab, record, ledger, docs, loadDocs]);
   useEffect(() => {
     const k = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", k); const old = document.body.style.overflow; document.body.style.overflow = "hidden";
@@ -89,13 +116,59 @@ function Editor({ record, editing: startEdit, canModify, onClose, onSaved }: { r
     if (!canModify) return toast("No permission to save staff", "bad");
     if (!String(d.name ?? "").trim()) return toast("Full Name is required", "bad");
     if (!/^\d{10}$/.test(String(d.phone ?? ""))) return toast("Phone Number must contain 10 digits", "bad");
-    if (Number(d.salaryAmount) < 0) return toast("Rates cannot be negative", "bad");
+    if (Number(d.salaryAmount) < 0 || Number(p.overtime_rate) < 0) return toast("Rates cannot be negative", "bad");
+    if (p.aadhaar && !/^\d{12}$/.test(p.aadhaar)) return toast("Aadhaar must have 12 digits", "bad");
+    if (p.pan && !/^[A-Z]{5}\d{4}[A-Z]$/.test(p.pan.toUpperCase())) return toast("Invalid PAN format", "bad");
+    if (p.bank?.ifsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(p.bank.ifsc)) return toast("Invalid IFSC code", "bad");
+    if (p.bank?.account_number && !/^\d{9,18}$/.test(p.bank.account_number)) return toast("Bank account number must be 9–18 digits", "bad");
     try {
-      await api.saveStaff({ ...d, email: d.email ?? "", bloodGroup: d.bloodGroup ?? "", joiningDate: d.joiningDate || null, licenseNumber: d.licenseNumber || null, licenseExpiry: d.licenseExpiry || null }, record?.id);
+      await api.saveStaff({ ...d, email: d.email ?? "", bloodGroup: d.bloodGroup ?? "", joiningDate: d.joiningDate || null, licenseNumber: d.licenseNumber || null, licenseExpiry: d.licenseExpiry || null,
+        profile: { ...p, pan: (p.pan ?? "").toUpperCase() } } as Partial<Staff>, record?.id);
       toast(record ? "Staff changes saved" : "Staff added", "ok"); onClose(); onSaved();
     } catch (e) { toastError(e); }
   };
   const F = (f: Field) => <FieldView key={String(f.name)} f={f} value={(d as Record<string, unknown>)[String(f.name)]} editing={editing} set={set(String(f.name))} />;
+  const PF = (f: Field) => <FieldView key={String(f.name)} f={f} value={getPath(String(f.name))} editing={editing} set={setPath(String(f.name))} />;
+  const addRule = async (kind: "bonus" | "deduction") => {
+    const v = await promptDialog(`Add ${kind}`, [{ name: "name", label: "Name / reason", required: true }, { name: "amount", label: "Amount ₹", type: "number", required: true },
+      { name: "frequency", label: "When applied", type: "select", options: ["Every trip", "Monthly", "One-time"] }]);
+    if (!v) return;
+    const key = kind === "bonus" ? "payroll_bonus_rules" : "payroll_deduction_rules";
+    setP((o) => ({ ...o, [key]: [...(o[key] ?? []), { name: String(v.name), amount: Number(v.amount), frequency: String(v.frequency || "Every trip") }] }));
+  };
+  const ruleCard = (title: string, ic: string, kind: "bonus" | "deduction") => {
+    const key = kind === "bonus" ? "payroll_bonus_rules" : "payroll_deduction_rules", a = p[key] ?? [], lbl = kind === "bonus" ? "Bonus" : "Deduction";
+    return (
+      <section className="sp-form-card"><header><span className="sp-card-icon"><I n={ic} s={24} /></span><h3>{title}</h3>
+        {editing && <button type="button" className={`sp-btn ${kind === "bonus" ? "softgreen" : "softred"}`} data-rule-add={kind} onClick={() => void addRule(kind)}><I n="plus" s={19} /> Add {lbl}</button>}</header>
+        <div className="sp-card-main">{a.length ? a.map((r, i) => (
+          <div key={i} className="sp-rule"><span><b>{r.name}</b><small>{r.amount ? inr(r.amount) : "—"} {r.frequency ? `· ${r.frequency}` : ""}</small></span>
+            {editing && <button type="button" className="sp-btn text" data-rule-remove={`${kind}:${i}`} onClick={() => setP((o) => ({ ...o, [key]: (o[key] ?? []).filter((_, j) => j !== i) }))}><I n="trash" s={18} /></button>}</div>))
+          : <button type="button" className="sp-add-rule" data-rule-add={kind} disabled={!editing} onClick={() => void addRule(kind)}><I n="plus" s={20} /> Add {lbl}</button>}</div></section>
+    );
+  };
+  const upload = (type: string) => {
+    if (!record) return toast("Save staff first, then upload documents", "bad");
+    const input = document.createElement("input"); input.type = "file"; input.accept = ".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp";
+    input.onchange = async () => {
+      const file = input.files?.[0]; if (!file) return;
+      if (file.size > 10 * 1024 * 1024) return toast("Maximum file size is 10 MB", "bad");
+      if (!/^(application\/pdf|image\/(jpeg|png|webp))$/.test(file.type)) return toast("Only PDF/JPG/PNG/WEBP files are allowed", "bad");
+      try {
+        const fileData = await new Promise<string>((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result)); fr.onerror = rej; fr.readAsDataURL(file); });
+        await api.admin(`/staff/${record.id}/documents`, "POST", { documentType: type, fileName: file.name, fileData });
+        await loadDocs(); toast("Document uploaded", "ok");
+      } catch (e) { toastError(e); }
+    };
+    input.click();
+  };
+  const download = async (doc: StaffDoc) => {
+    try {
+      const r = await fetch(`/api/admin/staff/${record!.id}/documents/${doc.id}/file`, { headers: authHeaders() });
+      if (!r.ok) throw new Error("Unable to open document");
+      const url = URL.createObjectURL(await r.blob()); const a = document.createElement("a"); a.href = url; a.download = doc.file_name || "document"; a.click(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (e) { toastError(e); }
+  };
   const paytype = d.salaryType === "monthly" ? "monthly" : "per_trip";
   return (
     <div className="sp-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -110,14 +183,14 @@ function Editor({ record, editing: startEdit, canModify, onClose, onSaved }: { r
               {F({ name: "name", label: "Full Name", icon: "user", required: true, placeholder: "Full name" })}
               {F({ name: "phone", label: "Phone Number", icon: "phone", required: true, max: 10, placeholder: "10-digit mobile number" })}
               {F({ name: "email", label: "Email", icon: "mail", type: "email", placeholder: "email@example.com" })}
-              {F({ name: "address", label: "Address", icon: "pin", wide: true, placeholder: "Street address, city, state", np: true })}
+              {PF({ name: "address", label: "Address", icon: "pin", wide: true, placeholder: "Street address, city, state" })}
               {F({ name: "bloodGroup", label: "Blood Group", icon: "drop", type: "select", options: [["", "Select blood group"], ...BLOOD.map((x) => [x, x] as [string, string])] })}
-              {F({ name: "emergencyName", label: "Emergency Contact Name", icon: "user", placeholder: "Contact name", np: true })}
-              {F({ name: "emergencyPhone", label: "Emergency Contact Phone", icon: "phone", placeholder: "10-digit phone", np: true })}
-              {F({ name: "aadhaar", label: "ID / Aadhar Number", icon: "finger", placeholder: "12-digit Aadhaar number", np: true })}
-              {F({ name: "pan", label: "PAN Number", icon: "id", placeholder: "e.g. ABCDE1234F", np: true })}
+              {PF({ name: "emergency_contact.name", label: "Emergency Contact Name", icon: "user", placeholder: "Contact name" })}
+              {PF({ name: "emergency_contact.phone", label: "Emergency Contact Phone", icon: "phone", placeholder: "10-digit phone", max: 10 })}
+              {PF({ name: "aadhaar", label: "ID / Aadhar Number", icon: "finger", placeholder: "12-digit Aadhaar number", max: 12 })}
+              {PF({ name: "pan", label: "PAN Number", icon: "id", placeholder: "e.g. ABCDE1234F", max: 10 })}
               {F({ name: "joiningDate", label: "Date of Joining", icon: "calendar", type: "date" })}
-              {F({ name: "employmentType", label: "Employment Type", icon: "users", type: "select", options: [["", "Select type"], ["Full-time", "Full-time"], ["Part-time", "Part-time"], ["Contract", "Contract"]], np: true })}
+              {PF({ name: "employment_type", label: "Employment Type", icon: "users", type: "select", options: [["", "Select type"], ["Full-time", "Full-time"], ["Part-time", "Part-time"], ["Contract", "Contract"]] })}
             </div></Card>
             <Card title="License Information" icon="shield"><div className="sp-fields">
               {F({ name: "licenseNumber", label: "License Number", icon: "id", placeholder: "Driving license number" })}
@@ -134,11 +207,47 @@ function Editor({ record, editing: startEdit, canModify, onClose, onSaved }: { r
             <Card title={paytype === "monthly" ? "Monthly Salary" : "Daily Wages"} icon="wallet"><div className="sp-fields">
               {F({ name: "salaryAmount", label: paytype === "monthly" ? "Monthly salary (₹)" : "Rate per trip / duty (₹)", icon: "cash", type: "number" })}
               {F({ name: "bataPerTrip", label: "Bata per trip (₹)", icon: "coin", type: "number" })}
-              {F({ name: "retention", label: "Retention per day (₹)", icon: "wallet", type: "number", np: true })}
+              {PF({ name: "retention_per_day", label: "Retention per day (₹)", icon: "wallet", type: "number" })}
             </div><small className="sp-note">The current payroll engine interprets Daily Wages as a per-trip rate, not a guaranteed per-day rate.</small></Card>
-            <p className="sp-note">Overtime, bonus and deduction policies: {NP}.</p>
+            <Card title="Overtime" icon="clock"><div className="sp-fields">
+              <FieldView f={{ name: "overtime_rate", label: "Overtime Rate (per hour)", icon: "coin", type: "number", placeholder: "₹ 100" }} value={p.overtime_rate ?? 100} editing={editing} set={setPath("overtime_rate")} />
+            </div></Card>
+            {ruleCard("Bonuses", "gift", "bonus")}
+            {ruleCard("Deductions", "trendingDown", "deduction")}
+            <p className="sp-note">Bonus, deduction and overtime policies are saved with staff settings but are not applied automatically to payroll calculations by the current backend.</p>
           </>}
-          {["bank", "ledger", "docs"].includes(tab) && <div className="sp-empty" data-not-persisted>{TABS.find((t) => t[0] === tab)?.[1]}: {NP}.</div>}
+          {tab === "bank" && <div className="sp-form-card sp-bank-fields"><div className="sp-card-main"><div className="sp-fields">
+            {PF({ name: "bank.account_name", label: "Account Holder Name", icon: "user", placeholder: "Name as per bank account" })}
+            {PF({ name: "bank.bank_name", label: "Bank Name", icon: "building", placeholder: "e.g. State Bank of India" })}
+            {PF({ name: "bank.branch", label: "Branch", icon: "pin", placeholder: "e.g. MG Road, Bangalore" })}
+            {PF({ name: "bank.account_number", label: "Account Number", icon: "hash", placeholder: "9-18 digit account number" })}
+            {PF({ name: "bank.ifsc", label: "IFSC Code", icon: "bank", placeholder: "e.g. SBIN0001234" })}
+            {PF({ name: "bank.upi", label: "UPI ID", icon: "at", placeholder: "e.g. name@ybl" })}
+          </div></div></div>}
+          {tab === "ledger" && (!record ? <div className="sp-empty">No payroll ledger entries found.</div> : !ledger ? <div className="sp-empty">Loading staff ledger…</div> : (
+            <div className="sp-ledger">
+              <div className="sp-kpis">{([["Earned", ledger.total_credits, "wallet", "green"], ["Paid / advanced", ledger.total_debits, "cash", "orange"], ["Balance", ledger.balance, "book", "blue"]] as const).map(([l, v, ic, tone]) => (
+                <div key={l} className={`sp-kpi ${tone}`}><div className="sp-kpi-icon"><I n={ic} s={23} /></div><div><strong>{inr(v)}</strong><small>{l}</small></div></div>))}</div>
+              <div className="sp-table-shell"><table className="sp-ledger-table"><thead><tr>{["DATE", "TYPE", "NOTE", "CREDIT", "DEBIT", "BALANCE"].map((x) => <th key={x}>{x}</th>)}</tr></thead>
+                <tbody>{ledger.entries.length ? ledger.entries.slice().reverse().map((r, i) => (
+                  <tr key={i}><td>{fdate(r.date)}</td><td>{r.kind}</td><td>{r.note}</td><td className="sp-green">{r.credit ? inr(r.credit) : "—"}</td><td className="sp-red">{r.debit ? inr(r.debit) : "—"}</td><td><b>{inr(r.balance)}</b></td></tr>))
+                  : <tr><td colSpan={6} className="sp-empty">No payroll ledger entries found.</td></tr>}</tbody></table></div>
+            </div>))}
+          {tab === "docs" && <>
+            <p className="sp-doc-hint">PDF, JPG, PNG or WEBP, up to 10 MB each. Uploads are saved immediately.</p>
+            <div className="sp-document-list">{DOC_TYPES.map(([key, label, ic, color]) => {
+              const m = (docs ?? []).filter((x) => x.document_type.toUpperCase() === key).at(-1);
+              return (
+                <div key={key} className="sp-document"><span className={`sp-document-icon ${color}`}><I n={ic} s={25} /></span>
+                  <span className="sp-doc-name"><strong>{label}</strong><small>{m ? `${m.file_name || "Record saved"} · ${m.expiry_date ? fdate(m.expiry_date) : "No expiry"}` : "Not uploaded"}</small></span>
+                  <div className="sp-doc-actions">
+                    {m?.has_file && <button type="button" className="sp-btn outline" data-doc-download={m.id} onClick={() => void download(m)}><I n="download" s={18} /> View</button>}
+                    {editing && <button type="button" className="sp-btn outline" data-doc-upload={key} onClick={() => upload(key)}><I n="upload" s={18} /> {m ? "Replace" : "Upload"}</button>}
+                  </div></div>
+              );
+            })}</div>
+            {!record && <p className="sp-note">Save this staff record before uploading documents.</p>}
+          </>}
         </div>
         <footer className="sp-modal-footer">
           <button type="button" className="sp-btn text" data-modal-close onClick={onClose}><I n="close" s={18} /> Cancel</button>

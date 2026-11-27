@@ -344,9 +344,10 @@ export interface PayoutRow { id: number; payout_no: string; staff_id: number; pe
 export interface PayoutSummary { total_paid_this_month: number; total_pending_approval: number; total_approved_unpaid: number; payouts_count_this_month: number }
 export interface AdvanceRow { id: number; staff_id: number; advance_type: string; amount: number; date_issued: string; reason: string | null; payment_mode: string; recovery_method: string; amount_recovered: number; status: string; balance: number; staff_name: string | null; staff_role: string | null }
 export interface ReimbursementRow { id: number; staff_id: number; category: string; amount: number; date: string; description: string; receipt: string | null; status: string; by: string | null; staff_name: string | null }
+export type StaffLedger = { entries: { date: string; kind: string; credit: number; debit: number; note: string; balance: number }[]; total_credits: number; total_debits: number; balance: number };
 export interface Staff { id: number; name: string; phone: string; role: string; status: string; licenseNumber: string | null; licenseExpiry: string | null;
   designation?: string | null; salaryType?: string | null; salaryAmount?: number | null; bataPerTrip?: number | null;
-  email?: string | null; bloodGroup?: string | null; joiningDate?: string | null }
+  email?: string | null; bloodGroup?: string | null; joiningDate?: string | null; profileJson?: string | null }
 export interface Assignment { id: number; tripId: number; kind: string; vehicleId: number | null; staffId: number | null; role: string; isActive: boolean;
   assignedAt: string; replacedAt: string | null; replacedReason: string | null }
 export interface SeatRow { seatCode: string; deck: string; row: number; col: number; seatType: string; occupied: boolean; state: string; gender: string | null }

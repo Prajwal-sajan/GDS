@@ -30,13 +30,14 @@ public static class VehicleDetailEndpoints
         return DateOnly.TryParseExact(v, "yyyy-MM-dd", out var d) ? d : throw Bad("Invalid " + label);
     }
 
-    private static (string Name, string Type, byte[] Bytes) File(string? data, string? name)
+    internal static (string Name, string Type, byte[] Bytes) File(string? data, string? name, int maxMb = 5)
     {
-        if (data is null || data.Length > 7_200_000) throw Bad("File larger than the 5 MB limit", 413);
+        var limit = $"File larger than the {maxMb} MB limit";
+        if (data is null || data.Length > maxMb * 1_440_000) throw Bad(limit, 413);
         var m = DataUri.Match(data);
         if (!m.Success) throw Bad("Upload a PDF, PNG, JPEG or WebP file");
         byte[] b; try { b = Convert.FromBase64String(m.Groups[2].Value); } catch { throw Bad("Invalid file encoding"); }
-        if (b.Length == 0 || b.Length > 5 * 1024 * 1024) throw Bad("File larger than the 5 MB limit", 413);
+        if (b.Length == 0 || b.Length > maxMb * 1024 * 1024) throw Bad(limit, 413);
         var t = m.Groups[1].Value;
         var ok = t switch
         {
@@ -84,8 +85,47 @@ public static class VehicleDetailEndpoints
     private static void Audit(GdsDbContext db, HttpContext h, long id, string section, object data) =>
         db.AuditLogs.Add(new AuditLog { TenantId = db.CurrentTenantId, Actor = h.User.Identity?.Name ?? "system", Action = "VEHICLE_" + section.ToUpperInvariant(), Entity = "vehicle", EntityId = id.ToString(), DataJson = JsonSerializer.Serialize(data), At = DateTime.UtcNow });
 
+    private static readonly Dictionary<string, string> StaffDocTypes = new() { ["AADHAAR"] = "Aadhaar Card", ["LICENSE"] = "Driving License", ["PAN"] = "PAN Card", ["BANK_CHEQUE"] = "Bank Cheque" };
+
+    /// <summary>Legacy staff-parity-v11 Documents tab (/documents/staff/:id): one active file per type (10 MB); replacing archives the previous file.</summary>
+    private static void MapStaffDocuments(IEndpointRouteBuilder app)
+    {
+        var g = app.MapGroup("/api/admin/staff/{id:long}/documents").RequireAuthorization(Policies.Operations).WithTags("Staff");
+        g.MapGet("", async (long id, GdsDbContext db) =>
+        {
+            if (!await db.Staff.AnyAsync(s => s.Id == id)) throw Bad("Staff not found", 404);
+            var docs = await db.ComplianceDocuments.AsNoTracking().Where(d => d.OwnerType == "staff" && d.OwnerId == id && d.ArchivedAt == null).OrderBy(d => d.Id).ToListAsync();
+            return Results.Ok(new { documents = docs.Select(Doc) });
+        });
+        g.MapPost("", async (long id, VehicleDocInput b, GdsDbContext db, HttpContext h) =>
+        {
+            if (!await db.Staff.AnyAsync(s => s.Id == id)) throw Bad("Staff not found", 404);
+            var type = (b.DocumentType ?? "").ToUpperInvariant();
+            if (!StaffDocTypes.TryGetValue(type, out var label)) throw Bad("Invalid document type");
+            var f = File(b.FileData, b.FileName, 10);
+            var now = DateTime.UtcNow;
+            var prior = await db.ComplianceDocuments.Where(d => d.OwnerType == "staff" && d.OwnerId == id && d.ArchivedAt == null && d.DocumentType == type).ToListAsync();
+            foreach (var p in prior) { p.ArchivedAt = now; p.ArchiveReason = "replaced"; }
+            var doc = new ComplianceDocument { TenantId = db.CurrentTenantId, OwnerType = "staff", OwnerId = id, DocumentType = type, DocumentName = label, Category = "identity",
+                VerificationStatus = "pending", ExpiryDate = Date(b.ExpiryDate, "expiry date"), FileName = f.Name, FileType = f.Type, FileData = f.Bytes, CreatedAt = now };
+            db.ComplianceDocuments.Add(doc);
+            db.AuditLogs.Add(new AuditLog { TenantId = db.CurrentTenantId, Actor = h.User.Identity?.Name ?? "system", Action = "STAFF_DOCUMENT", Entity = "staff", EntityId = id.ToString(), DataJson = JsonSerializer.Serialize(new { type, replaced = prior.Count }), At = now });
+            await db.SaveChangesAsync();
+            return Results.Ok(new { document = Doc(doc), replaced = prior.Count });
+        });
+        g.MapGet("/{docId:long}/file", async (long id, long docId, GdsDbContext db, HttpContext h) =>
+        {
+            var d = await db.ComplianceDocuments.AsNoTracking().FirstOrDefaultAsync(x => x.Id == docId && x.OwnerType == "staff" && x.OwnerId == id);
+            if (d?.FileData is null) throw Bad("Document not found", 404);
+            h.Response.Headers["X-Content-Type-Options"] = "nosniff";
+            h.Response.Headers.ContentDisposition = $"inline; filename=\"{Regex.Replace(d.FileName ?? "document", @"[^A-Za-z0-9._-]", "_")}\"";
+            return Results.Bytes(d.FileData, d.FileType ?? "application/octet-stream");
+        });
+    }
+
     public static void MapVehicleDetail(this IEndpointRouteBuilder app)
     {
+        MapStaffDocuments(app);
         var g = app.MapGroup("/api/admin/vehicles/{id:long}").RequireAuthorization().WithTags("Fleet");
         async Task<Vehicle> Get(GdsDbContext db, long id) => await db.Vehicles.FirstOrDefaultAsync(v => v.Id == id) ?? throw Bad("Vehicle not found", 404);
 

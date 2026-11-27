@@ -119,6 +119,7 @@ public sealed class GdsDbContext(DbContextOptions<GdsDbContext> options, ITenant
         b.Entity<SarathiConversation>(e => { e.Property(x => x.MessagesJson).HasColumnType("jsonb"); e.HasIndex(x => new { x.TenantId, x.Owner }); });
         b.Entity<Vehicle>(e => { e.Property(x => x.PositionJson).HasColumnType("jsonb"); e.Property(x => x.HealthJson).HasColumnType("jsonb"); e.Property(x => x.DetailsJson).HasColumnType("jsonb"); });
         b.Entity<VehicleMaintenance>(e => e.HasIndex(x => new { x.TenantId, x.VehicleId }));
+        b.Entity<Staff>(e => e.Property(x => x.ProfileJson).HasColumnType("jsonb"));
         b.Entity<CoachTemplate>(e => e.Property(x => x.AmenitiesJson).HasColumnType("jsonb"));
         b.Entity<Route>(e => e.Property(x => x.SettingsJson).HasColumnType("jsonb"));
         b.Entity<Trip>(e => { e.Property(x => x.TelemetryJson).HasColumnType("jsonb"); e.Property(x => x.StopEventsJson).HasColumnType("jsonb"); e.Property(x => x.UpdateSettingsJson).HasColumnType("jsonb"); e.Property(x => x.DelayReason).HasMaxLength(300); });

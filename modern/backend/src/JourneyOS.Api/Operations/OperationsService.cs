@@ -11,7 +11,8 @@ namespace JourneyOS.Api.Operations;
 public sealed record VehicleInput(string RegistrationNumber, long? CoachTemplateId, string? Status, string? ModelName, int? ManufactureYear,
     string? OwnershipType, string? PhoneNumber, bool GpsEnabled, DateOnly? InsuranceExpiry, DateOnly? PermitExpiry, DateOnly? FitnessExpiry, DateOnly? PucExpiry, string? VehicleRole = null);
 public sealed record StaffInput(string Name, string Phone, string Role, string? Status, string? Designation, string? LicenseNumber, DateOnly? LicenseExpiry,
-    string? SalaryType, decimal? SalaryAmount, decimal? BataPerTrip, string? Email = null, string? BloodGroup = null, DateOnly? JoiningDate = null);
+    string? SalaryType, decimal? SalaryAmount, decimal? BataPerTrip, string? Email = null, string? BloodGroup = null, DateOnly? JoiningDate = null,
+    System.Text.Json.Nodes.JsonObject? Profile = null);
 public sealed record AssignInput(string Role, long? VehicleId, long? StaffId, string? Reason);
 public sealed record FareInput(int FromSequence, int ToSequence, decimal Seater, decimal SleeperLower, decimal SleeperUpper);
 public sealed record BlockInput(List<string> Seats, int? FromSequence, int? ToSequence, string? Reason);
@@ -98,9 +99,62 @@ public sealed class OperationsService(GdsDbContext db, InventoryService inventor
         if (i.Email is not null) s.Email = i.Email.Trim() is { Length: > 0 } em ? em : null;
         if (i.BloodGroup is not null) s.BloodGroup = i.BloodGroup is "" ? null : i.BloodGroup;
         if (i.JoiningDate is not null) s.JoiningDate = i.JoiningDate;
-        Audit(actor, id is null ? "STAFF_CREATE" : "STAFF_UPDATE", "staff", s.Id.ToString(), new { i.Name, i.Role, i.Status });
+        if (i.Profile is not null) s.ProfileJson = CleanStaffProfile(i.Profile);
+        Audit(actor, id is null ? "STAFF_CREATE" : "STAFF_UPDATE", "staff", s.Id.ToString(), new { i.Name, i.Role, i.Status, profile = i.Profile is not null });
         await db.SaveChangesAsync();
         return s;
+    }
+
+    /// <summary>Legacy staff-parity-v11 save validation (Aadhaar 12 digits, PAN, IFSC, account 9-18 digits, non-negative rates); whitelists keys.</summary>
+    private static string CleanStaffProfile(System.Text.Json.Nodes.JsonObject p)
+    {
+        static string Str(System.Text.Json.Nodes.JsonNode? n, int max) { var s = n is System.Text.Json.Nodes.JsonValue v ? v.ToString().Trim() : ""; return s.Length > max ? s[..max] : s; }
+        static decimal Num(System.Text.Json.Nodes.JsonNode? n, string label)
+        {
+            if (n is null) return 0;
+            if (!decimal.TryParse(n.ToString(), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var d) || d < 0 || d > 10_000_000) throw new GdsException("VALIDATION", label);
+            return d;
+        }
+        var o = new System.Text.Json.Nodes.JsonObject
+        {
+            ["address"] = Str(p["address"], 300),
+            ["aadhaar"] = Str(p["aadhaar"], 12),
+            ["pan"] = Str(p["pan"], 10).ToUpperInvariant(),
+            ["employment_type"] = Str(p["employment_type"], 20),
+            ["retention_per_day"] = Num(p["retention_per_day"], "Rates cannot be negative"),
+            ["overtime_rate"] = Num(p["overtime_rate"] ?? 100, "Rates cannot be negative"),
+        };
+        var aad = o["aadhaar"]!.ToString(); if (aad != "" && !System.Text.RegularExpressions.Regex.IsMatch(aad, @"^\d{12}$")) throw new GdsException("VALIDATION", "Aadhaar must have 12 digits");
+        var pan = o["pan"]!.ToString(); if (pan != "" && !System.Text.RegularExpressions.Regex.IsMatch(pan, @"^[A-Z]{5}\d{4}[A-Z]$")) throw new GdsException("VALIDATION", "Invalid PAN format");
+        if (o["employment_type"]!.ToString() is not ("" or "Full-time" or "Part-time" or "Contract")) throw new GdsException("VALIDATION", "Invalid employment type");
+        var ec = p["emergency_contact"] as System.Text.Json.Nodes.JsonObject;
+        var ecPhone = Str(ec?["phone"], 10);
+        if (ecPhone != "" && !System.Text.RegularExpressions.Regex.IsMatch(ecPhone, @"^\d{10}$")) throw new GdsException("VALIDATION", "Emergency contact phone must have 10 digits");
+        o["emergency_contact"] = new System.Text.Json.Nodes.JsonObject { ["name"] = Str(ec?["name"], 100), ["phone"] = ecPhone };
+        var b = p["bank"] as System.Text.Json.Nodes.JsonObject;
+        var bank = new System.Text.Json.Nodes.JsonObject();
+        foreach (var k in new[] { "account_name", "bank_name", "branch", "account_number", "ifsc", "upi" }) bank[k] = Str(b?[k], 120);
+        var ifsc = bank["ifsc"]!.ToString().ToUpperInvariant(); bank["ifsc"] = ifsc;
+        if (ifsc != "" && !System.Text.RegularExpressions.Regex.IsMatch(ifsc, @"^[A-Z]{4}0[A-Z0-9]{6}$")) throw new GdsException("VALIDATION", "Invalid IFSC code");
+        var acc = bank["account_number"]!.ToString();
+        if (acc != "" && !System.Text.RegularExpressions.Regex.IsMatch(acc, @"^\d{9,18}$")) throw new GdsException("VALIDATION", "Bank account number must be 9–18 digits");
+        o["bank"] = bank;
+        foreach (var key in new[] { "payroll_bonus_rules", "payroll_deduction_rules" })
+        {
+            var arr = new System.Text.Json.Nodes.JsonArray();
+            if (p[key] is System.Text.Json.Nodes.JsonArray src)
+            {
+                if (src.Count > 20) throw new GdsException("VALIDATION", "Too many payroll rules");
+                foreach (var r in src.OfType<System.Text.Json.Nodes.JsonObject>())
+                {
+                    var name = Str(r["name"], 100); if (name == "") throw new GdsException("VALIDATION", "Rule name is required");
+                    var freq = Str(r["frequency"], 20); if (freq is not ("" or "Every trip" or "Monthly" or "One-time")) throw new GdsException("VALIDATION", "Invalid rule frequency");
+                    arr.Add(new System.Text.Json.Nodes.JsonObject { ["name"] = name, ["amount"] = Num(r["amount"], "Rule amount must be a non-negative number"), ["frequency"] = freq == "" ? "Every trip" : freq });
+                }
+            }
+            o[key] = arr;
+        }
+        return o.ToJsonString();
     }
 
     // ---------------- trip assignments (bus change / driver replacement) ----------------

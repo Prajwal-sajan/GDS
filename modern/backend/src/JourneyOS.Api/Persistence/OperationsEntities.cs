@@ -67,6 +67,9 @@ public sealed class Staff : ITenantOwned
     public string? Email { get; set; }
     public string? BloodGroup { get; set; }
     public DateOnly? JoiningDate { get; set; }
+    /// <summary>Legacy staff-parity-v11 profile: address, emergency_contact{name,phone}, aadhaar, pan, employment_type, bank{account_name,bank_name,
+    /// branch,account_number,ifsc,upi}, retention_per_day, overtime_rate, payroll_bonus_rules[], payroll_deduction_rules[]. jsonb; null = never entered.</summary>
+    public string? ProfileJson { get; set; }
 }
 
 // ---------- Staff payroll (legacy attendance / advances / reimbursements / payouts) ----------

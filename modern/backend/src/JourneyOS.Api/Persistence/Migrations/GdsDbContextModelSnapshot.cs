@@ -2957,6 +2957,10 @@ namespace JourneyOS.Api.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("phone");
 
+                    b.Property<string>("ProfileJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("profile_json");
+
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasColumnType("text")
