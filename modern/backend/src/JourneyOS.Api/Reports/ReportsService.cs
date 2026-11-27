@@ -361,7 +361,10 @@ public sealed class ReportsService(GdsDbContext db, TimeProvider clock)
     {
         ValidateRange(from, to);
         var bs = await db.Bookings.AsNoTracking().Join(db.Trips, b => b.TripId, t => t.Id, (b, t) => new { b, t.TravelDate })
-            .Where(x => x.TravelDate >= from && x.TravelDate <= to && x.b.Status == "CONFIRMED").OrderBy(x => x.b.Pnr).Select(x => x.b).ToListAsync(); // legacy store order == PNR order
+            .Where(x => x.TravelDate >= from && x.TravelDate <= to && x.b.Status == "CONFIRMED").Select(x => x.b).ToListAsync();
+        // legacy row order = booking creation order: imported legacy PNRs (ST…, time-encoded) all predate native bookings
+        bs = bs.OrderBy(b => b.Pnr.StartsWith("ST", StringComparison.Ordinal) ? 0 : 1)
+            .ThenBy(b => b.Pnr.StartsWith("ST", StringComparison.Ordinal) ? b.Pnr : "", StringComparer.Ordinal).ThenBy(b => b.Id).ToList();
         var ids = bs.Select(b => b.Id).ToList();
         var fin = await db.BookingFinances.AsNoTracking().Where(f => ids.Contains(f.BookingId)).ToDictionaryAsync(f => f.BookingId);
         var paid = (await db.Payments.AsNoTracking().Where(p => ids.Contains(p.BookingId) && p.Status == "PAID").Select(p => p.BookingId).ToListAsync()).ToHashSet();
